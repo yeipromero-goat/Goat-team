@@ -1,48 +1,34 @@
-import { takeShot, calculateScore } from "../game/shoot.js";
-import { state } from "../core/state.js";
-import { navigate } from "../core/router.js";
-
 export function loadShooting() {
   const app = document.getElementById("app");
 
   app.innerHTML = `
-    <h1>🎯 Tiro</h1>
+    <div style="background:#0e0e0e; color:white; min-height:100vh; padding:20px;">
+      <h1>🎯 Tiro</h1>
 
-    <canvas id="c" width="300" height="300"></canvas>
+      <canvas id="c" width="300" height="300" style="background:white;"></canvas>
 
-    <button id="shoot">Disparar</button>
-    <button id="back">← Volver</button>
+      <br><br>
+      <button id="shoot">Disparar</button>
+      <button id="back">← Volver</button>
 
-    <p id="score"></p>
+      <p id="score"></p>
+    </div>
   `;
 
   const canvas = document.getElementById("c");
   const ctx = canvas.getContext("2d");
 
-  drawTarget(ctx);
-
   document.getElementById("shoot").onclick = () => {
-    const shot = takeShot(state);
-    const score = calculateScore(shot.x, shot.y);
+    const x = (Math.random() - 0.5) * 50;
+    const y = (Math.random() - 0.5) * 50;
 
-    drawShot(ctx, shot.x, shot.y);
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(150 + x, 150 + y, 4, 0, Math.PI * 2);
+    ctx.fill();
 
-    state.game.score += score;
-
-    document.getElementById("score").innerText = "Score: " + score;
+    document.getElementById("score").innerText = "Tiro realizado";
   };
 
   document.getElementById("back").onclick = () => navigate("platform");
-}
-
-function drawTarget(ctx) {
-  ctx.fillStyle = "white";
-  ctx.fillRect(0, 0, 300, 300);
-}
-
-function drawShot(ctx, x, y) {
-  ctx.fillStyle = "red";
-  ctx.beginPath();
-  ctx.arc(150 + x, 150 + y, 4, 0, Math.PI * 2);
-  ctx.fill();
 }
