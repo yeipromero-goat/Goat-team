@@ -5,14 +5,20 @@ export function loadPlatform() {
   const app = document.getElementById("app");
 
   app.innerHTML = `
-    <h1>GOAT TEAM</h1>
+    <div style="font-family: sans-serif; padding:20px;">
+      
+      <h1>GOAT TEAM</h1>
 
-    <p>Nivel: ${state.bow.level}</p>
-    <p>FPS: ${state.bow.stats.fps}</p>
+      <p>Nivel del arco: ${state.bow.level}</p>
+      <p>FPS: ${state.bow.stats.fps}</p>
 
-    <button id="arco">Mi arco</button>
-    <button id="shoot">Tirar</button>
-    <button id="leader">Leaderboard</button>
+      <br>
+
+      <button id="arco">Mi arco</button>
+      <button id="shoot">Entrenar tiro</button>
+      <button id="leader">Leaderboard</button>
+
+    </div>
   `;
 
   document.getElementById("arco").onclick = () => navigate("arco");
