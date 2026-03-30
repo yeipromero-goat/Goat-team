@@ -5,18 +5,31 @@ export function loadPlatform() {
   const app = document.getElementById("app");
 
   app.innerHTML = `
-    <div style="font-family: sans-serif; padding:20px;">
-      
-      <h1>GOAT TEAM</h1>
+    <div style="
+      background:#0e0e0e;
+      color:#f0ece0;
+      min-height:100vh;
+      font-family: sans-serif;
+      padding:20px;
+    ">
 
-      <p>Nivel del arco: ${state.bow.level}</p>
-      <p>FPS: ${state.bow.stats.fps}</p>
+      <h1 style="letter-spacing:2px;">GOAT TEAM</h1>
 
-      <br>
+      <div style="
+        background:#181818;
+        padding:16px;
+        border-radius:12px;
+        margin-top:20px;
+      ">
+        <p><strong>Nivel:</strong> ${state.bow.level}</p>
+        <p><strong>FPS:</strong> ${state.bow.stats.fps}</p>
+      </div>
 
-      <button id="arco">Mi arco</button>
-      <button id="shoot">Entrenar tiro</button>
-      <button id="leader">Leaderboard</button>
+      <div style="margin-top:20px;">
+        <button id="arco">Mi arco</button>
+        <button id="shoot">Tirar</button>
+        <button id="leader">Leaderboard</button>
+      </div>
 
     </div>
   `;
