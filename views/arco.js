@@ -5,31 +5,45 @@ export function loadArco() {
   const app = document.getElementById("app");
 
   app.innerHTML = `
-    <div style="font-family: sans-serif; padding:20px;">
-      
+    <div style="
+      background:#0e0e0e;
+      color:#f0ece0;
+      min-height:100vh;
+      font-family:sans-serif;
+      padding:20px;
+    ">
+
       <h1>${state.bow.name}</h1>
 
-      <p><strong>Nivel:</strong> <span id="level">${state.bow.level}</span></p>
+      <div style="
+        background:#181818;
+        border-radius:12px;
+        padding:16px;
+        margin-bottom:20px;
+      ">
+        <p><strong>Nivel:</strong> <span id="level">${state.bow.level}</span></p>
+      </div>
 
-      <h2>Stats</h2>
+      <div style="
+        background:#181818;
+        border-radius:12px;
+        padding:16px;
+      ">
+        <h3>Stats</h3>
 
-      <p>FPS: <span id="fps">${state.bow.stats.fps}</span></p>
-      <p>Let Off: <span id="let">${state.bow.stats.letOff}</span></p>
-      <p>Brace Height: <span id="brace">${state.bow.stats.braceHeight}</span></p>
+        <p>FPS: <span id="fps">${state.bow.stats.fps}</span></p>
+        <p>Let Off: <span id="let">${state.bow.stats.letOff}</span></p>
+        <p>Brace: <span id="brace">${state.bow.stats.braceHeight}</span></p>
 
-      <h2>Upgrades</h2>
+        <button id="up-fps">+ FPS</button>
+        <button id="up-let">+ Let Off</button>
+      </div>
 
-      <button id="up-fps">+ FPS</button>
-      <button id="up-let">+ Let Off</button>
-
-      <br><br>
-
+      <br>
       <button id="back">← Volver</button>
 
     </div>
   `;
-
-  // EVENTOS
 
   document.getElementById("up-fps").onclick = () => {
     state.bow.stats.fps += 5;
@@ -41,12 +55,9 @@ export function loadArco() {
     updateUI();
   };
 
-  document.getElementById("back").onclick = () => {
-    navigate("platform");
-  };
+  document.getElementById("back").onclick = () => navigate("platform");
 }
 
-// actualizar UI sin recargar
 function updateUI() {
   document.getElementById("fps").innerText = state.bow.stats.fps;
   document.getElementById("let").innerText = state.bow.stats.letOff;
