@@ -5,19 +5,49 @@ export function loadArco() {
   const app = document.getElementById("app");
 
   app.innerHTML = `
-    <h1>${state.bow.name}</h1>
+    <div style="font-family: sans-serif; padding:20px;">
+      
+      <h1>${state.bow.name}</h1>
 
-    <p>Nivel: ${state.bow.level}</p>
-    <p>FPS: <span id="fps">${state.bow.stats.fps}</span></p>
+      <p><strong>Nivel:</strong> <span id="level">${state.bow.level}</span></p>
 
-    <button id="upgrade">+ FPS</button>
-    <button id="back">← Volver</button>
+      <h2>Stats</h2>
+
+      <p>FPS: <span id="fps">${state.bow.stats.fps}</span></p>
+      <p>Let Off: <span id="let">${state.bow.stats.letOff}</span></p>
+      <p>Brace Height: <span id="brace">${state.bow.stats.braceHeight}</span></p>
+
+      <h2>Upgrades</h2>
+
+      <button id="up-fps">+ FPS</button>
+      <button id="up-let">+ Let Off</button>
+
+      <br><br>
+
+      <button id="back">← Volver</button>
+
+    </div>
   `;
 
-  document.getElementById("upgrade").onclick = () => {
+  // EVENTOS
+
+  document.getElementById("up-fps").onclick = () => {
     state.bow.stats.fps += 5;
-    document.getElementById("fps").innerText = state.bow.stats.fps;
+    updateUI();
   };
 
-  document.getElementById("back").onclick = () => navigate("platform");
+  document.getElementById("up-let").onclick = () => {
+    state.bow.stats.letOff += 2;
+    updateUI();
+  };
+
+  document.getElementById("back").onclick = () => {
+    navigate("platform");
+  };
+}
+
+// actualizar UI sin recargar
+function updateUI() {
+  document.getElementById("fps").innerText = state.bow.stats.fps;
+  document.getElementById("let").innerText = state.bow.stats.letOff;
 }
