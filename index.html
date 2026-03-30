@@ -1,12 +1,16 @@
-/app
- ├── index.html
- ├── /core
- │     ├── state.js
- │     └── router.js
- ├── /views
- │     ├── platform.js
- │     ├── arco.js
- │     ├── shooting.js
- │     └── leaderboard.js
- ├── /game
- │     └── shoot.js
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>GOAT Team</title>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="module">
+    import { navigate } from "./core/router.js";
+
+    navigate("platform");
+  </script>
+</body>
+</html>
