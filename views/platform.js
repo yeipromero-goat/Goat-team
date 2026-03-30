@@ -5,36 +5,34 @@ export function loadPlatform() {
   const app = document.getElementById("app");
 
   app.innerHTML = `
-    <div style="
-      background:#0e0e0e;
-      color:#f0ece0;
-      min-height:100vh;
-      font-family: sans-serif;
-      padding:20px;
-    ">
-
-      <h1 style="letter-spacing:2px;">GOAT TEAM</h1>
-
-      <div style="
-        background:#181818;
-        padding:16px;
-        border-radius:12px;
-        margin-top:20px;
-      ">
-        <p><strong>Nivel:</strong> ${state.bow.level}</p>
-        <p><strong>FPS:</strong> ${state.bow.stats.fps}</p>
+    <div class="header">
+      <div class="hicon">GT</div>
+      <div>
+        <div class="htitle">GOAT TEAM</div>
+        <div class="hsub">Plataforma</div>
       </div>
+    </div>
 
-      <div style="margin-top:20px;">
-        <button id="arco">Mi arco</button>
-        <button id="shoot">Tirar</button>
-        <button id="leader">Leaderboard</button>
+    <div class="bow-profile">
+      <div class="bow-header">
+        <div>
+          <div class="bow-badge">ACTIVO</div>
+          <div class="bow-name">${state.bow.name}</div>
+          <div class="bow-model">Modelo Base</div>
+        </div>
+
+        <div class="bow-level-box">
+          <div class="bow-level-num">${state.bow.level}</div>
+        </div>
       </div>
+    </div>
 
+    <div style="margin-top:20px;">
+      <button id="arco">MI ARCO</button>
+      <button id="shoot">TIRAR</button>
     </div>
   `;
 
   document.getElementById("arco").onclick = () => navigate("arco");
   document.getElementById("shoot").onclick = () => navigate("shoot");
-  document.getElementById("leader").onclick = () => navigate("leaderboard");
 }
