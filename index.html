@@ -1,16 +1,40 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>GOAT Team</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+
+<title>GOAT TEAM</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<style>
+:root{
+  --bg:#0e0e0e;--surface:#181818;--surface2:#222222;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.16);
+  --text:#f0ece0;--muted:#888880;--hint:#555550;
+  --yellow:#d8d15a;--blue:#5a9fd8;--purple:#9a88dd;
+  --green:#5dcaa5;--coral:#d87850;--orange:#e8a840;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  padding:20px;
+}
+</style>
+
 </head>
+
 <body>
-  <div id="app"></div>
+<div id="app"></div>
 
-  <script type="module">
-    import { navigate } from "./core/router.js";
+<script type="module">
+  import { navigate } from "./core/router.js";
+  navigate("platform");
+</script>
 
-    navigate("platform");
-  </script>
 </body>
 </html>
