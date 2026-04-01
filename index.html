@@ -2090,21 +2090,23 @@ const PAT="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICA
 
 const ARCHERS = [
   {
-    id:"A-001", name:"Rodrigo Vega", rarity:"legend",
-    role:"Recurvo · Selección Nacional",
-    quote:"Mi estándar es alto. Mi ego es bajo.",
-    T:95, C:88, E:72, I:80,
+    id:"A-001", name:"Rodrigo Olvera", rarity:"legend",
+    role:"Compuesto · Selección Nacional",
+    quote:"Fiel a ti mismo.",
+    T:85, C:70, E:85, I:90,
     avatar:"MO", color:"#d8d15a",
-    ability:"Tiro Perfecto",
-    abilityDesc:"En la ronda final, +15 Técnica si el score acumulado es B o superior.",
+     foto:"Arquero-Rodrigo-Olvera.webp",
+    ability:"Modo serio",
+    abilityDesc:"Aumenta 10 de competitividad en torneo outdoor.",
     spec:"indoor",
-    bio:"Rodrigo no llegó a la élite por talento — llegó por disciplina compartida. Desde los 8 años entrenó junto a su comunidad, aprendiendo que el nivel se construye en conjunto. Tres veces campeón nacional, su lema es simple: estándar alto, ego bajo. Cada medalla la dedica al equipo que lo llevó ahí.",
+    bio:"Rodrigo empezó a los 11 años y aún más que de tirar, se enamoró del podio y las medallas, una sensación que ninguna otra cosa podría replicar, este amor lo llevo a entrenar mucho y lograr representar a México en torneos internacionales.",
     top:[
-      {pos:"🥇", event:"Campeonato Nacional Indoor", year:"2023"},
-      {pos:"🥈", event:"Campeonato Mundial — Individual", year:"2022"},
-      {pos:"🥇", event:"Juegos Panamericanos", year:"2021"},
-      {pos:"🥇", event:"Copa del Mundo — Etapa CDMX", year:"2021"},
-    ],
+  {pos:"🏅🥈🥉×19", event:"Juegos Nacionales", year:"2013–2024"},
+  {pos:"🥈🥉", event:"Mundial Juvenil", year:"2019 · Madrid, España"},
+  {pos:"🥇", event:"Mundial Juvenil", year:"2021 · Wrocław, Polonia"},
+  {pos:"🥇🥉", event:"Campeonato Panamericano Juvenil", year:"2021 · Medellín, Colombia"},
+  {pos:"🥇", event:"Puerto Rico Cup", year:"2022"},
+],
   },
   {
     id:"A-002", name:"Sofía Reyes", rarity:"epic",
@@ -2292,9 +2294,9 @@ function buildCard(data, type){
 
     <div class="card-art">
       <div class="diana-bg">${dianaRings()}</div>
-      <div class="avatar" style="background:${data.color}22;border-color:${data.color}55">
-        <span style="color:${data.color}">${data.avatar}</span>
-      </div>
+      <div class="avatar" style="background:${data.color}22;border-color:${data.color}55;overflow:hidden;padding:0">
+  ${data.foto ? `<img src="img/arqueros/${data.foto}.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="color:${data.color}">${data.avatar}</span>`}
+</div>
       <img class="gt-logo" src="${LOGO}" alt="GT"/>
     </div>
 
