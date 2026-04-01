@@ -4051,11 +4051,17 @@ function openCardDetail(id, type) {
   document.getElementById('cdm-band').style.background = rarityColor;
 
   // Avatar
-  const av = document.getElementById('cdm-avatar');
+const av = document.getElementById('cdm-avatar');
+if (data.foto) {
+  av.innerHTML = `<img src="img/arqueros/${data.foto}.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  av.style.background = data.color + '22';
+  av.style.borderColor = data.color + '88';
+} else {
   av.textContent = data.avatar;
   av.style.background = data.color + '22';
   av.style.borderColor = data.color + '88';
   av.style.color = data.color;
+}
 
   // Name / role / badges
   document.getElementById('cdm-name').textContent = data.name;
