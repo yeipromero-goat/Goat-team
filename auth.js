@@ -31,3 +31,7 @@ async function loginGoogle(){
 window._supabaseClient.auth.onAuthStateChange((event, session)=>{
   if(session) document.getElementById('auth-screen').style.display = 'none';
 });
+async function cerrarSesion(){
+  await window._supabaseClient.auth.signOut();
+  document.getElementById('auth-screen').style.display = 'flex';
+}
