@@ -1049,8 +1049,7 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
 <div class="nav-tabs">
   <div class="nav-tab active" onclick="switchTab('score',this)">🎯 Tablero</div>
   <div class="nav-tab" onclick="switchTab('cards',this)">🃏 Cartas</div>
-  <div class="nav-tab" onclick="switchTab('mi-arco',this)">🏹 Mi Arco</div>
-  <div class="nav-tab" onclick="switchTab('coleccion',this)">📦 Colección</div>
+<div class="nav-tab" onclick="switchTab('mi-arco',this)">🏹 Mi Arco</div>
   <div class="nav-tab" onclick="switchTab('sobres',this)">🎁 Sobres</div>
   <div class="nav-tab" onclick="switchTab('habilidades',this)">⚡ Habilidades</div>
 </div>
@@ -1520,6 +1519,8 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
         <div class="bow-name" id="bow-name-display">PHANTOM X-7</div>
         <div class="bow-model" id="bow-model-display">Arco Compuesto · Serie Élite Goat Team</div>
       </div>
+      <div class="sec">Mis Arcos</div>
+<div class="bow-collection-grid" id="collection-grid-2"></div>
     </div>
 
     <!-- STATS -->
@@ -3485,6 +3486,22 @@ function renderBowProfile() {
   renderUpgradeButtons();
   renderHistory();
   renderCollection();
+  // Render collection in Mi Arco tab
+  const grid2 = document.getElementById('collection-grid-2');
+  if (grid2) {
+    grid2.innerHTML = BOWS.map((b, i) => `
+      <div class="bow-card ${activeBow === i ? 'active-bow' : ''}" onclick="selectBow(${i})">
+        <div class="bow-card-name">${b.name}</div>
+        <div class="bow-card-model">${b.model}</div>
+        <div class="bow-card-stats">
+          <div class="bow-mini-stat"><strong>${b.fps}</strong> fps</div>
+          <div class="bow-mini-stat"><strong>${b.let}</strong>% LetOff</div>
+          <div class="bow-mini-stat"><strong>${b.ata}"</strong> AxA</div>
+          <div class="bow-mini-stat"><strong>${b.draw}</strong> lbs</div>
+        </div>
+      </div>
+    `).join('');
+  }
 }
 
 function renderUpgradeButtons() {
