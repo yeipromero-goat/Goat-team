@@ -28,8 +28,10 @@ window.loginGoogle = async function(){
   await window._supabaseClient.auth.signInWithOAuth({provider:'google', options:{redirectTo: window.location.href}});
 }
 
-window._supabaseClient.auth.onAuthStateChange((event, session)=>{
-  if(session) document.getElementById('auth-screen').style.display = 'none';
+document.addEventListener('DOMContentLoaded', function(){
+  window._supabaseClient.auth.onAuthStateChange((event, session)=>{
+    if(session) document.getElementById('auth-screen').style.display = 'none';
+  });
 });
 window.cerrarSesion = async function(){
   await window._supabaseClient.auth.signOut();
