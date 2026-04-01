@@ -129,6 +129,7 @@
     padding-bottom: 6px; border-bottom: 1px solid var(--border);
   }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
   .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
   .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
 
@@ -599,10 +600,46 @@ function renderEditor(a) {
       </div>
 
       <div class="section">
-        <div class="section-title">Habilidad</div>
-        <div class="grid-2">
+        <div class="section-title">Habilidad Especial</div>
+        <div class="grid-2" style="margin-bottom:12px">
           <div class="field"><label>Nombre habilidad</label><input id="f-ability" value="${a.ability||''}" placeholder="Modo Serio"></div>
           <div class="field"><label>Descripción</label><input id="f-ability-desc" value="${a.ability_desc||''}" placeholder="Efecto de la habilidad"></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field">
+            <label>Especialidad donde aplica</label>
+            <select id="f-ability-spec">
+              <option value="all" ${(a.ability_spec||'all')==='all'?'selected':''}>Todas</option>
+              <option value="indoor" ${a.ability_spec==='indoor'?'selected':''}>Indoor</option>
+              <option value="outdoor" ${a.ability_spec==='outdoor'?'selected':''}>Outdoor</option>
+              <option value="field" ${a.ability_spec==='field'?'selected':''}>Field</option>
+              <option value="3d" ${a.ability_spec==='3d'?'selected':''}>3D</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>¿En qué rondas aplica?</label>
+            <select id="f-ability-rounds">
+              <option value="all" ${(a.ability_rounds||'all')==='all'?'selected':''}>Todas las rondas</option>
+              <option value="final" ${a.ability_rounds==='final'?'selected':''}>Solo ronda final</option>
+              <option value="first" ${a.ability_rounds==='first'?'selected':''}>Solo primera ronda</option>
+              <option value="last2" ${a.ability_rounds==='last2'?'selected':''}>Últimas 2 rondas</option>
+            </select>
+          </div>
+        </div>
+        <div class="section-title" style="margin-bottom:10px">Bonus de stats</div>
+        <div class="grid-4">
+          ${[['f-ability-t','⚡ Técnica',a.ability_t||0],['f-ability-c','🎯 Competitividad',a.ability_c||0],['f-ability-e','😤 G. Estrés',a.ability_e||0],['f-ability-i','🧠 Int. Emocional',a.ability_i||0]].map(([id,label,val])=>`
+            <div class="stat-field">
+              <label>${label}</label>
+              <div class="stat-row">
+                <input type="range" id="${id}" min="-20" max="20" value="${val}" oninput="document.getElementById('${id}-val').textContent=(this.value>0?'+':'')+this.value">
+                <div class="stat-val" id="${id}-val" style="color:${val>0?'var(--green)':val<0?'var(--red)':'var(--muted)'}">${val>0?'+':''}${val}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted)" id="ability-preview">
+          ${a.ability ? `⚡ <strong style="color:var(--yellow)">${a.ability}</strong> — ${a.ability_desc||''}` : 'Sin habilidad definida'}
         </div>
       </div>
 
@@ -834,6 +871,12 @@ async function saveArcher() {
     foto: document.getElementById('f-foto').value.trim(),
     ability: document.getElementById('f-ability').value.trim(),
     ability_desc: document.getElementById('f-ability-desc').value.trim(),
+    ability_spec: document.getElementById('f-ability-spec').value,
+    ability_rounds: document.getElementById('f-ability-rounds').value,
+    ability_t: parseInt(document.getElementById('f-ability-t').value) || 0,
+    ability_c: parseInt(document.getElementById('f-ability-c').value) || 0,
+    ability_e: parseInt(document.getElementById('f-ability-e').value) || 0,
+    ability_i: parseInt(document.getElementById('f-ability-i').value) || 0,
     spec: document.getElementById('f-spec').value,
     bio: document.getElementById('f-bio').value.trim(),
     foto_position: document.getElementById('f-foto-position')?.value || 'center center',
