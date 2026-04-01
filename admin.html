@@ -369,6 +369,7 @@ function selectArcher(id) {
   const archer = archers.find(a => a.id === id);
   renderEditor(archer);
   renderList();
+  setTimeout(() => initBannerDrag(), 50);
 }
 
 function newArcher() {
@@ -602,7 +603,7 @@ function initBannerDrag() {
 }
 
 // Init drag on load if foto exists
-setTimeout(() => { if (document.getElementById('banner-img')) initBannerDrag(); }, 500);
+setTimeout(() => { if (document.getElementById('banner-img')) initBannerDrag(); }, 100);
 
 function syncColor(from) {
   if (from === 'picker') {
