@@ -1,5 +1,6 @@
 window.redeemCode = async function(){
     document.getElementById('code-feedback').style.color = '#d8d15a';
+    document.getElementById('code-feedback').style.display = 'block';
   const codigo = document.getElementById('code-input').value.trim().toUpperCase();
   if(!codigo){ 
     document.getElementById('code-feedback').textContent = 'Ingresa un código';
