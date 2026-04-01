@@ -2241,7 +2241,7 @@ function buildCard(data, type){
     <div class="card-art">
       <div class="diana-bg">${dianaRings()}</div>
       <div class="avatar" style="background:${data.color}22;border-color:${data.color}55;overflow:hidden;padding:0">
-  ${data.foto ? `<img src="img/arqueros/${data.foto}.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="color:${data.color}">${data.avatar}</span>`}
+  ${data.foto ? `<img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${data.foto}.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="color:${data.color}
 </div>
       <img class="gt-logo" src="${LOGO}" alt="GT"/>
     </div>
@@ -4020,10 +4020,10 @@ function openCardDetail(id, type) {
 const banner = document.getElementById('cdm-banner');
 const av = document.getElementById('cdm-avatar');
 if (data.foto) {
-  banner.style.backgroundImage = `url('img/arqueros/${data.foto}.webp')`;
+  banner.style.backgroundImage = `url('https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${data.foto}.webp')`;
   banner.style.backgroundSize = 'cover';
   banner.style.backgroundPosition = 'center top';
-  av.innerHTML = `<img src="img/arqueros/${data.foto}.webp" style="width:100%;height:100%;object-fit:cover">`;
+  av.innerHTML = `<img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${data.foto}.webp" style="width:100%;height:100%;object-fit:cover">`;
 } else {
   banner.style.background = data.color + '33';
   av.textContent = data.avatar;
