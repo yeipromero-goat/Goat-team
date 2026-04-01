@@ -247,7 +247,79 @@
   }
   .color-row input[type=text]:focus { outline: none; border-color: var(--yellow); }
 
-  .rarity-colors { legend: #d8d15a; common: #888; rare: #5b9bd5; epic: #a06cd5; }
+  /* NAV TABS */
+  .nav-tabs { display: flex; gap: 4px; padding: 0 24px; margin-right: auto; }
+  .nav-tab {
+    background: none; border: none; color: var(--muted); font-family: 'DM Sans';
+    font-size: 13px; font-weight: 500; padding: 0 12px; height: 56px;
+    cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--yellow); border-bottom-color: var(--yellow); }
+
+  /* CODIGOS PANEL */
+  .codigos-panel { padding: 24px; overflow-y: auto; background: var(--bg); }
+  .codigos-top { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .codigos-top h2 { font-family: 'Bebas Neue'; font-size: 28px; letter-spacing: .05em; }
+  .codigos-top .spacer { flex: 1; }
+  .gen-form { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 12px 16px; }
+  .gen-form select, .gen-form input {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 8px 12px; color: var(--text); font-family: 'DM Sans'; font-size: 13px;
+  }
+  .gen-form select:focus, .gen-form input:focus { outline: none; border-color: var(--yellow); }
+  .btn-gen {
+    background: var(--yellow); color: #000; border: none; border-radius: 8px;
+    padding: 8px 18px; font-family: 'Bebas Neue'; font-size: 16px; letter-spacing: .06em; cursor: pointer;
+  }
+  .btn-gen:hover { opacity: .85; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .stat-card .stat-num { font-family: 'Bebas Neue'; font-size: 32px; color: var(--yellow); line-height: 1; }
+  .stat-card .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 4px; font-family: 'DM Mono'; }
+
+  /* FILTER BAR */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+  .filter-btn {
+    background: var(--surface); border: 1px solid var(--border2); color: var(--muted);
+    border-radius: 6px; padding: 6px 14px; font-size: 12px; cursor: pointer;
+  }
+  .filter-btn.active { border-color: var(--yellow); color: var(--yellow); }
+  .search-input {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 7px 14px; color: var(--text); font-family: 'DM Mono'; font-size: 12px; width: 220px;
+  }
+  .search-input:focus { outline: none; border-color: var(--yellow); }
+
+  /* CODIGOS TABLE */
+  .codigos-table { width: 100%; border-collapse: collapse; }
+  .codigos-table th {
+    text-align: left; font-size: 10px; font-family: 'DM Mono'; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .1em; padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .codigos-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  .codigos-table tr:hover td { background: var(--surface); }
+  .codigo-text { font-family: 'DM Mono'; font-size: 13px; letter-spacing: .08em; color: var(--yellow); }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px;
+    font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  }
+  .badge-canjeado { background: #5cb85c22; color: #5cb85c; }
+  .badge-libre { background: #d8d15a22; color: #d8d15a; }
+  .badge-inactivo { background: #66666622; color: #666; }
+  .btn-icon {
+    background: none; border: 1px solid var(--border2); color: var(--muted);
+    border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;
+  }
+  .btn-icon:hover { border-color: var(--red); color: var(--red); }
+  .btn-copy {
+    background: none; border: 1px solid var(--border2); color: var(--muted);
+    border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;
+  }
+  .btn-copy:hover { border-color: var(--yellow); color: var(--yellow); }
 </style>
 </head>
 <body>
@@ -267,11 +339,16 @@
 <div id="app">
   <header>
     <h1>🐐 GOAT TEAM</h1>
-    <span>Admin Panel</span>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('arqueros')">Arqueros</button>
+      <button class="nav-tab" onclick="switchTab('codigos')">Códigos</button>
+    </div>
     <div class="header-spacer"></div>
     <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
   </header>
-  <div class="main">
+
+  <!-- ARQUEROS TAB -->
+  <div id="tab-arqueros" class="main">
     <div class="sidebar">
       <div class="sidebar-header">
         <h2>Arqueros</h2>
@@ -284,6 +361,52 @@
         <div class="icon">🏹</div>
         <p>Selecciona un arquero para editar</p>
       </div>
+    </div>
+  </div>
+
+  <!-- CODIGOS TAB -->
+  <div id="tab-codigos" style="display:none; height:calc(100vh - 56px); overflow-y:auto;">
+    <div class="codigos-panel">
+      <div class="codigos-top">
+        <h2>🎟 CÓDIGOS</h2>
+        <div class="spacer"></div>
+        <div class="gen-form">
+          <select id="gen-archer">
+            <option value="">Selecciona arquero...</option>
+          </select>
+          <input type="number" id="gen-cantidad" value="1" min="1" max="100" style="width:70px" placeholder="Cant.">
+          <button class="btn-gen" onclick="generarCodigos()">GENERAR</button>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num" id="stat-total">—</div><div class="stat-lbl">Total códigos</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-libres">—</div><div class="stat-lbl">Disponibles</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-canjeados">—</div><div class="stat-lbl">Canjeados</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-inactivos">—</div><div class="stat-lbl">Inactivos</div></div>
+      </div>
+
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterCodigos('todos', this)">Todos</button>
+        <button class="filter-btn" onclick="filterCodigos('libre', this)">Disponibles</button>
+        <button class="filter-btn" onclick="filterCodigos('canjeado', this)">Canjeados</button>
+        <button class="filter-btn" onclick="filterCodigos('inactivo', this)">Inactivos</button>
+        <input class="search-input" id="search-codigos" placeholder="Buscar código..." oninput="searchCodigos()">
+      </div>
+
+      <table class="codigos-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Arquero</th>
+            <th>Estado</th>
+            <th>Creado</th>
+            <th>Canjeado por</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="codigos-tbody"></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -691,6 +814,134 @@ function showToast(msg, type='success') {
   t.textContent = msg;
   t.className = `toast ${type} show`;
   setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  document.getElementById('tab-arqueros').style.display = tab === 'arqueros' ? 'grid' : 'none';
+  document.getElementById('tab-codigos').style.display = tab === 'codigos' ? 'block' : 'none';
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  if (tab === 'codigos') loadCodigos();
+}
+
+// ── CODIGOS ──
+let allCodigos = [];
+let currentFilter = 'todos';
+
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 12; i++) {
+    if (i > 0 && i % 4 === 0) code += '-';
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+async function loadCodigos() {
+  try {
+    // Populate archer selector
+    const sel = document.getElementById('gen-archer');
+    sel.innerHTML = '<option value="">Selecciona arquero...</option>' +
+      archers.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+
+    allCodigos = await sbFetch('codigos?order=created_at.desc');
+    renderCodigos(allCodigos);
+    updateStats(allCodigos);
+  } catch(e) { showToast('Error cargando códigos', 'error'); }
+}
+
+function updateStats(data) {
+  const total = data.length;
+  const canjeados = data.filter(c => c.canjeado).length;
+  const inactivos = data.filter(c => !c.activo).length;
+  const libres = data.filter(c => !c.canjeado && c.activo).length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-libres').textContent = libres;
+  document.getElementById('stat-canjeados').textContent = canjeados;
+  document.getElementById('stat-inactivos').textContent = inactivos;
+}
+
+function renderCodigos(data) {
+  const tbody = document.getElementById('codigos-tbody');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">No hay códigos</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(c => {
+    const archer = archers.find(a => a.id === c.carta_id);
+    const nombre = archer ? archer.name : c.carta_id;
+    const color = archer ? (RARITY_COLORS[archer.rarity] || '#888') : '#888';
+    const fecha = c.created_at ? new Date(c.created_at).toLocaleDateString('es-MX') : '—';
+
+    let badge = '';
+    if (!c.activo) badge = `<span class="badge badge-inactivo">Inactivo</span>`;
+    else if (c.canjeado) badge = `<span class="badge badge-canjeado">✓ Canjeado</span>`;
+    else badge = `<span class="badge badge-libre">Disponible</span>`;
+
+    return `<tr>
+      <td><span class="codigo-text">${c.codigo}</span></td>
+      <td><span style="color:${color};font-weight:600">${nombre}</span></td>
+      <td>${badge}</td>
+      <td style="color:var(--muted);font-size:12px">${fecha}</td>
+      <td style="color:var(--muted);font-size:11px;font-family:'DM Mono'">${c.canjeado_por ? c.canjeado_por.substring(0,8)+'...' : '—'}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn-copy" onclick="copyCode('${c.codigo}')" title="Copiar">📋</button>
+        ${c.activo && !c.canjeado ? `<button class="btn-icon" onclick="toggleCodigo('${c.codigo}', false)" title="Desactivar">🚫</button>` : ''}
+        ${!c.activo ? `<button class="btn-copy" onclick="toggleCodigo('${c.codigo}', true)" title="Activar">✅</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterCodigos(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+
+function searchCodigos() { applyFilters(); }
+
+function applyFilters() {
+  const search = document.getElementById('search-codigos').value.toLowerCase();
+  let filtered = allCodigos;
+  if (currentFilter === 'libre') filtered = filtered.filter(c => !c.canjeado && c.activo);
+  else if (currentFilter === 'canjeado') filtered = filtered.filter(c => c.canjeado);
+  else if (currentFilter === 'inactivo') filtered = filtered.filter(c => !c.activo);
+  if (search) filtered = filtered.filter(c => c.codigo.toLowerCase().includes(search) || c.carta_id?.toLowerCase().includes(search));
+  renderCodigos(filtered);
+}
+
+async function generarCodigos() {
+  const archerId = document.getElementById('gen-archer').value;
+  const cantidad = parseInt(document.getElementById('gen-cantidad').value) || 1;
+  if (!archerId) { showToast('Selecciona un arquero', 'error'); return; }
+
+  const nuevos = [];
+  for (let i = 0; i < cantidad; i++) {
+    nuevos.push({ codigo: genCode(), carta_id: archerId, canjeado: false, activo: true });
+  }
+
+  try {
+    await sbFetch('codigos', 'POST', nuevos);
+    showToast(`✅ ${cantidad} código${cantidad>1?'s':''} generado${cantidad>1?'s':''}`, 'success');
+    await loadCodigos();
+  } catch(e) { showToast('Error generando códigos', 'error'); }
+}
+
+async function toggleCodigo(codigo, activo) {
+  try {
+    await sbFetch(`codigos?codigo=eq.${codigo}`, 'PATCH', { activo });
+    showToast(activo ? '✅ Código activado' : '🚫 Código desactivado', 'success');
+    await loadCodigos();
+  } catch(e) { showToast('Error', 'error'); }
+}
+
+function copyCode(codigo) {
+  navigator.clipboard.writeText(codigo);
+  showToast('📋 Código copiado', 'success');
 }
 </script>
 </body>
