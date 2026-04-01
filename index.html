@@ -2549,7 +2549,6 @@ function updateSetupChecks() {
   document.getElementById('chk-deck-lbl').textContent   = deckCount>0?'✓ Deck listo ('+deckCount+' cartas)':'Deck vacío — ve a la pestaña Items';
   const btn = document.getElementById('btn-start-game');
   if(btn) btn.disabled = !(hasBow && hasArcher && hasCoach && deckCount>=PLAY_PER_ROUND);
-}
 
 
 // ── Bow selector in setup ─────────────────────────────────────────
