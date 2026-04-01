@@ -1044,7 +1044,7 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
     <div class="htitle">Goat Team — Sistema de Puntuación</div>
     <div class="hsub">Precisión · Competencia · Stats</div>
   </div>
-  <button onclick="cerrarSesion()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:1px solid rgba(255,255,255,0.2);color:#888880;padding:0.4rem 0.8rem;border-radius:8px;cursor:pointer;font-size:0.75rem;">Cerrar sesión</button>
+  <button onclick="window._supabaseClient.auth.signOut().then(()=>{ document.getElementById('auth-screen').style.display='flex'; })" style="position:absolute;top:1rem;right:1rem;background:transparent;border:1px solid rgba(255,255,255,0.2);color:#888880;padding:0.4rem 0.8rem;border-radius:8px;cursor:pointer;font-size:0.75rem;">Cerrar sesión</button>
 </div>
 <div class="nav-tabs">
   <div class="nav-tab active" onclick="switchTab('score',this)">🎯 Tablero</div>
