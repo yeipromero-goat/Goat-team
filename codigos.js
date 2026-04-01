@@ -34,5 +34,6 @@ window.redeemCode = async function(){
     .update({ canjeado: true, canjeado_por: userId })
     .eq('codigo', codigo);
 
-  document.getElementById('code-feedback').textContent = '✅ ¡Carta ' + data.carta_id + ' desbloqueada!';
+const nombre = data.carta_id.split('-').join(' ');
+document.getElementById('code-feedback').textContent = '✅ ¡Carta ' + nombre + ' desbloqueada!';
 }
