@@ -157,15 +157,51 @@
   }
 
   /* FOTO PREVIEW */
-  .foto-section { display: grid; grid-template-columns: 140px 1fr; gap: 16px; align-items: start; }
+  .foto-section { display: flex; flex-direction: column; gap: 16px; }
+  .foto-row { display: grid; grid-template-columns: 80px 1fr; gap: 16px; align-items: start; }
   .foto-preview {
-    width: 140px; height: 140px; border-radius: 50%; overflow: hidden;
+    width: 80px; height: 80px; border-radius: 50%; overflow: hidden;
     background: var(--surface2); border: 2px solid var(--border2);
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Bebas Neue'; font-size: 28px; color: var(--muted);
+    font-family: 'Bebas Neue'; font-size: 20px; color: var(--muted); flex-shrink:0;
   }
   .foto-preview img { width: 100%; height: 100%; object-fit: cover; }
   .foto-controls { display: flex; flex-direction: column; gap: 10px; }
+
+  /* BANNER EDITOR */
+  .banner-editor-wrap { display: flex; flex-direction: column; gap: 8px; }
+  .banner-editor-label { font-size: 11px; font-family: 'DM Mono'; color: var(--muted); }
+  .banner-editor {
+    position: relative; width: 100%; height: 180px; border-radius: 12px;
+    overflow: hidden; background: var(--surface2); border: 1px solid var(--border2);
+    cursor: grab; user-select: none;
+  }
+  .banner-editor:active { cursor: grabbing; }
+  .banner-editor-img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; pointer-events: none;
+  }
+  .banner-editor-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+  }
+  .banner-editor-hint {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px; padding: 6px 12px; font-size: 11px; color: rgba(255,255,255,0.7);
+    pointer-events: none; transition: opacity .3s;
+  }
+  .banner-editor-crosshair {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 20px; height: 20px; pointer-events: none;
+  }
+  .banner-editor-crosshair::before, .banner-editor-crosshair::after {
+    content: ''; position: absolute; background: rgba(255,255,255,0.6);
+  }
+  .banner-editor-crosshair::before { width: 1px; height: 100%; left: 50%; top: 0; }
+  .banner-editor-crosshair::after { height: 1px; width: 100%; top: 50%; left: 0; }
+  .banner-pos-display { font-size: 11px; font-family: 'DM Mono'; color: var(--muted); text-align: right; }
 
   /* LOGROS */
   .logros-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
@@ -385,19 +421,33 @@ function renderEditor(a) {
       <div class="section">
         <div class="section-title">Apariencia</div>
         <div class="foto-section">
-          <div class="foto-preview" id="foto-preview" style="border-color:${a.color||'#888'}">
-            ${a.foto ? `<img src="img/arqueros/${a.foto}.webp" onerror="this.parentElement.innerHTML='${a.avatar||'?'}'">` : (a.avatar||'?')}
-          </div>
-          <div class="foto-controls">
-            <div class="field"><label>Nombre del archivo foto (sin extensión)</label><input id="f-foto" value="${a.foto||''}" placeholder="Arquero-Nombre-Apellido" oninput="previewFoto()"></div>
-            <div class="field"><label>Iniciales avatar (fallback)</label><input id="f-avatar" value="${a.avatar||''}" placeholder="RO" maxlength="3"></div>
-            <div class="field">
-              <label>Color del arquero</label>
-              <div class="color-row">
-                <input type="color" id="f-color-picker" value="${a.color||'#888888'}" oninput="syncColor('picker')">
-                <input type="text" id="f-color" value="${a.color||'#888888'}" placeholder="#d8d15a" oninput="syncColor('text')">
+          <div class="foto-row">
+            <div class="foto-preview" id="foto-preview" style="border-color:${a.color||'#888'}">
+              ${a.foto ? `<img src="img/arqueros/${a.foto}.webp" onerror="this.parentElement.innerHTML='${a.avatar||'?'}'">` : (a.avatar||'?')}
+            </div>
+            <div class="foto-controls">
+              <div class="field"><label>Nombre del archivo foto (sin extensión)</label><input id="f-foto" value="${a.foto||''}" placeholder="Arquero-Nombre-Apellido" oninput="previewFoto()"></div>
+              <div class="field"><label>Iniciales avatar (fallback)</label><input id="f-avatar" value="${a.avatar||''}" placeholder="RO" maxlength="3"></div>
+              <div class="field">
+                <label>Color del arquero</label>
+                <div class="color-row">
+                  <input type="color" id="f-color-picker" value="${a.color||'#888888'}" oninput="syncColor('picker')">
+                  <input type="text" id="f-color" value="${a.color||'#888888'}" placeholder="#d8d15a" oninput="syncColor('text')">
+                </div>
               </div>
             </div>
+          </div>
+
+          <div class="banner-editor-wrap">
+            <div class="banner-editor-label">📸 Ajuste de foto en banner — arrastra para posicionar</div>
+            <div class="banner-editor" id="banner-editor">
+              ${a.foto ? `<img class="banner-editor-img" id="banner-img" src="img/arqueros/${a.foto}.webp" style="object-position:${a.foto_position||'center center'}">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px">Sin foto</div>'}
+              <div class="banner-editor-overlay"></div>
+              <div class="banner-editor-hint" id="banner-hint">✋ Arrastra para ajustar</div>
+              <div class="banner-editor-crosshair"></div>
+            </div>
+            <div class="banner-pos-display" id="banner-pos-display">${a.foto_position||'center center'}</div>
+            <input type="hidden" id="f-foto-position" value="${a.foto_position||'center center'}">
           </div>
         </div>
       </div>
@@ -467,12 +517,92 @@ function removeLogro(i) {
 function previewFoto() {
   const foto = document.getElementById('f-foto').value;
   const preview = document.getElementById('foto-preview');
+  const bannerEditor = document.getElementById('banner-editor');
   if (foto) {
     preview.innerHTML = `<img src="img/arqueros/${foto}.webp" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='❌'">`;
+    if (bannerEditor) {
+      const pos = document.getElementById('f-foto-position')?.value || 'center center';
+      bannerEditor.innerHTML = `
+        <img class="banner-editor-img" id="banner-img" src="img/arqueros/${foto}.webp" style="object-position:${pos}">
+        <div class="banner-editor-overlay"></div>
+        <div class="banner-editor-hint" id="banner-hint">✋ Arrastra para ajustar</div>
+        <div class="banner-editor-crosshair"></div>`;
+      initBannerDrag();
+    }
   } else {
     preview.innerHTML = document.getElementById('f-avatar')?.value || '?';
+    if (bannerEditor) bannerEditor.innerHTML = '<div style="display:flex;align-items:center;justify-content:height:100%;color:var(--muted);font-size:12px">Sin foto</div>';
   }
 }
+
+function initBannerDrag() {
+  const editor = document.getElementById('banner-editor');
+  const img = document.getElementById('banner-img');
+  const hint = document.getElementById('banner-hint');
+  const posDisplay = document.getElementById('banner-pos-display');
+  const posInput = document.getElementById('f-foto-position');
+  if (!editor || !img) return;
+
+  let dragging = false;
+  let startX, startY, startPosX, startPosY;
+
+  // Parse current position
+  const currentPos = posInput?.value || 'center center';
+  let posX = 50, posY = 50;
+  const match = currentPos.match(/([\d.]+)%\s+([\d.]+)%/);
+  if (match) { posX = parseFloat(match[1]); posY = parseFloat(match[2]); }
+
+  function updatePos() {
+    const posStr = `${posX.toFixed(1)}% ${posY.toFixed(1)}%`;
+    img.style.objectPosition = posStr;
+    if (posDisplay) posDisplay.textContent = posStr;
+    if (posInput) posInput.value = posStr;
+  }
+
+  editor.addEventListener('mousedown', e => {
+    dragging = true;
+    startX = e.clientX; startY = e.clientY;
+    startPosX = posX; startPosY = posY;
+    if (hint) hint.style.opacity = '0';
+    e.preventDefault();
+  });
+
+  // Touch support
+  editor.addEventListener('touchstart', e => {
+    dragging = true;
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    startPosX = posX; startPosY = posY;
+    if (hint) hint.style.opacity = '0';
+  }, {passive: true});
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const rect = editor.getBoundingClientRect();
+    const dx = (e.clientX - startX) / rect.width * 100;
+    const dy = (e.clientY - startY) / rect.height * 100;
+    posX = Math.max(0, Math.min(100, startPosX - dx));
+    posY = Math.max(0, Math.min(100, startPosY - dy));
+    updatePos();
+  });
+
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const rect = editor.getBoundingClientRect();
+    const dx = (e.touches[0].clientX - startX) / rect.width * 100;
+    const dy = (e.touches[0].clientY - startY) / rect.height * 100;
+    posX = Math.max(0, Math.min(100, startPosX - dx));
+    posY = Math.max(0, Math.min(100, startPosY - dy));
+    updatePos();
+  }, {passive: true});
+
+  document.addEventListener('mouseup', () => { dragging = false; });
+  document.addEventListener('touchend', () => { dragging = false; });
+
+  updatePos();
+}
+
+// Init drag on load if foto exists
+setTimeout(() => { if (document.getElementById('banner-img')) initBannerDrag(); }, 100);
 
 function syncColor(from) {
   if (from === 'picker') {
@@ -521,6 +651,7 @@ async function saveArcher() {
     ability_desc: document.getElementById('f-ability-desc').value.trim(),
     spec: document.getElementById('f-spec').value,
     bio: document.getElementById('f-bio').value.trim(),
+    foto_position: document.getElementById('f-foto-position')?.value || 'center center',
     top: getLogrosList()
   };
 
