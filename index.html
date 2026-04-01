@@ -2239,10 +2239,10 @@ function buildCard(data, type){
     <div class="card-type">${type==='archer'?'Arquero':'Coach'}</div>
 
     <div class="card-art">
-      <div class="diana-bg">${dianaRings()}</div>
-      <div class="avatar" style="background:${data.color}22;border-color:${data.color}55;overflow:hidden;padding:0">
-  ${data.foto ? `<img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${data.foto}.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="color:${data.color}
-</div>
+  <div class="diana-bg">${dianaRings()}</div>
+  <div class="avatar" style="background:${data.color}22;border-color:${data.color}55;overflow:hidden;padding:0">
+    ${data.foto ? `<img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${data.foto}.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="color:${data.color};font-family:'Bebas Neue';font-size:20px">${data.avatar}</span>`}
+  </div>
       <img class="gt-logo" src="${LOGO}" alt="GT"/>
     </div>
 
