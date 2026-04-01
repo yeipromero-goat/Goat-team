@@ -1,3 +1,4 @@
+window.addEventListener('load', function(){
 function showTab(t){
   document.getElementById('form-login').style.display = t==='login'?'block':'none';
   document.getElementById('form-register').style.display = t==='register'?'block':'none';
@@ -35,3 +36,4 @@ async function cerrarSesion(){
   await window._supabaseClient.auth.signOut();
   document.getElementById('auth-screen').style.display = 'flex';
 }
+});
