@@ -2540,7 +2540,6 @@ function updateSetupChecks() {
   const cbwl = document.getElementById('chk-bow-lbl');
   if(cbwl) cbwl.textContent = hasBow?'✓ '+BOWS[selectedBow].name:'Arco no seleccionado';
   }
-  if(cabd) cabd.className = 'dot dot-ok';
   ca.className = 'dot '+(hasArcher?'dot-ok':'dot-no');
   document.getElementById('chk-coach').className = 'dot '+(hasCoach?'dot-ok':'dot-no');
   document.getElementById('chk-deck').className  = 'dot '+(deckCount>=PLAY_PER_ROUND?'dot-ok':'dot-no');
