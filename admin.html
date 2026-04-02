@@ -129,7 +129,6 @@
     padding-bottom: 6px; border-bottom: 1px solid var(--border);
   }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
   .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
   .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
 
@@ -324,17 +323,6 @@
 
   /* COACHES */
   .coaches-layout { display: grid; grid-template-columns: 280px 1fr; height: calc(100vh - 56px); }
-  .coach-role-tag {
-    display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px;
-    font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-  }
-  .coach-avatar-big {
-    width: 80px; height: 80px; border-radius: 12px; overflow: hidden;
-    background: var(--surface2); border: 2px solid var(--border2);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Bebas Neue'; font-size: 22px; color: var(--muted); flex-shrink:0;
-  }
-  .coach-avatar-big img { width: 100%; height: 100%; object-fit: cover; }
   .coach-list-avatar {
     width: 36px; height: 36px; border-radius: 8px; overflow: hidden;
     background: var(--surface2); border: 1px solid var(--border2);
@@ -342,6 +330,13 @@
     font-family: 'Bebas Neue'; font-size: 13px; flex-shrink: 0;
   }
   .coach-list-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .coach-avatar-big {
+    width: 80px; height: 80px; border-radius: 12px; overflow: hidden;
+    background: var(--surface2); border: 2px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue'; font-size: 22px; color: var(--muted); flex-shrink:0;
+  }
+  .coach-avatar-big img { width: 100%; height: 100%; object-fit: cover; }
 </style>
 </head>
 <body>
@@ -512,7 +507,7 @@ function renderList() {
   const list = document.getElementById('archer-list');
   list.innerHTML = archers.map(a => {
     const color = RARITY_COLORS[a.rarity] || '#888';
-    const fotoSrc = a.foto ? `https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${a.foto}.webp` : null;
+    const fotoSrc = a.foto ? `img/arqueros/${a.foto}.webp` : null;
     return `<div class="archer-item ${currentId===a.id?'active':''}" onclick="selectArcher('${a.id}')">
       <div class="archer-avatar" style="border-color:${color}33;color:${color}">
         ${fotoSrc ? `<img src="${fotoSrc}" onerror="this.style.display='none'">` : a.avatar||'?'}
@@ -587,17 +582,10 @@ function renderEditor(a) {
         <div class="foto-section">
           <div class="foto-row">
             <div class="foto-preview" id="foto-preview" style="border-color:${a.color||'#888'}">
-              ${a.foto ? `<img src="${'https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/'+a.foto+'.webp'}" onerror="this.src='${'https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/'+a.foto+'.png'}';this.onerror=()=>this.parentElement.innerHTML='${a.avatar||'?'}'">` : (a.avatar||'?')}
+              ${a.foto ? `<img src="img/arqueros/${a.foto}.webp" onerror="this.parentElement.innerHTML='${a.avatar||'?'}'">` : (a.avatar||'?')}
             </div>
             <div class="foto-controls">
-              <div class="field">
-                <label>📸 Subir foto nueva</label>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <input type="file" id="f-foto-file" accept="image/*" style="flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px;color:var(--muted);font-size:12px" onchange="uploadFoto()">
-                  <div id="upload-status" style="font-size:11px;color:var(--muted);white-space:nowrap"></div>
-                </div>
-              </div>
-              <div class="field"><label>Nombre del archivo (sin extensión)</label><input id="f-foto" value="${a.foto||''}" placeholder="Arquero-Nombre-Apellido" oninput="previewFoto()"></div>
+              <div class="field"><label>Nombre del archivo foto (sin extensión)</label><input id="f-foto" value="${a.foto||''}" placeholder="Arquero-Nombre-Apellido" oninput="previewFoto()"></div>
               <div class="field"><label>Iniciales avatar (fallback)</label><input id="f-avatar" value="${a.avatar||''}" placeholder="RO" maxlength="3"></div>
               <div class="field">
                 <label>Color del arquero</label>
@@ -612,7 +600,7 @@ function renderEditor(a) {
           <div class="banner-editor-wrap">
             <div class="banner-editor-label">📸 Ajuste de foto en banner — arrastra para posicionar</div>
             <div class="banner-editor" id="banner-editor">
-              ${a.foto ? `<img class="banner-editor-img" id="banner-img" src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${a.foto}.webp" style="object-position:${a.foto_position||'center center'}">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px">Sin foto</div>'}
+              ${a.foto ? `<img class="banner-editor-img" id="banner-img" src="img/arqueros/${a.foto}.webp" style="object-position:${a.foto_position||'center center'}">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px">Sin foto</div>'}
               <div class="banner-editor-overlay"></div>
               <div class="banner-editor-hint" id="banner-hint">✋ Arrastra para ajustar</div>
               <div class="banner-editor-crosshair"></div>
@@ -639,46 +627,10 @@ function renderEditor(a) {
       </div>
 
       <div class="section">
-        <div class="section-title">Habilidad Especial</div>
-        <div class="grid-2" style="margin-bottom:12px">
+        <div class="section-title">Habilidad</div>
+        <div class="grid-2">
           <div class="field"><label>Nombre habilidad</label><input id="f-ability" value="${a.ability||''}" placeholder="Modo Serio"></div>
           <div class="field"><label>Descripción</label><input id="f-ability-desc" value="${a.ability_desc||''}" placeholder="Efecto de la habilidad"></div>
-        </div>
-        <div class="grid-2" style="margin-bottom:12px">
-          <div class="field">
-            <label>Especialidad donde aplica</label>
-            <select id="f-ability-spec">
-              <option value="all" ${(a.ability_spec||'all')==='all'?'selected':''}>Todas</option>
-              <option value="indoor" ${a.ability_spec==='indoor'?'selected':''}>Indoor</option>
-              <option value="outdoor" ${a.ability_spec==='outdoor'?'selected':''}>Outdoor</option>
-              <option value="field" ${a.ability_spec==='field'?'selected':''}>Field</option>
-              <option value="3d" ${a.ability_spec==='3d'?'selected':''}>3D</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>¿En qué rondas aplica?</label>
-            <select id="f-ability-rounds">
-              <option value="all" ${(a.ability_rounds||'all')==='all'?'selected':''}>Todas las rondas</option>
-              <option value="final" ${a.ability_rounds==='final'?'selected':''}>Solo ronda final</option>
-              <option value="first" ${a.ability_rounds==='first'?'selected':''}>Solo primera ronda</option>
-              <option value="last2" ${a.ability_rounds==='last2'?'selected':''}>Últimas 2 rondas</option>
-            </select>
-          </div>
-        </div>
-        <div class="section-title" style="margin-bottom:10px">Bonus de stats</div>
-        <div class="grid-4">
-          ${[['f-ability-t','⚡ Técnica',a.ability_t||0],['f-ability-c','🎯 Competitividad',a.ability_c||0],['f-ability-e','😤 G. Estrés',a.ability_e||0],['f-ability-i','🧠 Int. Emocional',a.ability_i||0]].map(([id,label,val])=>`
-            <div class="stat-field">
-              <label>${label}</label>
-              <div class="stat-row">
-                <input type="range" id="${id}" min="-20" max="20" value="${val}" oninput="document.getElementById('${id}-val').textContent=(this.value>0?'+':'')+this.value">
-                <div class="stat-val" id="${id}-val" style="color:${val>0?'var(--green)':val<0?'var(--red)':'var(--muted)'}">${val>0?'+':''}${val}</div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-        <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted)" id="ability-preview">
-          ${a.ability ? `⚡ <strong style="color:var(--yellow)">${a.ability}</strong> — ${a.ability_desc||''}` : 'Sin habilidad definida'}
         </div>
       </div>
 
@@ -721,70 +673,16 @@ function removeLogro(i) {
   document.getElementById(`logro-${i}`)?.remove();
 }
 
-const STORAGE_URL = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1';
-
-async function uploadFoto() {
-  const file = document.getElementById('f-foto-file').files[0];
-  if (!file) return;
-
-  const status = document.getElementById('upload-status');
-  status.textContent = '⏳ Subiendo...';
-  status.style.color = 'var(--muted)';
-
-  // Generate filename from archer name or use file name
-  const nombreInput = document.getElementById('f-name').value.trim();
-  const baseName = nombreInput
-    ? 'Arquero-' + nombreInput.replace(/\s+/g, '-')
-    : file.name.replace(/\.[^.]+$/, '');
-
-  try {
-    // Convert to webp-like upload (keep original format, rename)
-    const ext = file.name.split('.').pop();
-    const fileName = `${baseName}.${ext}`;
-
-    const res = await fetch(`${STORAGE_URL}/object/arqueros/${fileName}`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Content-Type': file.type,
-        'x-upsert': 'true'
-      },
-      body: file
-    });
-
-    if (!res.ok) throw new Error(await res.text());
-
-    // Update foto field with filename without extension
-    const fotoName = fileName.replace(/\.[^.]+$/, '');
-    document.getElementById('f-foto').value = fotoName;
-    status.textContent = '✅ Subida';
-    status.style.color = 'var(--green)';
-    previewFoto();
-  } catch(e) {
-    status.textContent = '❌ Error';
-    status.style.color = 'var(--red)';
-    showToast('Error subiendo foto: ' + e.message, 'error');
-  }
-}
-
-function getStorageFotoUrl(foto, ext='webp') {
-  if (!foto) return null;
-  // Try webp first, fallback handled by onerror
-  return `${STORAGE_URL}/object/public/arqueros/${foto}.${ext}`;
-}
-
 function previewFoto() {
   const foto = document.getElementById('f-foto').value;
   const preview = document.getElementById('foto-preview');
   const bannerEditor = document.getElementById('banner-editor');
-  const url = getStorageFotoUrl(foto);
-  if (foto && url) {
-    preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='${getStorageFotoUrl(foto,'png')}';this.onerror=()=>this.parentElement.innerHTML='❌'">`;
+  if (foto) {
+    preview.innerHTML = `<img src="img/arqueros/${foto}.webp" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='❌'">`;
     if (bannerEditor) {
       const pos = document.getElementById('f-foto-position')?.value || 'center center';
       bannerEditor.innerHTML = `
-        <img class="banner-editor-img" id="banner-img" src="${url}" style="object-position:${pos}" onerror="this.src='${getStorageFotoUrl(foto,'png')}'">
+        <img class="banner-editor-img" id="banner-img" src="img/arqueros/${foto}.webp" style="object-position:${pos}">
         <div class="banner-editor-overlay"></div>
         <div class="banner-editor-hint" id="banner-hint">✋ Arrastra para ajustar</div>
         <div class="banner-editor-crosshair"></div>`;
@@ -792,7 +690,7 @@ function previewFoto() {
     }
   } else {
     preview.innerHTML = document.getElementById('f-avatar')?.value || '?';
-    if (bannerEditor) bannerEditor.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px">Sin foto</div>';
+    if (bannerEditor) bannerEditor.innerHTML = '<div style="display:flex;align-items:center;justify-content:height:100%;color:var(--muted);font-size:12px">Sin foto</div>';
   }
 }
 
@@ -910,12 +808,6 @@ async function saveArcher() {
     foto: document.getElementById('f-foto').value.trim(),
     ability: document.getElementById('f-ability').value.trim(),
     ability_desc: document.getElementById('f-ability-desc').value.trim(),
-    ability_spec: document.getElementById('f-ability-spec').value,
-    ability_rounds: document.getElementById('f-ability-rounds').value,
-    ability_t: parseInt(document.getElementById('f-ability-t').value) || 0,
-    ability_c: parseInt(document.getElementById('f-ability-c').value) || 0,
-    ability_e: parseInt(document.getElementById('f-ability-e').value) || 0,
-    ability_i: parseInt(document.getElementById('f-ability-i').value) || 0,
     spec: document.getElementById('f-spec').value,
     bio: document.getElementById('f-bio').value.trim(),
     foto_position: document.getElementById('f-foto-position')?.value || 'center center',
@@ -1084,26 +976,26 @@ async function toggleCodigo(codigo, activo) {
   } catch(e) { showToast('Error', 'error'); }
 }
 
+function copyCode(codigo) {
+  navigator.clipboard.writeText(codigo);
+  showToast('📋 Código copiado', 'success');
+}
+
 // ── COACHES ──
+const COACH_ROLES = ['Head Coach','Asistente','Entrenador Técnico','Preparador Físico','Psicólogo Deportivo','Entrenador Junior'];
+const COACH_SPECS = ['indoor','outdoor','field','3d','general'];
+const STORAGE_URL = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1';
+
 let coaches = [];
 let currentCoachId = null;
 let isNewCoach = false;
-
-const COACH_ROLES = ['Head Coach', 'Asistente', 'Entrenador Técnico', 'Preparador Físico', 'Psicólogo Deportivo', 'Entrenador Junior'];
-const COACH_SPECS = ['indoor', 'outdoor', 'field', '3d', 'general'];
 
 async function loadCoaches() {
   try {
     coaches = await sbFetch('coaches?order=name');
     renderCoachList();
   } catch(e) {
-    // Table may not exist yet — show helpful message
-    const list = document.getElementById('coach-list');
-    list.innerHTML = `<div style="padding:16px;font-size:12px;color:var(--muted);line-height:1.6">
-      ⚠️ Tabla <code style="color:var(--yellow)">coaches</code> no encontrada en Supabase.<br><br>
-      Créala con estas columnas:<br>
-      <code style="font-size:10px;color:var(--text)">id, name, role, spec, quote, bio, foto, foto_position, avatar, color, t, c, e, i, certifications, experience_years, clubs, top</code>
-    </div>`;
+    document.getElementById('coach-list').innerHTML = `<div style="padding:16px;font-size:12px;color:var(--muted);line-height:1.6">⚠️ Error cargando coaches: ${e.message}</div>`;
   }
 }
 
@@ -1115,7 +1007,7 @@ function renderCoachList() {
   }
   list.innerHTML = coaches.map(c => {
     const color = c.color || '#5b9bd5';
-    const fotoSrc = c.foto ? `https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${c.foto}.webp` : null;
+    const fotoSrc = c.foto ? `${STORAGE_URL}/object/public/arqueros/${c.foto}.webp` : null;
     return `<div class="archer-item ${currentCoachId===c.id?'active':''}" onclick="selectCoach('${c.id}')">
       <div class="coach-list-avatar" style="border-color:${color}55">
         ${fotoSrc ? `<img src="${fotoSrc}" onerror="this.style.display='none'">` : `<span style="color:${color}">${c.avatar||'?'}</span>`}
@@ -1124,7 +1016,7 @@ function renderCoachList() {
         <div class="aname">${c.name}</div>
         <div class="arole">${c.role||''}</div>
       </div>
-      <div class="rarity-dot" style="background:${color}"></div>
+      <div class="rarity-dot" style="background:${RARITY_COLORS[c.rarity]||color}"></div>
     </div>`;
   }).join('');
 }
@@ -1132,8 +1024,7 @@ function renderCoachList() {
 function selectCoach(id) {
   currentCoachId = id;
   isNewCoach = false;
-  const coach = coaches.find(c => c.id === id);
-  renderCoachEditor(coach);
+  renderCoachEditor(coaches.find(c => c.id === id));
   renderCoachList();
 }
 
@@ -1141,11 +1032,12 @@ function newCoach() {
   currentCoachId = null;
   isNewCoach = true;
   renderCoachEditor({
-    id: 'C-' + String((coaches.length + 1)).padStart(3,'0'),
-    name: '', role: 'Head Coach', spec: 'general', quote: '',
-    bio: '', foto: '', avatar: '', color: '#5b9bd5',
-    t: 50, c: 50, e: 50, i: 50,
-    certifications: '', experience_years: '', clubs: '', top: []
+    id: 'C-' + String(coaches.length + 1).padStart(3,'0'),
+    name:'', rarity:'common', role:'Head Coach', spec:'general',
+    quote:'', bio:'', foto:'', avatar:'', color:'#5b9bd5',
+    t:50, c:50, e:50, i:50,
+    certifications:'', experience_years:'', clubs:'', ability:'', ability_desc:'',
+    ability_spec:'all', ability_rounds:'all', ability_t:0, ability_c:0, ability_e:0, ability_i:0, top:[]
   });
 }
 
@@ -1167,24 +1059,78 @@ function renderCoachEditor(c) {
         </div>
         <div class="grid-2" style="margin-bottom:12px">
           <div class="field">
+            <label>Rareza</label>
+            <select id="cf-rarity">
+              ${['legend','epic','rare','common'].map(r=>`<option value="${r}" ${c.rarity===r?'selected':''}>${r.charAt(0).toUpperCase()+r.slice(1)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
             <label>Rol</label>
             <select id="cf-role">
               ${COACH_ROLES.map(r=>`<option value="${r}" ${c.role===r?'selected':''}>${r}</option>`).join('')}
             </select>
           </div>
+        </div>
+        <div class="grid-2" style="margin-bottom:12px">
           <div class="field">
             <label>Especialidad</label>
             <select id="cf-spec">
               ${COACH_SPECS.map(s=>`<option value="${s}" ${c.spec===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
             </select>
           </div>
+          <div class="field"><label>Años de experiencia</label><input id="cf-exp" type="number" min="0" value="${c.experience_years||''}" placeholder="10"></div>
         </div>
         <div class="grid-2" style="margin-bottom:12px">
-          <div class="field"><label>Años de experiencia</label><input id="cf-exp" type="number" min="0" value="${c.experience_years||''}" placeholder="10"></div>
           <div class="field"><label>Clubes / Equipos</label><input id="cf-clubs" value="${c.clubs||''}" placeholder="Club A · Club B"></div>
+          <div class="field"><label>Certificaciones</label><input id="cf-certifications" value="${c.certifications||''}" placeholder="WA Level 2 · RFETA"></div>
         </div>
-        <div class="field" style="margin-bottom:12px"><label>Certificaciones</label><input id="cf-certifications" value="${c.certifications||''}" placeholder="WA Level 2 · RFETA"></div>
+        <div class="field" style="margin-bottom:12px"><label>Habilidad especial</label><input id="cf-ability" value="${c.ability||''}" placeholder="Nombre de la habilidad"></div>
+        <div class="field" style="margin-bottom:12px"><label>Descripción habilidad</label><input id="cf-ability-desc" value="${c.ability_desc||''}" placeholder="Efecto de la habilidad"></div>
         <div class="field"><label>Quote</label><input id="cf-quote" value="${c.quote||''}" placeholder="Frase del coach"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Habilidad Especial</div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field"><label>Nombre habilidad</label><input id="cf-ability" value="${c.ability||''}" placeholder="Visión Estratégica"></div>
+          <div class="field"><label>Descripción</label><input id="cf-ability-desc" value="${c.ability_desc||''}" placeholder="Efecto de la habilidad"></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field">
+            <label>Especialidad donde aplica</label>
+            <select id="cf-ability-spec">
+              <option value="all" ${(c.ability_spec||'all')==='all'?'selected':''}>Todas</option>
+              <option value="indoor" ${c.ability_spec==='indoor'?'selected':''}>Indoor</option>
+              <option value="outdoor" ${c.ability_spec==='outdoor'?'selected':''}>Outdoor</option>
+              <option value="field" ${c.ability_spec==='field'?'selected':''}>Field</option>
+              <option value="3d" ${c.ability_spec==='3d'?'selected':''}>3D</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>¿En qué rondas aplica?</label>
+            <select id="cf-ability-rounds">
+              <option value="all" ${(c.ability_rounds||'all')==='all'?'selected':''}>Todas las rondas</option>
+              <option value="final" ${c.ability_rounds==='final'?'selected':''}>Solo ronda final</option>
+              <option value="first" ${c.ability_rounds==='first'?'selected':''}>Solo primera ronda</option>
+              <option value="last2" ${c.ability_rounds==='last2'?'selected':''}>Últimas 2 rondas</option>
+            </select>
+          </div>
+        </div>
+        <div class="section-title" style="margin-bottom:10px">Bonus de stats al arquero</div>
+        <div class="grid-4">
+          ${[['cf-ability-t','⚡ Técnica',c.ability_t||0],['cf-ability-c','🎯 Competitividad',c.ability_c||0],['cf-ability-e','😤 G. Estrés',c.ability_e||0],['cf-ability-i','🧠 Int. Emocional',c.ability_i||0]].map(([id,label,val])=>`
+            <div class="stat-field">
+              <label>${label}</label>
+              <div class="stat-row">
+                <input type="range" id="${id}" min="-20" max="20" value="${val}" oninput="document.getElementById('${id}-val').textContent=(this.value>0?'+':'')+this.value">
+                <div class="stat-val" id="${id}-val" style="color:${val>0?'var(--green)':val<0?'var(--red)':'var(--muted)'}">${val>0?'+':''}${val}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted)">
+          ${c.ability ? `⚡ <strong style="color:var(--yellow)">${c.ability}</strong> — ${c.ability_desc||''}` : 'Sin habilidad definida'}
+        </div>
       </div>
 
       <div class="section">
@@ -1192,7 +1138,7 @@ function renderCoachEditor(c) {
         <div class="foto-section">
           <div class="foto-row">
             <div class="coach-avatar-big" id="coach-foto-preview" style="border-color:${c.color||'#5b9bd5'}">
-              ${c.foto ? `<img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${c.foto}.webp" onerror="this.src='https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${c.foto}.png';this.onerror=()=>this.parentElement.innerHTML='${c.avatar||'?'}'">` : (c.avatar||'?')}
+              ${c.foto ? `<img src="${STORAGE_URL}/object/public/arqueros/${c.foto}.webp" onerror="this.src='${STORAGE_URL}/object/public/arqueros/${c.foto}.png';this.onerror=()=>this.parentElement.innerHTML='?'">` : (c.avatar||'?')}
             </div>
             <div class="foto-controls">
               <div class="field">
@@ -1249,10 +1195,10 @@ function renderCoachEditor(c) {
   `;
 }
 
-function coachLogroRow(l, i) {
+function coachLogroRow(l,i) {
   return `<div class="logro-item" id="clogro-${i}">
     <input placeholder="🥇" value="${l.pos||''}" id="clpos-${i}">
-    <input placeholder="Evento / Torneo" value="${l.event||''}" id="clevent-${i}">
+    <input placeholder="Evento" value="${l.event||''}" id="clevent-${i}">
     <input placeholder="2024 · Ciudad" value="${l.year||''}" id="clyear-${i}">
     <button class="btn-remove-logro" onclick="removeCoachLogro(${i})">✕</button>
   </div>`;
@@ -1266,78 +1212,56 @@ function addCoachLogro() {
   list.appendChild(div.firstChild);
 }
 
-function removeCoachLogro(i) {
-  document.getElementById(`clogro-${i}`)?.remove();
-}
+function removeCoachLogro(i) { document.getElementById(`clogro-${i}`)?.remove(); }
 
 function getCoachLogrosList() {
-  const list = document.getElementById('coach-logros-list');
   const logros = [];
-  for (const item of list.children) {
+  for (const item of document.getElementById('coach-logros-list').children) {
     const i = item.id.split('-')[1];
-    const pos = document.getElementById(`clpos-${i}`)?.value?.trim();
     const event = document.getElementById(`clevent-${i}`)?.value?.trim();
-    const year = document.getElementById(`clyear-${i}`)?.value?.trim();
-    if (event) logros.push({ pos: pos||'', event, year: year||'' });
+    if (event) logros.push({ pos: document.getElementById(`clpos-${i}`)?.value?.trim()||'', event, year: document.getElementById(`clyear-${i}`)?.value?.trim()||'' });
   }
   return logros;
 }
 
 function syncCoachColor(from) {
-  if (from === 'picker') {
-    document.getElementById('cf-color').value = document.getElementById('cf-color-picker').value;
-  } else {
-    const val = document.getElementById('cf-color').value;
-    if (/^#[0-9a-fA-F]{6}$/.test(val)) document.getElementById('cf-color-picker').value = val;
-  }
+  if (from === 'picker') document.getElementById('cf-color').value = document.getElementById('cf-color-picker').value;
+  else { const v = document.getElementById('cf-color').value; if(/^#[0-9a-fA-F]{6}$/.test(v)) document.getElementById('cf-color-picker').value = v; }
 }
 
 async function uploadCoachFoto() {
   const file = document.getElementById('cf-foto-file').files[0];
   if (!file) return;
   const status = document.getElementById('coach-upload-status');
-  status.textContent = '⏳ Subiendo...';
-  status.style.color = 'var(--muted)';
-  const nombreInput = document.getElementById('cf-name').value.trim();
-  const baseName = nombreInput ? 'Coach-' + nombreInput.replace(/\s+/g, '-') : file.name.replace(/\.[^.]+$/, '');
+  status.textContent = '⏳ Subiendo...'; status.style.color = 'var(--muted)';
+  const nombre = document.getElementById('cf-name').value.trim();
+  const baseName = nombre ? 'Coach-' + nombre.replace(/\s+/g,'-') : file.name.replace(/\.[^.]+$/,'');
+  const ext = file.name.split('.').pop();
+  const fileName = `${baseName}.${ext}`;
   try {
-    const ext = file.name.split('.').pop();
-    const fileName = `${baseName}.${ext}`;
     const res = await fetch(`${STORAGE_URL}/object/arqueros/${fileName}`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': file.type, 'x-upsert': 'true' },
-      body: file
+      method:'POST', headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':file.type,'x-upsert':'true'}, body:file
     });
     if (!res.ok) throw new Error(await res.text());
-    const fotoName = fileName.replace(/\.[^.]+$/, '');
-    document.getElementById('cf-foto').value = fotoName;
-    status.textContent = '✅ Subida';
-    status.style.color = 'var(--green)';
+    document.getElementById('cf-foto').value = fileName.replace(/\.[^.]+$/,'');
+    status.textContent = '✅ Subida'; status.style.color = 'var(--green)';
     previewCoachFoto();
-  } catch(e) {
-    status.textContent = '❌ Error';
-    status.style.color = 'var(--red)';
-    showToast('Error subiendo foto: ' + e.message, 'error');
-  }
+  } catch(e) { status.textContent = '❌ Error'; status.style.color = 'var(--red)'; showToast('Error: '+e.message,'error'); }
 }
 
 function previewCoachFoto() {
   const foto = document.getElementById('cf-foto').value;
   const preview = document.getElementById('coach-foto-preview');
   if (!preview) return;
-  if (foto) {
-    const url = `${STORAGE_URL}/object/public/arqueros/${foto}.webp`;
-    const urlPng = `${STORAGE_URL}/object/public/arqueros/${foto}.png`;
-    preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='${urlPng}';this.onerror=()=>this.parentElement.innerHTML='❌'">`;
-  } else {
-    preview.innerHTML = document.getElementById('cf-avatar')?.value || '?';
-  }
+  if (foto) preview.innerHTML = `<img src="${STORAGE_URL}/object/public/arqueros/${foto}.webp" style="width:100%;height:100%;object-fit:cover" onerror="this.src='${STORAGE_URL}/object/public/arqueros/${foto}.png';this.onerror=()=>this.parentElement.innerHTML='❌'">`;
+  else preview.innerHTML = document.getElementById('cf-avatar')?.value || '?';
 }
 
 async function saveCoach() {
   const data = {
     id: document.getElementById('cf-id').value.trim(),
     name: document.getElementById('cf-name').value.trim(),
+    rarity: document.getElementById('cf-rarity').value,
     role: document.getElementById('cf-role').value,
     spec: document.getElementById('cf-spec').value,
     quote: document.getElementById('cf-quote').value.trim(),
@@ -1352,33 +1276,34 @@ async function saveCoach() {
     certifications: document.getElementById('cf-certifications').value.trim(),
     experience_years: parseInt(document.getElementById('cf-exp').value) || null,
     clubs: document.getElementById('cf-clubs').value.trim(),
+    ability: document.getElementById('cf-ability').value.trim(),
+    ability_desc: document.getElementById('cf-ability-desc').value.trim(),
+    ability_spec: document.getElementById('cf-ability-spec').value,
+    ability_rounds: document.getElementById('cf-ability-rounds').value,
+    ability_t: parseInt(document.getElementById('cf-ability-t').value) || 0,
+    ability_c: parseInt(document.getElementById('cf-ability-c').value) || 0,
+    ability_e: parseInt(document.getElementById('cf-ability-e').value) || 0,
+    ability_i: parseInt(document.getElementById('cf-ability-i').value) || 0,
     top: getCoachLogrosList()
   };
-  if (!data.name) { showToast('El nombre es requerido', 'error'); return; }
+  if (!data.name) { showToast('El nombre es requerido','error'); return; }
   try {
-    if (isNewCoach) {
-      await sbFetch('coaches', 'POST', data);
-      showToast('✅ Coach creado', 'success');
-    } else {
-      await sbFetch(`coaches?id=eq.${data.id}`, 'PATCH', data);
-      showToast('✅ Guardado', 'success');
-    }
-    currentCoachId = data.id;
-    isNewCoach = false;
+    if (isNewCoach) { await sbFetch('coaches','POST',data); showToast('✅ Coach creado','success'); }
+    else { await sbFetch(`coaches?id=eq.${data.id}`,'PATCH',data); showToast('✅ Guardado','success'); }
+    currentCoachId = data.id; isNewCoach = false;
     await loadCoaches();
-    renderCoachList();
-  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  } catch(e) { showToast('Error: '+e.message,'error'); }
 }
 
 async function deleteCoach(id) {
   if (!confirm('¿Eliminar este coach?')) return;
   try {
-    await sbFetch(`coaches?id=eq.${id}`, 'DELETE');
+    await sbFetch(`coaches?id=eq.${id}`,'DELETE');
     currentCoachId = null;
     document.getElementById('coach-editor').innerHTML = `<div class="editor-empty"><div class="icon">🎯</div><p>Selecciona un coach para editar</p></div>`;
-    showToast('🗑 Coach eliminado', 'success');
+    showToast('🗑 Coach eliminado','success');
     await loadCoaches();
-  } catch(e) { showToast('Error eliminando', 'error'); }
+  } catch(e) { showToast('Error eliminando','error'); }
 }
 </script>
 </body>
