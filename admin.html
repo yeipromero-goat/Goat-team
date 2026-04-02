@@ -451,6 +451,7 @@
 <script>
 const SUPABASE_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YWl5YWZsdWJzc2FnaHZoZWZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MjMwMzIsImV4cCI6MjA5MDQ5OTAzMn0.ur72JmEuh0KXp8Q9Eo7jF13kevxKaaDSZygR9wC3x6A';
+const STORAGE_URL = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1';
 const ADMIN_PASSWORD = 'goat2024';
 
 const RARITY_COLORS = { legend:'#d8d15a', epic:'#a06cd5', rare:'#5b9bd5', common:'#888' };
@@ -582,10 +583,17 @@ function renderEditor(a) {
         <div class="foto-section">
           <div class="foto-row">
             <div class="foto-preview" id="foto-preview" style="border-color:${a.color||'#888'}">
-              ${a.foto ? `<img src="img/arqueros/${a.foto}.webp" onerror="this.parentElement.innerHTML='${a.avatar||'?'}'">` : (a.avatar||'?')}
+              ${a.foto ? `<img src="${STORAGE_URL}/object/public/arqueros/${a.foto}.webp" onerror="this.src='${STORAGE_URL}/object/public/arqueros/${a.foto}.png';this.onerror=()=>this.parentElement.innerHTML='${a.avatar||'?'}'">` : (a.avatar||'?')}
             </div>
             <div class="foto-controls">
-              <div class="field"><label>Nombre del archivo foto (sin extensión)</label><input id="f-foto" value="${a.foto||''}" placeholder="Arquero-Nombre-Apellido" oninput="previewFoto()"></div>
+              <div class="field">
+                <label>📸 Subir foto nueva</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input type="file" id="f-foto-file" accept="image/*" style="flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px;color:var(--muted);font-size:12px" onchange="uploadFoto()">
+                  <div id="upload-status" style="font-size:11px;color:var(--muted);white-space:nowrap"></div>
+                </div>
+              </div>
+              <div class="field"><label>Nombre del archivo (sin extensión)</label><input id="f-foto" value="${a.foto||''}" placeholder="Arquero-Nombre-Apellido" oninput="previewFoto()"></div>
               <div class="field"><label>Iniciales avatar (fallback)</label><input id="f-avatar" value="${a.avatar||''}" placeholder="RO" maxlength="3"></div>
               <div class="field">
                 <label>Color del arquero</label>
@@ -600,7 +608,7 @@ function renderEditor(a) {
           <div class="banner-editor-wrap">
             <div class="banner-editor-label">📸 Ajuste de foto en banner — arrastra para posicionar</div>
             <div class="banner-editor" id="banner-editor">
-              ${a.foto ? `<img class="banner-editor-img" id="banner-img" src="img/arqueros/${a.foto}.webp" style="object-position:${a.foto_position||'center center'}">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px">Sin foto</div>'}
+              ${a.foto ? `<img class="banner-editor-img" id="banner-img" src="${STORAGE_URL}/object/public/arqueros/${a.foto}.webp" style="object-position:${a.foto_position||'center center'}" onerror="this.src='${STORAGE_URL}/object/public/arqueros/${a.foto}.png'">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px">Sin foto</div>'}
               <div class="banner-editor-overlay"></div>
               <div class="banner-editor-hint" id="banner-hint">✋ Arrastra para ajustar</div>
               <div class="banner-editor-crosshair"></div>
@@ -678,11 +686,13 @@ function previewFoto() {
   const preview = document.getElementById('foto-preview');
   const bannerEditor = document.getElementById('banner-editor');
   if (foto) {
-    preview.innerHTML = `<img src="img/arqueros/${foto}.webp" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='❌'">`;
+    const url = `${STORAGE_URL}/object/public/arqueros/${foto}.webp`;
+    const urlPng = `${STORAGE_URL}/object/public/arqueros/${foto}.png`;
+    preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='${urlPng}';this.onerror=()=>this.parentElement.innerHTML='❌'">`;
     if (bannerEditor) {
       const pos = document.getElementById('f-foto-position')?.value || 'center center';
       bannerEditor.innerHTML = `
-        <img class="banner-editor-img" id="banner-img" src="img/arqueros/${foto}.webp" style="object-position:${pos}">
+        <img class="banner-editor-img" id="banner-img" src="${url}" style="object-position:${pos}" onerror="this.src='${urlPng}'">
         <div class="banner-editor-overlay"></div>
         <div class="banner-editor-hint" id="banner-hint">✋ Arrastra para ajustar</div>
         <div class="banner-editor-crosshair"></div>`;
@@ -690,7 +700,32 @@ function previewFoto() {
     }
   } else {
     preview.innerHTML = document.getElementById('f-avatar')?.value || '?';
-    if (bannerEditor) bannerEditor.innerHTML = '<div style="display:flex;align-items:center;justify-content:height:100%;color:var(--muted);font-size:12px">Sin foto</div>';
+    if (bannerEditor) bannerEditor.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px">Sin foto</div>';
+  }
+}
+
+async function uploadFoto() {
+  const file = document.getElementById('f-foto-file').files[0];
+  if (!file) return;
+  const status = document.getElementById('upload-status');
+  status.textContent = '⏳ Subiendo...'; status.style.color = 'var(--muted)';
+  const nombre = document.getElementById('f-name').value.trim();
+  const baseName = nombre ? 'Arquero-' + nombre.replace(/\s+/g,'-') : file.name.replace(/\.[^.]+$/,'');
+  const ext = file.name.split('.').pop();
+  const fileName = `${baseName}.${ext}`;
+  try {
+    const res = await fetch(`${STORAGE_URL}/object/arqueros/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': file.type, 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    document.getElementById('f-foto').value = fileName.replace(/\.[^.]+$/,'');
+    status.textContent = '✅ Subida'; status.style.color = 'var(--green)';
+    previewFoto();
+  } catch(e) {
+    status.textContent = '❌ Error'; status.style.color = 'var(--red)';
+    showToast('Error subiendo foto: ' + e.message, 'error');
   }
 }
 
@@ -984,7 +1019,6 @@ function copyCode(codigo) {
 // ── COACHES ──
 const COACH_ROLES = ['Head Coach','Asistente','Entrenador Técnico','Preparador Físico','Psicólogo Deportivo','Entrenador Junior'];
 const COACH_SPECS = ['indoor','outdoor','field','3d','general'];
-const STORAGE_URL = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1';
 
 let coaches = [];
 let currentCoachId = null;
