@@ -2144,7 +2144,7 @@ async function loadCoachesFromSupabase() {
   } catch(e) { console.error('Error cargando coaches:', e); }
 }
 
-const COACHES = [
+let COACHES = [
   {
     id:"C-001", name:"Héctor Ibarra", rarity:"legend",
     role:"Head Coach · CONADE",
