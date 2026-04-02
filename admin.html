@@ -321,6 +321,27 @@
     border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;
   }
   .btn-copy:hover { border-color: var(--yellow); color: var(--yellow); }
+
+  /* COACHES */
+  .coaches-layout { display: grid; grid-template-columns: 280px 1fr; height: calc(100vh - 56px); }
+  .coach-role-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px;
+    font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  }
+  .coach-avatar-big {
+    width: 80px; height: 80px; border-radius: 12px; overflow: hidden;
+    background: var(--surface2); border: 2px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue'; font-size: 22px; color: var(--muted); flex-shrink:0;
+  }
+  .coach-avatar-big img { width: 100%; height: 100%; object-fit: cover; }
+  .coach-list-avatar {
+    width: 36px; height: 36px; border-radius: 8px; overflow: hidden;
+    background: var(--surface2); border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue'; font-size: 13px; flex-shrink: 0;
+  }
+  .coach-list-avatar img { width: 100%; height: 100%; object-fit: cover; }
 </style>
 </head>
 <body>
@@ -342,6 +363,7 @@
     <h1>🐐 GOAT TEAM</h1>
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchTab('arqueros')">Arqueros</button>
+      <button class="nav-tab" onclick="switchTab('coaches')">Coaches</button>
       <button class="nav-tab" onclick="switchTab('codigos')">Códigos</button>
     </div>
     <div class="header-spacer"></div>
@@ -361,6 +383,23 @@
       <div class="editor-empty">
         <div class="icon">🏹</div>
         <p>Selecciona un arquero para editar</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- COACHES TAB -->
+  <div id="tab-coaches" style="display:none;" class="coaches-layout">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Coaches</h2>
+        <button class="btn-new" onclick="newCoach()">+ NUEVO COACH</button>
+      </div>
+      <div class="archer-list" id="coach-list"></div>
+    </div>
+    <div class="editor" id="coach-editor">
+      <div class="editor-empty">
+        <div class="icon">🎯</div>
+        <p>Selecciona un coach para editar</p>
       </div>
     </div>
   </div>
@@ -923,10 +962,12 @@ function showToast(msg, type='success') {
 // ── TABS ──
 function switchTab(tab) {
   document.getElementById('tab-arqueros').style.display = tab === 'arqueros' ? 'grid' : 'none';
+  document.getElementById('tab-coaches').style.display = tab === 'coaches' ? 'grid' : 'none';
   document.getElementById('tab-codigos').style.display = tab === 'codigos' ? 'block' : 'none';
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
   if (tab === 'codigos') loadCodigos();
+  if (tab === 'coaches') loadCoaches();
 }
 
 // ── CODIGOS ──
@@ -1043,9 +1084,301 @@ async function toggleCodigo(codigo, activo) {
   } catch(e) { showToast('Error', 'error'); }
 }
 
-function copyCode(codigo) {
-  navigator.clipboard.writeText(codigo);
-  showToast('📋 Código copiado', 'success');
+// ── COACHES ──
+let coaches = [];
+let currentCoachId = null;
+let isNewCoach = false;
+
+const COACH_ROLES = ['Head Coach', 'Asistente', 'Entrenador Técnico', 'Preparador Físico', 'Psicólogo Deportivo', 'Entrenador Junior'];
+const COACH_SPECS = ['indoor', 'outdoor', 'field', '3d', 'general'];
+
+async function loadCoaches() {
+  try {
+    coaches = await sbFetch('coaches?order=name');
+    renderCoachList();
+  } catch(e) {
+    // Table may not exist yet — show helpful message
+    const list = document.getElementById('coach-list');
+    list.innerHTML = `<div style="padding:16px;font-size:12px;color:var(--muted);line-height:1.6">
+      ⚠️ Tabla <code style="color:var(--yellow)">coaches</code> no encontrada en Supabase.<br><br>
+      Créala con estas columnas:<br>
+      <code style="font-size:10px;color:var(--text)">id, name, role, spec, quote, bio, foto, foto_position, avatar, color, t, c, e, i, certifications, experience_years, clubs, top</code>
+    </div>`;
+  }
+}
+
+function renderCoachList() {
+  const list = document.getElementById('coach-list');
+  if (!coaches.length) {
+    list.innerHTML = `<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center;margin-top:20px">Sin coaches aún</div>`;
+    return;
+  }
+  list.innerHTML = coaches.map(c => {
+    const color = c.color || '#5b9bd5';
+    const fotoSrc = c.foto ? `https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${c.foto}.webp` : null;
+    return `<div class="archer-item ${currentCoachId===c.id?'active':''}" onclick="selectCoach('${c.id}')">
+      <div class="coach-list-avatar" style="border-color:${color}55">
+        ${fotoSrc ? `<img src="${fotoSrc}" onerror="this.style.display='none'">` : `<span style="color:${color}">${c.avatar||'?'}</span>`}
+      </div>
+      <div class="archer-info">
+        <div class="aname">${c.name}</div>
+        <div class="arole">${c.role||''}</div>
+      </div>
+      <div class="rarity-dot" style="background:${color}"></div>
+    </div>`;
+  }).join('');
+}
+
+function selectCoach(id) {
+  currentCoachId = id;
+  isNewCoach = false;
+  const coach = coaches.find(c => c.id === id);
+  renderCoachEditor(coach);
+  renderCoachList();
+}
+
+function newCoach() {
+  currentCoachId = null;
+  isNewCoach = true;
+  renderCoachEditor({
+    id: 'C-' + String((coaches.length + 1)).padStart(3,'0'),
+    name: '', role: 'Head Coach', spec: 'general', quote: '',
+    bio: '', foto: '', avatar: '', color: '#5b9bd5',
+    t: 50, c: 50, e: 50, i: 50,
+    certifications: '', experience_years: '', clubs: '', top: []
+  });
+}
+
+function renderCoachEditor(c) {
+  const top = Array.isArray(c.top) ? c.top : [];
+  document.getElementById('coach-editor').innerHTML = `
+    <div class="editor-form">
+      <div class="form-header">
+        <h2>${isNewCoach ? 'NUEVO COACH' : c.name.toUpperCase()}</h2>
+        ${!isNewCoach ? `<button class="btn-delete" onclick="deleteCoach('${c.id}')">🗑 Eliminar</button>` : ''}
+        <button class="btn-save" onclick="saveCoach()">💾 GUARDAR</button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Identidad</div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field"><label>ID</label><input id="cf-id" value="${c.id}" ${!isNewCoach?'readonly style="opacity:.5"':''}></div>
+          <div class="field"><label>Nombre completo</label><input id="cf-name" value="${c.name||''}" placeholder="Nombre Coach"></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field">
+            <label>Rol</label>
+            <select id="cf-role">
+              ${COACH_ROLES.map(r=>`<option value="${r}" ${c.role===r?'selected':''}>${r}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>Especialidad</label>
+            <select id="cf-spec">
+              ${COACH_SPECS.map(s=>`<option value="${s}" ${c.spec===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field"><label>Años de experiencia</label><input id="cf-exp" type="number" min="0" value="${c.experience_years||''}" placeholder="10"></div>
+          <div class="field"><label>Clubes / Equipos</label><input id="cf-clubs" value="${c.clubs||''}" placeholder="Club A · Club B"></div>
+        </div>
+        <div class="field" style="margin-bottom:12px"><label>Certificaciones</label><input id="cf-certifications" value="${c.certifications||''}" placeholder="WA Level 2 · RFETA"></div>
+        <div class="field"><label>Quote</label><input id="cf-quote" value="${c.quote||''}" placeholder="Frase del coach"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Apariencia</div>
+        <div class="foto-section">
+          <div class="foto-row">
+            <div class="coach-avatar-big" id="coach-foto-preview" style="border-color:${c.color||'#5b9bd5'}">
+              ${c.foto ? `<img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${c.foto}.webp" onerror="this.src='https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${c.foto}.png';this.onerror=()=>this.parentElement.innerHTML='${c.avatar||'?'}'">` : (c.avatar||'?')}
+            </div>
+            <div class="foto-controls">
+              <div class="field">
+                <label>📸 Subir foto nueva</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input type="file" id="cf-foto-file" accept="image/*" style="flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px;color:var(--muted);font-size:12px" onchange="uploadCoachFoto()">
+                  <div id="coach-upload-status" style="font-size:11px;color:var(--muted);white-space:nowrap"></div>
+                </div>
+              </div>
+              <div class="field"><label>Nombre del archivo (sin extensión)</label><input id="cf-foto" value="${c.foto||''}" placeholder="Coach-Nombre-Apellido" oninput="previewCoachFoto()"></div>
+              <div class="field"><label>Iniciales avatar (fallback)</label><input id="cf-avatar" value="${c.avatar||''}" placeholder="JD" maxlength="3"></div>
+              <div class="field">
+                <label>Color del coach</label>
+                <div class="color-row">
+                  <input type="color" id="cf-color-picker" value="${c.color||'#5b9bd5'}" oninput="syncCoachColor('picker')">
+                  <input type="text" id="cf-color" value="${c.color||'#5b9bd5'}" placeholder="#5b9bd5" oninput="syncCoachColor('text')">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Stats de Coaching</div>
+        <div class="grid-2">
+          ${[['cf-t','🏹 Técnica',c.t||50],['cf-c','🎯 Competitividad',c.c||50],['cf-e','😤 Gestión Estrés',c.e||50],['cf-i','🧠 Int. Emocional',c.i||50]].map(([id,label,val])=>`
+            <div class="stat-field">
+              <label>${label}</label>
+              <div class="stat-row">
+                <input type="range" id="${id}" min="0" max="100" value="${val}" oninput="document.getElementById('${id}-val').textContent=this.value">
+                <div class="stat-val" id="${id}-val">${val}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Biografía</div>
+        <div class="field"><textarea id="cf-bio" rows="4">${c.bio||''}</textarea></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Logros / Resultados</div>
+        <div class="logros-list" id="coach-logros-list">
+          ${top.map((l,i)=>coachLogroRow(l,i)).join('')}
+        </div>
+        <button class="btn-add-logro" onclick="addCoachLogro()">+ Agregar logro</button>
+      </div>
+
+      <div style="padding-bottom:40px"></div>
+    </div>
+  `;
+}
+
+function coachLogroRow(l, i) {
+  return `<div class="logro-item" id="clogro-${i}">
+    <input placeholder="🥇" value="${l.pos||''}" id="clpos-${i}">
+    <input placeholder="Evento / Torneo" value="${l.event||''}" id="clevent-${i}">
+    <input placeholder="2024 · Ciudad" value="${l.year||''}" id="clyear-${i}">
+    <button class="btn-remove-logro" onclick="removeCoachLogro(${i})">✕</button>
+  </div>`;
+}
+
+function addCoachLogro() {
+  const list = document.getElementById('coach-logros-list');
+  const i = list.children.length;
+  const div = document.createElement('div');
+  div.innerHTML = coachLogroRow({}, i);
+  list.appendChild(div.firstChild);
+}
+
+function removeCoachLogro(i) {
+  document.getElementById(`clogro-${i}`)?.remove();
+}
+
+function getCoachLogrosList() {
+  const list = document.getElementById('coach-logros-list');
+  const logros = [];
+  for (const item of list.children) {
+    const i = item.id.split('-')[1];
+    const pos = document.getElementById(`clpos-${i}`)?.value?.trim();
+    const event = document.getElementById(`clevent-${i}`)?.value?.trim();
+    const year = document.getElementById(`clyear-${i}`)?.value?.trim();
+    if (event) logros.push({ pos: pos||'', event, year: year||'' });
+  }
+  return logros;
+}
+
+function syncCoachColor(from) {
+  if (from === 'picker') {
+    document.getElementById('cf-color').value = document.getElementById('cf-color-picker').value;
+  } else {
+    const val = document.getElementById('cf-color').value;
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) document.getElementById('cf-color-picker').value = val;
+  }
+}
+
+async function uploadCoachFoto() {
+  const file = document.getElementById('cf-foto-file').files[0];
+  if (!file) return;
+  const status = document.getElementById('coach-upload-status');
+  status.textContent = '⏳ Subiendo...';
+  status.style.color = 'var(--muted)';
+  const nombreInput = document.getElementById('cf-name').value.trim();
+  const baseName = nombreInput ? 'Coach-' + nombreInput.replace(/\s+/g, '-') : file.name.replace(/\.[^.]+$/, '');
+  try {
+    const ext = file.name.split('.').pop();
+    const fileName = `${baseName}.${ext}`;
+    const res = await fetch(`${STORAGE_URL}/object/arqueros/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': file.type, 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const fotoName = fileName.replace(/\.[^.]+$/, '');
+    document.getElementById('cf-foto').value = fotoName;
+    status.textContent = '✅ Subida';
+    status.style.color = 'var(--green)';
+    previewCoachFoto();
+  } catch(e) {
+    status.textContent = '❌ Error';
+    status.style.color = 'var(--red)';
+    showToast('Error subiendo foto: ' + e.message, 'error');
+  }
+}
+
+function previewCoachFoto() {
+  const foto = document.getElementById('cf-foto').value;
+  const preview = document.getElementById('coach-foto-preview');
+  if (!preview) return;
+  if (foto) {
+    const url = `${STORAGE_URL}/object/public/arqueros/${foto}.webp`;
+    const urlPng = `${STORAGE_URL}/object/public/arqueros/${foto}.png`;
+    preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='${urlPng}';this.onerror=()=>this.parentElement.innerHTML='❌'">`;
+  } else {
+    preview.innerHTML = document.getElementById('cf-avatar')?.value || '?';
+  }
+}
+
+async function saveCoach() {
+  const data = {
+    id: document.getElementById('cf-id').value.trim(),
+    name: document.getElementById('cf-name').value.trim(),
+    role: document.getElementById('cf-role').value,
+    spec: document.getElementById('cf-spec').value,
+    quote: document.getElementById('cf-quote').value.trim(),
+    bio: document.getElementById('cf-bio').value.trim(),
+    foto: document.getElementById('cf-foto').value.trim(),
+    avatar: document.getElementById('cf-avatar').value.trim(),
+    color: document.getElementById('cf-color').value.trim(),
+    t: parseInt(document.getElementById('cf-t').value),
+    c: parseInt(document.getElementById('cf-c').value),
+    e: parseInt(document.getElementById('cf-e').value),
+    i: parseInt(document.getElementById('cf-i').value),
+    certifications: document.getElementById('cf-certifications').value.trim(),
+    experience_years: parseInt(document.getElementById('cf-exp').value) || null,
+    clubs: document.getElementById('cf-clubs').value.trim(),
+    top: getCoachLogrosList()
+  };
+  if (!data.name) { showToast('El nombre es requerido', 'error'); return; }
+  try {
+    if (isNewCoach) {
+      await sbFetch('coaches', 'POST', data);
+      showToast('✅ Coach creado', 'success');
+    } else {
+      await sbFetch(`coaches?id=eq.${data.id}`, 'PATCH', data);
+      showToast('✅ Guardado', 'success');
+    }
+    currentCoachId = data.id;
+    isNewCoach = false;
+    await loadCoaches();
+    renderCoachList();
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteCoach(id) {
+  if (!confirm('¿Eliminar este coach?')) return;
+  try {
+    await sbFetch(`coaches?id=eq.${id}`, 'DELETE');
+    currentCoachId = null;
+    document.getElementById('coach-editor').innerHTML = `<div class="editor-empty"><div class="icon">🎯</div><p>Selecciona un coach para editar</p></div>`;
+    showToast('🗑 Coach eliminado', 'success');
+    await loadCoaches();
+  } catch(e) { showToast('Error eliminando', 'error'); }
 }
 </script>
 </body>
