@@ -1631,21 +1631,17 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- ── GAME SETUP PANEL (visible before game starts) ── -->
 <div class="game-setup" id="game-setup-panel">
   <div class="game-setup-title">&#9654; Iniciar Partida</div>
-  <div class="game-setup-sub">El nivel se construye en conjunto. Elige tu arco, tu equipo y tu habilidad — luego demuéstralo.</div>
+  <div class="game-setup-sub">El nivel se construye en conjunto. Elige tu arco y tu equipo — luego demuéstralo.</div>
 
   <!-- BOW SELECTOR -->
   <div class="sec" style="margin-top:1rem">Selecciona tu Arco</div>
   <div id="setup-bow-selector" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem"></div>
   <div id="chk-bow-info" style="font-size:11px;color:var(--muted);margin-bottom:.8rem;padding:8px 10px;background:var(--surface2);border-radius:8px;display:none"></div>
 
-  <!-- ABILITY SELECTOR -->
-  <div class="sec" style="margin-top:1rem">Habilidad Especial <span style="font-size:10px;color:var(--hint);font-family:inherit;font-weight:400;letter-spacing:0">(opcional — úsala bien)</span></div>
-  <div id="setup-ability-selector" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:.5rem"></div>
-  <div style="font-size:10px;color:var(--hint);margin-bottom:1rem;padding:0 2px">La disciplina compartida empieza con el equipo correcto. Una habilidad bien elegida puede ser la diferencia.</div>
+
 
   <div class="game-setup-checks">
     <div class="setup-check"><div class="dot dot-no" id="chk-bow"></div><span id="chk-bow-lbl">Arco no seleccionado</span></div>
-    <div class="setup-check"><div class="dot dot-ok" id="chk-ability"></div><span id="chk-ability-lbl">Sin habilidad (opcional)</span></div>
     <div class="setup-check"><div class="dot dot-no" id="chk-archer"></div><span id="chk-archer-lbl">Arquero no seleccionado</span></div>
     <div class="setup-check"><div class="dot dot-no" id="chk-coach"></div><span id="chk-coach-lbl">Coach no seleccionado</span></div>
     <div class="setup-check"><div class="dot dot-no" id="chk-deck"></div><span id="chk-deck-lbl">Deck vacío (0/36)</span></div>
@@ -2135,60 +2131,6 @@ document.addEventListener('DOMContentLoaded', function(){
 ════════════════════════════════════════ -->
 
 <div id="tab-habilidades" class="tab-panel">
-  <div class="sec">Habilidades Desbloqueadas</div>
-  <div class="ability-cards-grid">
-
-    <div class="ability-card-item">
-      <div class="ability-card-header">
-        <span class="ability-card-icon">⚡</span>
-        <span class="ability-card-name">Estabilizador Elite</span>
-        <span class="ability-card-rarity rarity-rare">Rara</span>
-      </div>
-      <div class="ability-card-desc">+4" eje a eje, mejora precisión en viento lateral. Uso único por torneo.</div>
-      <div class="ability-card-action" onclick="equipAbility(0)">Equipar en Arco Activo</div>
-    </div>
-
-    <div class="ability-card-item">
-      <div class="ability-card-header">
-        <span class="ability-card-icon">🎯</span>
-        <span class="ability-card-name">Cuerda Nitro</span>
-        <span class="ability-card-rarity rarity-epic">Épica</span>
-      </div>
-      <div class="ability-card-desc">+12 FPS por una ronda. Puede afectar consistencia. Solo 1 uso.</div>
-      <div class="ability-card-action" onclick="equipAbility(1)">Equipar en Arco Activo</div>
-    </div>
-
-    <div class="ability-card-item">
-      <div class="ability-card-header">
-        <span class="ability-card-icon">🔩</span>
-        <span class="ability-card-name">Pesos de Balance</span>
-        <span class="ability-card-rarity rarity-rare">Rara</span>
-      </div>
-      <div class="ability-card-desc">Ajusta balance del arco. +2" eje a eje, -5 FPS. Permanente.</div>
-      <div class="ability-card-action" onclick="equipAbility(2)">Equipar en Arco Activo</div>
-    </div>
-
-    <div class="ability-card-item locked">
-      <div class="ability-card-header">
-        <span class="ability-card-icon">🔒</span>
-        <span class="ability-card-name">Cam System Pro</span>
-        <span class="ability-card-rarity rarity-legend">Leyenda</span>
-      </div>
-      <div class="ability-card-desc">+5% let off permanente. Solo disponible en Sobres Leyenda.</div>
-      <div class="ability-card-action used">No disponible</div>
-    </div>
-
-  </div>
-
-  <div class="sec" style="margin-top:1.5rem">Tarjetas Usadas</div>
-  <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:12px 14px">
-    <div style="font-size:11px;color:var(--muted);display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border)">
-      <span style="color:var(--text)">⚡ Estabilizador Básico</span><span>Torneo CDMX · 14 ene</span>
-    </div>
-    <div style="font-size:11px;color:var(--muted);display:flex;justify-content:space-between;padding:4px 0">
-      <span style="color:var(--text)">🎯 Cuerda Rápida</span><span>Torneo Zac · 3 ene</span>
-    </div>
-  </div>
 </div>
 
 
@@ -2504,20 +2446,7 @@ const DECK_SIZE     = 36;
 let selectedArcher  = null;
 let selectedCoach   = null;
 let selectedBow     = null;
-let selectedAbility = null; // índice en UNLOCKED_ABILITIES
-
-// Habilidades desbloqueadas por el jugador (las del tab de Habilidades)
-const UNLOCKED_ABILITIES = [
-  { id:'ab-0', icon:'⚡', name:'Estabilizador Elite',  rarity:'Rara',
-    desc:'+4" eje a eje, mejora precisión en viento lateral.',
-    bonus:{T:3, C:2, E:5, I:0}, oneShot:true },
-  { id:'ab-1', icon:'🎯', name:'Cuerda Nitro',          rarity:'Épica',
-    desc:'+12 FPS — potencia extra en una ronda.',
-    bonus:{T:6, C:-2, E:0, I:4}, oneShot:true },
-  { id:'ab-2', icon:'🔩', name:'Pesos de Balance',       rarity:'Rara',
-    desc:'Ajusta balance: +estabilidad, -velocidad.',
-    bonus:{T:-2, C:3, E:6, I:0}, oneShot:false },
-];
+// abilities removed
 
 
 
@@ -3167,20 +3096,7 @@ function updateSetupChecks() {
   if(cbw) cbw.className = 'dot '+(hasBow?'dot-ok':'dot-no');
   const cbwl = document.getElementById('chk-bow-lbl');
   if(cbwl) cbwl.textContent = hasBow?'✓ '+BOWS[selectedBow].name:'Arco no seleccionado';
-  // Ability check label
-  const cabl = document.getElementById('chk-ability-lbl');
-  const cabd = document.getElementById('chk-ability');
-  if (cabl) {
-    if (selectedAbility === 'bow') {
-      const bow = selectedBow !== null ? BOWS[selectedBow] : null;
-      cabl.textContent = bow && bow.ability ? '⚡ ' + bow.ability.name + ' (del arco)' : 'Sin habilidad (opcional)';
-    } else if (selectedAbility >= 0 && UNLOCKED_ABILITIES[selectedAbility]) {
-      cabl.textContent = '⚡ ' + UNLOCKED_ABILITIES[selectedAbility].name + ' equipada';
-    } else {
-      cabl.textContent = 'Sin habilidad (opcional)';
-    }
-  }
-  if(cabd) cabd.className = 'dot dot-ok';
+
   ca.className = 'dot '+(hasArcher?'dot-ok':'dot-no');
   document.getElementById('chk-coach').className = 'dot '+(hasCoach?'dot-ok':'dot-no');
   document.getElementById('chk-deck').className  = 'dot '+(deckCount>=PLAY_PER_ROUND?'dot-ok':'dot-no');
@@ -3189,101 +3105,6 @@ function updateSetupChecks() {
   document.getElementById('chk-deck-lbl').textContent   = deckCount>0?'✓ Deck listo ('+deckCount+' cartas)':'Deck vacío — ve a la pestaña Items';
   const btn = document.getElementById('btn-start-game');
   if(btn) btn.disabled = !(hasBow && hasArcher && hasCoach && deckCount>=PLAY_PER_ROUND);
-}
-
-// ── Ability selector in setup ────────────────────────────────────
-// selectedAbility values:
-//   null / -1  → ninguna
-//   'bow'       → habilidad propia del arco (permanente, siempre activa si existe)
-//   0,1,2,...   → índice en UNLOCKED_ABILITIES (de un solo uso del jugador)
-
-function renderSetupAbilitySelector() {
-  const container = document.getElementById('setup-ability-selector');
-  if (!container) return;
-
-  const bow = (selectedBow !== null && selectedBow !== undefined) ? BOWS[selectedBow] : null;
-  const bowAbility = bow && bow.ability ? bow.ability : null;
-
-  let html = '';
-
-  // ── Ninguna ──
-  const selNone = (selectedAbility === -1 || selectedAbility === null);
-  html += `<div class="setup-bow-card ${selNone?'selected':''}" onclick="selectSetupAbility(-1)" style="
-    border:1.5px solid ${selNone?'var(--yellow)':'var(--border2)'};
-    background:${selNone?'rgba(216,209,90,0.08)':'var(--surface)'};
-    border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;
-  ">
-    <div style="font-size:18px;margin-bottom:3px">🚫</div>
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:12px;color:var(--muted);letter-spacing:.04em">Sin habilidad</div>
-    <div style="font-size:9px;color:var(--hint);margin-top:3px">Solo stats base</div>
-  </div>`;
-
-  // ── Habilidad del arco (permanente, vinculada al arco) ──
-  if (bowAbility) {
-    const selBow = selectedAbility === 'bow';
-    // Map bow ability to UNLOCKED_ABILITIES bonus by name match
-    const matchedAb = UNLOCKED_ABILITIES.find(a => a.name === bowAbility.name);
-    const bonusParts = matchedAb
-      ? Object.entries(matchedAb.bonus).filter(([,v])=>v!==0).map(([k,v])=>`${v>0?'+':''}${v}${k}`).join(' ')
-      : '';
-    html += `<div class="setup-bow-card ${selBow?'selected':''}" onclick="selectSetupAbility('bow')" style="
-      border:1.5px solid ${selBow?'var(--yellow)':'var(--border2)'};
-      background:${selBow?'rgba(216,209,90,0.12)':'var(--surface)'};
-      border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;position:relative;
-    ">
-      <div style="position:absolute;top:6px;right:7px;font-size:8px;padding:1px 5px;border-radius:4px;background:rgba(216,209,90,.15);color:var(--yellow);font-weight:600">DEL ARCO</div>
-      <div style="font-size:18px;margin-bottom:3px">⚡</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:12px;color:${selBow?'var(--yellow)':'var(--text)'};letter-spacing:.04em">${bowAbility.name}</div>
-      <div style="font-size:9px;color:var(--muted);margin-top:2px">Permanente · del arco</div>
-      ${bonusParts ? `<div style="font-size:10px;color:var(--yellow);margin-top:4px;font-weight:600">${bonusParts}</div>` : ''}
-    </div>`;
-  } else if (bow) {
-    // Bow exists but has no ability
-    html += `<div style="border:1px dashed var(--border);border-radius:10px;padding:10px;opacity:.4;font-size:10px;color:var(--hint);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
-      <div style="font-size:16px">🏹</div>
-      <div>Sin habilidad en este arco</div>
-    </div>`;
-  } else {
-    html += `<div style="border:1px dashed var(--border);border-radius:10px;padding:10px;opacity:.3;font-size:10px;color:var(--hint);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
-      <div style="font-size:16px">🏹</div>
-      <div>Selecciona un arco primero</div>
-    </div>`;
-  }
-
-  // ── Habilidades desbloqueadas del jugador (de un solo uso) ──
-  UNLOCKED_ABILITIES.filter(ab => ab.oneShot).forEach((ab, i) => {
-    const sel = selectedAbility === i;
-    const bonusParts = Object.entries(ab.bonus).filter(([,v])=>v!==0).map(([k,v])=>`${v>0?'+':''}${v}${k}`).join(' ');
-    html += `<div class="setup-bow-card ${sel?'selected':''}" onclick="selectSetupAbility(${i})" style="
-      border:1.5px solid ${sel?'var(--purple)':'var(--border2)'};
-      background:${sel?'rgba(154,136,221,0.08)':'var(--surface)'};
-      border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;
-    ">
-      <div style="font-size:18px;margin-bottom:3px">${ab.icon}</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:12px;color:${sel?'var(--purple)':'var(--text)'};letter-spacing:.04em">${ab.name}</div>
-      <div style="font-size:9px;color:var(--muted);margin-top:2px">${ab.rarity} · 1 uso</div>
-      <div style="font-size:10px;color:var(--purple);margin-top:4px;font-weight:600">${bonusParts}</div>
-    </div>`;
-  });
-
-  container.innerHTML = html;
-}
-
-function selectSetupAbility(idx) {
-  selectedAbility = idx; // -1/null = ninguna, 'bow' = del arco, número = UNLOCKED_ABILITIES
-  renderSetupAbilitySelector();
-  const lbl = document.getElementById('chk-ability-lbl');
-  const dot = document.getElementById('chk-ability');
-  if (idx === -1 || idx === null) {
-    if(lbl) lbl.textContent = 'Sin habilidad (opcional)';
-  } else if (idx === 'bow') {
-    const bow = selectedBow !== null ? BOWS[selectedBow] : null;
-    if(lbl) lbl.textContent = bow && bow.ability ? '⚡ ' + bow.ability.name + ' (del arco)' : 'Sin habilidad (opcional)';
-  } else {
-    const ab = UNLOCKED_ABILITIES[idx];
-    if(lbl) lbl.textContent = '⚡ ' + ab.name + ' equipada';
-  }
-  if(dot) dot.className = 'dot dot-ok';
 }
 
 // ── Bow selector in setup ─────────────────────────────────────────
@@ -3318,12 +3139,9 @@ function selectSetupBow(idx) {
   // Auto-select bow's own ability if it has one, otherwise reset to none
   const bow = BOWS[idx];
   if (bow && bow.ability) {
-    selectedAbility = 'bow';
   } else {
-    selectedAbility = -1;
   }
   renderSetupBowSelector();
-  renderSetupAbilitySelector();
   const b = BOWS[idx];
   const infoEl = document.getElementById('chk-bow-info');
   if (infoEl) {
@@ -3341,7 +3159,7 @@ function startGame() {
   const shuffled = [...deckCards].sort(()=>Math.random()-.5);
   const hand = shuffled.splice(0, HAND_SIZE);
   const roundConditions = generateRoundConditions();
-  gameState = { phase:'playing', round:1, deck:shuffled, hand, played:[], roundScores:[], discardPile:[], drawnCard:null, conditions: roundConditions, pendingDiscards:[], bowIdx: selectedBow, abilityIdx: selectedAbility };
+  gameState = { phase:'playing', round:1, deck:shuffled, hand, played:[], roundScores:[], discardPile:[], drawnCard:null, conditions: roundConditions, pendingDiscards:[], bowIdx: selectedBow };
   document.getElementById('game-setup-panel').style.display = 'none';
   document.getElementById('game-active').style.display      = 'block';
   document.getElementById('game-end').style.display         = 'none';
@@ -3480,18 +3298,7 @@ function calcStatBreakdown(){
   const cards      = gameState ? gameState.played.filter(Boolean) : selCards.filter(Boolean);
   const {fin}      = _computeScore(archerData, bowData, cards, comp, envMods);
 
-  // Ability bonus (T,C,E,I only)
-  const abIdx = gameState ? gameState.abilityIdx : selectedAbility;
-  if(abIdx === 'bow'){
-    const bow2 = bowData;
-    if(bow2 && bow2.ability){
-      const matchedAb = UNLOCKED_ABILITIES.find(a => a.name === bow2.ability.name);
-      if(matchedAb) ['T','C','E','I'].forEach(s => { fin[s] = Math.min(100, fin[s] + (matchedAb.bonus[s]||0)); });
-    }
-  } else if(abIdx !== null && abIdx !== undefined && abIdx >= 0 && UNLOCKED_ABILITIES[abIdx]){
-    const ab = UNLOCKED_ABILITIES[abIdx];
-    ['T','C','E','I'].forEach(s => { fin[s] = Math.min(100, fin[s] + (ab.bonus[s]||0)); });
-  }
+
   return fin;
 }
 
@@ -3980,7 +3787,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // Arco module init
   renderBowProfile();
   renderSetupBowSelector();
-  renderSetupAbilitySelector();
 // Deck & board init
 loadArchersFromSupabase();
 loadCoachesFromSupabase();
@@ -4280,18 +4086,7 @@ function selectBow(idx) {
 }
 
 // ── USE ABILITY ──
-function useAbility() {
-  const b = BOWS[activeBow];
-  if (!b.ability || b.ability.used) return;
-  b.ability.used = true;
-  renderBowProfile();
-  showToast('⚡ Habilidad activada para este torneo');
-}
-
-// ── EQUIP ABILITY ──
-function equipAbility(idx) {
-  showToast('✅ Habilidad equipada en ' + BOWS[activeBow].name);
-}
+// useAbility / equipAbility removed
 
 // ── CODE REDEMPTION ──
 function formatCode(el) {
