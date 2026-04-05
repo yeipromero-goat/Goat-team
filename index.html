@@ -1509,17 +1509,23 @@ document.addEventListener('DOMContentLoaded', function(){
   <input id="aname"/><input id="cname"/>
   <input id="as-T" value="50"/><input id="as-C" value="50"/>
   <input id="as-E" value="50"/><input id="as-I" value="50"/>
+  <input id="as-FUE" value="70"/><input id="as-RES" value="70"/>
   <input id="cs-T" value="50"/><input id="cs-C" value="50"/>
   <input id="cs-E" value="50"/><input id="cs-I" value="50"/>
+  <input id="cs-FUE" value="70"/><input id="cs-RES" value="70"/>
   <!-- Hidden stat bars (engine uses these IDs) -->
   <div id="ab-T" style="width:50%"></div><span id="abn-T">50</span>
   <div id="ab-C" style="width:50%"></div><span id="abn-C">50</span>
   <div id="ab-E" style="width:50%"></div><span id="abn-E">50</span>
   <div id="ab-I" style="width:50%"></div><span id="abn-I">50</span>
+  <div id="ab-FUE" style="width:70%"></div><span id="abn-FUE">70</span>
+  <div id="ab-RES" style="width:70%"></div><span id="abn-RES">70</span>
   <div id="cb-T" style="width:50%"></div><span id="cbn-T">50</span>
   <div id="cb-C" style="width:50%"></div><span id="cbn-C">50</span>
   <div id="cb-E" style="width:50%"></div><span id="cbn-E">50</span>
   <div id="cb-I" style="width:50%"></div><span id="cbn-I">50</span>
+  <div id="cb-FUE" style="width:70%"></div><span id="cbn-FUE">70</span>
+  <div id="cb-RES" style="width:70%"></div><span id="cbn-RES">70</span>
   <!-- Weather sliders (hidden — values set by randomizer) -->
   <input type="range" id="wind-slider" min="0" max="3" value="0"/>
   <input type="range" id="rain-slider" min="0" max="3" value="0"/>
@@ -2234,11 +2240,15 @@ function selComp(el){
 }
 
 function updateBars(){
-  SS.forEach(s=>{
+  ['T','C','E','I','FUE','RES'].forEach(s=>{
     ['a','c'].forEach(p=>{
-      const v=Math.min(100,Math.max(0,parseInt(document.getElementById(p+'s-'+s).value)||0));
-      document.getElementById(p+'b-'+s).style.width=v+'%';
-      document.getElementById(p+'bn-'+s).textContent=v;
+      const el = document.getElementById(p+'s-'+s);
+      if(!el) return;
+      const v=Math.min(100,Math.max(0,parseInt(el.value)||0));
+      const bar = document.getElementById(p+'b-'+s);
+      const num = document.getElementById(p+'bn-'+s);
+      if(bar) bar.style.width=v+'%';
+      if(num) num.textContent=v;
     });
   });
 }
@@ -2353,8 +2363,8 @@ function recalc(){
   });
 
   // FUE y RES vienen del arquero seleccionado directamente
-  const aFUE = parseInt(document.getElementById('as-FUE')?document.getElementById('as-FUE').value:70)||70;
-  const aRES = parseInt(document.getElementById('as-RES')?document.getElementById('as-RES').value:70)||70;
+  const aFUE = parseInt(document.getElementById('as-FUE')?.value)||70;
+  const aRES = parseInt(document.getElementById('as-RES')?.value)||70;
   raw['FUE'] = aFUE * archerMult['FUE'];
   raw['RES'] = aRES * archerMult['RES'];
 
@@ -2814,9 +2824,9 @@ function selectPersonCard(id, type) {
   function fillPerson(prefix, role) {
     const nameEl = document.getElementById(prefix + 'name');
     if (nameEl) nameEl.value = data.name;
-    ['T','C','E','I'].forEach(s => {
+    ['T','C','E','I','FUE','RES'].forEach(s => {
       const el = document.getElementById(prefix + 's-' + s);
-      if (el) el.value = data[s];
+      if (el) el.value = data[s] || 70;
     });
     const emptyState  = document.getElementById(role + '-empty-state');
     const filledState = document.getElementById(role + '-filled-state');
@@ -3416,8 +3426,8 @@ function calcStatBreakdown(){
     raw[s] = ((a+c)/2 + mods[s] + envMods[s]) * archerMult[s];
   });
 
-  const aFUE = parseInt(document.getElementById('as-FUE')?document.getElementById('as-FUE').value:70)||70;
-  const aRES = parseInt(document.getElementById('as-RES')?document.getElementById('as-RES').value:70)||70;
+  const aFUE = parseInt(document.getElementById('as-FUE')?.value)||70;
+  const aRES = parseInt(document.getElementById('as-RES')?.value)||70;
   raw['FUE'] = aFUE * archerMult['FUE'];
   raw['RES'] = aRES * archerMult['RES'];
 
@@ -3666,8 +3676,8 @@ function calcCurrentScore(){
     raw[s] = ((a+c)/2 + mods[s] + envMods[s]) * archerMult[s];
   });
 
-  const aFUE = parseInt(document.getElementById('as-FUE')?document.getElementById('as-FUE').value:70)||70;
-  const aRES = parseInt(document.getElementById('as-RES')?document.getElementById('as-RES').value:70)||70;
+  const aFUE = parseInt(document.getElementById('as-FUE')?.value)||70;
+  const aRES = parseInt(document.getElementById('as-RES')?.value)||70;
   raw['FUE'] = aFUE * archerMult['FUE'];
   raw['RES']  = aRES * archerMult['RES'];
 
