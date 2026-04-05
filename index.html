@@ -2164,6 +2164,8 @@ function switchTab(id, el){
   document.querySelectorAll('.sb-item').forEach(t=>t.classList.remove('active'));
   const sbItem = document.getElementById('sb-'+id);
   if(sbItem) sbItem.classList.add('active');
+  // Actualizar título de página
+  if(typeof updatePageTitle === 'function') updatePageTitle(id);
   // Cerrar sidebar en mobile
   if(typeof closeSidebar === 'function') closeSidebar();
 }
@@ -4056,13 +4058,7 @@ function closeOverlay() {
   document.getElementById('pack-overlay').style.display = 'none';
 }
 
-// ── TAB SWITCHER ──
-function switchTab(id, el) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + id).classList.add('active');
-  if (el) el.classList.add('active');
-}
+// ── TAB SWITCHER (manejado por 02-nav.html) ──
 
 // ── TOAST ──
 let toastTimer;
