@@ -1698,11 +1698,13 @@ document.addEventListener('DOMContentLoaded', function(){
         <div class="rsb-history" id="rsb-history"></div>
       </div>
       <!-- Desglose por stat -->
-      <div class="bkgrid">
-        <div class="bkitem"><div class="bklabel">Técnica · 40%</div><div class="bkval" id="bk-T">0</div><div class="bkw" id="bkw-T">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Compet. · 15%</div><div class="bkval" id="bk-C">0</div><div class="bkw" id="bkw-C">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">G.Estrés · 15%</div><div class="bkval" id="bk-E">0</div><div class="bkw" id="bkw-E">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Int.Emoc. · 30%</div><div class="bkval" id="bk-I">0</div><div class="bkw" id="bkw-I">0 pts</div></div>
+      <div class="bkgrid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="bkitem"><div class="bklabel">Técnica · 30%</div><div class="bkval" id="bk-T">0</div><div class="bkw" id="bkw-T">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Int.Emoc. · 25%</div><div class="bkval" id="bk-I">0</div><div class="bkw" id="bkw-I">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">G.Estrés · 18%</div><div class="bkval" id="bk-E">0</div><div class="bkw" id="bkw-E">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Compet. · 12%</div><div class="bkval" id="bk-C">0</div><div class="bkw" id="bkw-C">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Fuerza · 10%</div><div class="bkval" id="bk-FUE">0</div><div class="bkw" id="bkw-FUE">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Resistencia · 5%</div><div class="bkval" id="bk-RES">0</div><div class="bkw" id="bkw-RES">0 pts</div></div>
       </div>
       <!-- Total acumulado (visible durante el juego) -->
       <div class="rsb-total" id="rsb-total" style="display:none;margin-top:10px">
@@ -2395,8 +2397,8 @@ function recalc(){
   // Score final ponderado
   const score = Math.round(SS.reduce((a,s)=>a+fin[s]*W[s],0));
 
-  // Actualizar UI stats visibles (T,C,E,I)
-  ['T','C','E','I'].forEach(s=>{
+  // Actualizar UI stats visibles (todas las 6)
+  SS.forEach(s=>{
     const bkEl = document.getElementById('bk-'+s);
     const bkwEl = document.getElementById('bkw-'+s);
     if(bkEl) bkEl.textContent = fin[s];
@@ -3841,20 +3843,37 @@ function showRoundConditions(round, cond) {
   const wrap = document.getElementById('round-conditions');
   if(!wrap) return;
 
-  const mult   = ENV_COMP_MULT[cond.comp] || 1.0;
-  const w      = WIND_LEVELS[cond.wind];
-  const r      = RAIN_LEVELS[cond.rain];
-  const t      = TEMP_LEVELS[cond.temp];
+  const mult       = ENV_COMP_MULT[cond.comp] || 1.0;
+  const archerMult = COMP_ARCHER_MULT[cond.comp] || {T:1,C:1,E:1,I:1,FUE:1,RES:1};
+  const bowMult    = COMP_BOW_MULT[cond.comp]   || {fps:1,let:1,draw:1};
+  const w = WIND_LEVELS[cond.wind];
+  const r = RAIN_LEVELS[cond.rain];
+  const t = TEMP_LEVELS[cond.temp];
 
-  // Total env penalty on score
   const envPenalty = Math.round(
-    SS.reduce((acc, s) => acc + Math.round((w[s]+r[s]+t[s])*mult) * W[s], 0)
+    ['T','C','E','I'].reduce((acc, s) => acc + Math.round((w[s]+r[s]+t[s])*mult) * W[s], 0)
   );
 
   const compMod = MODS[cond.comp];
-  const compImpact = SS.map(s => compMod[s] !== 0
+  const compImpact = ['T','C','E','I'].map(s => compMod[s] !== 0
     ? `<span style="color:${compMod[s]>0?'var(--green)':'var(--coral)'}">${compMod[s]>0?'+':''}${compMod[s]}${s}</span>`
     : '').filter(Boolean).join(' ');
+
+  const statLabels = {T:'TEC',C:'COM',E:'EST',I:'IEM',FUE:'FUE',RES:'RES'};
+  const archMultHtml = Object.entries(archerMult)
+    .filter(([s, v]) => Math.abs(v - 1.0) > 0.05)
+    .map(([s, v]) => {
+      const color = v > 1 ? 'var(--green)' : 'var(--coral)';
+      return `<span style="color:${color}">${statLabels[s]||s}x${v}</span>`;
+    }).join(' ');
+
+  const bowMultHtml = Object.entries(bowMult)
+    .filter(([k, v]) => Math.abs(v - 1.0) > 0.05)
+    .map(([k, v]) => {
+      const label = k === 'fps' ? 'FPS' : k === 'let' ? 'LetOff' : 'Lbs';
+      const color = v > 1 ? 'var(--green)' : 'var(--coral)';
+      return `<span style="color:${color}">${label}x${v}</span>`;
+    }).join(' ');
 
   function impactClass(lvl) {
     return lvl.cls === 'bad' ? 'bad' : lvl.cls === 'warn' ? 'warn' : lvl.cls === 'good' ? 'good' : 'neutral';
@@ -3862,16 +3881,16 @@ function showRoundConditions(round, cond) {
 
   const warningLevel = (-envPenalty) + (cond.comp === 'field' ? 5 : 0);
   const warningHtml = warningLevel >= 15
-    ? `<div class="rc-warning">⚠️ Condiciones difíciles — el ambiente penalizará hasta <strong>${envPenalty} pts</strong> en tu score. Elige cartas de gestión mental.</div>`
+    ? `<div class="rc-warning">&#9888;&#65039; Condiciones dificiles &mdash; penalizacion estimada de <strong>${envPenalty} pts</strong>. Juega cartas de gestion mental.</div>`
     : warningLevel >= 8
-    ? `<div class="rc-warning" style="border-color:var(--yellow);background:rgba(216,209,90,.08)">⚡ Condiciones moderadas — penalización estimada de <strong>${envPenalty} pts</strong>.</div>`
+    ? `<div class="rc-warning" style="border-color:var(--yellow);background:rgba(216,209,90,.08)">&#9889; Condiciones moderadas &mdash; penalizacion estimada de <strong>${envPenalty} pts</strong>.</div>`
     : '';
 
   wrap.style.display = 'block';
   wrap.innerHTML = `
     <div class="round-conditions">
       <div class="rc-header">
-        <div class="rc-title">&#127922; Condiciones — Ronda ${round}</div>
+        <div class="rc-title">&#127922; Condiciones &mdash; Ronda ${round}</div>
         <div class="rc-round-badge">${round} / ${TOTAL_ROUNDS}</div>
       </div>
       <div class="rc-grid">
@@ -3879,25 +3898,29 @@ function showRoundConditions(round, cond) {
           <div class="rc-item-icon">${COMP_ICONS[cond.comp]}</div>
           <div class="rc-item-label">Competencia</div>
           <div class="rc-item-val" style="color:var(--yellow)">${COMP_NAMES[cond.comp]}</div>
-          <div class="rc-item-impact ${compImpact ? 'warn' : 'neutral'}">${compImpact || '—'}</div>
+          <div class="rc-item-impact ${compImpact ? 'warn' : 'neutral'}" style="font-size:9px;line-height:1.6">
+            ${compImpact || '&mdash;'}
+            ${archMultHtml ? `<br><span style="color:var(--muted);font-size:8px">Arquero: ${archMultHtml}</span>` : ''}
+            ${bowMultHtml ? `<br><span style="color:var(--muted);font-size:8px">Arco: ${bowMultHtml}</span>` : ''}
+          </div>
         </div>
         <div class="rc-item">
-          <div class="rc-item-icon">🌬️</div>
+          <div class="rc-item-icon">&#127788;&#65039;</div>
           <div class="rc-item-label">Viento</div>
           <div class="rc-item-val">${w.label}</div>
-          <div class="rc-item-impact ${impactClass(w)}">${cond.wind === 0 ? '—' : w.txt.slice(0,35)}</div>
+          <div class="rc-item-impact ${impactClass(w)}">${cond.wind === 0 ? '&mdash;' : w.txt.slice(0,35)}</div>
         </div>
         <div class="rc-item">
-          <div class="rc-item-icon">🌧️</div>
+          <div class="rc-item-icon">&#127783;&#65039;</div>
           <div class="rc-item-label">Lluvia</div>
           <div class="rc-item-val">${r.label}</div>
-          <div class="rc-item-impact ${impactClass(r)}">${cond.rain === 0 ? '—' : r.txt.slice(0,35)}</div>
+          <div class="rc-item-impact ${impactClass(r)}">${cond.rain === 0 ? '&mdash;' : r.txt.slice(0,35)}</div>
         </div>
         <div class="rc-item">
-          <div class="rc-item-icon">🌡️</div>
+          <div class="rc-item-icon">&#127777;&#65039;</div>
           <div class="rc-item-label">Temperatura</div>
           <div class="rc-item-val">${t.label}</div>
-          <div class="rc-item-impact ${impactClass(t)}">${cond.temp === 2 ? '—' : t.txt.slice(0,35)}</div>
+          <div class="rc-item-impact ${impactClass(t)}">${cond.temp === 2 ? '&mdash;' : t.txt.slice(0,35)}</div>
         </div>
       </div>
       ${warningHtml}
