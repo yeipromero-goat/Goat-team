@@ -2199,13 +2199,34 @@ function switchTab(id, el){
 
 // ── SCORING SYSTEM ────────────────────────────────────────────────────────
 
-const MODS={indoor:{T:2,C:0,E:-13,I:-13},outdoor:{T:-16,C:-13,E:2,I:-13},field:{T:-13,C:-13,E:-13,I:-13},'3d':{T:-13,C:-13,E:0,I:2}};
-const W={T:.40,C:.15,E:.15,I:.30};
-const SS=['T','C','E','I'];
+const MODS={
+  indoor:  {T:2,  C:0,  E:-13,I:-13,FUE:0,  RES:0  },
+  outdoor: {T:-16,C:-13,E:2,  I:-13,FUE:0,  RES:0  },
+  field:   {T:-13,C:-13,E:-13,I:-13,FUE:0,  RES:0  },
+  '3d':    {T:-13,C:-13,E:0,  I:2,  FUE:0,  RES:0  }
+};
+// Pesos base (suma 100%)
+const W={T:.30,C:.12,E:.18,I:.25,FUE:.10,RES:.05};
+const SS=['T','C','E','I','FUE','RES'];
 let comp='indoor', selCards=[], openSlot=null;
 let playerDeck=[];
 let activeCatFilter='all';
-let envMods={T:0,C:0,E:0,I:0};
+let envMods={T:0,C:0,E:0,I:0,FUE:0,RES:0};
+
+// ── MODIFICADORES POR MODALIDAD (arquero) ──
+const COMP_ARCHER_MULT={
+  indoor:  {T:1.2,C:1.0,E:1.2,I:1.3,FUE:0.7,RES:0.6},
+  outdoor: {T:1.0,C:1.2,E:1.2,I:1.1,FUE:1.0,RES:1.3},
+  field:   {T:1.4,C:1.0,E:0.9,I:1.0,FUE:1.2,RES:1.4},
+  '3d':    {T:1.0,C:1.3,E:1.1,I:1.2,FUE:1.1,RES:1.2}
+};
+// ── MODIFICADORES POR MODALIDAD (arco) ──
+const COMP_BOW_MULT={
+  indoor:  {fps:0.3,let:1.4,draw:0.2},
+  outdoor: {fps:1.2,let:1.0,draw:1.1},
+  field:   {fps:1.5,let:1.1,draw:1.2},
+  '3d':    {fps:1.4,let:1.3,draw:1.0}
+};
 
 function selComp(el){
   document.querySelectorAll('.comp-btn').forEach(b=>b.classList.remove('sel'));
@@ -2235,7 +2256,7 @@ function updateEnv(){
 
   function fmtImpact(lvl){
     if(mult===0) return 'Indoor: ambiente controlado, sin efecto';
-    const delta=SS.map(s=>{
+    const delta=['T','C','E','I'].map(s=>{
       const v=Math.round((lvl.T!==undefined?lvl[s]:0)*mult);
       return v!==0?`${v>0?'+':''}${v}${s}`:'';
     }).filter(Boolean).join('  ');
@@ -2250,17 +2271,20 @@ function updateEnv(){
   ti.className='env-impact '+t.cls; ti.textContent=fmtImpact(t);
 
   SS.forEach(s=>{ envMods[s]=Math.round((w[s]+r[s]+t[s])*mult); });
+  // FUE y RES no se ven afectados por clima directamente
+  envMods['FUE'] = 0;
+  envMods['RES'] = 0;
 
-  const totalPen=SS.reduce((a,s)=>a+Math.min(0,envMods[s]),0);
+  const totalPen=['T','C','E','I'].reduce((a,s)=>a+Math.min(0,envMods[s]),0);
   const note=document.getElementById('env-note');
   if(totalPen===0){
     note.className='env-note';
     note.textContent=mult===0?'Indoor: el clima no afecta el rendimiento.':'Condiciones perfectas — sin penalizacion ambiental.';
   } else {
     note.className='env-note active-note';
-    const penalties=SS.map(s=>envMods[s]!==0?`${s}:${envMods[s]}`:'').filter(Boolean).join('  ');
+    const penalties=['T','C','E','I'].map(s=>envMods[s]!==0?`${s}:${envMods[s]}`:'').filter(Boolean).join('  ');
     const label=mult===1.0?'Outdoor':mult===0.85?'Field':'3D';
-    note.textContent=label+' — Penalizacion activa (x'+mult+') → '+penalties+'  |  Total impacto en score: '+Math.round(SS.reduce((a,s)=>a+envMods[s]*W[s],0))+' pts';
+    note.textContent=label+' — Penalizacion activa (x'+mult+') → '+penalties+'  |  Total impacto en score: '+Math.round(['T','C','E','I'].reduce((a,s)=>a+envMods[s]*W[s],0))+' pts';
   }
   recalc();
 }
@@ -2317,20 +2341,58 @@ function pickCard(idx){
 }
 
 function recalc(){
-  const mods=MODS[comp], raw={T:0,C:0,E:0,I:0};
-  SS.forEach(s=>{
+  const mods = MODS[comp];
+  const archerMult = COMP_ARCHER_MULT[comp] || {T:1,C:1,E:1,I:1,FUE:1,RES:1};
+  const raw = {T:0,C:0,E:0,I:0,FUE:0,RES:0};
+
+  // Base: media arquero+coach con modificadores de modalidad sobre T,C,E,I
+  ['T','C','E','I'].forEach(s=>{
     const a=parseInt(document.getElementById('as-'+s).value)||0;
     const c=parseInt(document.getElementById('cs-'+s).value)||0;
-    raw[s]=(a+c)/2+mods[s]+envMods[s];
+    raw[s] = ((a+c)/2 + mods[s] + envMods[s]) * archerMult[s];
   });
-  selCards.filter(Boolean).forEach(c=>SS.forEach(s=>{raw[s]+=c[s];}));
-  const fin={};
-  SS.forEach(s=>{fin[s]=Math.min(100,Math.max(0,Math.round(raw[s])));});
-  const score=Math.round(SS.reduce((a,s)=>a+fin[s]*W[s],0));
-  SS.forEach(s=>{
-    document.getElementById('bk-'+s).textContent=fin[s];
-    document.getElementById('bkw-'+s).textContent=Math.round(fin[s]*W[s])+' pts';
+
+  // FUE y RES vienen del arquero seleccionado directamente
+  const aFUE = parseInt(document.getElementById('as-FUE')?document.getElementById('as-FUE').value:70)||70;
+  const aRES = parseInt(document.getElementById('as-RES')?document.getElementById('as-RES').value:70)||70;
+  raw['FUE'] = aFUE * archerMult['FUE'];
+  raw['RES'] = aRES * archerMult['RES'];
+
+  // Cartas especiales (bonus a T,C,E,I)
+  selCards.filter(Boolean).forEach(c=>['T','C','E','I'].forEach(s=>{raw[s]+=(c[s]||0);}));
+
+  // Bono del arco según modalidad
+  const bowMult = COMP_BOW_MULT[comp] || {fps:1,let:1,draw:1};
+  const bowIdx = selectedBow;
+  if(bowIdx !== null && bowIdx !== undefined && BOWS[bowIdx]){
+    const bow = BOWS[bowIdx];
+    // FPS → bonus TEC (flecha plana, menos error)
+    const fpsBonus = Math.round((bow.fps - 280) / 8 * bowMult.fps);
+    // LetOff → bonus EST (menos esfuerzo = menos estrés)
+    const letBonus = Math.round((bow.let - 72) / 2 * bowMult.let);
+    // Lbs (draw weight) → bonus FUE si >65, penaliza EST si >75 y FUE<75
+    const drawBonus = bow.draw > 65 ? Math.round((bow.draw - 65) / 5 * bowMult.draw) : 0;
+    const drawPenalty = (bow.draw > 75 && aFUE < 75) ? -2 : 0;
+
+    raw['T']   += fpsBonus;
+    raw['E']   += letBonus + drawPenalty;
+    raw['FUE'] += drawBonus;
+  }
+
+  const fin = {};
+  SS.forEach(s=>{ fin[s] = Math.min(100, Math.max(0, Math.round(raw[s]))); });
+
+  // Score final ponderado
+  const score = Math.round(SS.reduce((a,s)=>a+fin[s]*W[s],0));
+
+  // Actualizar UI stats visibles (T,C,E,I)
+  ['T','C','E','I'].forEach(s=>{
+    const bkEl = document.getElementById('bk-'+s);
+    const bkwEl = document.getElementById('bkw-'+s);
+    if(bkEl) bkEl.textContent = fin[s];
+    if(bkwEl) bkwEl.textContent = Math.round(fin[s]*W[s])+' pts';
   });
+
   const fsEl = document.getElementById('final-score');
   const sgEl = document.getElementById('score-grade');
   const rlEl = document.getElementById('score-round-label');
@@ -3343,37 +3405,52 @@ function renderLiveScore(){
 
 // Helper: compute per-stat final values
 function calcStatBreakdown(){
-  const mods = MODS[comp], raw = {T:0,C:0,E:0,I:0};
-  SS.forEach(s=>{
+  const mods = MODS[comp];
+  const archerMult = COMP_ARCHER_MULT[comp] || {T:1,C:1,E:1,I:1,FUE:1,RES:1};
+  const bowMult = COMP_BOW_MULT[comp] || {fps:1,let:1,draw:1};
+  const raw = {T:0,C:0,E:0,I:0,FUE:0,RES:0};
+
+  ['T','C','E','I'].forEach(s=>{
     const a = parseInt(document.getElementById('as-'+s).value)||0;
     const c = parseInt(document.getElementById('cs-'+s).value)||0;
-    raw[s] = (a+c)/2 + mods[s] + envMods[s];
+    raw[s] = ((a+c)/2 + mods[s] + envMods[s]) * archerMult[s];
   });
+
+  const aFUE = parseInt(document.getElementById('as-FUE')?document.getElementById('as-FUE').value:70)||70;
+  const aRES = parseInt(document.getElementById('as-RES')?document.getElementById('as-RES').value:70)||70;
+  raw['FUE'] = aFUE * archerMult['FUE'];
+  raw['RES'] = aRES * archerMult['RES'];
+
   const cards = gameState ? gameState.played.filter(Boolean) : selCards.filter(Boolean);
-  cards.forEach(c => SS.forEach(s => { raw[s] += c[s]; }));
-  // BOW BONUS: el arco seleccionado agrega un bono basado en sus stats
+  cards.forEach(c => ['T','C','E','I'].forEach(s => { raw[s] += (c[s]||0); }));
+
+  // Bono del arco
   const bowIdx = gameState ? gameState.bowIdx : selectedBow;
-  if (bowIdx !== null && bowIdx !== undefined && BOWS[bowIdx]) {
+  if(bowIdx !== null && bowIdx !== undefined && BOWS[bowIdx]){
     const bow = BOWS[bowIdx];
-    raw['T'] += Math.round((bow.fps - 280) / 8);
-    raw['C'] += Math.round((bow.let - 72) / 2);
-    raw['E'] += Math.round((bow.ata - 30) / 2) + Math.round((bow.bh - 6.5) * 2);
-    raw['I'] += Math.round((bow.draw - 60) / 5) + Math.round((bow.dl - 28) / 0.5);
+    const fpsBonus = Math.round((bow.fps - 280) / 8 * bowMult.fps);
+    const letBonus = Math.round((bow.let - 72) / 2 * bowMult.let);
+    const drawBonus = bow.draw > 65 ? Math.round((bow.draw - 65) / 5 * bowMult.draw) : 0;
+    const drawPenalty = (bow.draw > 75 && aFUE < 75) ? -2 : 0;
+    raw['T']   += fpsBonus;
+    raw['E']   += letBonus + drawPenalty;
+    raw['FUE'] += drawBonus;
   }
-  // ABILITY BONUS
+
+  // Habilidad especial
   const abIdx = gameState ? gameState.abilityIdx : selectedAbility;
-  if (abIdx === 'bow') {
-    // Habilidad del arco: buscar en UNLOCKED_ABILITIES por nombre
+  if(abIdx === 'bow'){
     const bowIdx2 = gameState ? gameState.bowIdx : selectedBow;
     const bow2 = (bowIdx2 !== null && bowIdx2 !== undefined) ? BOWS[bowIdx2] : null;
-    if (bow2 && bow2.ability) {
+    if(bow2 && bow2.ability){
       const matchedAb = UNLOCKED_ABILITIES.find(a => a.name === bow2.ability.name);
-      if (matchedAb) SS.forEach(s => { raw[s] += matchedAb.bonus[s] || 0; });
+      if(matchedAb) ['T','C','E','I'].forEach(s => { raw[s] += matchedAb.bonus[s] || 0; });
     }
-  } else if (abIdx !== null && abIdx !== undefined && abIdx >= 0 && UNLOCKED_ABILITIES[abIdx]) {
+  } else if(abIdx !== null && abIdx !== undefined && abIdx >= 0 && UNLOCKED_ABILITIES[abIdx]){
     const ab = UNLOCKED_ABILITIES[abIdx];
-    SS.forEach(s => { raw[s] += ab.bonus[s] || 0; });
+    ['T','C','E','I'].forEach(s => { raw[s] += ab.bonus[s] || 0; });
   }
+
   const fin = {};
   SS.forEach(s => { fin[s] = Math.min(100, Math.max(0, Math.round(raw[s]))); });
   return fin;
@@ -3578,16 +3655,36 @@ function confirmDiscard(){
 
 // ── Calc score using played cards ─────────────────────────────────
 function calcCurrentScore(){
-  const mods=MODS[comp], raw={T:0,C:0,E:0,I:0};
-  SS.forEach(s=>{
-    const a=parseInt(document.getElementById('as-'+s).value)||0;
-    const c=parseInt(document.getElementById('cs-'+s).value)||0;
-    raw[s]=(a+c)/2+mods[s]+envMods[s];
+  const mods = MODS[comp];
+  const archerMult = COMP_ARCHER_MULT[comp] || {T:1,C:1,E:1,I:1,FUE:1,RES:1};
+  const bowMult = COMP_BOW_MULT[comp] || {fps:1,let:1,draw:1};
+  const raw = {T:0,C:0,E:0,I:0,FUE:0,RES:0};
+
+  ['T','C','E','I'].forEach(s=>{
+    const a = parseInt(document.getElementById('as-'+s).value)||0;
+    const c = parseInt(document.getElementById('cs-'+s).value)||0;
+    raw[s] = ((a+c)/2 + mods[s] + envMods[s]) * archerMult[s];
   });
-  if(gameState) gameState.played.filter(Boolean).forEach(c=>SS.forEach(s=>{raw[s]+=c[s];}));
-  else selCards.filter(Boolean).forEach(c=>SS.forEach(s=>{raw[s]+=c[s];}));
-  const fin={};
-  SS.forEach(s=>{fin[s]=Math.min(100,Math.max(0,Math.round(raw[s])));});
+
+  const aFUE = parseInt(document.getElementById('as-FUE')?document.getElementById('as-FUE').value:70)||70;
+  const aRES = parseInt(document.getElementById('as-RES')?document.getElementById('as-RES').value:70)||70;
+  raw['FUE'] = aFUE * archerMult['FUE'];
+  raw['RES']  = aRES * archerMult['RES'];
+
+  const cards = gameState ? gameState.played.filter(Boolean) : selCards.filter(Boolean);
+  cards.forEach(c => ['T','C','E','I'].forEach(s => { raw[s] += (c[s]||0); }));
+
+  const bowIdx = gameState ? gameState.bowIdx : selectedBow;
+  if(bowIdx !== null && bowIdx !== undefined && BOWS[bowIdx]){
+    const bow = BOWS[bowIdx];
+    raw['T']   += Math.round((bow.fps - 280) / 8 * bowMult.fps);
+    raw['E']   += Math.round((bow.let - 72) / 2 * bowMult.let);
+    raw['FUE'] += bow.draw > 65 ? Math.round((bow.draw - 65) / 5 * bowMult.draw) : 0;
+    if(bow.draw > 75 && aFUE < 75) raw['E'] -= 2;
+  }
+
+  const fin = {};
+  SS.forEach(s=>{ fin[s] = Math.min(100, Math.max(0, Math.round(raw[s]))); });
   return Math.round(SS.reduce((a,s)=>a+fin[s]*W[s],0));
 }
 
