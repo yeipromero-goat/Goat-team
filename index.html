@@ -2490,6 +2490,7 @@ async function loadArchersFromSupabase() {
       role: a.role,
       quote: a.quote,
       T: a.t, C: a.c, E: a.e, I: a.i,
+      FUE: a.fue || 70, RES: a.res || 70,
       avatar: a.avatar,
       color: a.color,
       foto: a.foto,
@@ -2675,6 +2676,16 @@ function buildCard(data, type){
           <span class="stat-label">IEM</span>
           <div class="stat-bar-wrap"><div class="stat-bar bar-I" style="width:${data.I}%"></div></div>
           <span class="stat-val">${data.I}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">FUE</span>
+          <div class="stat-bar-wrap"><div class="stat-bar" style="width:${data.FUE||70}%;background:#e05555"></div></div>
+          <span class="stat-val">${data.FUE||70}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">RES</span>
+          <div class="stat-bar-wrap"><div class="stat-bar" style="width:${data.RES||70}%;background:#60c060"></div></div>
+          <span class="stat-val">${data.RES||70}</span>
         </div>
       </div>
 
@@ -3624,7 +3635,10 @@ function resignGame(){
 
 // ── Reset ─────────────────────────────────────────────────────────
 function resetGame(){
-  gameState=null; selCards=[];
+  gameState=null;
+  selCards=[];
+  // Limpiar slots del tablero
+  for(let i=0;i<6;i++) selCards[i]=null;
   lockConditionUI(false);
   hideRoundConditions();
   stopRoundTimer();
@@ -3632,7 +3646,12 @@ function resetGame(){
   document.getElementById('game-setup-panel').style.display='block';
   document.getElementById('game-active').style.display='none';
   document.getElementById('game-end').style.display='none';
-  recalc(); updateSetupChecks();
+  // Limpiar picker y grid de cartas
+  const pa=document.getElementById('picker-area');
+  if(pa) pa.innerHTML='';
+  renderSlots();
+  recalc();
+  updateSetupChecks();
 }
 
 // ── Hook person selection → update setup checks ───────────────────
@@ -4383,10 +4402,12 @@ function hideTimerDisplay() {
 const RARITY_COLORS  = { legend:'#d8d15a', epic:'#9a88dd', rare:'#5a9fd8', common:'#888880' };
 const RARITY_LABELS  = { legend:'Leyenda', epic:'Épica', rare:'Rara', common:'Común' };
 const STAT_META = [
-  { key:'T', label:'Técnica',           color:'#5a9fd8' },
-  { key:'C', label:'Competitividad',    color:'#5dcaa5' },
-  { key:'E', label:'G. Estrés',         color:'#9a88dd' },
-  { key:'I', label:'Int. Emocional',    color:'#d87850' },
+  { key:'T',   label:'Técnica',           color:'#5a9fd8' },
+  { key:'C',   label:'Competitividad',    color:'#5dcaa5' },
+  { key:'E',   label:'G. Estrés',         color:'#9a88dd' },
+  { key:'I',   label:'Int. Emocional',    color:'#d87850' },
+  { key:'FUE', label:'Fuerza',            color:'#e05555' },
+  { key:'RES', label:'Resistencia',       color:'#60c060' },
 ];
 
 let _cdmCurrentId   = null;
