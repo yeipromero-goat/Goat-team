@@ -14,13 +14,13 @@ function switchTab(id, el){
 
 // ── SCORING SYSTEM ────────────────────────────────────────────────────────
 
-const MODS={indoor:{T:2,C:0,E:-13,I:-13},outdoor:{T:-16,C:-13,E:2,I:-13},field:{T:-13,C:-13,E:-13,I:-13},'3d':{T:-13,C:-13,E:0,I:2}};
-const W={T:.40,C:.15,E:.15,I:.30};
-const SS=['T','C','E','I'];
+const MODS={indoor:{T:2,C:0,E:-13,I:-13,FUE:0,RES:0},outdoor:{T:-16,C:-13,E:2,I:-13,FUE:0,RES:0},field:{T:-13,C:-13,E:-13,I:-13,FUE:0,RES:0},'3d':{T:-13,C:-13,E:0,I:2,FUE:0,RES:0}};
+const W={T:.36,C:.13,E:.13,I:.28,FUE:.06,RES:.04};
+const SS=['T','C','E','I','FUE','RES'];
 let comp='indoor', selCards=[], openSlot=null;
 let playerDeck=[];
 let activeCatFilter='all';
-let envMods={T:0,C:0,E:0,I:0};
+let envMods={T:0,C:0,E:0,I:0,FUE:0,RES:0};
 
 function selComp(el){
   document.querySelectorAll('.comp-btn').forEach(b=>b.classList.remove('sel'));
@@ -117,7 +117,8 @@ function renderPList(q){
   const used=selCards.filter(Boolean).map(c=>c.id);
   const items=CARDS.map((c,i)=>({...c,idx:i})).filter(c=>!used.includes(c.id)&&c.n.toLowerCase().includes(q.toLowerCase()));
   document.getElementById('plist').innerHTML=items.map(c=>{
-    const st=SS.map(s=>c[s]!==0?`${c[s]>0?'+':''}${c[s]}${s}`:'').filter(Boolean).join(' ');
+    const stKeys=['T','C','E','I','FUE','RES'];
+    const st=stKeys.map(s=>c[s]!==0?`${c[s]>0?'+':''}${c[s]}${s==='FUE'?'F':s==='RES'?'R':s}`:'').filter(Boolean).join(' ');
     return `<div class="pitem" onclick="pickCard(${c.idx})"><span class="piname">${c.n}</span><span style="display:flex;gap:5px;align-items:center"><span class="pistats">${st}</span><span class="picat">${c.cat}</span></span></div>`;
   }).join('');
 }
@@ -132,19 +133,19 @@ function pickCard(idx){
 }
 
 function recalc(){
-  const mods=MODS[comp], raw={T:0,C:0,E:0,I:0};
+  const mods=MODS[comp], raw={T:0,C:0,E:0,I:0,FUE:0,RES:0};
   SS.forEach(s=>{
     const a=parseInt(document.getElementById('as-'+s).value)||0;
     const c=parseInt(document.getElementById('cs-'+s).value)||0;
     raw[s]=(a+c)/2+mods[s]+envMods[s];
   });
-  selCards.filter(Boolean).forEach(c=>SS.forEach(s=>{raw[s]+=c[s];}));
+  selCards.filter(Boolean).forEach(c=>SS.forEach(s=>{if(c[s])raw[s]+=c[s];}));
   const fin={};
   SS.forEach(s=>{fin[s]=Math.min(100,Math.max(0,Math.round(raw[s])));});
   const score=Math.round(SS.reduce((a,s)=>a+fin[s]*W[s],0));
   SS.forEach(s=>{
-    document.getElementById('bk-'+s).textContent=fin[s];
-    document.getElementById('bkw-'+s).textContent=Math.round(fin[s]*W[s])+' pts';
+    const bk=document.getElementById('bk-'+s); if(bk) bk.textContent=fin[s];
+    const bkw=document.getElementById('bkw-'+s); if(bkw) bkw.textContent=Math.round(fin[s]*W[s])+' pts';
   });
   const fsEl = document.getElementById('final-score');
   const sgEl = document.getElementById('score-grade');
@@ -326,6 +327,11 @@ function selectPersonCard(id, type) {
       const el = document.getElementById(prefix + 's-' + s);
       if (el) el.value = data[s];
     });
+    // F y R
+    const fEl = document.getElementById(prefix + 's-FUE');
+    const rEl = document.getElementById(prefix + 's-RES');
+    if (fEl) fEl.value = data.f || data.F || 50;
+    if (rEl) rEl.value = data.r || data.R || 50;
     const emptyState  = document.getElementById(role + '-empty-state');
     const filledState = document.getElementById(role + '-filled-state');
     if (emptyState)  emptyState.style.display  = 'none';
@@ -918,14 +924,14 @@ function renderLiveScore(){
 
 // Helper: compute per-stat final values
 function calcStatBreakdown(){
-  const mods = MODS[comp], raw = {T:0,C:0,E:0,I:0};
+  const mods = MODS[comp], raw = {T:0,C:0,E:0,I:0,FUE:0,RES:0};
   SS.forEach(s=>{
     const a = parseInt(document.getElementById('as-'+s).value)||0;
     const c = parseInt(document.getElementById('cs-'+s).value)||0;
     raw[s] = (a+c)/2 + mods[s] + envMods[s];
   });
   const cards = gameState ? gameState.played.filter(Boolean) : selCards.filter(Boolean);
-  cards.forEach(c => SS.forEach(s => { raw[s] += c[s]; }));
+  cards.forEach(c => SS.forEach(s => { if(c[s]) raw[s] += c[s]; }));
   // BOW BONUS: el arco seleccionado agrega un bono basado en sus stats
   const bowIdx = gameState ? gameState.bowIdx : selectedBow;
   if (bowIdx !== null && bowIdx !== undefined && BOWS[bowIdx]) {
@@ -1153,14 +1159,14 @@ function confirmDiscard(){
 
 // ── Calc score using played cards ─────────────────────────────────
 function calcCurrentScore(){
-  const mods=MODS[comp], raw={T:0,C:0,E:0,I:0};
+  const mods=MODS[comp], raw={T:0,C:0,E:0,I:0,FUE:0,RES:0};
   SS.forEach(s=>{
     const a=parseInt(document.getElementById('as-'+s).value)||0;
     const c=parseInt(document.getElementById('cs-'+s).value)||0;
     raw[s]=(a+c)/2+mods[s]+envMods[s];
   });
-  if(gameState) gameState.played.filter(Boolean).forEach(c=>SS.forEach(s=>{raw[s]+=c[s];}));
-  else selCards.filter(Boolean).forEach(c=>SS.forEach(s=>{raw[s]+=c[s];}));
+  if(gameState) gameState.played.filter(Boolean).forEach(c=>SS.forEach(s=>{if(c[s])raw[s]+=c[s];}));
+  else selCards.filter(Boolean).forEach(c=>SS.forEach(s=>{if(c[s])raw[s]+=c[s];}));
   const fin={};
   SS.forEach(s=>{fin[s]=Math.min(100,Math.max(0,Math.round(raw[s])));});
   return Math.round(SS.reduce((a,s)=>a+fin[s]*W[s],0));

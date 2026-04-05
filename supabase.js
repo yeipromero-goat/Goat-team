@@ -21,7 +21,7 @@ async function loadArchersFromSupabase() {
       rarity: a.rarity,
       role: a.role,
       quote: a.quote,
-      T: a.t, C: a.c, E: a.e, I: a.i,
+      T: a.t, C: a.c, E: a.e, I: a.i, f: a.f || 50, r: a.r || 50,
       avatar: a.avatar,
       color: a.color,
       foto: a.foto,
@@ -47,7 +47,7 @@ async function loadCoachesFromSupabase() {
     const data = await res.json();
     COACHES = data.map(c => ({
       id: c.id, name: c.name, rarity: c.rarity, role: c.role,
-      quote: c.quote, T: c.t, C: c.c, E: c.e, I: c.i,
+      quote: c.quote, T: c.t, C: c.c, E: c.e, I: c.i, f: c.f || 50, r: c.r || 50,
       avatar: c.avatar, color: c.color, foto: c.foto,
       foto_position: c.foto_position || 'center center',
       ability: c.ability, abilityDesc: c.ability_desc,

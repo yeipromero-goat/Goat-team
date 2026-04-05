@@ -359,6 +359,8 @@
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchTab('arqueros')">Arqueros</button>
       <button class="nav-tab" onclick="switchTab('coaches')">Coaches</button>
+      <button class="nav-tab" onclick="switchTab('cartas')">Cartas</button>
+      <button class="nav-tab" onclick="switchTab('arcos')">Arcos</button>
       <button class="nav-tab" onclick="switchTab('codigos')">Códigos</button>
     </div>
     <div class="header-spacer"></div>
@@ -445,6 +447,53 @@
     </div>
   </div>
 </div>
+
+
+  <!-- CARTAS TAB -->
+  <div id="tab-cartas" style="display:none;" class="main">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Cartas</h2>
+        <button class="btn-new" onclick="newCarta()">+ NUEVA CARTA</button>
+      </div>
+      <div style="padding:8px 8px 4px;border-bottom:1px solid var(--border)">
+        <input class="search-input" style="width:100%;box-sizing:border-box" id="carta-search" placeholder="Buscar carta..." oninput="filterCartaList()">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">
+          <button class="filter-btn active" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('all',this)">Todas</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Arco',this)">Arco</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Soltador',this)">Soltador</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Mira',this)">Mira</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Estab.',this)">Estab.</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Tecnica',this)">Técnica</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Mental',this)">Mental</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Equipo',this)">Equipo</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Prep.',this)">Prep.</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Flecha',this)">Flecha</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Posicion',this)">Posición</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Peso',this)">Peso</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 8px" onclick="filterCartaCat('Let off',this)">Let off</button>
+        </div>
+      </div>
+      <div class="archer-list" id="carta-list"></div>
+    </div>
+    <div class="editor" id="carta-editor">
+      <div class="editor-empty"><div class="icon">🃏</div><p>Selecciona una carta para editar</p></div>
+    </div>
+  </div>
+
+  <!-- ARCOS TAB -->
+  <div id="tab-arcos" style="display:none;" class="main">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Arcos</h2>
+        <button class="btn-new" onclick="newArco()">+ NUEVO ARCO</button>
+      </div>
+      <div class="archer-list" id="arco-list"></div>
+    </div>
+    <div class="editor" id="arco-editor">
+      <div class="editor-empty"><div class="icon">🏹</div><p>Selecciona un arco para editar</p></div>
+    </div>
+  </div>
 
 <div class="toast" id="toast"></div>
 
@@ -537,7 +586,7 @@ function newArcher() {
   renderEditor({
     id: 'A-' + String(archers.length + 1).padStart(3,'0'),
     name: '', rarity: 'common', role: '', quote: '',
-    t: 50, c: 50, e: 50, i: 50,
+    t: 50, c: 50, e: 50, i: 50, f: 50, r: 50,
     avatar: '', color: '#888888', foto: '',
     ability: '', ability_desc: '', spec: 'outdoor', bio: '', top: []
   });
@@ -621,8 +670,8 @@ function renderEditor(a) {
 
       <div class="section">
         <div class="section-title">Stats</div>
-        <div class="grid-2">
-          ${[['f-t','Técnica',a.t],['f-c','Competitividad',a.c],['f-e','G. Estrés',a.e],['f-i','Int. Emocional',a.i]].map(([id,label,val])=>`
+        <div class="grid-3">
+          ${[['f-t','⚡ Técnica',a.t],['f-c','🎯 Competitividad',a.c],['f-e','😤 G. Estrés',a.e],['f-i','🧠 Int. Emocional',a.i],['f-f','💪 Fuerza',a.f||50],['f-r','🏃 Resistencia',a.r||50]].map(([id,label,val])=>`
             <div class="stat-field">
               <label>${label}</label>
               <div class="stat-row">
@@ -838,6 +887,8 @@ async function saveArcher() {
     c: parseInt(document.getElementById('f-c').value),
     e: parseInt(document.getElementById('f-e').value),
     i: parseInt(document.getElementById('f-i').value),
+    f: parseInt(document.getElementById('f-f').value),
+    r: parseInt(document.getElementById('f-r').value),
     avatar: document.getElementById('f-avatar').value.trim(),
     color: document.getElementById('f-color').value.trim(),
     foto: document.getElementById('f-foto').value.trim(),
@@ -891,10 +942,14 @@ function switchTab(tab) {
   document.getElementById('tab-arqueros').style.display = tab === 'arqueros' ? 'grid' : 'none';
   document.getElementById('tab-coaches').style.display = tab === 'coaches' ? 'grid' : 'none';
   document.getElementById('tab-codigos').style.display = tab === 'codigos' ? 'block' : 'none';
+  document.getElementById('tab-cartas').style.display = tab === 'cartas' ? 'grid' : 'none';
+  document.getElementById('tab-arcos').style.display = tab === 'arcos' ? 'grid' : 'none';
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
   if (tab === 'codigos') loadCodigos();
   if (tab === 'coaches') loadCoaches();
+  if (tab === 'cartas') loadCartas();
+  if (tab === 'arcos') loadArcos();
 }
 
 // ── CODIGOS ──
@@ -1069,9 +1124,9 @@ function newCoach() {
     id: 'C-' + String(coaches.length + 1).padStart(3,'0'),
     name:'', rarity:'common', role:'Head Coach', spec:'general',
     quote:'', bio:'', foto:'', avatar:'', color:'#5b9bd5',
-    t:50, c:50, e:50, i:50,
+    t:50, c:50, e:50, i:50, f:50, r:50,
     certifications:'', experience_years:'', clubs:'', ability:'', ability_desc:'',
-    ability_spec:'all', ability_rounds:'all', ability_t:0, ability_c:0, ability_e:0, ability_i:0, top:[]
+    ability_spec:'all', ability_rounds:'all', ability_t:0, ability_c:0, ability_e:0, ability_i:0, ability_f:0, ability_r:0, top:[]
   });
 }
 
@@ -1149,8 +1204,8 @@ function renderCoachEditor(c) {
           </div>
         </div>
         <div class="section-title" style="margin-bottom:10px">Bonus de stats al arquero</div>
-        <div class="grid-4">
-          ${[['cf-ability-t','⚡ Técnica',c.ability_t||0],['cf-ability-c','🎯 Competitividad',c.ability_c||0],['cf-ability-e','😤 G. Estrés',c.ability_e||0],['cf-ability-i','🧠 Int. Emocional',c.ability_i||0]].map(([id,label,val])=>`
+        <div class="grid-3">
+          ${[['cf-ability-t','⚡ Técnica',c.ability_t||0],['cf-ability-c','🎯 Competitividad',c.ability_c||0],['cf-ability-e','😤 G. Estrés',c.ability_e||0],['cf-ability-i','🧠 Int. Emocional',c.ability_i||0],['cf-ability-f','💪 Fuerza',c.ability_f||0],['cf-ability-r','🏃 Resistencia',c.ability_r||0]].map(([id,label,val])=>`
             <div class="stat-field">
               <label>${label}</label>
               <div class="stat-row">
@@ -1196,8 +1251,8 @@ function renderCoachEditor(c) {
 
       <div class="section">
         <div class="section-title">Stats de Coaching</div>
-        <div class="grid-2">
-          ${[['cf-t','🏹 Técnica',c.t||50],['cf-c','🎯 Competitividad',c.c||50],['cf-e','😤 Gestión Estrés',c.e||50],['cf-i','🧠 Int. Emocional',c.i||50]].map(([id,label,val])=>`
+        <div class="grid-3">
+          ${[['cf-t','⚡ Técnica',c.t||50],['cf-c','🎯 Competitividad',c.c||50],['cf-e','😤 Gestión Estrés',c.e||50],['cf-i','🧠 Int. Emocional',c.i||50],['cf-f','💪 Fuerza',c.f||50],['cf-r','🏃 Resistencia',c.r||50]].map(([id,label,val])=>`
             <div class="stat-field">
               <label>${label}</label>
               <div class="stat-row">
@@ -1305,6 +1360,8 @@ async function saveCoach() {
     c: parseInt(document.getElementById('cf-c').value),
     e: parseInt(document.getElementById('cf-e').value),
     i: parseInt(document.getElementById('cf-i').value),
+    f: parseInt(document.getElementById('cf-f').value) || 50,
+    r: parseInt(document.getElementById('cf-r').value) || 50,
     certifications: document.getElementById('cf-certifications').value.trim(),
     experience_years: parseInt(document.getElementById('cf-exp').value) || null,
     clubs: document.getElementById('cf-clubs').value.trim(),
@@ -1316,6 +1373,8 @@ async function saveCoach() {
     ability_c: parseInt(document.getElementById('cf-ability-c').value) || 0,
     ability_e: parseInt(document.getElementById('cf-ability-e').value) || 0,
     ability_i: parseInt(document.getElementById('cf-ability-i').value) || 0,
+    ability_f: parseInt(document.getElementById('cf-ability-f').value) || 0,
+    ability_r: parseInt(document.getElementById('cf-ability-r').value) || 0,
     top: getCoachLogrosList()
   };
   if (!data.name) { showToast('El nombre es requerido','error'); return; }
@@ -1337,6 +1396,386 @@ async function deleteCoach(id) {
     await loadCoaches();
   } catch(e) { showToast('Error eliminando','error'); }
 }
+
+
+// ── CARTAS ──────────────────────────────────────────────────────────────
+const CARTA_CATS = ['Arco','Soltador','Mira','Estab.','Peso','Let off','Tecnica','Posicion','Equipo','Flecha','Mental','Prep.'];
+const STAT_LABELS_6 = {t:'T — Técnica', c:'C — Competitividad', e:'E — G.Estrés', i:'I — Int.Emocional', f:'F — Fuerza', r:'R — Resistencia'};
+
+let cartas = [];
+let currentCartaId = null;
+let isNewCarta = false;
+let cartaCatFilter = 'all';
+
+async function loadCartas() {
+  try {
+    cartas = await sbFetch('cards?order=id');
+    renderCartaList();
+  } catch(e) { showToast('Error cargando cartas: ' + e.message, 'error'); }
+}
+
+function filterCartaList() {
+  renderCartaList();
+}
+
+function filterCartaCat(cat, btn) {
+  cartaCatFilter = cat;
+  document.querySelectorAll('#tab-cartas .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCartaList();
+}
+
+function renderCartaList() {
+  const list = document.getElementById('carta-list');
+  const q = (document.getElementById('carta-search')?.value || '').toLowerCase();
+  let filtered = cartas;
+  if (cartaCatFilter !== 'all') filtered = filtered.filter(c => c.category === cartaCatFilter);
+  if (q) filtered = filtered.filter(c => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q));
+
+  if (!filtered.length) {
+    list.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center;margin-top:20px">Sin cartas</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(c => {
+    const stats = ['t','c','e','i','f','r'].map(s => {
+      const v = c[s] || 0;
+      if (v === 0) return '';
+      const col = v > 0 ? '#5cb85c' : '#e05555';
+      return `<span style="color:${col};font-size:10px;font-family:'DM Mono'">${v > 0 ? '+' : ''}${v}</span>`;
+    }).filter(Boolean).join(' ');
+
+    return `<div class="archer-item ${currentCartaId===c.id?'active':''}" onclick="selectCarta('${c.id}')">
+      <div class="archer-avatar" style="border-radius:8px;border-color:var(--border2);color:var(--muted);font-size:10px;font-family:'DM Mono'">
+        ${c.id.replace('I-','')}
+      </div>
+      <div class="archer-info">
+        <div class="aname">${c.name}</div>
+        <div class="arole" style="display:flex;gap:4px;align-items:center">
+          <span style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-size:9px;color:var(--muted)">${c.category||'—'}</span>
+          ${stats}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectCarta(id) {
+  currentCartaId = id;
+  isNewCarta = false;
+  renderCartaEditor(cartas.find(c => c.id === id));
+  renderCartaList();
+}
+
+function newCarta() {
+  currentCartaId = null;
+  isNewCarta = true;
+  const nextNum = cartas.length + 1;
+  renderCartaEditor({
+    id: 'I-' + String(nextNum).padStart(3,'0'),
+    name: '', category: 'Arco',
+    t: 0, c: 0, e: 0, i: 0, f: 0, r: 0
+  });
+}
+
+function renderCartaEditor(c) {
+  document.getElementById('carta-editor').innerHTML = `
+    <div class="editor-form">
+      <div class="form-header">
+        <h2>${isNewCarta ? 'NUEVA CARTA' : c.name.toUpperCase()}</h2>
+        ${!isNewCarta ? `<button class="btn-delete" onclick="deleteCarta('${c.id}')">🗑 Eliminar</button>` : ''}
+        <button class="btn-save" onclick="saveCarta()">💾 GUARDAR</button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Identidad</div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field"><label>ID</label><input id="ca-id" value="${c.id}" ${!isNewCarta?'readonly style="opacity:.5"':''}></div>
+          <div class="field"><label>Nombre de la carta</label><input id="ca-name" value="${c.name||''}" placeholder="Ej: Arco 34&quot;"></div>
+        </div>
+        <div class="field">
+          <label>Categoría</label>
+          <select id="ca-cat">
+            ${CARTA_CATS.map(cat=>`<option value="${cat}" ${c.category===cat?'selected':''}>${cat}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Stats — valores positivos suman, negativos penalizan</div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:11px;color:var(--muted);line-height:1.6">
+          Rango: <strong style="color:var(--yellow)">-20 a +20</strong> por stat.
+          Estas cartas se suman al score del arquero en el tablero de puntuación.<br>
+          <strong style="color:var(--text)">T</strong> Técnica ·
+          <strong style="color:var(--text)">C</strong> Competitividad ·
+          <strong style="color:var(--text)">E</strong> G.Estrés ·
+          <strong style="color:var(--text)">I</strong> Int.Emocional ·
+          <strong style="color:var(--text)">F</strong> Fuerza ·
+          <strong style="color:var(--text)">R</strong> Resistencia
+        </div>
+        <div class="grid-3">
+          ${[['ca-t','⚡ T — Técnica',c.t||0],['ca-c','🎯 C — Competitividad',c.c||0],['ca-e','😤 E — G. Estrés',c.e||0],['ca-i','🧠 I — Int. Emocional',c.i||0],['ca-f','💪 F — Fuerza',c.f||0],['ca-r','🏃 R — Resistencia',c.r||0]].map(([id,label,val])=>`
+            <div class="stat-field">
+              <label>${label}</label>
+              <div class="stat-row">
+                <input type="range" id="${id}" min="-20" max="20" value="${val}" oninput="updateCartaStat('${id}',this.value)">
+                <div class="stat-val" id="${id}-val" style="color:${val>0?'var(--green)':val<0?'var(--red)':'var(--muted)'};min-width:38px">${val>0?'+':''}${val}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted)">
+          Vista previa: <strong style="color:var(--text)">${c.name||'Nueva carta'}</strong>
+          — ${['t','c','e','i','f','r'].map(s=>{const v=c[s]||0;if(v===0)return '';const col=v>0?'#5cb85c':'#e05555';return `<span style="color:${col}">${s.toUpperCase()} ${v>0?'+':''}${v}</span>`;}).filter(Boolean).join(' · ')||'sin stats'}
+        </div>
+      </div>
+
+      <div style="padding-bottom:40px"></div>
+    </div>
+  `;
+}
+
+function updateCartaStat(id, val) {
+  const numVal = parseInt(val);
+  const el = document.getElementById(id + '-val');
+  if (el) {
+    el.textContent = (numVal > 0 ? '+' : '') + numVal;
+    el.style.color = numVal > 0 ? 'var(--green)' : numVal < 0 ? 'var(--red)' : 'var(--muted)';
+  }
+}
+
+async function saveCarta() {
+  const data = {
+    id: document.getElementById('ca-id').value.trim(),
+    name: document.getElementById('ca-name').value.trim(),
+    category: document.getElementById('ca-cat').value,
+    t: parseInt(document.getElementById('ca-t').value) || 0,
+    c: parseInt(document.getElementById('ca-c').value) || 0,
+    e: parseInt(document.getElementById('ca-e').value) || 0,
+    i: parseInt(document.getElementById('ca-i').value) || 0,
+    f: parseInt(document.getElementById('ca-f').value) || 0,
+    r: parseInt(document.getElementById('ca-r').value) || 0,
+  };
+  if (!data.name) { showToast('El nombre es requerido', 'error'); return; }
+  if (!data.id) { showToast('El ID es requerido', 'error'); return; }
+  try {
+    if (isNewCarta) {
+      await sbFetch('cards', 'POST', data);
+      showToast('✅ Carta creada', 'success');
+    } else {
+      await sbFetch(`cards?id=eq.${data.id}`, 'PATCH', data);
+      showToast('✅ Carta guardada', 'success');
+    }
+    currentCartaId = data.id;
+    isNewCarta = false;
+    await loadCartas();
+    renderCartaList();
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteCarta(id) {
+  if (!confirm(`¿Eliminar la carta "${id}"?`)) return;
+  try {
+    await sbFetch(`cards?id=eq.${id}`, 'DELETE');
+    currentCartaId = null;
+    document.getElementById('carta-editor').innerHTML = '<div class="editor-empty"><div class="icon">🃏</div><p>Selecciona una carta para editar</p></div>';
+    showToast('🗑 Carta eliminada', 'success');
+    await loadCartas();
+  } catch(e) { showToast('Error eliminando', 'error'); }
+}
+
+
+// ── ARCOS ────────────────────────────────────────────────────────────────
+let arcos = [];
+let currentArcoId = null;
+let isNewArco = false;
+
+async function loadArcos() {
+  try {
+    arcos = await sbFetch('bows?order=id');
+    renderArcoList();
+  } catch(e) { showToast('Error cargando arcos: ' + e.message, 'error'); }
+}
+
+function renderArcoList() {
+  const list = document.getElementById('arco-list');
+  if (!arcos.length) {
+    list.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center;margin-top:20px">Sin arcos</div>';
+    return;
+  }
+  list.innerHTML = arcos.map(b => `
+    <div class="archer-item ${currentArcoId===b.id?'active':''}" onclick="selectArco(${b.id})">
+      <div class="archer-avatar" style="border-radius:8px;font-size:18px;border-color:var(--border2)">🏹</div>
+      <div class="archer-info">
+        <div class="aname">${b.name}</div>
+        <div class="arole">${b.model||''} · Nv.${b.level||1} · ${b.fps||'—'}fps</div>
+      </div>
+      <div style="font-size:10px;font-family:'DM Mono';color:var(--muted)">#${b.id}</div>
+    </div>
+  `).join('');
+}
+
+function selectArco(id) {
+  currentArcoId = id;
+  isNewArco = false;
+  renderArcoEditor(arcos.find(b => b.id === id));
+  renderArcoList();
+}
+
+function newArco() {
+  currentArcoId = null;
+  isNewArco = true;
+  renderArcoEditor({
+    name: '', model: '', level: 1,
+    fps: 280, let_off: 72, ata: 30, bh: 6.5, draw: 60, dl: 28,
+    ability_name: '', ability_desc: '', unlocked: true
+  });
+}
+
+function renderArcoEditor(b) {
+  document.getElementById('arco-editor').innerHTML = `
+    <div class="editor-form">
+      <div class="form-header">
+        <h2>${isNewArco ? 'NUEVO ARCO' : (b.name||'').toUpperCase()}</h2>
+        ${!isNewArco ? `<button class="btn-delete" onclick="deleteArco(${b.id})">🗑 Eliminar</button>` : ''}
+        <button class="btn-save" onclick="saveArco()">💾 GUARDAR</button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Identidad</div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field"><label>Nombre del arco</label><input id="ar-name" value="${b.name||''}" placeholder="PHANTOM X-7"></div>
+          <div class="field"><label>Modelo / Serie</label><input id="ar-model" value="${b.model||''}" placeholder="Serie Élite · Nivel 7"></div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Nivel inicial</label>
+            <div class="stat-row">
+              <input type="range" id="ar-level" min="1" max="10" value="${b.level||1}" oninput="document.getElementById('ar-level-val').textContent=this.value">
+              <div class="stat-val" id="ar-level-val">${b.level||1}</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Desbloqueado por defecto</label>
+            <select id="ar-unlocked">
+              <option value="true" ${b.unlocked!==false?'selected':''}>Sí — disponible desde el inicio</option>
+              <option value="false" ${b.unlocked===false?'selected':''}>No — requiere desbloqueo</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Stats del Arco</div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:11px;color:var(--muted);line-height:1.6">
+          Estos son los valores <strong style="color:var(--yellow)">base</strong> del arco.
+          El jugador puede mejorar FPS y Let Off con puntos de torneo.
+          ATA, Draw y BH son informativos (fijos).
+        </div>
+        <div class="grid-3">
+          <div class="stat-field">
+            <label>🚀 FPS (velocidad) <span style="background:rgba(216,209,90,.15);color:var(--yellow);border:1px solid rgba(216,209,90,.3);border-radius:4px;padding:1px 6px;font-size:9px">MEJORABLE</span></label>
+            <div class="stat-row">
+              <input type="range" id="ar-fps" min="240" max="380" value="${b.fps||280}" oninput="document.getElementById('ar-fps-val').textContent=this.value+' fps'">
+              <div class="stat-val" id="ar-fps-val" style="min-width:56px">${b.fps||280} fps</div>
+            </div>
+          </div>
+          <div class="stat-field">
+            <label>⚙️ Let Off % <span style="background:rgba(216,209,90,.15);color:var(--yellow);border:1px solid rgba(216,209,90,.3);border-radius:4px;padding:1px 6px;font-size:9px">MEJORABLE</span></label>
+            <div class="stat-row">
+              <input type="range" id="ar-let" min="50" max="95" value="${b.let_off||72}" oninput="document.getElementById('ar-let-val').textContent=this.value+'%'">
+              <div class="stat-val" id="ar-let-val" style="min-width:42px">${b.let_off||72}%</div>
+            </div>
+          </div>
+          <div class="stat-field">
+            <label>↔️ Eje a Eje (ATA) <span style="background:rgba(136,136,128,.12);color:var(--muted);border:1px solid rgba(136,136,128,.2);border-radius:4px;padding:1px 6px;font-size:9px">FIJO</span></label>
+            <div class="stat-row">
+              <input type="range" id="ar-ata" min="18" max="48" step="0.5" value="${b.ata||30}" oninput="document.getElementById('ar-ata-val').textContent=this.value+'&quot;'">
+              <div class="stat-val" id="ar-ata-val" style="min-width:42px">${b.ata||30}"</div>
+            </div>
+          </div>
+          <div class="stat-field">
+            <label>🏹 Draw Weight (lbs) <span style="background:rgba(136,136,128,.12);color:var(--muted);border:1px solid rgba(136,136,128,.2);border-radius:4px;padding:1px 6px;font-size:9px">FIJO</span></label>
+            <div class="stat-row">
+              <input type="range" id="ar-draw" min="20" max="80" value="${b.draw||60}" oninput="document.getElementById('ar-draw-val').textContent=this.value+' lbs'">
+              <div class="stat-val" id="ar-draw-val" style="min-width:52px">${b.draw||60} lbs</div>
+            </div>
+          </div>
+          <div class="stat-field">
+            <label>📐 Brace Height (BH) <span style="background:rgba(136,136,128,.12);color:var(--muted);border:1px solid rgba(136,136,128,.2);border-radius:4px;padding:1px 6px;font-size:9px">FIJO</span></label>
+            <div class="stat-row">
+              <input type="range" id="ar-bh" min="5" max="9" step="0.5" value="${b.bh||6.5}" oninput="document.getElementById('ar-bh-val').textContent=this.value+'&quot;'">
+              <div class="stat-val" id="ar-bh-val" style="min-width:42px">${b.bh||6.5}"</div>
+            </div>
+          </div>
+          <div class="stat-field">
+            <label>📏 Draw Length (DL) <span style="background:rgba(136,136,128,.12);color:var(--muted);border:1px solid rgba(136,136,128,.2);border-radius:4px;padding:1px 6px;font-size:9px">FIJO</span></label>
+            <div class="stat-row">
+              <input type="range" id="ar-dl" min="22" max="34" step="0.5" value="${b.dl||28}" oninput="document.getElementById('ar-dl-val').textContent=this.value+'&quot;'">
+              <div class="stat-val" id="ar-dl-val" style="min-width:42px">${b.dl||28}"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Habilidad Especial</div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;font-size:11px;color:var(--muted)">
+          Dejar vacío si el arco no tiene habilidad especial.
+        </div>
+        <div class="grid-2">
+          <div class="field"><label>Nombre de la habilidad</label><input id="ar-ability-name" value="${b.ability_name||''}" placeholder="Estabilizador Elite"></div>
+          <div class="field"><label>Descripción / Efecto</label><input id="ar-ability-desc" value="${b.ability_desc||''}" placeholder="Aumenta eje a eje +4&quot; por torneo"></div>
+        </div>
+      </div>
+
+      <div style="padding-bottom:40px"></div>
+    </div>
+  `;
+}
+
+async function saveArco() {
+  const data = {
+    name: document.getElementById('ar-name').value.trim(),
+    model: document.getElementById('ar-model').value.trim(),
+    level: parseInt(document.getElementById('ar-level').value) || 1,
+    fps: parseInt(document.getElementById('ar-fps').value) || 280,
+    let_off: parseInt(document.getElementById('ar-let').value) || 72,
+    ata: parseFloat(document.getElementById('ar-ata').value) || 30,
+    bh: parseFloat(document.getElementById('ar-bh').value) || 6.5,
+    draw: parseInt(document.getElementById('ar-draw').value) || 60,
+    dl: parseFloat(document.getElementById('ar-dl').value) || 28,
+    ability_name: document.getElementById('ar-ability-name').value.trim() || null,
+    ability_desc: document.getElementById('ar-ability-desc').value.trim() || null,
+    unlocked: document.getElementById('ar-unlocked').value === 'true',
+  };
+  if (!data.name) { showToast('El nombre es requerido', 'error'); return; }
+  try {
+    if (isNewArco) {
+      const result = await sbFetch('bows', 'POST', data);
+      showToast('✅ Arco creado', 'success');
+      if (result && result[0]) currentArcoId = result[0].id;
+    } else {
+      await sbFetch(`bows?id=eq.${currentArcoId}`, 'PATCH', data);
+      showToast('✅ Arco guardado', 'success');
+    }
+    isNewArco = false;
+    await loadArcos();
+    renderArcoList();
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteArco(id) {
+  if (!confirm('¿Eliminar este arco?')) return;
+  try {
+    await sbFetch(`bows?id=eq.${id}`, 'DELETE');
+    currentArcoId = null;
+    document.getElementById('arco-editor').innerHTML = '<div class="editor-empty"><div class="icon">🏹</div><p>Selecciona un arco para editar</p></div>';
+    showToast('🗑 Arco eliminado', 'success');
+    await loadArcos();
+  } catch(e) { showToast('Error eliminando', 'error'); }
+}
+
 </script>
 </body>
 </html>
