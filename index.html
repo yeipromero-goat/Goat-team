@@ -1189,10 +1189,34 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
   margin-left:240px;
   flex:1;
   min-width:0;
-  padding:2rem 2.5rem 4rem;
+  padding:1.75rem 2rem 4rem 1.5rem;
   max-width:100%;
 }
 
+/* ── PAGE TITLE ── */
+.page-title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:1.5rem;
+  padding-bottom:1rem;
+  border-bottom:0.5px solid var(--border);
+}
+.page-title-icon{font-size:20px}
+.page-title-text{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:24px;
+  letter-spacing:.05em;
+  color:var(--text);
+  line-height:1;
+}
+.page-title-sub{
+  font-size:10px;
+  color:var(--muted);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-top:3px;
+}
 /* ── HAMBURGER (mobile only) ── */
 .hamburger{
   display:none;
@@ -1311,6 +1335,15 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
 <!-- ── MAIN WRAPPER (el contenido de los tabs va aquí) ── -->
 <div class="main-content" id="main-content">
 
+<!-- Título de página dinámico -->
+<div class="page-title" id="page-title">
+  <span class="page-title-icon">🎯</span>
+  <div>
+    <div class="page-title-text">Tablero</div>
+    <div class="page-title-sub">Puntuación y partidas</div>
+  </div>
+</div>
+
 <script>
 // ── Sidebar toggle ──
 function toggleSidebar(){
@@ -1328,15 +1361,34 @@ function closeSidebar(){
 }
 
 // ── switchTab: actualiza tabs Y sidebar ──
+const TAB_META = {
+  'score':       { icon:'🎯', label:'Tablero',    sub:'Puntuación y partidas' },
+  'cards':       { icon:'🃏', label:'Cartas',      sub:'Arqueros y coaches' },
+  'mi-arco':     { icon:'🏹', label:'Mi Arco',     sub:'Equipo y stats' },
+  'sobres':      { icon:'🎁', label:'Sobres',      sub:'Tienda y packs' },
+  'habilidades': { icon:'⚡', label:'Habilidades', sub:'Habilidades especiales' },
+};
+
+function updatePageTitle(name){
+  const meta = TAB_META[name] || {};
+  const el = document.getElementById('page-title');
+  if(!el) return;
+  el.innerHTML = `
+    <span class="page-title-icon">${meta.icon||''}</span>
+    <div>
+      <div class="page-title-text">${meta.label||''}</div>
+      <div class="page-title-sub">${meta.sub||''}</div>
+    </div>
+  `;
+}
+
 const _origSwitchTab = window.switchTab;
 window.switchTab = function(name, el){
-  // Llamar al switchTab original si existe
   if(typeof _origSwitchTab === 'function') _origSwitchTab(name, el);
-  // Actualizar sidebar activo
   document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
   const sbItem = document.getElementById('sb-' + name);
   if(sbItem) sbItem.classList.add('active');
-  // Cerrar sidebar en mobile
+  updatePageTitle(name);
   closeSidebar();
 };
 
@@ -1352,6 +1404,8 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('sb-user-email').textContent = email;
     document.getElementById('sb-avatar-initials').textContent = initials;
   });
+  // Título inicial
+  updatePageTitle('score');
 });
 </script>
 
