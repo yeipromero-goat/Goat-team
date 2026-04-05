@@ -1697,14 +1697,14 @@ document.addEventListener('DOMContentLoaded', function(){
         </div>
         <div class="rsb-history" id="rsb-history"></div>
       </div>
-      <!-- Desglose por stat -->
+      <!-- Desglose por stat — 6 stats, pesos reales -->
       <div class="bkgrid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="bkitem"><div class="bklabel">Técnica · 30%</div><div class="bkval" id="bk-T">0</div><div class="bkw" id="bkw-T">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Int.Emoc. · 25%</div><div class="bkval" id="bk-I">0</div><div class="bkw" id="bkw-I">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Técnica · 32%</div><div class="bkval" id="bk-T">0</div><div class="bkw" id="bkw-T">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Int.Emoc. · 28%</div><div class="bkval" id="bk-I">0</div><div class="bkw" id="bkw-I">0 pts</div></div>
         <div class="bkitem"><div class="bklabel">G.Estrés · 18%</div><div class="bkval" id="bk-E">0</div><div class="bkw" id="bkw-E">0 pts</div></div>
         <div class="bkitem"><div class="bklabel">Compet. · 12%</div><div class="bkval" id="bk-C">0</div><div class="bkw" id="bkw-C">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Fuerza · 10%</div><div class="bkval" id="bk-FUE">0</div><div class="bkw" id="bkw-FUE">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Resistencia · 5%</div><div class="bkval" id="bk-RES">0</div><div class="bkw" id="bkw-RES">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Fuerza · 6%</div><div class="bkval" id="bk-FUE">0</div><div class="bkw" id="bkw-FUE">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Resistencia · 4%</div><div class="bkval" id="bk-RES">0</div><div class="bkw" id="bkw-RES">0 pts</div></div>
       </div>
       <!-- Total acumulado (visible durante el juego) -->
       <div class="rsb-total" id="rsb-total" style="display:none;margin-top:10px">
@@ -1897,68 +1897,76 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="bow-profile" id="bow-profile-card">
     <div class="bow-header">
       <div class="bow-identity">
-        <div class="bow-badge" id="bow-badge">⚡ ARCO ACTIVO</div>
+        <div class="bow-badge" id="bow-badge">&#9889; ARCO ACTIVO</div>
         <div class="bow-name" id="bow-name-display">PHANTOM X-7</div>
-        <div class="bow-model" id="bow-model-display">Arco Compuesto · Serie Élite Goat Team</div>
+        <div class="bow-model" id="bow-model-display">Arco Compuesto · Serie Elite Goat Team</div>
       </div>
       <div class="sec">Mis Arcos</div>
-<div class="bow-collection-grid" id="collection-grid-2"></div>
+      <div class="bow-collection-grid" id="collection-grid-2"></div>
     </div>
 
-    <!-- STATS -->
+    <!-- 4 STATS: fps y let (mejorables) | ata y bh (informativos) -->
     <div class="stats-grid">
+      <!-- FPS — mejorable -->
       <div class="stat-item">
-        <div class="stat-label">Velocidad (FPS)</div>
+        <div class="stat-label" style="display:flex;align-items:center;gap:5px">
+          Velocidad (FPS)
+          <span style="font-size:9px;background:rgba(216,209,90,.15);color:var(--yellow);border:0.5px solid rgba(216,209,90,.3);border-radius:4px;padding:1px 5px">MEJORABLE</span>
+        </div>
         <div class="stat-row-inner">
-          <div class="stat-track"><div class="stat-fill fill-fps" id="sf-fps" style="width:73%"></div></div>
+          <div class="stat-track"><div class="stat-fill fill-fps" id="sf-fps" style="width:43%"></div></div>
           <div class="stat-val"><span id="sv-fps">292</span><span class="stat-unit">fps</span></div>
         </div>
       </div>
+
+      <!-- LetOff — mejorable -->
       <div class="stat-item">
-        <div class="stat-label">Let Off %</div>
+        <div class="stat-label" style="display:flex;align-items:center;gap:5px">
+          Let Off %
+          <span style="font-size:9px;background:rgba(216,209,90,.15);color:var(--yellow);border:0.5px solid rgba(216,209,90,.3);border-radius:4px;padding:1px 5px">MEJORABLE</span>
+        </div>
         <div class="stat-row-inner">
-          <div class="stat-track"><div class="stat-fill fill-let" id="sf-let" style="width:82%"></div></div>
+          <div class="stat-track"><div class="stat-fill fill-let" id="sf-let" style="width:73%"></div></div>
           <div class="stat-val"><span id="sv-let">82</span><span class="stat-unit">%</span></div>
         </div>
       </div>
+
+      <!-- Eje a Eje — informativo fijo -->
       <div class="stat-item">
-        <div class="stat-label">Eje a Eje</div>
+        <div class="stat-label" style="display:flex;align-items:center;gap:5px">
+          Eje a Eje
+          <span style="font-size:9px;background:rgba(136,136,128,.12);color:var(--muted);border:0.5px solid rgba(136,136,128,.2);border-radius:4px;padding:1px 5px">FIJO</span>
+        </div>
         <div class="stat-row-inner">
-          <div class="stat-track"><div class="stat-fill fill-ata" id="sf-ata" style="width:64%"></div></div>
+          <div class="stat-track"><div class="stat-fill fill-ata" id="sf-ata" style="width:46%"></div></div>
           <div class="stat-val"><span id="sv-ata">32</span><span class="stat-unit">"</span></div>
         </div>
       </div>
+
+      <!-- Brace Height — informativo fijo -->
       <div class="stat-item">
-        <div class="stat-label">Peso de Draw</div>
-        <div class="stat-row-inner">
-          <div class="stat-track"><div class="stat-fill fill-draw" id="sf-draw" style="width:70%"></div></div>
-          <div class="stat-val"><span id="sv-draw">70</span><span class="stat-unit">lbs</span></div>
+        <div class="stat-label" style="display:flex;align-items:center;gap:5px">
+          Brace Height
+          <span style="font-size:9px;background:rgba(136,136,128,.12);color:var(--muted);border:0.5px solid rgba(136,136,128,.2);border-radius:4px;padding:1px 5px">FIJO</span>
         </div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">Brace Height</div>
         <div class="stat-row-inner">
-          <div class="stat-track"><div class="stat-fill fill-bh" id="sf-bh" style="width:78%"></div></div>
+          <div class="stat-track"><div class="stat-fill fill-bh" id="sf-bh" style="width:50%"></div></div>
           <div class="stat-val"><span id="sv-bh">7</span><span class="stat-unit">"</span></div>
         </div>
       </div>
-      <div class="stat-item">
-        <div class="stat-label">Draw Length</div>
-        <div class="stat-row-inner">
-          <div class="stat-track"><div class="stat-fill fill-dl" id="sf-dl" style="width:68%"></div></div>
-          <div class="stat-val"><span id="sv-dl">29</span><span class="stat-unit">"</span></div>
-        </div>
-      </div>
     </div>
+
+    <!-- RADAR HEXAGONO -->
+    <div id="bow-radar-wrap" style="margin-top:16px"></div>
 
     <!-- ABILITY -->
     <div class="bow-ability" id="bow-ability-section">
       <div class="ability-header">
-        <span class="ability-icon">⚡</span>
+        <span class="ability-icon">&#9889;</span>
         <span class="ability-name" id="bow-ability-name">Estabilizador Elite</span>
         <span class="ability-used-badge" id="ability-used-badge" style="display:none">USADA</span>
       </div>
-      <div class="ability-desc" id="bow-ability-desc">Aumenta el eje a eje en +4" y mejora la precisión en viento lateral. Uso único por torneo.</div>
+      <div class="ability-desc" id="bow-ability-desc">Aumenta el eje a eje en +4" y mejora la precision en viento lateral. Uso unico por torneo.</div>
       <div style="margin-top:8px">
         <button onclick="useAbility()" id="btn-use-ability" style="font-size:11px;padding:5px 12px;border-radius:6px;border:1.5px solid var(--yellow);background:rgba(216,209,90,.1);color:var(--yellow);cursor:pointer;font-family:'DM Sans',sans-serif">
           Activar Habilidad
@@ -1967,7 +1975,7 @@ document.addEventListener('DOMContentLoaded', function(){
     </div>
   </div>
 
-  <!-- UPGRADE PANEL -->
+  <!-- UPGRADE PANEL — solo FPS y LetOff -->
   <div class="sec">Mejoras de Stats</div>
   <div class="upgrade-panel">
     <div class="upgrade-header">
@@ -1977,65 +1985,78 @@ document.addEventListener('DOMContentLoaded', function(){
         <span class="points-num" id="tournament-points">15</span>
       </div>
     </div>
-    <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Cada punto ganado en torneo es disciplina acumulada. Las mejoras son permanentes — como el trabajo real.</p>
-    <div class="upgrade-grid">
-      <div class="upgrade-btn" onclick="upgradeStat('fps')" id="upg-fps">
-        <div class="upgrade-btn-stat">FPS</div>
-        <div class="upgrade-btn-cost">5<span class="upgrade-btn-cost-unit"> pts</span></div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px">Solo FPS y Let Off se pueden mejorar. Las mejoras son permanentes — como el trabajo real.</p>
+
+    <!-- FPS -->
+    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rl);padding:14px 16px;margin-bottom:10px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--yellow))"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.04em">Velocidad (FPS)</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">+4 fps por mejora · Rango 240–360 fps</div>
+        </div>
+        <div style="text-align:right">
+          <div id="fps-current-val" style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--yellow)">292</div>
+          <div style="font-size:9px;color:var(--muted)">fps actuales</div>
+        </div>
       </div>
-      <div class="upgrade-btn" onclick="upgradeStat('let')" id="upg-let">
-        <div class="upgrade-btn-stat">Let Off</div>
-        <div class="upgrade-btn-cost">8<span class="upgrade-btn-cost-unit"> pts</span></div>
+      <div style="font-size:10px;color:var(--hint);margin-bottom:10px;border-left:2px solid var(--blue);padding-left:8px">
+        Mayor FPS = flecha mas plana. Clave en Field y 3D para compensar errores de distancia.
       </div>
-      <div class="upgrade-btn" onclick="upgradeStat('ata')" id="upg-ata">
-        <div class="upgrade-btn-stat">Eje a Eje</div>
-        <div class="upgrade-btn-cost">6<span class="upgrade-btn-cost-unit"> pts</span></div>
+      <button onclick="upgradeStat('fps')" id="upg-fps"
+        style="width:100%;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.04em;padding:9px;border-radius:var(--r);border:1.5px solid var(--yellow);background:rgba(216,209,90,.1);color:var(--yellow);cursor:pointer">
+        MEJORAR FPS · 5 pts
+      </button>
+    </div>
+
+    <!-- LetOff -->
+    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rl);padding:14px 16px;margin-bottom:10px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--purple),var(--green))"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.04em">Let Off %</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">+1% por mejora · Rango 60–90%</div>
+        </div>
+        <div style="text-align:right">
+          <div id="let-current-val" style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--purple)">82</div>
+          <div style="font-size:9px;color:var(--muted)">% actuales</div>
+        </div>
       </div>
-      <div class="upgrade-btn" onclick="upgradeStat('draw')" id="upg-draw">
-        <div class="upgrade-btn-stat">Draw Wt</div>
-        <div class="upgrade-btn-cost">7<span class="upgrade-btn-cost-unit"> pts</span></div>
+      <div style="font-size:10px;color:var(--hint);margin-bottom:10px;border-left:2px solid var(--purple);padding-left:8px">
+        Let Off alto = sostienes menos peso. Mas tiempo para apuntar. Esencial en Indoor y 3D.
       </div>
-      <div class="upgrade-btn" onclick="upgradeStat('bh')" id="upg-bh">
-        <div class="upgrade-btn-stat">Brace H.</div>
-        <div class="upgrade-btn-cost">5<span class="upgrade-btn-cost-unit"> pts</span></div>
-      </div>
-      <div class="upgrade-btn" onclick="upgradeStat('dl')" id="upg-dl">
-        <div class="upgrade-btn-stat">Draw Len.</div>
-        <div class="upgrade-btn-cost">6<span class="upgrade-btn-cost-unit"> pts</span></div>
-      </div>
+      <button onclick="upgradeStat('let')" id="upg-let"
+        style="width:100%;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.04em;padding:9px;border-radius:var(--r);border:1.5px solid var(--purple);background:rgba(154,136,221,.1);color:var(--purple);cursor:pointer">
+        MEJORAR LET OFF · 3 pts
+      </button>
     </div>
 
     <!-- HISTORY -->
     <div class="upgrade-history" id="upgrade-history-section">
       <div class="history-title">Historial de Mejoras</div>
       <div class="history-list" id="upgrade-history-list">
-        <div class="history-item"><span class="history-stat">FPS +4</span><span class="history-date">Torneo Zacatecas · hace 3 días</span></div>
-        <div class="history-item"><span class="history-stat">Let Off +2%</span><span class="history-date">Torneo CDMX Élite · hace 12 días</span></div>
-        <div class="history-item"><span class="history-stat">Eje a Eje +1"</span><span class="history-date">Copa Nacional · hace 1 mes</span></div>
+        <div class="history-item"><span class="history-stat">FPS +4</span><span class="history-date">Torneo Zacatecas · hace 3 dias</span></div>
+        <div class="history-item"><span class="history-stat">Let Off +2%</span><span class="history-date">Torneo CDMX Elite · hace 12 dias</span></div>
       </div>
     </div>
   </div>
 
 </div>
 
-<!-- ════════════════════════════════════════
-     TAB: COLECCIÓN
-════════════════════════════════════════ -->
+<!-- COLECCION -->
 <div id="tab-coleccion" class="tab-panel">
   <div class="sec">Mis Arcos (<span id="collection-count">3</span>)</div>
   <div class="bow-collection-grid" id="collection-grid">
-
     <div class="bow-card active-bow" onclick="selectBow(0)">
       <div class="bow-card-name">PHANTOM X-7</div>
-      <div class="bow-card-model">Serie Élite · Nivel 7</div>
+      <div class="bow-card-model">Serie Elite · Nivel 7</div>
       <div class="bow-card-stats">
         <div class="bow-mini-stat"><strong>292</strong> fps</div>
         <div class="bow-mini-stat"><strong>82</strong>% LetOff</div>
         <div class="bow-mini-stat"><strong>32"</strong> AxA</div>
-        <div class="bow-mini-stat"><strong>70</strong>lbs</div>
+        <div class="bow-mini-stat"><strong>7"</strong> BH</div>
       </div>
     </div>
-
     <div class="bow-card" onclick="selectBow(1)">
       <div class="bow-card-name">GOAT HUNTER PRO</div>
       <div class="bow-card-model">Serie Caza · Nivel 4</div>
@@ -2043,10 +2064,9 @@ document.addEventListener('DOMContentLoaded', function(){
         <div class="bow-mini-stat"><strong>310</strong> fps</div>
         <div class="bow-mini-stat"><strong>75</strong>% LetOff</div>
         <div class="bow-mini-stat"><strong>28"</strong> AxA</div>
-        <div class="bow-mini-stat"><strong>60</strong>lbs</div>
+        <div class="bow-mini-stat"><strong>6"</strong> BH</div>
       </div>
     </div>
-
     <div class="bow-card" onclick="selectBow(2)">
       <div class="bow-card-name">STORM SHADOW</div>
       <div class="bow-card-model">Serie Velocidad · Nivel 2</div>
@@ -2054,21 +2074,15 @@ document.addEventListener('DOMContentLoaded', function(){
         <div class="bow-mini-stat"><strong>340</strong> fps</div>
         <div class="bow-mini-stat"><strong>70</strong>% LetOff</div>
         <div class="bow-mini-stat"><strong>30"</strong> AxA</div>
-        <div class="bow-mini-stat"><strong>70</strong>lbs</div>
+        <div class="bow-mini-stat"><strong>6.5"</strong> BH</div>
       </div>
     </div>
-
     <div class="bow-card" style="border-style:dashed;cursor:default;display:flex;align-items:center;justify-content:center;min-height:90px;flex-direction:column;gap:6px">
       <div style="font-size:22px;color:var(--hint)">+</div>
       <div style="font-size:11px;color:var(--hint)">Desbloquear con sobre</div>
     </div>
-
   </div>
 </div>
-
-<!-- ════════════════════════════════════════
-     TAB: SOBRES
-════════════════════════════════════════ -->
 
 <div id="tab-sobres" class="tab-panel">
   <div class="sec">Tienda de Sobres</div>
@@ -2207,33 +2221,43 @@ function switchTab(id, el){
 
 // ── SCORING SYSTEM ────────────────────────────────────────────────────────
 
-const MODS={
-  indoor:  {T:2,  C:0,  E:-13,I:-13,FUE:0,  RES:0  },
-  outdoor: {T:-16,C:-13,E:2,  I:-13,FUE:0,  RES:0  },
-  field:   {T:-13,C:-13,E:-13,I:-13,FUE:0,  RES:0  },
-  '3d':    {T:-13,C:-13,E:0,  I:2,  FUE:0,  RES:0  }
-};
-// Pesos base (suma 100%)
-const W={T:.30,C:.12,E:.18,I:.25,FUE:.10,RES:.05};
-const SS=['T','C','E','I','FUE','RES'];
+// ── PESOS BASE (suma 1.0) ──
+// TEC=32% IEM=28% EST=18% COM=12% FUE=6% RES=4%
+const W = {T:.32, C:.12, E:.18, I:.28, FUE:.06, RES:.04};
+const SS = ['T','C','E','I','FUE','RES'];
 let comp='indoor', selCards=[], openSlot=null;
 let playerDeck=[];
 let activeCatFilter='all';
 let envMods={T:0,C:0,E:0,I:0,FUE:0,RES:0};
 
-// ── MODIFICADORES POR MODALIDAD (arquero) ──
-const COMP_ARCHER_MULT={
-  indoor:  {T:1.2,C:1.0,E:1.2,I:1.3,FUE:0.7,RES:0.6},
-  outdoor: {T:1.0,C:1.2,E:1.2,I:1.1,FUE:1.0,RES:1.3},
-  field:   {T:1.4,C:1.0,E:0.9,I:1.0,FUE:1.2,RES:1.4},
-  '3d':    {T:1.0,C:1.3,E:1.1,I:1.2,FUE:1.1,RES:1.2}
+// ── MODIFICADORES POR DISCIPLINA (arquero) — de tabla real ──
+// Muy relevante=1.3 | Relevante=1.0 | Poco relevante=0.6
+const COMP_ARCHER_MULT = {
+  indoor:  {T:1.3, C:1.3, E:1.3, I:1.0, FUE:0.6, RES:0.6},
+  outdoor: {T:1.2, C:1.2, E:1.2, I:1.0, FUE:1.0, RES:1.3},
+  field:   {T:1.4, C:1.0, E:1.0, I:1.3, FUE:1.0, RES:1.0},
+  '3d':    {T:1.0, C:1.4, E:1.3, I:1.4, FUE:0.6, RES:0.6}
 };
-// ── MODIFICADORES POR MODALIDAD (arco) ──
-const COMP_BOW_MULT={
-  indoor:  {fps:0.3,let:1.4,draw:0.2},
-  outdoor: {fps:1.2,let:1.0,draw:1.1},
-  field:   {fps:1.5,let:1.1,draw:1.2},
-  '3d':    {fps:1.4,let:1.3,draw:1.0}
+
+// ── MODIFICADORES DEL ARCO POR DISCIPLINA ──
+// fps: Indoor no relevante | Outdoor poco | Field relevante | 3D muy relevante
+// ata: Indoor 36"+ muy relevante | Outdoor 35"+ | Field 33-37" | 3D 32-36"
+// bh:  Indoor muy relevante | Outdoor relevante | Field/3D poco
+// let: Siempre ayuda, mas en Indoor/3D donde sostienes mas
+const COMP_BOW_MULT = {
+  indoor:  {fps:0.2, ata:1.4, bh:1.4, let:1.3, draw:0.3},
+  outdoor: {fps:0.8, ata:1.2, bh:1.0, let:1.0, draw:1.0},
+  field:   {fps:1.2, ata:1.0, bh:0.5, let:0.8, draw:1.0},
+  '3d':    {fps:1.4, ata:0.8, bh:0.5, let:1.2, draw:0.8}
+};
+
+// ── MODS de competencia (offset base) — solo afecta T,C,E,I ──
+// Ahora los multiplicadores son los que definen el perfil; MODS solo finos ajustes
+const MODS = {
+  indoor:  {T:0, C:0, E:0, I:0, FUE:0, RES:0},
+  outdoor: {T:0, C:0, E:0, I:0, FUE:0, RES:0},
+  field:   {T:0, C:0, E:0, I:0, FUE:0, RES:0},
+  '3d':    {T:0, C:0, E:0, I:0, FUE:0, RES:0}
 };
 
 function selComp(el){
@@ -2256,47 +2280,51 @@ function updateBars(){
 }
 
 function updateEnv(){
-  const wv=parseInt(document.getElementById('wind-slider').value)||0;
-  const rv=parseInt(document.getElementById('rain-slider').value)||0;
-  const tv=parseInt(document.getElementById('temp-slider').value)||2;
-  const mult=ENV_COMP_MULT[comp]||1.0;
-  const w=WIND_LEVELS[wv], r=RAIN_LEVELS[rv], t=TEMP_LEVELS[tv];
+  const isIndoor = comp === 'indoor';
+  // Indoor: solo temperatura, viento y lluvia = 0
+  const wv = isIndoor ? 0 : (parseInt(document.getElementById('wind-slider').value)||0);
+  const rv = isIndoor ? 0 : (parseInt(document.getElementById('rain-slider').value)||0);
+  const tv = parseInt(document.getElementById('temp-slider').value)||2;
 
-  document.getElementById('wind-val').textContent=w.label;
-  document.getElementById('rain-val').textContent=r.label;
-  document.getElementById('temp-val').textContent=t.label;
+  // Indoor: mult climático = 0 (ambiente controlado)
+  const mult = isIndoor ? 0 : (ENV_COMP_MULT[comp]||1.0);
+  const w = WIND_LEVELS[wv], r = RAIN_LEVELS[rv], t = TEMP_LEVELS[tv];
 
-  function fmtImpact(lvl){
-    if(mult===0) return 'Indoor: ambiente controlado, sin efecto';
-    const delta=['T','C','E','I'].map(s=>{
-      const v=Math.round((lvl.T!==undefined?lvl[s]:0)*mult);
-      return v!==0?`${v>0?'+':''}${v}${s}`:'';
-    }).filter(Boolean).join('  ');
-    return lvl.txt+(delta?' ['+delta+']':'');
-  }
+  const wiEl = document.getElementById('wind-val');
+  const riEl = document.getElementById('rain-val');
+  const tiEl = document.getElementById('temp-val');
+  if(wiEl) wiEl.textContent = isIndoor ? 'N/A' : w.label;
+  if(riEl) riEl.textContent = isIndoor ? 'N/A' : r.label;
+  if(tiEl) tiEl.textContent = t.label;
 
-  const wi=document.getElementById('wind-impact');
-  const ri=document.getElementById('rain-impact');
-  const ti=document.getElementById('temp-impact');
-  wi.className='env-impact '+w.cls; wi.textContent=fmtImpact(w);
-  ri.className='env-impact '+r.cls; ri.textContent=fmtImpact(r);
-  ti.className='env-impact '+t.cls; ti.textContent=fmtImpact(t);
+  const wi = document.getElementById('wind-impact');
+  const ri = document.getElementById('rain-impact');
+  const ti = document.getElementById('temp-impact');
+  if(wi){ wi.className='env-impact neutral'; wi.textContent = isIndoor ? 'Indoor: sin efecto de viento.' : (wv===0 ? 'Sin viento.' : w.txt); }
+  if(ri){ ri.className='env-impact neutral'; ri.textContent = isIndoor ? 'Indoor: sin efecto de lluvia.' : (rv===0 ? 'Sin lluvia.' : r.txt); }
+  if(ti){ ti.className='env-impact '+t.cls; ti.textContent = tv===2 ? 'Temperatura ideal.' : t.txt; }
 
-  SS.forEach(s=>{ envMods[s]=Math.round((w[s]+r[s]+t[s])*mult); });
-  // FUE y RES no se ven afectados por clima directamente
+  // Solo temperatura afecta Indoor
+  ['T','C','E','I'].forEach(s=>{
+    const wMod = isIndoor ? 0 : Math.round(w[s]*mult);
+    const rMod = isIndoor ? 0 : Math.round(r[s]*mult);
+    const tMod = Math.round(t[s]*mult);
+    envMods[s] = wMod + rMod + tMod;
+  });
   envMods['FUE'] = 0;
   envMods['RES'] = 0;
 
-  const totalPen=['T','C','E','I'].reduce((a,s)=>a+Math.min(0,envMods[s]),0);
-  const note=document.getElementById('env-note');
-  if(totalPen===0){
-    note.className='env-note';
-    note.textContent=mult===0?'Indoor: el clima no afecta el rendimiento.':'Condiciones perfectas — sin penalizacion ambiental.';
-  } else {
-    note.className='env-note active-note';
-    const penalties=['T','C','E','I'].map(s=>envMods[s]!==0?`${s}:${envMods[s]}`:'').filter(Boolean).join('  ');
-    const label=mult===1.0?'Outdoor':mult===0.85?'Field':'3D';
-    note.textContent=label+' — Penalizacion activa (x'+mult+') → '+penalties+'  |  Total impacto en score: '+Math.round(['T','C','E','I'].reduce((a,s)=>a+envMods[s]*W[s],0))+' pts';
+  const totalPen = ['T','C','E','I'].reduce((a,s)=>a+Math.min(0,envMods[s]),0);
+  const note = document.getElementById('env-note');
+  if(note){
+    if(totalPen===0){
+      note.className='env-note';
+      note.textContent = isIndoor ? 'Indoor: ambiente controlado — solo la temperatura puede afectar.' : 'Condiciones perfectas — sin penalizacion ambiental.';
+    } else {
+      note.className='env-note active-note';
+      const penalties = ['T','C','E','I'].map(s=>envMods[s]!==0?`${s}:${envMods[s]}`:'').filter(Boolean).join('  ');
+      note.textContent = comp.charAt(0).toUpperCase()+comp.slice(1)+' — Penalizacion: '+penalties+'  |  Score -'+Math.abs(Math.round(['T','C','E','I'].reduce((a,s)=>a+Math.min(0,envMods[s])*W[s],0)))+' pts';
+    }
   }
   recalc();
 }
@@ -2352,56 +2380,85 @@ function pickCard(idx){
   renderSlots(); recalc();
 }
 
-function recalc(){
-  const mods = MODS[comp];
-  const archerMult = COMP_ARCHER_MULT[comp] || {T:1,C:1,E:1,I:1,FUE:1,RES:1};
-  const raw = {T:0,C:0,E:0,I:0,FUE:0,RES:0};
 
-  // Base: media arquero+coach con modificadores de modalidad sobre T,C,E,I
-  ['T','C','E','I'].forEach(s=>{
-    const a=parseInt(document.getElementById('as-'+s).value)||0;
-    const c=parseInt(document.getElementById('cs-'+s).value)||0;
-    raw[s] = ((a+c)/2 + mods[s] + envMods[s]) * archerMult[s];
-  });
+// ── NÚCLEO DE CÁLCULO DE SCORE ──────────────────────────────────────
+// Arquero + Arco + Disciplina + Clima. Coaches = solo colección.
+function _computeScore(archerData, bowData, cards, comp, envMods){
+  const am = COMP_ARCHER_MULT[comp] || {T:1,C:1,E:1,I:1,FUE:1,RES:1};
+  const bm = COMP_BOW_MULT[comp]   || {fps:1,ata:1,bh:1,let:1,draw:1};
+  const raw = {T:0, C:0, E:0, I:0, FUE:0, RES:0};
 
-  // FUE y RES vienen del arquero seleccionado directamente
-  const aFUE = parseInt(document.getElementById('as-FUE')?.value)||70;
-  const aRES = parseInt(document.getElementById('as-RES')?.value)||70;
-  raw['FUE'] = aFUE * archerMult['FUE'];
-  raw['RES'] = aRES * archerMult['RES'];
-
-  // Cartas especiales (bonus a T,C,E,I)
-  selCards.filter(Boolean).forEach(c=>['T','C','E','I'].forEach(s=>{raw[s]+=(c[s]||0);}));
-
-  // Bono del arco según modalidad
-  const bowMult = COMP_BOW_MULT[comp] || {fps:1,let:1,draw:1};
-  const bowIdx = selectedBow;
-  if(bowIdx !== null && bowIdx !== undefined && BOWS[bowIdx]){
-    const bow = BOWS[bowIdx];
-    // FPS → bonus TEC (flecha plana, menos error)
-    const fpsBonus = Math.round((bow.fps - 280) / 8 * bowMult.fps);
-    // LetOff → bonus EST (menos esfuerzo = menos estrés)
-    const letBonus = Math.round((bow.let - 72) / 2 * bowMult.let);
-    // Lbs (draw weight) → bonus FUE si >65, penaliza EST si >75 y FUE<75
-    const drawBonus = bow.draw > 65 ? Math.round((bow.draw - 65) / 5 * bowMult.draw) : 0;
-    const drawPenalty = (bow.draw > 75 && aFUE < 75) ? -2 : 0;
-
-    raw['T']   += fpsBonus;
-    raw['E']   += letBonus + drawPenalty;
-    raw['FUE'] += drawBonus;
+  if(archerData){
+    // Stats del arquero × multiplicador de disciplina + ajuste climático
+    raw.T   = (archerData.T   || 50) * am.T   + (envMods.T   || 0);
+    raw.C   = (archerData.C   || 50) * am.C   + (envMods.C   || 0);
+    raw.E   = (archerData.E   || 50) * am.E   + (envMods.E   || 0);
+    raw.I   = (archerData.I   || 50) * am.I   + (envMods.I   || 0);
+    raw.FUE = (archerData.FUE || 70) * am.FUE;
+    raw.RES = (archerData.RES || 70) * am.RES;
+  } else {
+    // Sin arquero: usar valores de inputs (setup manual)
+    raw.T   = (parseInt(document.getElementById('as-T')?.value)||50) * am.T   + (envMods.T||0);
+    raw.C   = (parseInt(document.getElementById('as-C')?.value)||50) * am.C   + (envMods.C||0);
+    raw.E   = (parseInt(document.getElementById('as-E')?.value)||50) * am.E   + (envMods.E||0);
+    raw.I   = (parseInt(document.getElementById('as-I')?.value)||50) * am.I   + (envMods.I||0);
+    raw.FUE = (parseInt(document.getElementById('as-FUE')?.value)||70) * am.FUE;
+    raw.RES = (parseInt(document.getElementById('as-RES')?.value)||70) * am.RES;
   }
 
+  // ── BONO DEL ARCO ──────────────────────────────────────────────────
+  if(bowData){
+    const fps  = bowData.fps  || 280;
+    const ata  = bowData.ata  || 30;
+    const bh   = bowData.bh   || 6.5;
+    const letv = bowData.let  || 72;
+    const draw = bowData.draw || 60;
+
+    // FPS: referencia neutral 280fps. +/- 1pt por cada 10fps × mult
+    raw.T   += Math.round((fps - 280) / 10 * bm.fps);
+
+    // AxA: referencia neutral 30". Indoor quiere >36", Outdoor >35", Field 33-37", 3D 32-36"
+    // Cada pulgada sobre 30 aporta al score × mult disciplina
+    raw.E   += Math.round((ata - 30) * 0.5 * bm.ata);
+
+    // Brace Height: referencia neutral 6.5". Mas alto = mas perdonador
+    // Muy relevante Indoor (precision), poco Field/3D
+    raw.E   += Math.round((bh - 6.5) * 1.5 * bm.bh);
+
+    // LetOff: referencia neutral 72%. Cada 2% extra ayuda al EST (menos esfuerzo)
+    raw.E   += Math.round((letv - 72) / 2 * bm.let);
+
+    // Draw weight: >65lbs da FUE. Si draw>75 y FUE<75 -> penaliza EST (fatiga)
+    if(draw > 65) raw.FUE += Math.round((draw - 65) / 5 * bm.draw);
+    const arcFUE = archerData ? (archerData.FUE||70) : (parseInt(document.getElementById('as-FUE')?.value)||70);
+    if(draw > 75 && arcFUE < 75) raw.E -= 3;
+  }
+
+  // ── BONUS DE CARTAS (solo T,C,E,I) ────────────────────────────────
+  if(cards){
+    cards.forEach(c => {
+      if(!c) return;
+      raw.T += c.T||0; raw.C += c.C||0;
+      raw.E += c.E||0; raw.I += c.I||0;
+    });
+  }
+
+  // ── CLAMP y SCORE FINAL ───────────────────────────────────────────
   const fin = {};
   SS.forEach(s=>{ fin[s] = Math.min(100, Math.max(0, Math.round(raw[s]))); });
+  const score = Math.round(SS.reduce((acc,s)=>acc + fin[s]*W[s], 0));
+  return {fin, score};
+}
+function recalc(){
+  const archerData = selectedArcher || null;
+  const bowData    = (selectedBow !== null && selectedBow !== undefined) ? BOWS[selectedBow] : null;
+  const cards      = selCards.filter(Boolean);
+  const {fin, score} = _computeScore(archerData, bowData, cards, comp, envMods);
 
-  // Score final ponderado
-  const score = Math.round(SS.reduce((a,s)=>a+fin[s]*W[s],0));
-
-  // Actualizar UI stats visibles (todas las 6)
   SS.forEach(s=>{
-    const bkEl = document.getElementById('bk-'+s);
+    const bkEl  = document.getElementById('bk-'+s);
     const bkwEl = document.getElementById('bkw-'+s);
-    if(bkEl) bkEl.textContent = fin[s];
+    if(bkEl)  bkEl.textContent  = fin[s];
     if(bkwEl) bkwEl.textContent = Math.round(fin[s]*W[s])+' pts';
   });
 
@@ -3417,54 +3474,24 @@ function renderLiveScore(){
 
 // Helper: compute per-stat final values
 function calcStatBreakdown(){
-  const mods = MODS[comp];
-  const archerMult = COMP_ARCHER_MULT[comp] || {T:1,C:1,E:1,I:1,FUE:1,RES:1};
-  const bowMult = COMP_BOW_MULT[comp] || {fps:1,let:1,draw:1};
-  const raw = {T:0,C:0,E:0,I:0,FUE:0,RES:0};
+  const archerData = selectedArcher || null;
+  const bowIdx     = gameState ? gameState.bowIdx : selectedBow;
+  const bowData    = (bowIdx !== null && bowIdx !== undefined) ? BOWS[bowIdx] : null;
+  const cards      = gameState ? gameState.played.filter(Boolean) : selCards.filter(Boolean);
+  const {fin}      = _computeScore(archerData, bowData, cards, comp, envMods);
 
-  ['T','C','E','I'].forEach(s=>{
-    const a = parseInt(document.getElementById('as-'+s).value)||0;
-    const c = parseInt(document.getElementById('cs-'+s).value)||0;
-    raw[s] = ((a+c)/2 + mods[s] + envMods[s]) * archerMult[s];
-  });
-
-  const aFUE = parseInt(document.getElementById('as-FUE')?.value)||70;
-  const aRES = parseInt(document.getElementById('as-RES')?.value)||70;
-  raw['FUE'] = aFUE * archerMult['FUE'];
-  raw['RES'] = aRES * archerMult['RES'];
-
-  const cards = gameState ? gameState.played.filter(Boolean) : selCards.filter(Boolean);
-  cards.forEach(c => ['T','C','E','I'].forEach(s => { raw[s] += (c[s]||0); }));
-
-  // Bono del arco
-  const bowIdx = gameState ? gameState.bowIdx : selectedBow;
-  if(bowIdx !== null && bowIdx !== undefined && BOWS[bowIdx]){
-    const bow = BOWS[bowIdx];
-    const fpsBonus = Math.round((bow.fps - 280) / 8 * bowMult.fps);
-    const letBonus = Math.round((bow.let - 72) / 2 * bowMult.let);
-    const drawBonus = bow.draw > 65 ? Math.round((bow.draw - 65) / 5 * bowMult.draw) : 0;
-    const drawPenalty = (bow.draw > 75 && aFUE < 75) ? -2 : 0;
-    raw['T']   += fpsBonus;
-    raw['E']   += letBonus + drawPenalty;
-    raw['FUE'] += drawBonus;
-  }
-
-  // Habilidad especial
+  // Ability bonus (T,C,E,I only)
   const abIdx = gameState ? gameState.abilityIdx : selectedAbility;
   if(abIdx === 'bow'){
-    const bowIdx2 = gameState ? gameState.bowIdx : selectedBow;
-    const bow2 = (bowIdx2 !== null && bowIdx2 !== undefined) ? BOWS[bowIdx2] : null;
+    const bow2 = bowData;
     if(bow2 && bow2.ability){
       const matchedAb = UNLOCKED_ABILITIES.find(a => a.name === bow2.ability.name);
-      if(matchedAb) ['T','C','E','I'].forEach(s => { raw[s] += matchedAb.bonus[s] || 0; });
+      if(matchedAb) ['T','C','E','I'].forEach(s => { fin[s] = Math.min(100, fin[s] + (matchedAb.bonus[s]||0)); });
     }
   } else if(abIdx !== null && abIdx !== undefined && abIdx >= 0 && UNLOCKED_ABILITIES[abIdx]){
     const ab = UNLOCKED_ABILITIES[abIdx];
-    ['T','C','E','I'].forEach(s => { raw[s] += ab.bonus[s] || 0; });
+    ['T','C','E','I'].forEach(s => { fin[s] = Math.min(100, fin[s] + (ab.bonus[s]||0)); });
   }
-
-  const fin = {};
-  SS.forEach(s => { fin[s] = Math.min(100, Math.max(0, Math.round(raw[s]))); });
   return fin;
 }
 
@@ -3667,37 +3694,12 @@ function confirmDiscard(){
 
 // ── Calc score using played cards ─────────────────────────────────
 function calcCurrentScore(){
-  const mods = MODS[comp];
-  const archerMult = COMP_ARCHER_MULT[comp] || {T:1,C:1,E:1,I:1,FUE:1,RES:1};
-  const bowMult = COMP_BOW_MULT[comp] || {fps:1,let:1,draw:1};
-  const raw = {T:0,C:0,E:0,I:0,FUE:0,RES:0};
-
-  ['T','C','E','I'].forEach(s=>{
-    const a = parseInt(document.getElementById('as-'+s).value)||0;
-    const c = parseInt(document.getElementById('cs-'+s).value)||0;
-    raw[s] = ((a+c)/2 + mods[s] + envMods[s]) * archerMult[s];
-  });
-
-  const aFUE = parseInt(document.getElementById('as-FUE')?.value)||70;
-  const aRES = parseInt(document.getElementById('as-RES')?.value)||70;
-  raw['FUE'] = aFUE * archerMult['FUE'];
-  raw['RES']  = aRES * archerMult['RES'];
-
-  const cards = gameState ? gameState.played.filter(Boolean) : selCards.filter(Boolean);
-  cards.forEach(c => ['T','C','E','I'].forEach(s => { raw[s] += (c[s]||0); }));
-
-  const bowIdx = gameState ? gameState.bowIdx : selectedBow;
-  if(bowIdx !== null && bowIdx !== undefined && BOWS[bowIdx]){
-    const bow = BOWS[bowIdx];
-    raw['T']   += Math.round((bow.fps - 280) / 8 * bowMult.fps);
-    raw['E']   += Math.round((bow.let - 72) / 2 * bowMult.let);
-    raw['FUE'] += bow.draw > 65 ? Math.round((bow.draw - 65) / 5 * bowMult.draw) : 0;
-    if(bow.draw > 75 && aFUE < 75) raw['E'] -= 2;
-  }
-
-  const fin = {};
-  SS.forEach(s=>{ fin[s] = Math.min(100, Math.max(0, Math.round(raw[s]))); });
-  return Math.round(SS.reduce((a,s)=>a+fin[s]*W[s],0));
+  const archerData = selectedArcher || null;
+  const bowIdx     = gameState ? gameState.bowIdx : selectedBow;
+  const bowData    = (bowIdx !== null && bowIdx !== undefined) ? BOWS[bowIdx] : null;
+  const cards      = gameState ? gameState.played.filter(Boolean) : selCards.filter(Boolean);
+  const {score}    = _computeScore(archerData, bowData, cards, comp, envMods);
+  return score;
 }
 
 // ── End game ──────────────────────────────────────────────────────
@@ -3843,46 +3845,61 @@ function showRoundConditions(round, cond) {
   const wrap = document.getElementById('round-conditions');
   if(!wrap) return;
 
-  const mult       = ENV_COMP_MULT[cond.comp] || 1.0;
-  const archerMult = COMP_ARCHER_MULT[cond.comp] || {T:1,C:1,E:1,I:1,FUE:1,RES:1};
-  const bowMult    = COMP_BOW_MULT[cond.comp]   || {fps:1,let:1,draw:1};
-  const w = WIND_LEVELS[cond.wind];
-  const r = RAIN_LEVELS[cond.rain];
+  const isIndoor = cond.comp === 'indoor';
+  const mult = isIndoor ? 0 : (ENV_COMP_MULT[cond.comp] || 1.0);
+  const w = WIND_LEVELS[isIndoor ? 0 : cond.wind];
+  const r = RAIN_LEVELS[isIndoor ? 0 : cond.rain];
   const t = TEMP_LEVELS[cond.temp];
 
+  // Penalizacion ambiental en score
   const envPenalty = Math.round(
-    ['T','C','E','I'].reduce((acc, s) => acc + Math.round((w[s]+r[s]+t[s])*mult) * W[s], 0)
+    ['T','C','E','I'].reduce((acc,s) => acc + Math.round((w[s]+r[s]+t[s])*mult)*W[s], 0)
   );
 
-  const compMod = MODS[cond.comp];
-  const compImpact = ['T','C','E','I'].map(s => compMod[s] !== 0
-    ? `<span style="color:${compMod[s]>0?'var(--green)':'var(--coral)'}">${compMod[s]>0?'+':''}${compMod[s]}${s}</span>`
-    : '').filter(Boolean).join(' ');
+  // Textos narrativos exactos por disciplina
+  const NARRATIVE = {
+    indoor:  {
+      up:   ['TEC','IEM','EST','COM'],
+      down: ['FUE','RES'],
+      tip:  'Ambiente controlado. Precision absoluta, cada flecha acumula estres.',
+      bow:  'Arco largo (36"+) para maxima estabilidad y una mira mas limpia.'
+    },
+    outdoor: {
+      up:   ['RES','COM','TEC','EST'],
+      down: [],
+      tip:  'El entorno no perdona — la fatiga y el viento definen el resultado.',
+      bow:  'Arco mediano o largo con eje a eje de 28" o mas para sostener linea bajo desgaste.'
+    },
+    field:   {
+      up:   ['TEC','IEM'],
+      down: [],
+      tip:  'Terreno irregular, angulos y distancias cambiantes — adaptarte es todo.',
+      bow:  'Arco mediano, agil y rapido para compensar angulos y ejecuciones incomodas.'
+    },
+    '3d':    {
+      up:   ['COM','IEM','EST'],
+      down: ['FUE','RES'],
+      tip:  'Una sola flecha. Sin segundas oportunidades — ejecucion pura.',
+      bow:  'Let-off alto para sostener, leer y ejecutar sin prisa.'
+    }
+  };
 
-  const statLabels = {T:'TEC',C:'COM',E:'EST',I:'IEM',FUE:'FUE',RES:'RES'};
-  const archMultHtml = Object.entries(archerMult)
-    .filter(([s, v]) => Math.abs(v - 1.0) > 0.05)
-    .map(([s, v]) => {
-      const color = v > 1 ? 'var(--green)' : 'var(--coral)';
-      return `<span style="color:${color}">${statLabels[s]||s}x${v}</span>`;
-    }).join(' ');
+  const statColor = {TEC:'var(--blue)',COM:'var(--green)',EST:'var(--purple)',IEM:'var(--orange)',FUE:'#e05555',RES:'#60c060'};
+  const narr = NARRATIVE[cond.comp] || {up:[],down:[],tip:'',bow:''};
 
-  const bowMultHtml = Object.entries(bowMult)
-    .filter(([k, v]) => Math.abs(v - 1.0) > 0.05)
-    .map(([k, v]) => {
-      const label = k === 'fps' ? 'FPS' : k === 'let' ? 'LetOff' : 'Lbs';
-      const color = v > 1 ? 'var(--green)' : 'var(--coral)';
-      return `<span style="color:${color}">${label}x${v}</span>`;
-    }).join(' ');
+  const upHtml = narr.up.map(s =>
+    `<span style="background:rgba(93,202,165,.12);border:0.5px solid rgba(93,202,165,.3);border-radius:5px;padding:2px 8px;font-size:10px;color:var(--green)">&#8593; ${s}</span>`
+  ).join(' ');
+  const downHtml = narr.down.map(s =>
+    `<span style="background:rgba(216,120,80,.1);border:0.5px solid rgba(216,120,80,.3);border-radius:5px;padding:2px 8px;font-size:10px;color:var(--coral)">&#8595; ${s}</span>`
+  ).join(' ');
 
-  function impactClass(lvl) {
-    return lvl.cls === 'bad' ? 'bad' : lvl.cls === 'warn' ? 'warn' : lvl.cls === 'good' ? 'good' : 'neutral';
-  }
+  function impactClass(lvl){ return lvl.cls==='bad'?'bad':lvl.cls==='warn'?'warn':lvl.cls==='good'?'good':'neutral'; }
 
-  const warningLevel = (-envPenalty) + (cond.comp === 'field' ? 5 : 0);
-  const warningHtml = warningLevel >= 15
-    ? `<div class="rc-warning">&#9888;&#65039; Condiciones dificiles &mdash; penalizacion estimada de <strong>${envPenalty} pts</strong>. Juega cartas de gestion mental.</div>`
-    : warningLevel >= 8
+  const warningLevel = (-envPenalty) + (cond.comp==='field'?5:0);
+  const warningHtml = warningLevel>=15
+    ? `<div class="rc-warning">&#9888;&#65039; Condiciones dificiles &mdash; penalizacion estimada de <strong>${envPenalty} pts</strong>.</div>`
+    : warningLevel>=8
     ? `<div class="rc-warning" style="border-color:var(--yellow);background:rgba(216,209,90,.08)">&#9889; Condiciones moderadas &mdash; penalizacion estimada de <strong>${envPenalty} pts</strong>.</div>`
     : '';
 
@@ -3894,33 +3911,51 @@ function showRoundConditions(round, cond) {
         <div class="rc-round-badge">${round} / ${TOTAL_ROUNDS}</div>
       </div>
       <div class="rc-grid">
-        <div class="rc-item">
-          <div class="rc-item-icon">${COMP_ICONS[cond.comp]}</div>
-          <div class="rc-item-label">Competencia</div>
-          <div class="rc-item-val" style="color:var(--yellow)">${COMP_NAMES[cond.comp]}</div>
-          <div class="rc-item-impact ${compImpact ? 'warn' : 'neutral'}" style="font-size:9px;line-height:1.6">
-            ${compImpact || '&mdash;'}
-            ${archMultHtml ? `<br><span style="color:var(--muted);font-size:8px">Arquero: ${archMultHtml}</span>` : ''}
-            ${bowMultHtml ? `<br><span style="color:var(--muted);font-size:8px">Arco: ${bowMultHtml}</span>` : ''}
+
+        <!-- COMPETENCIA: narrativo -->
+        <div class="rc-item" style="grid-column:1/-1;flex-direction:column;align-items:flex-start;gap:8px;padding:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:22px">${COMP_ICONS[cond.comp]}</span>
+            <div>
+              <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Competencia</div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--yellow);letter-spacing:.05em">${COMP_NAMES[cond.comp]}</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">${upHtml}${downHtml}</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.5;border-left:2px solid var(--yellow);padding-left:10px;margin-top:2px">
+            ${narr.tip}
+          </div>
+          <div style="font-size:10px;color:var(--hint);line-height:1.5;display:flex;gap:6px;align-items:flex-start">
+            <span style="color:var(--yellow);font-size:13px">&#127919;</span>
+            <span>${narr.bow}</span>
           </div>
         </div>
+
+        <!-- CLIMA: solo temperatura en Indoor -->
+        ${!isIndoor ? `
         <div class="rc-item">
           <div class="rc-item-icon">&#127788;&#65039;</div>
           <div class="rc-item-label">Viento</div>
           <div class="rc-item-val">${w.label}</div>
-          <div class="rc-item-impact ${impactClass(w)}">${cond.wind === 0 ? '&mdash;' : w.txt.slice(0,35)}</div>
+          <div class="rc-item-impact ${impactClass(w)}">${cond.wind===0?'&mdash;':w.txt.slice(0,40)}</div>
         </div>
         <div class="rc-item">
           <div class="rc-item-icon">&#127783;&#65039;</div>
           <div class="rc-item-label">Lluvia</div>
           <div class="rc-item-val">${r.label}</div>
-          <div class="rc-item-impact ${impactClass(r)}">${cond.rain === 0 ? '&mdash;' : r.txt.slice(0,35)}</div>
-        </div>
+          <div class="rc-item-impact ${impactClass(r)}">${cond.rain===0?'&mdash;':r.txt.slice(0,40)}</div>
+        </div>` : `
+        <div class="rc-item" style="grid-column:1/3">
+          <div class="rc-item-icon">&#127968;</div>
+          <div class="rc-item-label">Ambiente</div>
+          <div class="rc-item-val" style="color:var(--green)">Controlado</div>
+          <div class="rc-item-impact neutral">Sin viento · Sin lluvia</div>
+        </div>`}
         <div class="rc-item">
           <div class="rc-item-icon">&#127777;&#65039;</div>
           <div class="rc-item-label">Temperatura</div>
           <div class="rc-item-val">${t.label}</div>
-          <div class="rc-item-impact ${impactClass(t)}">${cond.temp === 2 ? '&mdash;' : t.txt.slice(0,35)}</div>
+          <div class="rc-item-impact ${impactClass(t)}">${cond.temp===2?'&mdash;':t.txt.slice(0,40)}</div>
         </div>
       </div>
       ${warningHtml}
@@ -3965,10 +4000,11 @@ const BOWS = [
   {name:'STORM SHADOW', model:'Serie Velocidad · Nivel 2', level:2, xp:80, fps:340, let:70, ata:30, draw:70, bh:6.5, dl:30, ability:null}
 ];
 
-const STAT_COSTS = {fps:5,let:8,ata:6,draw:7,bh:5,dl:6};
-const STAT_LIMITS = {fps:[240,360],let:[60,95],ata:[20,46],draw:[40,90],bh:[5.5,8.5],dl:[24,32]};
-const STAT_STEPS = {fps:4,let:2,ata:1,draw:5,bh:0.5,dl:0.5};
-const STAT_UNITS = {fps:'fps',let:'%',ata:'"',draw:'lbs',bh:'"',dl:'"'};
+// Solo fps y let son mejorables. ata y bh son informativos fijos.
+const STAT_COSTS  = {fps:5, let:3};
+const STAT_LIMITS = {fps:[240,360], let:[60,90]};
+const STAT_STEPS  = {fps:4, let:1};
+const STAT_UNITS  = {fps:'fps', let:'%', ata:'"', bh:'"'};
 
 let activeBow = 0;
 let points = 15;
@@ -3997,10 +4033,16 @@ function renderBowProfile() {
   document.getElementById('bow-name-display').textContent = b.name;
   document.getElementById('bow-model-display').textContent = b.model;
 
-  const stats = ['fps','let','ata','draw','bh','dl'];
-  stats.forEach(s => {
-    document.getElementById('sv-' + s).textContent = b[s];
-    document.getElementById('sf-' + s).style.width = calcPercent(s, b[s]) + '%';
+  // Solo 4 stats visibles: fps, let, ata, bh
+  ['fps','let','ata','bh'].forEach(s => {
+    const sv = document.getElementById('sv-' + s);
+    const sf = document.getElementById('sf-' + s);
+    if(sv) sv.textContent = b[s];
+    if(sf){
+      const ranges = {fps:[240,360], let:[60,90], ata:[20,46], bh:[5.5,8.5]};
+      const [mn,mx] = ranges[s];
+      sf.style.width = Math.round(((b[s]-mn)/(mx-mn))*100) + '%';
+    }
   });
 
   // Ability
@@ -4026,31 +4068,156 @@ function renderBowProfile() {
     abs.style.display = 'none';
   }
 
+  renderBowRadar(b);
   renderUpgradeButtons();
   renderHistory();
   renderCollection();
-  // Render collection in Mi Arco tab
+
   const grid2 = document.getElementById('collection-grid-2');
   if (grid2) {
-    grid2.innerHTML = BOWS.map((b, i) => `
+    grid2.innerHTML = BOWS.map((bw, i) => `
       <div class="bow-card ${activeBow === i ? 'active-bow' : ''}" onclick="selectBow(${i})">
-        <div class="bow-card-name">${b.name}</div>
-        <div class="bow-card-model">${b.model}</div>
+        <div class="bow-card-name">${bw.name}</div>
+        <div class="bow-card-model">${bw.model}</div>
         <div class="bow-card-stats">
-          <div class="bow-mini-stat"><strong>${b.fps}</strong> fps</div>
-          <div class="bow-mini-stat"><strong>${b.let}</strong>% LetOff</div>
-          <div class="bow-mini-stat"><strong>${b.ata}"</strong> AxA</div>
-          <div class="bow-mini-stat"><strong>${b.draw}</strong> lbs</div>
+          <div class="bow-mini-stat"><strong>${bw.fps}</strong> fps</div>
+          <div class="bow-mini-stat"><strong>${bw.let}</strong>% LetOff</div>
+          <div class="bow-mini-stat"><strong>${bw.ata}"</strong> AxA</div>
+          <div class="bow-mini-stat"><strong>${bw.bh}"</strong> BH</div>
         </div>
       </div>
     `).join('');
   }
 }
 
+// ── RADAR DEL ARCO ─────────────────────────────────────────────────
+function calcBowScores(b) {
+  // Puntúa el arco de 0-100 para cada disciplina según parámetros reales
+  const fps = b.fps, letv = b.let, ata = b.ata, bh = b.bh;
+
+  // Indoor: LetOff alto y AxA largo (36"+) y BH alto son claves. FPS no importa.
+  const indoor = Math.round(
+    letv * 0.45 +
+    Math.min(100, ((ata - 20) / 26) * 100) * 0.35 +
+    Math.min(100, ((bh  - 5.5) / 3) * 100) * 0.20
+  );
+
+  // Outdoor: balance fps + ata largo + let moderado
+  const outdoor = Math.round(
+    Math.min(100, ((fps - 240) / 120) * 100) * 0.35 +
+    Math.min(100, ((ata - 20) / 26) * 100) * 0.35 +
+    letv * 0.30
+  );
+
+  // Field: fps alto (distancias desconocidas) + ata mediano
+  const field = Math.round(
+    Math.min(100, ((fps - 240) / 120) * 100) * 0.55 +
+    Math.min(100, ((ata - 20) / 26) * 100) * 0.25 +
+    letv * 0.20
+  );
+
+  // 3D: fps muy alto + let alto (sostienes mientras calculas)
+  const d3 = Math.round(
+    Math.min(100, ((fps - 240) / 120) * 100) * 0.50 +
+    letv * 0.50
+  );
+
+  // General: promedio ponderado
+  const general = Math.round((indoor*0.25 + outdoor*0.25 + field*0.25 + d3*0.25));
+
+  return {general, indoor, outdoor, field, d3};
+}
+
+function renderBowRadar(b) {
+  const wrap = document.getElementById('bow-radar-wrap');
+  if(!wrap) return;
+  const scores = calcBowScores(b);
+
+  // Texto guía dinámico
+  const sorted = Object.entries({Indoor:scores.indoor, Outdoor:scores.outdoor, Field:scores.field, '3D':scores.d3})
+    .sort((a,b)=>b[1]-a[1]);
+  const best = sorted[0][0];
+  const second = sorted[1][0];
+
+  const colorMap = {Indoor:'#5dcaa5', Outdoor:'#378add', Field:'#e05555', '3D':'#9a88dd'};
+
+  const guia = {
+    Indoor:  'AxA largo y LetOff alto dan estabilidad y mira limpia.',
+    Outdoor: 'Velocidad y alcance para sostener linea a 70m bajo viento.',
+    Field:   'FPS alto perdona el error al estimar distancias.',
+    '3D':    'Velocidad y LetOff alto para calcular y ejecutar sin prisa.'
+  };
+
+  const nextTip = b.let < 85
+    ? `Sube LetOff a 85%+ para ganar ventaja en <span style="color:#9a88dd">3D</span> e <span style="color:#5dcaa5">Indoor</span>.`
+    : b.fps < 320
+    ? `Sube FPS a 320+ para mejorar en <span style="color:#e05555">Field</span> y <span style="color:#9a88dd">3D</span>.`
+    : `Arco optimizado. Mantén el rendimiento en torneo.`;
+
+  wrap.innerHTML = `
+    <div style="font-size:10px;color:var(--muted);text-align:center;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">${b.name}</div>
+    <div style="position:relative;width:100%;padding-bottom:85%">
+      <canvas id="bow-radar-chart" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:10px;font-size:10px;color:var(--muted)">
+      <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#d8d15a"></span>General ${scores.general}</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#5dcaa5"></span>Indoor ${scores.indoor}</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#378add"></span>Outdoor ${scores.outdoor}</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#e05555"></span>Field ${scores.field}</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#9a88dd"></span>3D ${scores.d3}</span>
+    </div>
+    <div style="margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface2);border:0.5px solid var(--border);font-size:10px;color:var(--muted);line-height:1.7">
+      Mejor para <span style="color:${colorMap[best]};font-weight:500">${best}</span> — ${guia[best]}
+      <br><span style="color:var(--hint)">&#9889; ${nextTip}</span>
+    </div>
+  `;
+
+  // Chart.js radar
+  if(window.Chart){
+    const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const gridC = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+    const tickC = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+    const lblC  = isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
+    const ptColors = ['#d8d15a','#5dcaa5','#378add','#e05555','#9a88dd'];
+
+    const ctx = document.getElementById('bow-radar-chart');
+    if(ctx){
+      if(ctx._chartInstance) ctx._chartInstance.destroy();
+      ctx._chartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['General','Indoor','Outdoor','Field','3D'],
+          datasets:[{
+            data: [scores.general, scores.indoor, scores.outdoor, scores.field, scores.d3],
+            backgroundColor: 'rgba(216,209,90,0.15)',
+            borderColor: '#d8d15a',
+            borderWidth: 2,
+            pointBackgroundColor: ptColors,
+            pointBorderColor: ptColors,
+            pointRadius: 5,
+            pointHoverRadius: 7
+          }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{display:false}, tooltip:{callbacks:{label: ctx=>' '+ctx.raw+' / 100'}}},
+          scales:{ r:{
+            min:0, max:100,
+            ticks:{ stepSize:25, color:tickC, backdropColor:'transparent', font:{size:9}},
+            grid:{ color:gridC },
+            angleLines:{ color:gridC },
+            pointLabels:{ color:lblC, font:{size:11, weight:'500'}}
+          }}
+        }
+      });
+    }
+  }
+}
+
 function renderUpgradeButtons() {
-  const stats = ['fps','let','ata','draw','bh','dl'];
-  stats.forEach(s => {
+  ['fps','let'].forEach(s => {
     const btn = document.getElementById('upg-' + s);
+    if(!btn) return;
     const b = BOWS[activeBow];
     const [min, max] = STAT_LIMITS[s];
     if (b[s] >= max || points < STAT_COSTS[s]) {
@@ -4059,7 +4226,8 @@ function renderUpgradeButtons() {
       btn.classList.remove('disabled');
     }
   });
-  document.getElementById('tournament-points').textContent = points;
+  const ptEl = document.getElementById('tournament-points');
+  if(ptEl) ptEl.textContent = points;
 }
 
 function renderHistory() {
@@ -4081,20 +4249,21 @@ function renderCollection() {
 
 // ── UPGRADE ──
 function upgradeStat(stat) {
+  if (stat !== 'fps' && stat !== 'let') return;
   const b = BOWS[activeBow];
   const cost = STAT_COSTS[stat];
   const [min, max] = STAT_LIMITS[stat];
   const step = STAT_STEPS[stat];
 
   if (points < cost) { showToast('Puntos insuficientes','error'); return; }
-  if (b[stat] >= max) { showToast('Stat al máximo','error'); return; }
+  if (b[stat] >= max) { showToast(stat==='let'?'Let Off al máximo (90%)':'FPS al máximo','error'); return; }
 
   points -= cost;
   b[stat] = Math.min(max, parseFloat((b[stat] + step).toFixed(1)));
   b.xp += cost * 30;
   if (b.xp >= b.level * 1000) { b.xp -= b.level * 1000; b.level++; }
 
-  const labels = {fps:'FPS',let:'Let Off',ata:'Eje a Eje',draw:'Draw Weight',bh:'Brace Height',dl:'Draw Length'};
+  const labels = {fps:'FPS', let:'Let Off'};
   upgradeHistory.push({stat:`${labels[stat]} +${step}${STAT_UNITS[stat]}`, date:'Ahora'});
 
   renderBowProfile();
@@ -4769,6 +4938,7 @@ function selectFromModal() {
 
   </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="codigos.js"></script>
 <script src="auth.js"></script>
 </body>
