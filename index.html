@@ -1217,34 +1217,55 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
   text-transform:uppercase;
   margin-top:3px;
 }
-/* ── HAMBURGER (mobile only) ── */
-.hamburger{
+/* ── MOBILE HEADER ── */
+.mobile-header{
   display:none;
   position:fixed;
-  top:14px;left:14px;
-  z-index:200;
-  background:rgba(20,20,20,0.82);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  border:0.5px solid rgba(255,255,255,0.1);
-  border-radius:9px;
-  width:38px;height:38px;
-  align-items:center;justify-content:center;
-  cursor:pointer;
-  flex-direction:column;
-  gap:5px;
-  padding:10px;
+  top:0;left:0;right:0;
+  height:52px;
+  z-index:150;
+  background:rgba(14,14,14,0.88);
+  backdrop-filter:blur(20px) saturate(1.6);
+  -webkit-backdrop-filter:blur(20px) saturate(1.6);
+  border-bottom:0.5px solid rgba(255,255,255,0.07);
+  align-items:center;
+  justify-content:space-between;
+  padding:0 14px;
 }
-.hamburger span{
+.mobile-header-logo{
+  display:flex;align-items:center;gap:9px;
+}
+.mobile-header-logo img{
+  width:28px;height:28px;border-radius:50%;object-fit:cover;
+}
+.mobile-header-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:16px;letter-spacing:.05em;color:var(--text);
+}
+.mobile-hamburger{
+  width:36px;height:36px;
+  border-radius:8px;
+  background:rgba(255,255,255,0.06);
+  border:0.5px solid rgba(255,255,255,0.1);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  flex-direction:column;gap:4px;padding:10px;
+}
+.mobile-hamburger span{
   display:block;
-  width:18px;height:1.5px;
+  width:16px;height:1.5px;
   background:var(--text);
   border-radius:2px;
   transition:all .25s;
 }
-.hamburger.open span:nth-child(1){transform:rotate(45deg) translate(4.5px,4.5px)}
-.hamburger.open span:nth-child(2){opacity:0}
-.hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(4.5px,-4.5px)}
+.mobile-hamburger.open span:nth-child(1){transform:rotate(45deg) translate(4px,4px)}
+.mobile-hamburger.open span:nth-child(2){opacity:0}
+.mobile-hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(4px,-4px)}
+
+/* ── HAMBURGER (mobile only) ── */
+.hamburger{
+  display:none;
+}
 
 /* Overlay para cerrar sidebar en mobile */
 .sb-overlay{
@@ -1257,25 +1278,33 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
 
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
-  .hamburger{display:flex}
+  .mobile-header{display:flex}
   .sidebar{
+    top:52px;
+    height:calc(100vh - 52px);
     transform:translateX(-100%);
     transition:transform .28s cubic-bezier(.4,0,.2,1);
   }
   .sidebar.open{transform:translateX(0)}
-  .sb-overlay.open{display:block}
+  .sb-overlay.open{display:block;top:52px}
   .main-content{
     margin-left:0;
     padding:1rem .85rem 4rem;
-    padding-top:3.5rem;
+    padding-top:calc(52px + 1rem);
   }
 }
 </style>
 
-<!-- ── HAMBURGER BUTTON (mobile) ── -->
-<button class="hamburger" id="hamburger" aria-label="Menú" onclick="toggleSidebar()">
-  <span></span><span></span><span></span>
-</button>
+<!-- ── MOBILE HEADER (solo mobile) ── -->
+<header class="mobile-header" id="mobile-header">
+  <div class="mobile-header-logo">
+    <img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp" alt="Goat Team"/>
+    <span class="mobile-header-title">GOAT TEAM</span>
+  </div>
+  <div class="mobile-hamburger" id="hamburger" onclick="toggleSidebar()">
+    <span></span><span></span><span></span>
+  </div>
+</header>
 
 <!-- ── SIDEBAR OVERLAY (mobile) ── -->
 <div class="sb-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
@@ -1345,7 +1374,6 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
 </div>
 
 <script>
-// ── Sidebar toggle ──
 function toggleSidebar(){
   const sb = document.getElementById('sidebar');
   const hb = document.getElementById('hamburger');
