@@ -914,6 +914,9 @@ async function saveArcher() {
     isNew = false;
     await loadArchers();
     renderList();
+    // Re-render editor con datos frescos desde el array actualizado
+    const updated = archers.find(a => a.id === data.id);
+    if (updated) { renderEditor(updated); setTimeout(() => initBannerDrag(), 50); }
   } catch(e) {
     showToast('Error: ' + e.message, 'error');
   }
@@ -1383,6 +1386,9 @@ async function saveCoach() {
     else { await sbFetch(`coaches?id=eq.${data.id}`,'PATCH',data); showToast('✅ Guardado','success'); }
     currentCoachId = data.id; isNewCoach = false;
     await loadCoaches();
+    // Re-render editor con datos frescos
+    const updatedCoach = coaches.find(c => c.id === data.id);
+    if (updatedCoach) renderCoachEditor(updatedCoach);
   } catch(e) { showToast('Error: '+e.message,'error'); }
 }
 
