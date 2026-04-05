@@ -42,7 +42,7 @@ body::before{
   z-index:0;
 }
 body>*{position:relative;z-index:1}
-body{max-width:860px;margin:0 auto;padding:2rem 1.25rem 4rem;overflow-x:hidden}
+body{overflow-x:hidden;display:flex;min-height:100vh;}
 .header{display:flex;align-items:center;gap:14px;margin-bottom:1.75rem;padding-bottom:1.1rem;border-bottom:0.5px solid var(--border)}
 .hicon{width:46px;height:46px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:19px;color:#111;flex-shrink:0}
 .htitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.04em;line-height:1}
@@ -1036,21 +1036,324 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
   </div>
 </div>
 
-<div class="header">
-  <div class="hicon" style="background:transparent;padding:0;overflow:visible;width:56px;height:56px;flex-shrink:0"><img src='https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp' style="width:72px;height:auto;margin-top:-8px;margin-left:-8px" alt="Goat Team"/></div>
-  <div>
-    <div class="htitle">Goat Team — Sistema de Puntuación</div>
-    <div class="hsub">Precisión · Competencia · Stats</div>
+<!-- ── SIDEBAR STYLES ── -->
+<style>
+/* Layout base con sidebar */
+.app-layout{
+  display:flex;
+  min-height:100vh;
+  position:relative;
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:240px;
+  flex-shrink:0;
+  height:100vh;
+  position:fixed;
+  top:0;left:0;
+  display:flex;
+  flex-direction:column;
+  z-index:100;
+  /* Glass effect */
+  background:rgba(20,20,20,0.72);
+  backdrop-filter:blur(24px) saturate(1.6);
+  -webkit-backdrop-filter:blur(24px) saturate(1.6);
+  border-right:0.5px solid rgba(255,255,255,0.07);
+  box-shadow:4px 0 32px rgba(0,0,0,0.35);
+}
+
+/* Logo area */
+.sb-logo{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  padding:22px 18px 18px;
+  border-bottom:0.5px solid rgba(255,255,255,0.06);
+}
+.sb-logo img{
+  width:36px;height:36px;
+  border-radius:50%;
+  object-fit:cover;
+}
+.sb-logo-text{
+  display:flex;flex-direction:column;
+}
+.sb-logo-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:18px;letter-spacing:.05em;
+  color:var(--text);line-height:1;
+}
+.sb-logo-sub{
+  font-size:9px;color:var(--muted);
+  letter-spacing:.08em;text-transform:uppercase;
+  margin-top:3px;
+}
+
+/* Nav items */
+.sb-nav{
+  flex:1;
+  padding:12px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  overflow-y:auto;
+}
+.sb-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 12px;
+  border-radius:9px;
+  cursor:pointer;
+  transition:all .15s;
+  color:var(--muted);
+  font-size:13px;
+  font-weight:500;
+  user-select:none;
+  border:1px solid transparent;
+}
+.sb-item:hover{
+  background:rgba(255,255,255,0.06);
+  color:var(--text);
+}
+.sb-item.active{
+  background:rgba(216,209,90,0.12);
+  color:var(--yellow);
+  border-color:rgba(216,209,90,0.18);
+}
+.sb-item-icon{
+  font-size:16px;
+  width:22px;
+  text-align:center;
+  flex-shrink:0;
+}
+.sb-item-label{font-size:13px}
+
+.sb-divider{
+  height:0.5px;
+  background:rgba(255,255,255,0.06);
+  margin:8px 10px;
+}
+
+/* User area */
+.sb-user{
+  padding:14px 16px;
+  border-top:0.5px solid rgba(255,255,255,0.06);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.sb-user-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.sb-avatar{
+  width:32px;height:32px;
+  border-radius:50%;
+  background:rgba(216,209,90,0.2);
+  border:1.5px solid rgba(216,209,90,0.35);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:14px;color:var(--yellow);
+  flex-shrink:0;
+}
+.sb-user-info{flex:1;min-width:0}
+.sb-user-name{
+  font-size:12px;font-weight:500;
+  color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.sb-user-email{
+  font-size:10px;color:var(--hint);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.sb-signout{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 10px;border-radius:7px;
+  cursor:pointer;
+  color:var(--muted);font-size:12px;
+  transition:all .15s;
+  border:none;background:transparent;
+  width:100%;text-align:left;
+  font-family:'DM Sans',sans-serif;
+}
+.sb-signout:hover{
+  background:rgba(216,120,80,0.1);
+  color:var(--coral);
+}
+
+/* ── MAIN CONTENT ── */
+.main-content{
+  margin-left:240px;
+  flex:1;
+  min-width:0;
+  padding:2rem 1.5rem 4rem;
+  max-width:900px;
+}
+
+/* ── HAMBURGER (mobile only) ── */
+.hamburger{
+  display:none;
+  position:fixed;
+  top:14px;left:14px;
+  z-index:200;
+  background:rgba(20,20,20,0.82);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border:0.5px solid rgba(255,255,255,0.1);
+  border-radius:9px;
+  width:38px;height:38px;
+  align-items:center;justify-content:center;
+  cursor:pointer;
+  flex-direction:column;
+  gap:5px;
+  padding:10px;
+}
+.hamburger span{
+  display:block;
+  width:18px;height:1.5px;
+  background:var(--text);
+  border-radius:2px;
+  transition:all .25s;
+}
+.hamburger.open span:nth-child(1){transform:rotate(45deg) translate(4.5px,4.5px)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(4.5px,-4.5px)}
+
+/* Overlay para cerrar sidebar en mobile */
+.sb-overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.5);
+  z-index:99;
+  backdrop-filter:blur(2px);
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .hamburger{display:flex}
+  .sidebar{
+    transform:translateX(-100%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  .sidebar.open{transform:translateX(0)}
+  .sb-overlay.open{display:block}
+  .main-content{
+    margin-left:0;
+    padding:1rem .85rem 4rem;
+    padding-top:3.5rem;
+  }
+}
+</style>
+
+<!-- ── HAMBURGER BUTTON (mobile) ── -->
+<button class="hamburger" id="hamburger" aria-label="Menú" onclick="toggleSidebar()">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- ── SIDEBAR OVERLAY (mobile) ── -->
+<div class="sb-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar" id="sidebar">
+
+  <!-- Logo -->
+  <div class="sb-logo">
+    <img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp" alt="Goat Team"/>
+    <div class="sb-logo-text">
+      <div class="sb-logo-title">GOAT TEAM</div>
+      <div class="sb-logo-sub">Precisión · Stats</div>
+    </div>
   </div>
-  <button onclick="window._supabaseClient.auth.signOut().then(()=>{ document.getElementById('auth-screen').style.display='flex'; })" style="position:absolute;top:1rem;right:1rem;background:transparent;border:1px solid rgba(255,255,255,0.2);color:#888880;padding:0.4rem 0.8rem;border-radius:8px;cursor:pointer;font-size:0.75rem;">Cerrar sesión</button>
-</div>
-<div class="nav-tabs">
-  <div class="nav-tab active" onclick="switchTab('score',this)">🎯 Tablero</div>
-  <div class="nav-tab" onclick="switchTab('cards',this)">🃏 Cartas</div>
-  <div class="nav-tab" onclick="switchTab('mi-arco',this)">🏹 Mi Arco</div>
-  <div class="nav-tab" onclick="switchTab('sobres',this)">🎁 Sobres</div>
-  <div class="nav-tab" onclick="switchTab('habilidades',this)">⚡ Habilidades</div>
-</div>
+
+  <!-- Nav items -->
+  <nav class="sb-nav">
+    <div class="sb-item active" id="sb-score" onclick="switchTab('score',this)">
+      <span class="sb-item-icon">🎯</span>
+      <span class="sb-item-label">Tablero</span>
+    </div>
+    <div class="sb-item" id="sb-cards" onclick="switchTab('cards',this)">
+      <span class="sb-item-icon">🃏</span>
+      <span class="sb-item-label">Cartas</span>
+    </div>
+    <div class="sb-item" id="sb-mi-arco" onclick="switchTab('mi-arco',this)">
+      <span class="sb-item-icon">🏹</span>
+      <span class="sb-item-label">Mi Arco</span>
+    </div>
+    <div class="sb-item" id="sb-sobres" onclick="switchTab('sobres',this)">
+      <span class="sb-item-icon">🎁</span>
+      <span class="sb-item-label">Sobres</span>
+    </div>
+    <div class="sb-item" id="sb-habilidades" onclick="switchTab('habilidades',this)">
+      <span class="sb-item-icon">⚡</span>
+      <span class="sb-item-label">Habilidades</span>
+    </div>
+  </nav>
+
+  <!-- User -->
+  <div class="sb-user">
+    <div class="sb-user-row">
+      <div class="sb-avatar" id="sb-avatar-initials">?</div>
+      <div class="sb-user-info">
+        <div class="sb-user-name" id="sb-user-name">—</div>
+        <div class="sb-user-email" id="sb-user-email">—</div>
+      </div>
+    </div>
+    <button class="sb-signout" onclick="window._supabaseClient.auth.signOut().then(()=>{ document.getElementById('auth-screen').style.display='flex'; closeSidebar(); })">
+      <span>↪</span> Cerrar sesión
+    </button>
+  </div>
+
+</aside>
+
+<!-- ── MAIN WRAPPER (el contenido de los tabs va aquí) ── -->
+<div class="main-content" id="main-content">
+
+<script>
+// ── Sidebar toggle ──
+function toggleSidebar(){
+  const sb = document.getElementById('sidebar');
+  const hb = document.getElementById('hamburger');
+  const ov = document.getElementById('sb-overlay');
+  sb.classList.toggle('open');
+  hb.classList.toggle('open');
+  ov.classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('hamburger').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('open');
+}
+
+// ── switchTab: actualiza tabs Y sidebar ──
+const _origSwitchTab = window.switchTab;
+window.switchTab = function(name, el){
+  // Llamar al switchTab original si existe
+  if(typeof _origSwitchTab === 'function') _origSwitchTab(name, el);
+  // Actualizar sidebar activo
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  const sbItem = document.getElementById('sb-' + name);
+  if(sbItem) sbItem.classList.add('active');
+  // Cerrar sidebar en mobile
+  closeSidebar();
+};
+
+// ── Cargar info del usuario en sidebar ──
+document.addEventListener('DOMContentLoaded', function(){
+  window._supabaseClient.auth.getUser().then(({ data }) => {
+    if(!data?.user) return;
+    const u = data.user;
+    const email = u.email || '';
+    const name = u.user_metadata?.nombre || u.user_metadata?.full_name || email.split('@')[0] || '?';
+    const initials = name.charAt(0).toUpperCase();
+    document.getElementById('sb-user-name').textContent = name;
+    document.getElementById('sb-user-email').textContent = email;
+    document.getElementById('sb-avatar-initials').textContent = initials;
+  });
+});
+</script>
 
 <div id="tab-score" class="tab-panel active" style="padding:0">
 
@@ -1802,9 +2105,13 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
 // ── TAB SWITCHING ─────────────────────────────────────────────────────────
 function switchTab(id, el){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
-  el.classList.add('active');
+  // Actualizar sidebar
+  document.querySelectorAll('.sb-item').forEach(t=>t.classList.remove('active'));
+  const sbItem = document.getElementById('sb-'+id);
+  if(sbItem) sbItem.classList.add('active');
+  // Cerrar sidebar en mobile
+  if(typeof closeSidebar === 'function') closeSidebar();
 }
 
 // ── SCORING SYSTEM ────────────────────────────────────────────────────────
