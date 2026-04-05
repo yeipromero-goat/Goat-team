@@ -182,11 +182,11 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:.06em;color
 .section-title{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin:2rem 0 1rem;padding-left:4px;border-left:3px solid var(--yellow)}
 
 /* Card grid */
-.deck{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:2.5rem}
+.deck{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:2.5rem}
 
 /* ── THE CARD ── */
 .card{
-  width:100%;aspect-ratio:2.5/3.5;min-height:280px;
+  width:100%;aspect-ratio:2.5/3.5;min-height:320px;
   border-radius:16px;
   border:1.5px solid var(--b2);
   background:var(--s1);
@@ -1279,6 +1279,7 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
   .mobile-header{display:flex}
+  .sb-logo{display:none}
   .sidebar{
     top:52px;
     height:calc(100vh - 52px);
@@ -2192,8 +2193,6 @@ function switchTab(id, el){
   document.querySelectorAll('.sb-item').forEach(t=>t.classList.remove('active'));
   const sbItem = document.getElementById('sb-'+id);
   if(sbItem) sbItem.classList.add('active');
-  // Actualizar título de página
-  if(typeof updatePageTitle === 'function') updatePageTitle(id);
   // Cerrar sidebar en mobile
   if(typeof closeSidebar === 'function') closeSidebar();
 }
@@ -2705,9 +2704,7 @@ let guideMode = null; // null | 'archer' | 'coach' | 'items'
 function goPickPerson(type) {
   guideMode = type;
   // Switch to cards tab
-  const cardsTab = Array.from(document.querySelectorAll('.nav-tab'))
-    .find(t => t.getAttribute('onclick') && t.getAttribute('onclick').includes('cards'));
-  if (cardsTab) switchTab('cards', cardsTab);
+  switchTab('cards', document.getElementById('sb-cards'));
   // Switch to correct sub-tab
   const subId = type === 'archer' ? 'archers' : 'coaches';
   const subTab = Array.from(document.querySelectorAll('.sub-tab'))
@@ -2799,9 +2796,7 @@ function selectPersonCard(id, type) {
     } else if (selectedArcher && selectedCoach && playerDeck.length === 0) {
       // Both picked, no deck yet → go to items
       setTimeout(() => {
-        const cardsTab = Array.from(document.querySelectorAll('.nav-tab'))
-          .find(t => t.getAttribute('onclick') && t.getAttribute('onclick').includes('cards'));
-        if (cardsTab) switchTab('cards', cardsTab);
+        switchTab('cards', document.getElementById('sb-cards'));
         const itemsTab = Array.from(document.querySelectorAll('.sub-tab'))
           .find(t => t.getAttribute('onclick') && t.getAttribute('onclick').includes('items'));
         if (itemsTab) switchSubTab('items', itemsTab);
@@ -2810,9 +2805,7 @@ function selectPersonCard(id, type) {
     } else {
       // Both picked and deck exists → back to board
       setTimeout(() => {
-        const scoreTab = Array.from(document.querySelectorAll('.nav-tab'))
-          .find(t => t.getAttribute('onclick') && t.getAttribute('onclick').includes('score'));
-        if (scoreTab) switchTab('score', scoreTab);
+        switchTab('score', document.getElementById('sb-score'));
       }, 300);
     }
   }
@@ -2988,8 +2981,7 @@ function applyDeckToBoard() {
   renderSlots();
   recalc();
   // Switch to board
-  const scoreTab = document.querySelectorAll('.nav-tab')[0];
-  switchTab('score', scoreTab);
+  switchTab('score', document.getElementById('sb-score'));
 }
 
 // ── INIT DECK BUILDER ────────────────────────────────────────────────────
@@ -3965,8 +3957,7 @@ function selectBow(idx) {
   if (idx >= BOWS.length) return;
   activeBow = idx;
   renderBowProfile();
-  switchTab('mi-arco', document.querySelector('.nav-tab'));
-  document.querySelectorAll('.nav-tab')[0].click();
+  switchTab('mi-arco', document.getElementById('sb-mi-arco'));
   showToast(`🏹 ${BOWS[idx].name} activado`);
 }
 
@@ -4086,6 +4077,7 @@ function closeOverlay() {
   document.getElementById('pack-overlay').style.display = 'none';
 }
 
+// ── TAB SWITCHER ──
 // ── TAB SWITCHER (manejado por 02-nav.html) ──
 
 // ── TOAST ──
@@ -4546,9 +4538,7 @@ function selectFromModal() {
   // Navigate: after selecting archer → go to tablero so they can pick coach (or vice versa)
   // If both already selected → stay on tablero
   setTimeout(() => {
-    const scoreTab = Array.from(document.querySelectorAll('.nav-tab'))
-      .find(t => t.getAttribute('onclick') && t.getAttribute('onclick').includes('score'));
-    if (scoreTab) switchTab('score', scoreTab);
+    switchTab('score', document.getElementById('sb-score'));
   }, 150);
 }
 
