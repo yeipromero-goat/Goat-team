@@ -4419,19 +4419,42 @@ let roundTimerInterval = null;
 let roundTimerRemaining = 0;
 
 function startRoundTimer() {
-  stopRoundTimer(); // clear any existing
-  roundTimerRemaining = ROUND_TIMER_SECS;
-  updateTimerDisplay();
-  roundTimerInterval = setInterval(() => {
-    roundTimerRemaining--;
-    updateTimerDisplay();
-    if (roundTimerRemaining <= 0) {
-      stopRoundTimer();
-      // Auto-close round with whatever cards are played
-      if (gameState && gameState.phase === 'playing') {
-        showToast('⏰ Tiempo agotado — disciplina es también saber cuándo soltar.');
-        endRound(true);
+  stopRoundTimer();
+
+  // 3 segundos de preparación antes de empezar
+  let countdown = 3;
+  const pill = document.getElementById('hud-timer-pill');
+
+  // Mostrar cuenta regresiva de preparación
+  if (pill) {
+    pill.textContent = '🎯 ' + countdown;
+    pill.style.borderColor = 'var(--purple)';
+    pill.style.color       = 'var(--purple)';
+    pill.style.background  = 'rgba(154,136,221,0.12)';
+  }
+
+  const prepInterval = setInterval(() => {
+    countdown--;
+    if (countdown > 0) {
+      if (pill) {
+        pill.textContent = '🎯 ' + countdown;
       }
+    } else {
+      clearInterval(prepInterval);
+      // Ahora sí empieza el timer de 40 segundos
+      roundTimerRemaining = ROUND_TIMER_SECS;
+      updateTimerDisplay();
+      roundTimerInterval = setInterval(() => {
+        roundTimerRemaining--;
+        updateTimerDisplay();
+        if (roundTimerRemaining <= 0) {
+          stopRoundTimer();
+          if (gameState && gameState.phase === 'playing') {
+            showToast('⏰ Tiempo agotado — disciplina es también saber cuándo soltar.');
+            endRound(true);
+          }
+        }
+      }, 1000);
     }
   }, 1000);
 }
