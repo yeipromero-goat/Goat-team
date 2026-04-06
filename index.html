@@ -2042,42 +2042,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- COLECCION -->
 <div id="tab-coleccion" class="tab-panel">
   <div class="sec">Mis Arcos (<span id="collection-count">3</span>)</div>
-  <div class="bow-collection-grid" id="collection-grid">
-    <div class="bow-card active-bow" onclick="selectBow(0)">
-      <div class="bow-card-name">PHANTOM X-7</div>
-      <div class="bow-card-model">Serie Elite · Nivel 7</div>
-      <div class="bow-card-stats">
-        <div class="bow-mini-stat"><strong>292</strong> fps</div>
-        <div class="bow-mini-stat"><strong>82</strong>% LetOff</div>
-        <div class="bow-mini-stat"><strong>32"</strong> AxA</div>
-        <div class="bow-mini-stat"><strong>7"</strong> BH</div>
-      </div>
-    </div>
-    <div class="bow-card" onclick="selectBow(1)">
-      <div class="bow-card-name">GOAT HUNTER PRO</div>
-      <div class="bow-card-model">Serie Caza · Nivel 4</div>
-      <div class="bow-card-stats">
-        <div class="bow-mini-stat"><strong>310</strong> fps</div>
-        <div class="bow-mini-stat"><strong>75</strong>% LetOff</div>
-        <div class="bow-mini-stat"><strong>28"</strong> AxA</div>
-        <div class="bow-mini-stat"><strong>6"</strong> BH</div>
-      </div>
-    </div>
-    <div class="bow-card" onclick="selectBow(2)">
-      <div class="bow-card-name">STORM SHADOW</div>
-      <div class="bow-card-model">Serie Velocidad · Nivel 2</div>
-      <div class="bow-card-stats">
-        <div class="bow-mini-stat"><strong>340</strong> fps</div>
-        <div class="bow-mini-stat"><strong>70</strong>% LetOff</div>
-        <div class="bow-mini-stat"><strong>30"</strong> AxA</div>
-        <div class="bow-mini-stat"><strong>6.5"</strong> BH</div>
-      </div>
-    </div>
-    <div class="bow-card" style="border-style:dashed;cursor:default;display:flex;align-items:center;justify-content:center;min-height:90px;flex-direction:column;gap:6px">
-      <div style="font-size:22px;color:var(--hint)">+</div>
-      <div style="font-size:11px;color:var(--hint)">Desbloquear con sobre</div>
-    </div>
-  </div>
+  <div class="bow-collection-grid" id="collection-grid"></div>
 </div>
 
 <div id="tab-sobres" class="tab-panel">
@@ -2453,7 +2418,7 @@ let selectedBow     = null;
 
 // ── CARDS ─────────────────────────────────────────────────────────────────
 
-let CARDS = []; // loaded from Supabase
+window.CARDS = window.CARDS || []; // loaded from Supabase — window-scoped so supabase-persistence.js can fill it
 
 const SPEC_LABELS={indoor:"Indoor",outdoor:"Outdoor",field:"Field","3d":"3D",all:"All"};
 const SPEC_COLORS={indoor:"#5a9fd8",outdoor:"#5dcaa5",field:"#d8d15a","3d":"#9a88dd",all:"#888880"};
@@ -3621,7 +3586,7 @@ window.addEventListener('supabase-data-ready', function() {
 /* ── ARCO MODULE JS ── */
 
 // ── DATA ──
-let BOWS = []; // loaded from Supabase
+window.BOWS = window.BOWS || []; // loaded from Supabase — window-scoped so supabase-persistence.js can fill it
 
 // Solo fps y let son mejorables. ata y bh son informativos fijos.
 const STAT_COSTS  = {fps:5, let:3};
