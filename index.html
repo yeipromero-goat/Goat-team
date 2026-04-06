@@ -1941,7 +1941,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="deck-builder-header">
       <div>
         <div class="db-title">Constructor de Deck</div>
-        <div class="db-subtitle">Elige 36 cartas para tu mazo. Haz clic en aleatorio para inico rápido.</div>
+        <div class="db-subtitle">Elige 36 cartas para tu mazo. Haz clic en aleatorio para inicio rápido.</div>
       </div>
       <div class="db-actions">
         <div class="db-progress">
@@ -3023,7 +3023,7 @@ function startGame() {
   const roundConditions = generateRoundConditions();
   gameState = { phase:'playing', round:1, deck:shuffled, hand, played:[], roundScores:[], discardPile:[], drawnCard:null, conditions: roundConditions, pendingDiscards:[], bowIdx: selectedBow };
   document.getElementById('game-setup-panel').style.display = 'none';
-  document.getElementById('game-active').style.display      = 'block';
+  document.getElementById('game-panel').style.display       = 'block';
   document.getElementById('game-end').style.display         = 'none';
   applyRoundConditions(roundConditions[0]);
   showRoundConditions(1, roundConditions[0]);
@@ -3374,7 +3374,7 @@ function calcCurrentScore(){
 // ── End game ──────────────────────────────────────────────────────
 function endGame(){
   gameState.phase='end';
-  document.getElementById('game-active').style.display='none';
+  document.getElementById('game-panel').style.display='none';
   document.getElementById('game-end').style.display='block';
   onGameEndHook();
   const scores  = gameState.roundScores;
@@ -3424,7 +3424,7 @@ function resetGame(){
   stopRoundTimer();
   hideTimerDisplay();
   document.getElementById('game-setup-panel').style.display='block';
-  document.getElementById('game-active').style.display='none';
+  document.getElementById('game-panel').style.display='none';
   document.getElementById('game-end').style.display='none';
   // Limpiar picker y grid de cartas
   const pa=document.getElementById('picker-area');
