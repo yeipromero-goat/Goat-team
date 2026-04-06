@@ -152,20 +152,50 @@ function renderCards() {
   `).join('');
 }
 
-// BOWS
+// BOWS — renderiza colección principal + perfil activo
 function renderBows() {
-  const grid = document.getElementById('collection-grid-2');
-  if (!grid || !window.BOWS) return;
+  if (!window.BOWS || BOWS.length === 0) return;
 
-  grid.innerHTML = BOWS.map(b => `
-    <div class="icard">
-      <div class="ic-name">${b.name}</div>
-      <div class="ic-stats">
-        <span class="ic-stat pos">FPS ${b.fps}</span>
-        <span class="ic-stat pos">LET ${b.let}%</span>
+  // 1. Colección principal (tab-coleccion) — con onclick selectBow
+  const grid = document.getElementById('collection-grid');
+  if (grid) {
+    grid.innerHTML = BOWS.map((b, i) => `
+      <div class="bow-card ${i === 0 ? 'active-bow' : ''}" onclick="selectBow(${i})">
+        <div class="bow-card-name">${b.name}</div>
+        <div class="bow-card-model">${b.model || ''}</div>
+        <div class="bow-card-stats">
+          <div class="bow-mini-stat"><strong>${b.fps}</strong> fps</div>
+          <div class="bow-mini-stat"><strong>${b.let}</strong>% LetOff</div>
+          <div class="bow-mini-stat"><strong>${b.ata}"</strong> AxA</div>
+          <div class="bow-mini-stat"><strong>${b.bh}"</strong> BH</div>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `).join('');
+    const countEl = document.getElementById('collection-count');
+    if (countEl) countEl.textContent = BOWS.length;
+  }
+
+  // 2. Mini grid dentro de mi-arco (collection-grid-2)
+  const grid2 = document.getElementById('collection-grid-2');
+  if (grid2) {
+    grid2.innerHTML = BOWS.map((b, i) => `
+      <div class="bow-card ${i === 0 ? 'active-bow' : ''}" onclick="selectBow(${i})">
+        <div class="bow-card-name">${b.name}</div>
+        <div class="bow-card-model">${b.model || ''}</div>
+        <div class="bow-card-stats">
+          <div class="bow-mini-stat"><strong>${b.fps}</strong> fps</div>
+          <div class="bow-mini-stat"><strong>${b.let}</strong>% LetOff</div>
+          <div class="bow-mini-stat"><strong>${b.ata}"</strong> AxA</div>
+          <div class="bow-mini-stat"><strong>${b.bh}"</strong> BH</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 3. Render perfil del primer arco activo
+  if (typeof renderBowProfile === 'function') {
+    renderBowProfile();
+  }
 }
 
 // MASTER
