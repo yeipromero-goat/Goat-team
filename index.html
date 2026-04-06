@@ -1941,7 +1941,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="deck-builder-header">
       <div>
         <div class="db-title">Constructor de Deck</div>
-        <div class="db-subtitle">Elige 36 de 72 cartas para tu mazo. Haz clic para agregar o quitar.</div>
+        <div class="db-subtitle">Elige 36 cartas para tu mazo. Haz clic en aleatorio para inico rápido.</div>
       </div>
       <div class="db-actions">
         <div class="db-progress">
@@ -2795,6 +2795,10 @@ function switchSubTab(id, el) {
   document.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('sub-' + id).classList.add('active');
+  // Inicializar deck builder al entrar a items
+  if (id === 'items' && typeof initDeckBuilder === 'function') {
+    initDeckBuilder();
+  }
 }
 
 
