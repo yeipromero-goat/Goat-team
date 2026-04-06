@@ -1472,116 +1472,35 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <div id="tab-score" class="tab-panel active" style="padding:0">
 
-
-<div class="sec">Equipo</div>
-<div class="person-pick-grid">
-
-  <!-- ARCHER PICK CARD -->
-  <div class="person-pick-card archer-pick" id="archer-pick-card">
-    <!-- Empty state -->
-    <div id="archer-empty-state">
-      <div class="ppc-icon">🏹</div>
-      <div class="ppc-title">Arquero</div>
-      <div class="ppc-sub">Ninguno seleccionado</div>
-      <button class="btn-pick-person" onclick="goPickPerson('archer')">
-        &#9654; Elegir Arquero
-      </button>
-    </div>
-    <!-- Filled state -->
-    <div id="archer-filled-state" style="display:none">
-      <div class="ppc-filled-header">
-        <div class="ppc-avatar" id="archer-mini-avatar">?</div>
-        <div class="ppc-filled-info">
-          <div class="ppc-filled-name" id="archer-mini-name">—</div>
-          <div class="ppc-filled-role" id="archer-mini-role">—</div>
-          <div class="ppc-filled-ability" id="archer-mini-ability"></div>
-        </div>
+<!-- ── INTRODUCCIÓN AL JUEGO ──────────────────────────── -->
+<div id="game-intro" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rl);padding:18px 20px;margin-bottom:1.25rem;position:relative;overflow:hidden">
+  <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--yellow),var(--coral),var(--purple));opacity:.8"></div>
+  <div style="display:flex;align-items:flex-start;gap:14px">
+    <img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp"
+      style="width:44px;height:44px;border-radius:50%;flex-shrink:0;margin-top:2px" alt="GT"/>
+    <div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.05em;color:var(--text);line-height:1;margin-bottom:4px">
+        GOAT TEAM — SIMULADOR DE TORNEO
       </div>
-      <div class="ppc-stats-row" id="archer-stats-preview"></div>
-      <div class="ppc-actions">
-        <button class="ppc-btn-change" onclick="goPickPerson('archer')">↺ Cambiar</button>
-        <button class="ppc-btn-remove" onclick="clearPersonCard('archer')">× Quitar</button>
+      <div style="font-size:12px;color:var(--muted);line-height:1.7">
+        Elige tu <strong style="color:var(--text)">arquero</strong>, tu <strong style="color:var(--text)">coach</strong> y tu <strong style="color:var(--text)">arco</strong>.
+        Construye un <strong style="color:var(--text)">deck de 36 cartas</strong> y juega 6 rondas de competencia.
+        Cada ronda, el clima y la disciplina cambian — adapta tu estrategia y maximiza tu score.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <span style="font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(216,209,90,.1);color:var(--yellow);border:0.5px solid rgba(216,209,90,.3)">6 rondas</span>
+        <span style="font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(90,159,216,.1);color:var(--blue);border:0.5px solid rgba(90,159,216,.3)">36 cartas</span>
+        <span style="font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(154,136,221,.1);color:var(--purple);border:0.5px solid rgba(154,136,221,.3)">Clima dinámico</span>
+        <span style="font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(93,202,165,.1);color:var(--green);border:0.5px solid rgba(93,202,165,.3)">Score en tiempo real</span>
       </div>
     </div>
   </div>
-
-  <!-- COACH PICK CARD -->
-  <div class="person-pick-card coach-pick" id="coach-pick-card">
-    <!-- Empty state -->
-    <div id="coach-empty-state">
-      <div class="ppc-icon">🎯</div>
-      <div class="ppc-title">Coach</div>
-      <div class="ppc-sub">Ninguno seleccionado</div>
-      <button class="btn-pick-person" onclick="goPickPerson('coach')" style="border-color:var(--coral);background:rgba(216,120,80,.1);color:var(--coral)">
-        &#9654; Elegir Coach
-      </button>
-    </div>
-    <!-- Filled state -->
-    <div id="coach-filled-state" style="display:none">
-      <div class="ppc-filled-header">
-        <div class="ppc-avatar" id="coach-mini-avatar">?</div>
-        <div class="ppc-filled-info">
-          <div class="ppc-filled-name" id="coach-mini-name">—</div>
-          <div class="ppc-filled-role" id="coach-mini-role">—</div>
-          <div class="ppc-filled-ability" id="coach-mini-ability"></div>
-        </div>
-      </div>
-      <div class="ppc-stats-row" id="coach-stats-preview"></div>
-      <div class="ppc-actions">
-        <button class="ppc-btn-change" onclick="goPickPerson('coach')">↺ Cambiar</button>
-        <button class="ppc-btn-remove" onclick="clearPersonCard('coach')">× Quitar</button>
-      </div>
-    </div>
-  </div>
-
 </div>
 
-<!-- Hidden inputs for stats (still used by scoring engine) -->
-<div style="display:none">
-  <input id="aname"/><input id="cname"/>
-  <input id="as-T" value="50"/><input id="as-C" value="50"/>
-  <input id="as-E" value="50"/><input id="as-I" value="50"/>
-  <input id="as-FUE" value="70"/><input id="as-RES" value="70"/>
-  <input id="cs-T" value="50"/><input id="cs-C" value="50"/>
-  <input id="cs-E" value="50"/><input id="cs-I" value="50"/>
-  <input id="cs-FUE" value="70"/><input id="cs-RES" value="70"/>
-  <!-- Hidden stat bars (engine uses these IDs) -->
-  <div id="ab-T" style="width:50%"></div><span id="abn-T">50</span>
-  <div id="ab-C" style="width:50%"></div><span id="abn-C">50</span>
-  <div id="ab-E" style="width:50%"></div><span id="abn-E">50</span>
-  <div id="ab-I" style="width:50%"></div><span id="abn-I">50</span>
-  <div id="ab-FUE" style="width:70%"></div><span id="abn-FUE">70</span>
-  <div id="ab-RES" style="width:70%"></div><span id="abn-RES">70</span>
-  <div id="cb-T" style="width:50%"></div><span id="cbn-T">50</span>
-  <div id="cb-C" style="width:50%"></div><span id="cbn-C">50</span>
-  <div id="cb-E" style="width:50%"></div><span id="cbn-E">50</span>
-  <div id="cb-I" style="width:50%"></div><span id="cbn-I">50</span>
-  <div id="cb-FUE" style="width:70%"></div><span id="cbn-FUE">70</span>
-  <div id="cb-RES" style="width:70%"></div><span id="cbn-RES">70</span>
-  <!-- Weather sliders (hidden — values set by randomizer) -->
-  <input type="range" id="wind-slider" min="0" max="3" value="0"/>
-  <input type="range" id="rain-slider" min="0" max="3" value="0"/>
-  <input type="range" id="temp-slider" min="0" max="4" value="2"/>
-  <!-- Weather display elements (hidden — shown in round-conditions card) -->
-  <span id="wind-val"></span><span id="rain-val"></span><span id="temp-val"></span>
-  <div id="wind-impact"></div><div id="rain-impact"></div><div id="temp-impact"></div>
-  <div id="env-note"></div>
-  <!-- Competition grid wrapper (hidden — managed by randomizer) -->
-  <div id="comp-grid-wrap"><div class="comp-btn sel" data-comp="indoor"></div></div>
-  <span id="comp-lock-badge"></span><span id="env-lock-badge"></span>
-  <!-- Old card picker placeholders (guarded in JS) -->
-  <div id="cards-grid"></div><div id="picker-area"></div>
-  <span id="card-count"></span>
-</div>
-
-
-<!-- ── TOURNAMENT PANEL ── -->
+<!-- ── TORNEO MULTIJUGADOR ─────────────────────────────── -->
 <div id="tournament-panel" style="margin-bottom:1.25rem">
-
-  <!-- Join / Create row -->
-  <div id="tournament-lobby" style="">
+  <div id="tournament-lobby">
     <div class="sec">🏆 Torneo Multijugador</div>
-
     <!-- Create -->
     <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rl);padding:14px 16px;margin-bottom:10px;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--yellow),var(--orange))"></div>
@@ -1595,7 +1514,6 @@ document.addEventListener('DOMContentLoaded', function(){
         </button>
       </div>
     </div>
-
     <!-- Join -->
     <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rl);padding:14px 16px;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--purple))"></div>
@@ -1623,80 +1541,154 @@ document.addEventListener('DOMContentLoaded', function(){
         <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.04em">Sala Activa</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">Comparte este ID — el nivel se construye en conjunto</div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <div id="trn-room-id-badge" style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.1em;color:var(--yellow);background:rgba(216,209,90,.1);border:1px solid rgba(216,209,90,.3);border-radius:8px;padding:4px 12px">GOAT-0000</div>
-        <button onclick="copyRoomId()" style="font-size:10px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer">📋 Copiar</button>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div id="trn-room-id-badge" style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--yellow);letter-spacing:.1em;background:rgba(216,209,90,.1);border:1px solid rgba(216,209,90,.3);border-radius:8px;padding:4px 12px">—</div>
+        <button onclick="copyRoomId()" style="font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">📋 Copiar</button>
+        <button onclick="leaveTournament()" style="font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border);background:transparent;color:var(--hint);cursor:pointer">Salir</button>
       </div>
     </div>
-
-    <!-- Participants list -->
-    <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Participantes (<span id="trn-count">1</span>)</div>
-    <div id="trn-participants-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
-
-    <!-- Leaderboard (shown after 2+ submitted) -->
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px"><span id="trn-count">0</span> arqueros en sala</div>
+    <div id="trn-participants-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
     <div id="trn-leaderboard-wrap" style="display:none">
-      <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">🏆 Tabla de Posiciones</div>
-      <div id="trn-leaderboard" style="display:flex;flex-direction:column;gap:4px"></div>
-      <div id="trn-winner-reward" style="display:none;margin-top:12px;background:rgba(216,209,90,.08);border:1px solid rgba(216,209,90,.3);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--yellow)"></div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">🏆 Clasificación</div>
+      <div id="trn-leaderboard" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
-
-    <!-- Reward explanation -->
-    <div style="margin-top:10px;padding:9px 12px;background:rgba(216,209,90,.06);border:0.5px solid rgba(216,209,90,.2);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.55">
-      🎖️ <strong style="color:var(--yellow)">Premio de Habilidad:</strong> Cuando compiten <strong>5 o más arqueros</strong>, el 1er lugar gana <strong>+1 Punto de Torneo</strong> para mejorar su arco en "Mi Arco". La grandeza se gana — y se construye en conjunto.
-    </div>
-
-    <!-- Submit score button (shown after game ends) -->
+    <div id="trn-winner-reward" style="display:none;font-size:11px;color:var(--yellow);background:rgba(216,209,90,.08);border:0.5px solid rgba(216,209,90,.25);border-radius:8px;padding:8px 12px;margin-top:8px"></div>
     <div id="trn-submit-wrap" style="display:none;margin-top:10px">
-      <button onclick="submitTournamentScore()" style="width:100%;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.05em;padding:10px;border-radius:var(--r);border:1.5px solid var(--green);background:rgba(93,202,165,.12);color:var(--green);cursor:pointer">
-        📤 Enviar puntuación al torneo
+      <button onclick="submitTournamentScore()" style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.04em;padding:8px 20px;border-radius:var(--r);border:1.5px solid var(--green);background:rgba(93,202,165,.12);color:var(--green);cursor:pointer">
+        📤 Enviar mi puntuación al torneo
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── LINEUP GUARDADO + INICIAR PARTIDA ──────────────── -->
+<div id="game-setup-panel" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rl);padding:18px 20px;margin-bottom:1.25rem;position:relative;overflow:hidden">
+  <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--yellow),var(--coral),var(--purple));opacity:.6"></div>
+
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.04em;margin-bottom:4px">
+    ▶ INICIAR PARTIDA
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:16px">
+    Tu lineup guardado se usa automáticamente. Cámbialo en <strong style="color:var(--text)">Cartas</strong> o <strong style="color:var(--text)">Mi Arco</strong> cuando quieras.
+  </div>
+
+  <!-- Resumen del lineup -->
+  <div id="lineup-summary" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+
+    <!-- Arquero -->
+    <div style="background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--r);padding:10px 12px;border-top:2px solid var(--blue)">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Arquero Activo</div>
+      <div id="ls-archer-content">
+        <div style="font-size:11px;color:var(--hint);display:flex;align-items:center;gap:6px">
+          <span>🏹</span> Sin seleccionar
+        </div>
+      </div>
+      <button onclick="goPickPerson('archer')" style="margin-top:8px;font-size:10px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+        ↺ Cambiar
       </button>
     </div>
 
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button onclick="leaveTournament()" style="font-size:11px;padding:5px 12px;border-radius:6px;border:0.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Salir de la sala</button>
+    <!-- Coach -->
+    <div style="background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--r);padding:10px 12px;border-top:2px solid var(--coral)">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Coach Activo</div>
+      <div id="ls-coach-content">
+        <div style="font-size:11px;color:var(--hint);display:flex;align-items:center;gap:6px">
+          <span>🎯</span> Sin seleccionar
+        </div>
+      </div>
+      <button onclick="goPickPerson('coach')" style="margin-top:8px;font-size:10px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+        ↺ Cambiar
+      </button>
+    </div>
+
+    <!-- Arco -->
+    <div style="background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--r);padding:10px 12px;border-top:2px solid var(--yellow)">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Arco Activo</div>
+      <div id="ls-bow-content">
+        <div style="font-size:11px;color:var(--hint);display:flex;align-items:center;gap:6px">
+          <span>🎯</span> Sin seleccionar
+        </div>
+      </div>
+      <button onclick="switchTab('mi-arco',document.getElementById('sb-mi-arco'))" style="margin-top:8px;font-size:10px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+        ↺ Cambiar
+      </button>
+    </div>
+
+    <!-- Deck -->
+    <div style="background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--r);padding:10px 12px;border-top:2px solid var(--purple)">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Deck</div>
+      <div id="ls-deck-content">
+        <div style="font-size:11px;color:var(--hint);display:flex;align-items:center;gap:6px">
+          <span>🃏</span> Sin armar
+        </div>
+      </div>
+      <button onclick="switchTab('cards',document.getElementById('sb-cards'))" style="margin-top:8px;font-size:10px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+        ↺ Cambiar
+      </button>
     </div>
   </div>
 
-</div>
-<!-- END TOURNAMENT PANEL -->
-
-<!-- ── GAME SETUP PANEL (visible before game starts) ── -->
-<div class="game-setup" id="game-setup-panel">
-  <div class="game-setup-title">&#9654; Iniciar Partida</div>
-  <div class="game-setup-sub">El nivel se construye en conjunto. Elige tu arco y tu equipo — luego demuéstralo.</div>
-
-  <!-- BOW SELECTOR -->
-  <div class="sec" style="margin-top:1rem">Selecciona tu Arco</div>
-  <div id="setup-bow-selector" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem"></div>
-  <div id="chk-bow-info" style="font-size:11px;color:var(--muted);margin-bottom:.8rem;padding:8px 10px;background:var(--surface2);border-radius:8px;display:none"></div>
-
-
-
-  <div class="game-setup-checks">
-    <div class="setup-check"><div class="dot dot-no" id="chk-bow"></div><span id="chk-bow-lbl">Arco no seleccionado</span></div>
-    <div class="setup-check"><div class="dot dot-no" id="chk-archer"></div><span id="chk-archer-lbl">Arquero no seleccionado</span></div>
-    <div class="setup-check"><div class="dot dot-no" id="chk-coach"></div><span id="chk-coach-lbl">Coach no seleccionado</span></div>
-    <div class="setup-check"><div class="dot dot-no" id="chk-deck"></div><span id="chk-deck-lbl">Deck vacío (0/36)</span></div>
+  <!-- Checks de setup -->
+  <div class="game-setup-checks" style="margin-bottom:14px">
+    <div class="setup-check"><div class="dot" id="chk-archer"></div><span id="chk-archer-lbl" style="font-size:11px;color:var(--muted)">Arquero</span></div>
+    <div class="setup-check"><div class="dot" id="chk-coach"></div><span id="chk-coach-lbl" style="font-size:11px;color:var(--muted)">Coach</span></div>
+    <div class="setup-check"><div class="dot" id="chk-bow"></div><span id="chk-bow-lbl" style="font-size:11px;color:var(--muted)">Arco</span></div>
+    <div class="setup-check"><div class="dot" id="chk-deck"></div><span id="chk-deck-lbl" style="font-size:11px;color:var(--muted)">Deck (0/36)</span></div>
   </div>
+
   <button class="btn-start" id="btn-start-game" onclick="startGame()" disabled>
-    &#127919; Comenzar juego
+    🎯 Comenzar Juego
   </button>
 </div>
 
-<div id="game-active" style="display:none">
-<!-- ── GAME HUD ── -->
+<!-- Hidden inputs (usados por el motor de scoring) -->
+<div style="display:none">
+  <input id="aname"/><input id="cname"/>
+  <input id="as-T" value="50"/><input id="as-C" value="50"/>
+  <input id="as-E" value="50"/><input id="as-I" value="50"/>
+  <input id="as-FUE" value="70"/><input id="as-RES" value="70"/>
+  <input id="cs-T" value="50"/><input id="cs-C" value="50"/>
+  <input id="cs-E" value="50"/><input id="cs-I" value="50"/>
+  <input id="cs-FUE" value="70"/><input id="cs-RES" value="70"/>
+  <div id="ab-T"></div><span id="abn-T">50</span>
+  <div id="ab-C"></div><span id="abn-C">50</span>
+  <div id="ab-E"></div><span id="abn-E">50</span>
+  <div id="ab-I"></div><span id="abn-I">50</span>
+  <div id="ab-FUE"></div><span id="abn-FUE">70</span>
+  <div id="ab-RES"></div><span id="abn-RES">70</span>
+  <div id="cb-T"></div><span id="cbn-T">50</span>
+  <div id="cb-C"></div><span id="cbn-C">50</span>
+  <div id="cb-E"></div><span id="cbn-E">50</span>
+  <div id="cb-I"></div><span id="cbn-I">50</span>
+  <div id="cb-FUE"></div><span id="cbn-FUE">70</span>
+  <div id="cb-RES"></div><span id="cbn-RES">70</span>
+  <input type="range" id="wind-slider" min="0" max="3" value="0"/>
+  <input type="range" id="rain-slider" min="0" max="3" value="0"/>
+  <input type="range" id="temp-slider" min="0" max="4" value="2"/>
+  <span id="wind-val"></span><span id="rain-val"></span><span id="temp-val"></span>
+  <div id="wind-impact"></div><div id="rain-impact"></div><div id="temp-impact"></div>
+  <div id="env-note"></div>
+  <div id="comp-grid-wrap"><div class="comp-btn sel" data-comp="indoor"></div></div>
+  <span id="comp-lock-badge"></span><span id="env-lock-badge"></span>
+  <div id="cards-grid"></div><div id="picker-area"></div>
+  <span id="card-count"></span>
+</div>
+
+<!-- ── GAME IN PROGRESS ────────────────────────────────── -->
+<div id="game-panel" style="display:none">
+
+  <!-- HUD -->
   <div class="game-hud">
-    <div style="display:flex;align-items:center;gap:14px">
-      <div id="hud-timer-pill" style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:.04em;line-height:1;min-width:80px;text-align:center;padding:4px 10px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.16);transition:background .3s,color .3s,border-color .3s">⏱ 40</div>
-      <div>
-        <div class="hud-round">Ronda <span id="hud-round-num">1</span><span style="color:var(--muted);font-size:16px"> / 6</span></div>
-        <div class="hud-phase-lbl" id="hud-phase-label">50M / FOCUS</div>
-      </div>
+    <div>
+      <div class="hud-round">Ronda <span id="hud-round-num">1</span><span style="color:var(--muted);font-size:18px"> / 6</span></div>
+      <div class="hud-phase-lbl" id="hud-phase-lbl">Jugando</div>
     </div>
     <div class="hud-pills">
       <div class="hud-pill" id="hud-played-count">0 / 6 jugadas</div>
       <div class="hud-pill" id="hud-deck-remain">Deck: 0</div>
       <div class="hud-pill" id="hud-hand-count">Mano: 10</div>
+      <div class="hud-pill" id="hud-timer-pill"></div>
     </div>
     <div class="hud-actions">
       <button class="btn-resign" onclick="resignGame()">Abandonar</button>
@@ -1706,16 +1698,15 @@ document.addEventListener('DOMContentLoaded', function(){
     </div>
   </div>
 
-  <!-- Round conditions (shown at start of each round) -->
+  <!-- Round conditions -->
   <div id="round-conditions" style="display:none"></div>
 
-  <!-- Score unificado -->
+  <!-- Score -->
   <div class="scorebox" style="position:relative;overflow:hidden;margin-bottom:1rem">
     <div style="position:absolute;right:-20px;bottom:-20px;width:120px;opacity:0.05;pointer-events:none;z-index:0">
       <img src='https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp' style="width:100%;height:auto" alt=""/>
     </div>
     <div style="position:relative;z-index:1">
-      <!-- Header: score grande + grado + historial rondas -->
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
         <div style="display:flex;align-items:baseline;gap:10px">
           <span class="snum2" id="final-score">0</span>
@@ -1725,7 +1716,6 @@ document.addEventListener('DOMContentLoaded', function(){
         </div>
         <div class="rsb-history" id="rsb-history"></div>
       </div>
-      <!-- Desglose por stat — 6 stats, pesos reales -->
       <div class="bkgrid" style="grid-template-columns:repeat(3,1fr)">
         <div class="bkitem"><div class="bklabel">Técnica · 32%</div><div class="bkval" id="bk-T">0</div><div class="bkw" id="bkw-T">0 pts</div></div>
         <div class="bkitem"><div class="bklabel">Int.Emoc. · 28%</div><div class="bkval" id="bk-I">0</div><div class="bkw" id="bkw-I">0 pts</div></div>
@@ -1734,17 +1724,14 @@ document.addEventListener('DOMContentLoaded', function(){
         <div class="bkitem"><div class="bklabel">Fuerza · 6%</div><div class="bkval" id="bk-FUE">0</div><div class="bkw" id="bkw-FUE">0 pts</div></div>
         <div class="bkitem"><div class="bklabel">Resistencia · 4%</div><div class="bkval" id="bk-RES">0</div><div class="bkw" id="bkw-RES">0 pts</div></div>
       </div>
-      <!-- Total acumulado (visible durante el juego) -->
       <div class="rsb-total" id="rsb-total" style="display:none;margin-top:10px">
         Total acumulado: <strong id="rsb-total-num">0</strong>
       </div>
     </div>
   </div>
 
-  <!-- Phase banner -->
   <div id="phase-banner" style="display:none"></div>
 
-  <!-- FASE JUGANDO: slots de cartas jugadas -->
   <div id="phase-playing" class="phase-block">
     <div class="phase-header">
       <span class="phase-title">&#9654; Cartas en juego esta ronda</span>
@@ -1753,43 +1740,28 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="played-grid" id="played-grid"></div>
   </div>
 
-  <!-- FASE ROBAR: UI clara de robo -->
   <div id="phase-draw" class="phase-block" style="display:none">
     <div class="draw-card-ui">
       <div class="dcui-title">&#9651; Fase de Robo</div>
       <div class="dcui-sub">Robaste <strong id="draw-card-name">—</strong> de tu deck</div>
       <div class="dcui-count">Quedan <span id="draw-deck-remain">0</span> cartas en el deck</div>
-      <button class="btn-confirm-draw" onclick="confirmDraw()">
-        Continuar al descarte &#10140;
-      </button>
+      <button class="btn-confirm-draw" onclick="confirmDraw()">Continuar al descarte &#10140;</button>
     </div>
   </div>
 
-  <!-- FASE DESCARTAR: UI clara de descarte -->
   <div id="phase-discard" class="phase-block" style="display:none">
     <div class="discard-ui">
       <div class="dcui-title" style="color:var(--coral)">&#9660; Intercambio de Cartas</div>
-      <div class="dcui-sub">
-        Selecciona hasta <strong>3 cartas</strong> para descartar.<br>
-        Robarás del deck exactamente las que descartes.
-      </div>
-      <div class="discard-counter">
-        <span id="discard-selected-count">0</span> / 3 seleccionadas
-        &nbsp;·&nbsp; Deck: <span id="discard-deck-count">0</span>
-      </div>
+      <div class="dcui-sub">Selecciona hasta <strong>3 cartas</strong> para descartar.<br>Robarás del deck exactamente las que descartes.</div>
+      <div class="discard-counter"><span id="discard-selected-count">0</span> / 3 seleccionadas &nbsp;·&nbsp; Deck: <span id="discard-deck-count">0</span></div>
     </div>
-    <!-- Cards to discard from hand -->
     <div class="hand-grid discard-grid" id="discard-hand-grid"></div>
-    <!-- Confirm button -->
     <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <button class="btn-confirm-discard" id="btn-confirm-discard" onclick="confirmDiscard()">
-        &#8635; Confirmar intercambio (0 cartas)
-      </button>
+      <button class="btn-confirm-discard" id="btn-confirm-discard" onclick="confirmDiscard()">&#8635; Confirmar intercambio (0 cartas)</button>
       <span style="font-size:10px;color:var(--hint)">O continúa sin intercambiar</span>
     </div>
   </div>
 
-  <!-- Mano de cartas (visible en fase jugando) -->
   <div id="phase-hand" class="phase-block">
     <div class="phase-header">
       <span class="phase-title">Tu mano <span id="hand-label-count" style="color:var(--hint)">(10)</span></span>
@@ -1798,50 +1770,135 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="hand-grid" id="hand-grid"></div>
   </div>
 
-  <!-- Historial detallado -->
   <div id="round-history-wrap" style="display:none;margin-top:.75rem">
     <div class="phase-header"><span class="phase-title">Historial de rondas</span></div>
     <div class="round-history" id="round-history"></div>
   </div>
 
-</div>
+</div><!-- end game-panel -->
 
-<!-- ── END GAME ── -->
+<!-- ── END GAME ───────────────────────────────────────── -->
 <div id="game-end" style="display:none">
   <div class="endgame">
     <div class="endgame-title">&#127942; Partida Completa</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">La grandeza se construye ronda a ronda.</div>
     <div class="endgame-score" id="end-total-score">0</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:20px">puntos totales</div>
-
-    <!-- Round by round breakdown -->
     <div class="endgame-rounds" id="end-rounds-detail"></div>
-
-    <!-- Score bar visual -->
     <div class="end-bar-wrap">
-      <div class="end-bar-track">
-        <div class="end-bar-fill" id="end-bar-fill"></div>
-      </div>
-      <div class="end-bar-labels">
-        <span>0</span><span>C</span><span>B</span><span>A</span><span>S</span><span>600</span>
-      </div>
+      <div class="end-bar-track"><div class="end-bar-fill" id="end-bar-fill"></div></div>
+      <div class="end-bar-labels"><span>0</span><span>C</span><span>B</span><span>A</span><span>S</span><span>600</span></div>
     </div>
-
     <div class="end-grade-box" id="end-grade-box">
       <span id="end-grade-letter">C</span>
       <span id="end-grade-desc">Sigue entrenando</span>
     </div>
-
     <div style="display:flex;gap:10px;justify-content:center;margin-top:18px">
       <button class="btn-play-again" onclick="resetGame()">&#8635; Jugar de nuevo</button>
     </div>
   </div>
 </div>
 
+<script>
+// ── LINEUP UI ─────────────────────────────────────────
+// Refresca las 4 tarjetas de resumen y los checks de setup
+function refreshLineupUI() {
+  const archer = window.selectedArcher;
+  const coach  = window.selectedCoach;
+  const bow    = window.activeBow != null ? (window.BOWS || [])[window.activeBow] : null;
+  const deck   = window.playerDeck || [];
 
+  // Arquero
+  const archerEl = document.getElementById('ls-archer-content');
+  if (archerEl) {
+    archerEl.innerHTML = archer
+      ? `<div style="display:flex;align-items:center;gap:8px">
+           <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;background:${archer.color}22;border:1.5px solid ${archer.color}55;flex-shrink:0">
+             ${archer.foto
+               ? `<img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${archer.foto}.webp" style="width:100%;height:100%;object-fit:cover">`
+               : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:13px;color:${archer.color}">${archer.avatar}</div>`}
+           </div>
+           <div>
+             <div style="font-size:12px;font-weight:600;color:var(--text)">${archer.name}</div>
+             <div style="font-size:10px;color:var(--muted)">${archer.role}</div>
+           </div>
+         </div>`
+      : `<div style="font-size:11px;color:var(--hint)">🏹 Sin seleccionar</div>`;
+  }
 
+  // Coach
+  const coachEl = document.getElementById('ls-coach-content');
+  if (coachEl) {
+    coachEl.innerHTML = coach
+      ? `<div style="display:flex;align-items:center;gap:8px">
+           <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;background:${coach.color}22;border:1.5px solid ${coach.color}55;flex-shrink:0">
+             ${coach.foto
+               ? `<img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${coach.foto}.webp" style="width:100%;height:100%;object-fit:cover">`
+               : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:13px;color:${coach.color}">${coach.avatar}</div>`}
+           </div>
+           <div>
+             <div style="font-size:12px;font-weight:600;color:var(--text)">${coach.name}</div>
+             <div style="font-size:10px;color:var(--muted)">${coach.role}</div>
+           </div>
+         </div>`
+      : `<div style="font-size:11px;color:var(--hint)">🎯 Sin seleccionar</div>`;
+  }
+
+  // Arco
+  const bowEl = document.getElementById('ls-bow-content');
+  if (bowEl) {
+    bowEl.innerHTML = bow
+      ? `<div style="font-size:12px;font-weight:600;color:var(--text)">${bow.name}</div>
+         <div style="font-size:10px;color:var(--yellow);margin-top:2px">${bow.fps}fps · ${bow.let}% let · ${bow.draw}lbs</div>`
+      : `<div style="font-size:11px;color:var(--hint)">🏹 Sin seleccionar</div>`;
+  }
+
+  // Deck
+  const deckEl = document.getElementById('ls-deck-content');
+  if (deckEl) {
+    const count = deck.length;
+    const ready = count >= 36;
+    deckEl.innerHTML = `
+      <div style="font-size:12px;font-weight:600;color:${ready ? 'var(--green)' : 'var(--text)'}">
+        ${count} / 36 cartas ${ready ? '✓' : ''}
+      </div>
+      <div style="margin-top:4px;height:3px;background:var(--surface);border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${Math.min(100,(count/36*100)).toFixed(0)}%;background:${ready ? 'var(--green)' : 'var(--yellow)'};border-radius:2px;transition:width .3s"></div>
+      </div>`;
+  }
+
+  // Checks
+  _setCheck('archer', !!archer,  archer  ? `✓ ${archer.name}` : 'Arquero');
+  _setCheck('coach',  !!coach,   coach   ? `✓ ${coach.name}`  : 'Coach');
+  _setCheck('bow',    !!bow,     bow     ? `✓ ${bow.name}`    : 'Arco');
+  _setCheck('deck',   deck.length >= 36, `Deck (${deck.length}/36)`);
+
+  // Botón iniciar
+  const btn = document.getElementById('btn-start-game');
+  const ready = !!archer && !!coach && !!bow && deck.length >= 36;
+  if (btn) btn.disabled = !ready;
+}
+
+function _setCheck(key, ok, label) {
+  const dot = document.getElementById('chk-' + key);
+  const lbl = document.getElementById('chk-' + key + '-lbl');
+  if (dot) { dot.className = 'dot ' + (ok ? 'dot-ok' : 'dot-no'); }
+  if (lbl) { lbl.textContent = label; lbl.style.color = ok ? 'var(--text)' : 'var(--muted)'; }
+}
+
+// Exponer globalmente para que auth.js y persistence lo llamen
+window.refreshLineupUI = refreshLineupUI;
+
+// Refrescar cuando los datos del juego estén listos
+window.addEventListener('supabase-user-ready', refreshLineupUI);
+document.addEventListener('DOMContentLoaded', () => {
+  // Primer render (puede estar vacío si aún no cargó)
+  setTimeout(refreshLineupUI, 500);
+});
+</script>
 
 </div><!-- end tab-score -->
+
 <div id="tab-cards" class="tab-panel" style="padding:0 0 4rem">
 
   <!-- Guided flow banner -->
