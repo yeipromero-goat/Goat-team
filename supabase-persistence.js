@@ -76,8 +76,17 @@ window.upgradeHistory  = window.upgradeHistory   || [];
 // ─── SAVE ─────────────────────────────────────────────────────────
 async function saveUserSelections() {
   try {
-    const { data: sessionData } = await window._supabaseClient.auth.getSession();
-    if (!sessionData?.session) return;
+    // Esperar sesión activa — reintenta hasta 3 segundos
+    let sessionData;
+    for (let i = 0; i < 15; i++) {
+      const result = await window._supabaseClient.auth.getSession();
+      if (result?.data?.session) { sessionData = result.data; break; }
+      await new Promise(r => setTimeout(r, 200));
+    }
+    if (!sessionData?.session) {
+      console.warn('⚠️ saveUserSelections: sin sesión activa, omitiendo');
+      return;
+    }
 
     const userId = sessionData.session.user.id;
 
