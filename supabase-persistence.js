@@ -41,13 +41,20 @@
 // ═══════════════════════════════════════════════════════════════════
 
 // ─── FETCH PROPIO (no usa fetchSupabase de supabase.js) ───────────
+// Usa el token de sesión del usuario autenticado, no el anon key.
+// Esto es necesario para que las políticas RLS funcionen correctamente.
 async function _userFetch(endpoint, options = {}) {
   const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+
+  // Token de sesión activo del usuario — requerido para pasar RLS
+  const { data: sessionData } = await window._supabaseClient.auth.getSession();
+  const token = sessionData?.session?.access_token || SUPABASE_KEY;
+
   const res = await fetch(url, {
     ...options,
     headers: {
       apikey: SUPABASE_KEY,
-      Authorization: 'Bearer ' + SUPABASE_KEY,
+      Authorization: 'Bearer ' + token,
       'Content-Type': 'application/json',
       ...(options.headers || {})
     }
