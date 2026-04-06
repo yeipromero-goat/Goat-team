@@ -224,8 +224,15 @@ async function initAppData() {
     console.log('📦 DATA READY');
 
     renderAll();
-
     APP_STATE.ready = true;
+
+    // Restaurar lineup del usuario ahora que ARCHERS/COACHES/BOWS están listos
+    if (typeof loadUserSelections === 'function') {
+      await loadUserSelections();
+    }
+    if (typeof refreshLineupUI === 'function') {
+      refreshLineupUI();
+    }
 
   } catch (e) {
     console.error('❌ INIT ERROR:', e);
