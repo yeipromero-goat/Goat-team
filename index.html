@@ -3015,7 +3015,7 @@ function selectSetupBow(idx) {
 
 // ── Start game ────────────────────────────────────────────────────
 function startGame() {
-  if(!selectedArcher||!selectedCoach||selectedBow===null) return;
+  if(!selectedArcher || !selectedCoach || selectedBow === null || selectedBow === undefined) return;
   const deckCards = playerDeck.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
   if(deckCards.length < PLAY_PER_ROUND){ alert('Necesitas al menos '+PLAY_PER_ROUND+' cartas en tu deck.'); return; }
   const shuffled = [...deckCards].sort(()=>Math.random()-.5);
