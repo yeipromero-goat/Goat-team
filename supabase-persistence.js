@@ -252,6 +252,7 @@ function addArcherToLineup(archerId) {
   if (window.lineupArcherIds.length >= 3) window.lineupArcherIds.shift();
   window.lineupArcherIds.push(archerId);
   saveUserSelections();
+  if (typeof refreshLineupUI === 'function') refreshLineupUI();
 }
 
 function addBowToLineup(bowId) {
@@ -260,11 +261,13 @@ function addBowToLineup(bowId) {
   if (window.lineupBowIds.length >= 3) window.lineupBowIds.shift();
   window.lineupBowIds.push(bowId);
   saveUserSelections();
+  if (typeof refreshLineupUI === 'function') refreshLineupUI();
 }
 
 function setCoachInLineup(coachId) {
   window.lineupCoachId = coachId;
   saveUserSelections();
+  if (typeof refreshLineupUI === 'function') refreshLineupUI();
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────
