@@ -2946,7 +2946,10 @@ function gradeDesc(g){
 
 // ── Setup checks ──────────────────────────────────────────────────
 function updateSetupChecks() {
-  const hasBow    = selectedBow    !== null;
+  // Sincronizar selectedBow con activeBow (fuente de verdad de Mi Arco)
+  if (activeBow !== null && activeBow !== undefined) selectedBow = activeBow;
+
+  const hasBow    = selectedBow !== null && selectedBow !== undefined;
   const hasArcher = selectedArcher !== null;
   const hasCoach  = selectedCoach  !== null;
   const deckCount = playerDeck.length;
@@ -3015,7 +3018,13 @@ function selectSetupBow(idx) {
 
 // ── Start game ────────────────────────────────────────────────────
 function startGame() {
-  if(!selectedArcher || !selectedCoach || selectedBow === null || selectedBow === undefined) return;
+  // Sincronizar selectedBow con activeBow antes de validar
+  if (activeBow !== null && activeBow !== undefined) selectedBow = activeBow;
+
+  if (!selectedArcher || !selectedCoach || selectedBow === null || selectedBow === undefined) {
+    console.warn('startGame bloqueado — archer:', !!selectedArcher, 'coach:', !!selectedCoach, 'bow:', selectedBow);
+    return;
+  }
   const deckCards = playerDeck.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
   if(deckCards.length < PLAY_PER_ROUND){ alert('Necesitas al menos '+PLAY_PER_ROUND+' cartas en tu deck.'); return; }
   const shuffled = [...deckCards].sort(()=>Math.random()-.5);
