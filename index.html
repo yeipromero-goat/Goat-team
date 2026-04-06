@@ -3985,11 +3985,12 @@ function upgradeStat(stat) {
 // ── SELECT BOW ──
 function selectBow(idx) {
   if (idx >= BOWS.length) return;
-  activeBow = idx;
+  activeBow    = idx;
+  selectedBow  = idx;  // ← requerido por startGame()
   renderBowProfile();
   switchTab('mi-arco', document.getElementById('sb-mi-arco'));
   showToast(`🏹 ${BOWS[idx].name} activado`);
-  if (typeof addBowToLineup    === 'function') addBowToLineup(BOWS[idx].id);
+  if (typeof addBowToLineup     === 'function') addBowToLineup(BOWS[idx].id);
   if (typeof saveUserSelections === 'function') saveUserSelections();
   if (typeof refreshLineupUI    === 'function') refreshLineupUI();
 }
