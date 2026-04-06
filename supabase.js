@@ -168,4 +168,6 @@ async function initAppData() {
 }
 
 // ── START ──────────────────────────────────────────────
-initAppData();
+document.addEventListener('DOMContentLoaded', () => {
+  initAppData();
+});
