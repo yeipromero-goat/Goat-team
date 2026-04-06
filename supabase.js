@@ -45,9 +45,13 @@ const mappers = {
     RES: a.r || 50,
     avatar: a.avatar || '',
     foto: a.foto || '',
+    foto_position: a.foto_position || 'center center',
     color: a.color || '#000',
     ability: a.ability || '',
-    abilityDesc: a.ability_desc || ''
+    abilityDesc: a.ability_desc || '',
+    spec: a.spec || 'all',
+    bio: a.bio || '',
+    top: a.top || []
   }),
 
   coaches: (c) => ({
@@ -64,9 +68,13 @@ const mappers = {
     RES: c.r || 50,
     avatar: c.avatar || '',
     foto: c.foto || '',
+    foto_position: c.foto_position || 'center center',
     color: c.color || '#000',
     ability: c.ability || '',
-    abilityDesc: c.ability_desc || ''
+    abilityDesc: c.ability_desc || '',
+    spec: c.spec || 'all',
+    bio: c.bio || '',
+    top: c.top || []
   }),
 
   cards: (c) => ({
@@ -86,7 +94,7 @@ const mappers = {
     fps: b.fps || 280,
     ata: b.ata || 30,
     bh: b.bh || 6.5,
-    let: b.let || 72,
+    let: b.let_off || b.let || 72,
     draw: b.draw || 60
   })
 };
