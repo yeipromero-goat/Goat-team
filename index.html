@@ -3025,6 +3025,7 @@ function startGame() {
   // Sincronizar variables locales desde window (cargadas por supabase-persistence)
   if (window.selectedArcher) selectedArcher = window.selectedArcher;
   if (window.selectedCoach)  selectedCoach  = window.selectedCoach;
+  if (window.playerDeck?.length) { playerDeck.length = 0; window.playerDeck.forEach(id => playerDeck.push(id)); }
   if (activeBow !== null && activeBow !== undefined) selectedBow = activeBow;
 
   if (!selectedArcher || !selectedCoach || selectedBow === null || selectedBow === undefined) {
