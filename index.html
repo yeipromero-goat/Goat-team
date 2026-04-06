@@ -3606,6 +3606,9 @@ window.addEventListener('supabase-data-ready', function() {
   if (typeof recalc                 === 'function') recalc();
   if (typeof renderArcherCards      === 'function') renderArcherCards();
   if (typeof renderCoachCards       === 'function') renderCoachCards();
+  if (typeof renderItemFilters      === 'function') renderItemFilters();
+  if (typeof renderItemGrid         === 'function') renderItemGrid();
+  if (typeof updateDeckUI           === 'function') updateDeckUI();
   if (typeof updateSetupChecks      === 'function') updateSetupChecks();
   console.log('🔄 UI re-renderizada con datos de Supabase');
 });
