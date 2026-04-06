@@ -2744,6 +2744,7 @@ function getAllCategories() {
 function renderItemFilters() {
   const cats = getAllCategories();
   const el = document.getElementById('item-filters');
+  if (!el) return;
   el.innerHTML = cats.map(cat =>
     `<div class="item-filter ${cat === activeCatFilter ? 'active' : ''}"
        onclick="setItemFilter('${cat}',this)">${cat === 'all' ? 'Todas (72)' : cat}</div>`
@@ -2763,7 +2764,9 @@ function renderItemGrid() {
     ? CARDS
     : CARDS.filter(c => c.cat === activeCatFilter);
 
-  document.getElementById('item-grid').innerHTML = filtered.map(c => {
+  const el = document.getElementById('item-grid');
+  if (!el || CARDS.length === 0) return;
+  el.innerHTML = filtered.map(c => {
     const inDeck = playerDeck.includes(c.id);
     const limited = atLimit && !inDeck;
     const stats = ['T','C','E','I']
@@ -3610,7 +3613,7 @@ window.addEventListener('supabase-data-ready', function() {
   if (typeof renderItemGrid         === 'function') renderItemGrid();
   if (typeof updateDeckUI           === 'function') updateDeckUI();
   if (typeof updateSetupChecks      === 'function') updateSetupChecks();
-  console.log('🔄 UI re-renderizada con datos de Supabase');
+  console.log('🔄 UI re-renderizada con datos de Supabase | CARDS:', window.CARDS?.length, '| item-grid:', !!document.getElementById('item-grid'));
 });
 
 
