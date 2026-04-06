@@ -2715,7 +2715,14 @@ function selectPersonCard(id, type) {
       }, 300);
     }
   }
+  // Guardar en lineup persistente
+  if (type === 'archer') {
+    if (typeof addArcherToLineup === 'function') addArcherToLineup(data.id);
+  } else {
+    if (typeof setCoachInLineup === 'function') setCoachInLineup(data.id);
+  }
   if (typeof saveUserSelections === 'function') saveUserSelections();
+  if (typeof refreshLineupUI    === 'function') refreshLineupUI();
 }
 
 function clearPersonCard(type) {
@@ -2737,6 +2744,7 @@ function clearPersonCard(type) {
   updateCardSelectionUI();
   updateBars(); recalc();
   if (typeof saveUserSelections === 'function') saveUserSelections();
+  if (typeof refreshLineupUI    === 'function') refreshLineupUI();
 }
 
 function updateCardSelectionUI() {
@@ -3972,7 +3980,9 @@ function selectBow(idx) {
   renderBowProfile();
   switchTab('mi-arco', document.getElementById('sb-mi-arco'));
   showToast(`🏹 ${BOWS[idx].name} activado`);
+  if (typeof addBowToLineup    === 'function') addBowToLineup(BOWS[idx].id);
   if (typeof saveUserSelections === 'function') saveUserSelections();
+  if (typeof refreshLineupUI    === 'function') refreshLineupUI();
 }
 
 // ── USE ABILITY ──
