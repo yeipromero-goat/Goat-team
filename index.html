@@ -2679,10 +2679,12 @@ function selectPersonCard(id, type) {
   if (type === 'archer') {
     if (selectedArcher && selectedArcher.id === data.id) { clearPersonCard('archer'); return; }
     selectedArcher = data;
+    window.selectedArcher = data;
     fillPerson('a', 'archer');
   } else {
     if (selectedCoach && selectedCoach.id === data.id)   { clearPersonCard('coach'); return; }
     selectedCoach = data;
+    window.selectedCoach = data;
     fillPerson('c', 'coach');
   }
 
@@ -2946,7 +2948,9 @@ function gradeDesc(g){
 
 // ── Setup checks ──────────────────────────────────────────────────
 function updateSetupChecks() {
-  // Sincronizar selectedBow con activeBow (fuente de verdad de Mi Arco)
+  // Sincronizar variables locales desde window (cargadas por supabase-persistence)
+  if (window.selectedArcher) selectedArcher = window.selectedArcher;
+  if (window.selectedCoach)  selectedCoach  = window.selectedCoach;
   if (activeBow !== null && activeBow !== undefined) selectedBow = activeBow;
 
   const hasBow    = selectedBow !== null && selectedBow !== undefined;
@@ -3018,7 +3022,9 @@ function selectSetupBow(idx) {
 
 // ── Start game ────────────────────────────────────────────────────
 function startGame() {
-  // Sincronizar selectedBow con activeBow antes de validar
+  // Sincronizar variables locales desde window (cargadas por supabase-persistence)
+  if (window.selectedArcher) selectedArcher = window.selectedArcher;
+  if (window.selectedCoach)  selectedCoach  = window.selectedCoach;
   if (activeBow !== null && activeBow !== undefined) selectedBow = activeBow;
 
   if (!selectedArcher || !selectedCoach || selectedBow === null || selectedBow === undefined) {
