@@ -1,6 +1,6 @@
 // ── CONFIG ─────────────────────────────────────────────
 const SUPABASE_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
-const SUPABASE_KEY = 'TU_KEY_AQUI';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YWl5YWZsdWJzc2FnaHZoZWZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MjMwMzIsImV4cCI6MjA5MDQ5OTAzMn0.ur72JmEuh0KXp8Q9Eo7jF13kevxKaaDSZygR9wC3x6A';
 
 // ── ESTADO GLOBAL ──────────────────────────────────────
 window.APP_STATE = {
