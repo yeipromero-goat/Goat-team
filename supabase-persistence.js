@@ -20,8 +20,8 @@
 //    window.COACHES          (array hardcodeado en data.js)
 // ══════════════════════════════════════════════════════════════════
 
-const SUPABASE_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YWl5YWZsdWJzc2FnaHZoZWZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MjMwMzIsImV4cCI6MjA5MDQ5OTAzMn0.ur72JmEuh0KXp8Q9Eo7jF13kevxKaaDSZygR9wC3x6A';
+// SUPABASE_URL y SUPABASE_ANON_KEY ya están declaradas en 00-head.html (globales)
+const SUPABASE_KEY = SUPABASE_ANON_KEY;
 
 // ─── Helper fetch ────────────────────────────────────────────────
 async function sbFetch(path, options = {}) {
