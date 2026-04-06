@@ -44,6 +44,7 @@ const mappers = {
     FUE: a.f || 50,
     RES: a.r || 50,
     avatar: a.avatar || '',
+    foto: a.foto || '',
     color: a.color || '#000',
     ability: a.ability || '',
     abilityDesc: a.ability_desc || ''
@@ -62,6 +63,7 @@ const mappers = {
     FUE: c.f || 50,
     RES: c.r || 50,
     avatar: c.avatar || '',
+    foto: c.foto || '',
     color: c.color || '#000',
     ability: c.ability || '',
     abilityDesc: c.ability_desc || ''
