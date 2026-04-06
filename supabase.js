@@ -20,20 +20,15 @@ async function fetchSupabase(endpoint) {
     }
   });
 
-  if (!res.ok) {
-    throw new Error(`Supabase error: ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
 
   const data = await res.json();
-
-  if (!Array.isArray(data)) {
-    throw new Error('Formato inválido');
-  }
+  if (!Array.isArray(data)) throw new Error('Formato inválido');
 
   return data;
 }
 
-// ── MAPPERS (SEPARACIÓN LIMPIA) ────────────────────────
+// ── MAPPERS ────────────────────────────────────────────
 const mappers = {
 
   archers: (a) => ({
@@ -42,25 +37,16 @@ const mappers = {
     rarity: a.rarity || 'common',
     role: a.role || '',
     quote: a.quote || '',
-
     T: a.t || 50,
     C: a.c || 50,
     E: a.e || 50,
     I: a.i || 50,
     FUE: a.f || 50,
     RES: a.r || 50,
-
     avatar: a.avatar || '',
     color: a.color || '#000',
-    foto: a.foto || '',
-    foto_position: a.foto_position || 'center center',
-
     ability: a.ability || '',
-    abilityDesc: a.ability_desc || '',
-    spec: a.spec || '',
-    bio: a.bio || '',
-
-    top: Array.isArray(a.top) ? a.top : []
+    abilityDesc: a.ability_desc || ''
   }),
 
   coaches: (c) => ({
@@ -69,28 +55,16 @@ const mappers = {
     rarity: c.rarity || 'common',
     role: c.role || '',
     quote: c.quote || '',
-
     T: c.t || 50,
     C: c.c || 50,
     E: c.e || 50,
     I: c.i || 50,
     FUE: c.f || 50,
     RES: c.r || 50,
-
     avatar: c.avatar || '',
     color: c.color || '#000',
-    foto: c.foto || '',
-    foto_position: c.foto_position || 'center center',
-
     ability: c.ability || '',
-    abilityDesc: c.ability_desc || '',
-    spec: c.spec || '',
-    bio: c.bio || '',
-
-    top: Array.isArray(c.top) ? c.top : [],
-    certifications: c.certifications || [],
-    experience_years: c.experience_years || 0,
-    clubs: c.clubs || []
+    abilityDesc: c.ability_desc || ''
   }),
 
   cards: (c) => ({
@@ -115,21 +89,80 @@ const mappers = {
   })
 };
 
-// ── LOADER GENÉRICO ────────────────────────────────────
+// ── LOADER ─────────────────────────────────────────────
 async function loadResource(name, endpoint) {
   try {
     const data = await fetchSupabase(endpoint);
     APP_STATE[name] = data.map(mappers[name]);
-
-    console.log(`✅ ${name} cargado:`, APP_STATE[name].length);
-
+    console.log(`✅ ${name}:`, APP_STATE[name].length);
   } catch (e) {
-    console.error(`❌ Error cargando ${name}:`, e.message);
+    console.error(`❌ ${name}:`, e.message);
     APP_STATE[name] = [];
   }
 }
 
-// ── INIT GLOBAL ────────────────────────────────────────
+// ── RENDERS ────────────────────────────────────────────
+
+// ARCHERS
+function renderArchers() {
+  if (typeof renderArcherCards === 'function') {
+    renderArcherCards();
+  }
+}
+
+// COACHES
+function renderCoaches() {
+  const coachDeck = document.getElementById('coach-deck');
+
+  if (coachDeck && typeof buildCard === 'function') {
+    coachDeck.innerHTML = COACHES.map(c => buildCard(c, 'coach')).join('');
+  }
+}
+
+// CARDS (ITEMS)
+function renderCards() {
+  const grid = document.getElementById('item-grid');
+  if (!grid || !window.CARDS) return;
+
+  grid.innerHTML = CARDS.map(c => `
+    <div class="icard">
+      <div class="ic-cat">${c.cat}</div>
+      <div class="ic-name">${c.n}</div>
+      <div class="ic-stats">
+        ${c.T ? `<span class="ic-stat pos">T +${c.T}</span>` : ''}
+        ${c.C ? `<span class="ic-stat pos">C +${c.C}</span>` : ''}
+        ${c.E ? `<span class="ic-stat pos">E +${c.E}</span>` : ''}
+        ${c.I ? `<span class="ic-stat pos">I +${c.I}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// BOWS
+function renderBows() {
+  const grid = document.getElementById('collection-grid-2');
+  if (!grid || !window.BOWS) return;
+
+  grid.innerHTML = BOWS.map(b => `
+    <div class="icard">
+      <div class="ic-name">${b.name}</div>
+      <div class="ic-stats">
+        <span class="ic-stat pos">FPS ${b.fps}</span>
+        <span class="ic-stat pos">LET ${b.let}%</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// MASTER
+function renderAll() {
+  renderArchers();
+  renderCoaches();
+  renderCards();
+  renderBows();
+}
+
+// ── INIT ───────────────────────────────────────────────
 async function initAppData() {
   try {
     await Promise.all([
@@ -139,35 +172,21 @@ async function initAppData() {
       loadResource('bows', 'bows?order=name')
     ]);
 
-    // Mapear a variables legacy (compatibilidad con tu código actual)
     window.ARCHERS = APP_STATE.archers;
     window.COACHES = APP_STATE.coaches;
     window.CARDS   = APP_STATE.cards;
     window.BOWS    = APP_STATE.bows;
 
-    // Render seguro
-    if (typeof renderArcherCards === 'function') {
-      renderArcherCards();
-    }
+    console.log('📦 DATA READY');
 
-    const coachDeck = document.getElementById('coach-deck');
-    if (coachDeck && typeof buildCard === 'function') {
-      coachDeck.innerHTML = COACHES.map(c => buildCard(c, 'coach')).join('');
-    }
-
-    if (typeof renderPList === 'function') {
-      renderPList('');
-    }
+    renderAll();
 
     APP_STATE.ready = true;
-    console.log('🚀 App lista');
 
   } catch (e) {
-    console.error('❌ Error inicializando app:', e);
+    console.error('❌ INIT ERROR:', e);
   }
 }
 
 // ── START ──────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  initAppData();
-});
+document.addEventListener('DOMContentLoaded', initAppData);
