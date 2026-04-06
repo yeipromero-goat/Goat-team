@@ -215,16 +215,31 @@ function buildCard(data, type){
   const specLabel = SPEC_LABELS[data.spec]||data.spec;
 
   return `<div class="card ${type} ${data.rarity}" data-id="${data.id}" data-type="${type}" onclick="handleCardClick('${data.id}','${type}',event)">
+    
+    <!-- ⭐ FAVORITO -->
+    <div 
+      class="fav-btn"
+      data-${type}-id="${data.id}"
+      onclick="event.stopPropagation(); ${
+        type === 'archer'
+          ? `toggleFavoriteArcher('${data.id}')`
+          : type === 'coach'
+          ? `setFavoriteCoach('${data.id}')`
+          : `setFavoriteCard('${data.id}')`
+      }"
+    >⭐</div>
+
     <div class="card-detail-btn" onclick="event.stopPropagation();openCardDetail('${data.id}','${type}')" title="Ver detalle" style="position:absolute;bottom:32px;right:6px;z-index:5;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.7);font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1">ⓘ</div>
+
     <div class="card-band"></div>
     <div class="card-rarity">${pipHtml}</div>
     <div class="card-type">${type==='archer'?'Arquero':'Coach'}</div>
 
     <div class="card-art">
-  <div class="diana-bg">${dianaRings()}</div>
-  <div class="avatar" style="background:${data.color}22;border-color:${data.color}55;overflow:hidden;padding:0">
-    ${data.foto ? `<img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${data.foto}.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="color:${data.color};font-family:'Bebas Neue';font-size:20px">${data.avatar}</span>`}
-  </div>
+      <div class="diana-bg">${dianaRings()}</div>
+      <div class="avatar" style="background:${data.color}22;border-color:${data.color}55;overflow:hidden;padding:0">
+        ${data.foto ? `<img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/${data.foto}.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="color:${data.color};font-family:'Bebas Neue';font-size:20px">${data.avatar}</span>`}
+      </div>
       <img class="gt-logo" src="${LOGO}" alt="GT"/>
     </div>
 
