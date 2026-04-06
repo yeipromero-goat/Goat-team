@@ -2221,7 +2221,8 @@ function switchTab(id, el){
 const W = {T:.32, C:.12, E:.18, I:.28, FUE:.06, RES:.04};
 const SS = ['T','C','E','I','FUE','RES'];
 let comp='indoor', selCards=[], openSlot=null;
-let playerDeck=[];
+window.playerDeck = window.playerDeck || [];
+let playerDeck = window.playerDeck;
 let activeCatFilter='all';
 let envMods={T:0,C:0,E:0,I:0,FUE:0,RES:0};
 
@@ -2851,6 +2852,7 @@ function toggleDeckCard(cardId) {
     if (playerDeck.length >= DECK_SIZE) return;
     playerDeck.push(cardId);
   }
+  window.playerDeck = playerDeck;
   updateDeckUI();
   renderItemGrid();
   if (typeof refreshLineupUI === 'function') refreshLineupUI();
@@ -2873,7 +2875,8 @@ function updateDeckUI() {
 }
 
 function clearDeck() {
-  playerDeck = [];
+  playerDeck.length = 0;
+  window.playerDeck = playerDeck;
   updateDeckUI();
   renderItemGrid();
   if (typeof saveUserSelections === 'function') saveUserSelections();
@@ -2881,9 +2884,10 @@ function clearDeck() {
 }
 
 function randomDeck() {
-  playerDeck = [];
+  playerDeck.length = 0;
   const shuffled = [...CARDS].sort(() => Math.random() - 0.5);
-  playerDeck = shuffled.slice(0, DECK_SIZE).map(c => c.id);
+  shuffled.slice(0, DECK_SIZE).forEach(c => playerDeck.push(c.id));
+  window.playerDeck = playerDeck;
   updateDeckUI();
   renderItemGrid();
   if (typeof saveUserSelections === 'function') saveUserSelections();
