@@ -2853,6 +2853,7 @@ function toggleDeckCard(cardId) {
   }
   updateDeckUI();
   renderItemGrid();
+  if (typeof refreshLineupUI === 'function') refreshLineupUI();
 }
 
 function updateDeckUI() {
@@ -2876,6 +2877,7 @@ function clearDeck() {
   updateDeckUI();
   renderItemGrid();
   if (typeof saveUserSelections === 'function') saveUserSelections();
+  if (typeof refreshLineupUI    === 'function') refreshLineupUI();
 }
 
 function randomDeck() {
@@ -2885,6 +2887,7 @@ function randomDeck() {
   updateDeckUI();
   renderItemGrid();
   if (typeof saveUserSelections === 'function') saveUserSelections();
+  if (typeof refreshLineupUI    === 'function') refreshLineupUI();
 }
 
 // ── APPLY DECK TO BOARD ──────────────────────────────────────────────────
@@ -2893,17 +2896,15 @@ function applyDeckToBoard() {
     alert('Tu deck está vacío. Agrega cartas primero.');
     return;
   }
-  // Map playerDeck ids back to CARDS objects and fill the 6 scoring slots
   const deckCards = playerDeck.map(id => CARDS.find(c => c.id === id)).filter(Boolean);
-  // Fill first 6 slots
   for (let i = 0; i < 6; i++) {
     selCards[i] = deckCards[i] || null;
   }
   renderSlots();
   recalc();
-  // Switch to board
   switchTab('score', document.getElementById('sb-score'));
   if (typeof saveUserSelections === 'function') saveUserSelections();
+  if (typeof refreshLineupUI    === 'function') refreshLineupUI();
 }
 
 // ── INIT DECK BUILDER ────────────────────────────────────────────────────
