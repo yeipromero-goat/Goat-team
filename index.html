@@ -2150,11 +2150,10 @@ document.addEventListener('DOMContentLoaded', function(){
 function switchTab(id, el){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
-  // Actualizar sidebar
   document.querySelectorAll('.sb-item').forEach(t=>t.classList.remove('active'));
   const sbItem = document.getElementById('sb-'+id);
   if(sbItem) sbItem.classList.add('active');
-  // Cerrar sidebar en mobile
+  if(typeof updatePageTitle === 'function') updatePageTitle(id);
   if(typeof closeSidebar === 'function') closeSidebar();
 }
 
