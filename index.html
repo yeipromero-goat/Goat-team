@@ -2953,7 +2953,10 @@ function updateSetupChecks() {
   const hasBow    = selectedBow !== null && selectedBow !== undefined;
   const hasArcher = selectedArcher !== null;
   const hasCoach  = selectedCoach  !== null;
-  const deckCount = playerDeck.length;
+  // window.playerDeck es la fuente de verdad — playerDeck local puede estar desync
+  const deckCount = (window.playerDeck || playerDeck).length;
+  const hasDeck   = deckCount >= DECK_SIZE;
+
   const ca = document.getElementById('chk-archer');
   if (!ca) return;
   const cbw = document.getElementById('chk-bow');
@@ -2963,12 +2966,12 @@ function updateSetupChecks() {
 
   ca.className = 'dot '+(hasArcher?'dot-ok':'dot-no');
   document.getElementById('chk-coach').className = 'dot '+(hasCoach?'dot-ok':'dot-no');
-  document.getElementById('chk-deck').className  = 'dot '+(deckCount>=PLAY_PER_ROUND?'dot-ok':'dot-no');
+  document.getElementById('chk-deck').className  = 'dot '+(hasDeck?'dot-ok':'dot-no');
   document.getElementById('chk-archer-lbl').textContent = hasArcher?'✓ '+selectedArcher.name:'Arquero no seleccionado';
   document.getElementById('chk-coach-lbl').textContent  = hasCoach?'✓ '+selectedCoach.name:'Coach no seleccionado';
-  document.getElementById('chk-deck-lbl').textContent   = deckCount>0?'✓ Deck listo ('+deckCount+' cartas)':'Deck vacío — ve a la pestaña Items';
+  document.getElementById('chk-deck-lbl').textContent   = hasDeck?'✓ Deck listo ('+deckCount+' cartas)':'Deck ('+deckCount+'/36)';
   const btn = document.getElementById('btn-start-game');
-  if(btn) btn.disabled = !(hasBow && hasArcher && hasCoach && deckCount>=PLAY_PER_ROUND);
+  if(btn) btn.disabled = !(hasBow && hasArcher && hasCoach && hasDeck);
 }
 
 // ── Bow selector in setup ─────────────────────────────────────────
