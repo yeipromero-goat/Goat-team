@@ -91,12 +91,17 @@ const mappers = {
   bows: (b) => ({
     id: b.id,
     name: b.name || 'Sin nombre',
+    model: b.model || '',
     fps: b.fps || 280,
     ata: b.ata || 30,
     bh: b.bh || 6.5,
     let: b.let_off || b.let || 72,
-    draw: b.draw || 60
+    draw: b.draw || 60,
+    dl: b.dl || 28,
+    ability_name: b.ability_name || '',
+    ability_desc: b.ability_desc || ''
   })
+
 };
 
 // ── LOADER ─────────────────────────────────────────────
@@ -123,7 +128,6 @@ function renderArchers() {
 // COACHES
 function renderCoaches() {
   const coachDeck = document.getElementById('coach-deck');
-
   if (coachDeck && typeof buildCard === 'function') {
     coachDeck.innerHTML = COACHES.map(c => buildCard(c, 'coach')).join('');
   }
