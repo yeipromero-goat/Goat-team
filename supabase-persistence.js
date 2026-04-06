@@ -132,7 +132,7 @@ async function saveUserSelections() {
       tournament_results: window.tournamentResults || []
     };
 
-    await _userFetch('user_selections', {
+    await _userFetch('user_selections?on_conflict=user_id', {
       method: 'POST',
       headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify(payload)
