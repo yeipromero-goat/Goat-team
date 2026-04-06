@@ -194,11 +194,10 @@ async function loadUserSelections() {
     if (Array.isArray(row.bow_ids) && row.bow_ids.length > 0) {
       window.lineupBowIds = row.bow_ids.slice(0, 3);
       const idx = (window.BOWS || []).findIndex(b => b.id === row.bow_ids[0]);
-      if (idx >= 0) window.activeBow = idx;
+      if (idx >= 0) { window.activeBow = idx; window.selectedBow = idx; }
     } else if (row.active_bow_id != null) {
-      // fallback campo legacy
       const idx = (window.BOWS || []).findIndex(b => b.id === row.active_bow_id);
-      if (idx >= 0) { window.activeBow = idx; window.lineupBowIds = [window.BOWS[idx].id]; }
+      if (idx >= 0) { window.activeBow = idx; window.selectedBow = idx; window.lineupBowIds = [window.BOWS[idx].id]; }
     }
 
     // 🔧 Upgrades de arcos
