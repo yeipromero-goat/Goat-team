@@ -2153,3 +2153,59 @@ function selectFromModal() {
   }, 150);
 }
 
+// ── FAVORITOS ─────────────────────────────────────
+
+let userFavorites = {
+  archers: [],
+  coach: null,
+  cards: []
+};
+
+function toggleFavoriteArcher(id){
+  if(userFavorites.archers.includes(id)){
+    userFavorites.archers = userFavorites.archers.filter(a => a !== id);
+  } else {
+    if(userFavorites.archers.length >= 3){
+      alert('Solo puedes tener 3 arqueros favoritos');
+      return;
+    }
+    userFavorites.archers.push(id);
+  }
+  updateFavoriteUI();
+}
+
+function setFavoriteCoach(id){
+  userFavorites.coach = id;
+  updateFavoriteUI();
+}
+
+function setFavoriteCard(id){
+  if(userFavorites.cards.includes(id)){
+    userFavorites.cards = userFavorites.cards.filter(c => c !== id);
+  } else {
+    userFavorites.cards.push(id);
+  }
+  updateFavoriteUI();
+}
+
+function updateFavoriteUI(){
+  document.querySelectorAll('.fav-btn').forEach(btn=>{
+    btn.classList.remove('fav-active');
+
+    const archerId = btn.dataset.archerId;
+    const coachId = btn.dataset.coachId;
+    const cardId = btn.dataset.cardId;
+
+    if(archerId && userFavorites.archers.includes(archerId)){
+      btn.classList.add('fav-active');
+    }
+
+    if(coachId && userFavorites.coach === coachId){
+      btn.classList.add('fav-active');
+    }
+
+    if(cardId && userFavorites.cards.includes(cardId)){
+      btn.classList.add('fav-active');
+    }
+  });
+}
