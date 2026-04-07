@@ -5507,31 +5507,43 @@ window.btSaveSession=function(){
   btSessions.unshift(s);
   if(typeof window.supabaseSaveScore==='function') window.supabaseSaveScore(s);
 
-  // Si hay torneo pendiente — subir score automáticamente
-  const pendingTournament = window._cpPendingTournament;
-  if(pendingTournament){
-    const userId = window._supabaseUserId;
-    if(userId){
-      fetch('https://axaiyaflubssaghvhefe.supabase.co/rest/v1/tournament_players?tournament_id=eq.'+pendingTournament+'&user_id=eq.'+userId, {
-        method:'PATCH',
-        headers:{
-          'apikey': window._supabaseAnonKey||'',
-          'Authorization':'Bearer '+(window._supabaseToken||''),
-          'Content-Type':'application/json',
-          'Prefer':'return=minimal'
-        },
-        body:JSON.stringify({
-          qualifying_score: s.total,
-          qualifying_detail: s.ends,
-          qualifying_at: s.date
-        })
-      }).then(()=>{
-        window._cpPendingTournament=null;
-        // Regresar a la sala del torneo
-        if(typeof switchTab==='function') switchTab('competencias', document.getElementById('sb-competencias'));
-        setTimeout(()=>{ if(typeof cpOpenRoom==='function') cpOpenRoom(pendingTournament); }, 300);
+  const SUPA='https://axaiyaflubssaghvhefe.supabase.co';
+  const headers={'apikey':window._supabaseAnonKey||'','Authorization':'Bearer '+(window._supabaseToken||''),'Content-Type':'application/json','Prefer':'return=minimal'};
+  const userId=window._supabaseUserId;
+
+  // Si hay LIGA pendiente — guardar score en league_rounds y actualizar standings
+  const pendingLeague = window._cpPendingLeague;
+  if(pendingLeague && userId){
+    const {leagueId, roundId} = pendingLeague;
+    // Guardar score del round
+    fetch(`${SUPA}/rest/v1/league_round_scores`, {
+      method:'POST', headers,
+      body:JSON.stringify({league_id:leagueId, round_id:roundId, user_id:userId, score:s.total, ends:s.ends, submitted_at:s.date})
+    }).then(()=>{
+      // Actualizar standings — sumar puntos (simplificado: posición se calcula al cerrar)
+      fetch(`${SUPA}/rest/v1/league_standings?league_id=eq.${leagueId}&user_id=eq.${userId}`, {
+        method:'PATCH', headers,
+        body:JSON.stringify({last_round_points:s.total, rounds_played:1})
       });
-    }
+    });
+    window._cpPendingLeague=null;
+    btResetState();
+    if(typeof switchTab==='function') switchTab('competencias', document.getElementById('sb-competencias'));
+    setTimeout(()=>{ if(typeof cpOpenLeague==='function') cpOpenLeague(leagueId); }, 300);
+    return;
+  }
+
+  // Si hay TORNEO pendiente — subir score automáticamente
+  const pendingTournament = window._cpPendingTournament;
+  if(pendingTournament && userId){
+    fetch(`${SUPA}/rest/v1/tournament_players?tournament_id=eq.${pendingTournament}&user_id=eq.${userId}`, {
+      method:'PATCH', headers,
+      body:JSON.stringify({qualifying_score:s.total, qualifying_detail:s.ends, qualifying_at:s.date})
+    }).then(()=>{
+      window._cpPendingTournament=null;
+      if(typeof switchTab==='function') switchTab('competencias', document.getElementById('sb-competencias'));
+      setTimeout(()=>{ if(typeof cpOpenRoom==='function') cpOpenRoom(pendingTournament); }, 300);
+    });
   } else {
     btResetState();btShowMain('historial');
   }
@@ -5590,8 +5602,6 @@ window.btResumeTournament = function(){
       </div>`;
   }
 }
-
-window.btSf=function(v,el,id){
   if(id==='bt-fd')btFDays=v;else btFMod=v;
   document.getElementById(id).querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
   el.classList.add('act');btRenderH();
@@ -6092,6 +6102,13 @@ setTimeout(()=>{
       <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
       <label class="cp-label">Nombre de la liga</label>
       <input class="cp-input" id="cp-lg-title" placeholder="Ej: Liga Indoor Primavera 2026">
+      <label class="cp-label">Modalidad de cada fecha</label>
+      <select class="cp-select" id="cp-lg-disc">
+        <optgroup label="Indoor"><option value="indoor-15">Indoor 15 tiros</option><option value="indoor-30" selected>Indoor 30 tiros</option><option value="indoor-60">Indoor 60 tiros</option></optgroup>
+        <optgroup label="Outdoor"><option value="outdoor-15">Outdoor 15 tiros</option><option value="outdoor-36">Outdoor 36 tiros</option><option value="outdoor-72">Outdoor 72 tiros</option></optgroup>
+        <optgroup label="Field"><option value="field-c">Field Conocidas</option><option value="field-d">Field Desconocidas</option></optgroup>
+        <optgroup label="3D"><option value="3d">3D</option></optgroup>
+      </select>
       <label class="cp-label">Número de fechas</label>
       <select class="cp-select" id="cp-lg-rounds">
         <option value="4">4 fechas</option><option value="6" selected>6 fechas</option><option value="8">8 fechas</option><option value="12">12 fechas</option>
@@ -6756,9 +6773,12 @@ window.cpAdminCreateTournament = async function(){
 window.cpAdminCreateLeague = async function(){
   const title=document.getElementById('cp-lg-title').value.trim();
   if(!title) return cpToast('Escribe un nombre');
+  const disc=document.getElementById('cp-lg-disc').value;
   const payload={
     created_by:cpUserId, title,
     code: cpGenCode(),
+    discipline: disc,
+    disc_group: disc.split('-')[0]==='3d'?'3d':disc.split('-')[0],
     rounds_total:parseInt(document.getElementById('cp-lg-rounds').value),
     match_format:document.getElementById('cp-lg-mfmt').value,
     has_bracket:document.getElementById('cp-lg-fmt').value==='bracket',
@@ -6779,6 +6799,35 @@ window.cpAdminCreateLeague = async function(){
     const league=Array.isArray(data)?data[0]:data;
     cpToast(`✓ Liga creada · Código: ${league?.code||''}`);
     cpAdminTab('ligas');
+  } catch(e){ console.error(e); cpToast('Error: '+e.message); }
+}
+
+// ── ADMIN: ACTIVAR FECHA DE LIGA ──────────────────────────────────
+window.cpAdminActivarFecha = async function(leagueId, roundNumber, discipline){
+  if(!confirm(`¿Activar Fecha ${roundNumber}? Los arqueros tendrán 3 horas para subir su score.`)) return;
+  const activeUntil = new Date(Date.now() + 3*60*60*1000).toISOString();
+  try{
+    // Crear o actualizar el league_round
+    const res=await cpFetch('/rest/v1/league_rounds',{
+      method:'POST',
+      headers:{'Prefer':'return=representation','resolution':'merge-duplicates'},
+      body:JSON.stringify({
+        league_id:leagueId,
+        round_number:roundNumber,
+        discipline: discipline,
+        status:'active',
+        active_until:activeUntil
+      })
+    });
+    if(!res.ok){ const err=await res.text(); console.error('Error activando fecha:',err); return cpToast('Error: '+err.slice(0,60)); }
+    // Actualizar current_round en la liga
+    await cpFetch('/rest/v1/leagues?id=eq.'+leagueId,{
+      method:'PATCH',
+      headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({current_round:roundNumber})
+    });
+    cpToast(`✓ Fecha ${roundNumber} activada — cierra en 3 horas`);
+    cpLoadAdminLeagues();
   } catch(e){ console.error(e); cpToast('Error: '+e.message); }
 }
 
@@ -6810,14 +6859,21 @@ async function cpLoadAdminLeagues(){
     const res=await cpFetch('/rest/v1/leagues?order=created_at.desc&limit=10');
     const data=await res.json();
     if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Sin ligas</div>'; return; }
-    listEl.innerHTML=data.map(l=>`
-      <div class="cp-card" style="margin-bottom:8px">
+    // Cargar rounds activos de cada liga
+    const roundsRes=await cpFetch('/rest/v1/league_rounds?status=eq.active&order=round_number.desc&limit=20');
+    const activeRounds=await roundsRes.json();
+    listEl.innerHTML=data.map(l=>{
+      const nextRound=(l.current_round||0)+1;
+      const activeRound=activeRounds.find(r=>r.league_id===l.id);
+      const timerLeft=activeRound?.active_until?Math.max(0,Math.round((new Date(activeRound.active_until)-Date.now())/60000)):0;
+      return`<div class="cp-card" style="margin-bottom:8px">
         <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="font-size:13px;font-weight:600;color:#fff">${l.title}</div>
           <span class="cp-pill ${l.status==='active'?'cp-badge-playing':'cp-badge-closed'}">${l.status==='active'?'Activa':'Finalizada'}</span>
         </div>
-        <div class="cp-muted" style="font-size:11px;margin-bottom:4px">${l.current_round||0}/${l.rounds_total} fechas · ${l.visible?'Visible':'Oculta'}</div>
+        <div class="cp-muted" style="font-size:11px;margin-bottom:4px">${l.current_round||0}/${l.rounds_total} fechas · ${DISC_LABELS[l.discipline]||l.discipline||'—'} · ${l.visible?'Visible':'Oculta'}</div>
+        ${activeRound?`<div style="background:rgba(93,202,165,0.08);border:0.5px solid rgba(93,202,165,0.3);border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#5dcaa5">⏱ Fecha ${activeRound.round_number} activa · ${timerLeft} min restantes</div>`:''}
         ${l.code?`
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.2);border-radius:8px;padding:6px 10px">
           <span style="font-size:10px;color:rgba(255,255,255,0.4)">CÓDIGO</span>
@@ -6825,11 +6881,13 @@ async function cpLoadAdminLeagues(){
           <button class="cp-btn cp-btn-sm" onclick="navigator.clipboard?.writeText('${l.code}').then(()=>cpToast('Copiado ✓'))" style="padding:4px 8px;font-size:10px;margin-left:auto">Copiar</button>
         </div>`:''}
         <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${l.status==='active'&&nextRound<=l.rounds_total&&!activeRound?`<button class="cp-btn cp-btn-sm cp-btn-g" onclick="cpAdminActivarFecha('${l.id}',${nextRound},'${l.discipline||'indoor-30'}')">▶ Activar Fecha ${nextRound}</button>`:''}
           ${l.status==='active'?`<button class="cp-btn cp-btn-sm cp-btn-r" onclick="cpAdminCloseLeague('${l.id}')">Terminar liga</button>`:''}
           <button class="cp-btn cp-btn-sm" onclick="cpAdminToggleLeagueVisible('${l.id}',${!l.visible})">${l.visible?'Ocultar':'Mostrar'}</button>
           <button class="cp-btn cp-btn-sm" onclick="cpOpenLeague('${l.id}')">Ver tabla →</button>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch(e){ console.error(e); }
 }
 
@@ -6947,14 +7005,12 @@ window.cpOpenLeague = async function(leagueId){
 
     // Header
     document.getElementById('cp-room-title').textContent = league.title;
-    document.getElementById('cp-room-sub').textContent = `Liga · ${league.rounds_total} fechas`;
+    document.getElementById('cp-room-sub').textContent = `Liga · ${DISC_LABELS[league.discipline]||league.discipline||''} · ${league.rounds_total} fechas`;
     document.getElementById('cp-room-status-badge').className = 'cp-pill cp-badge-playing';
     document.getElementById('cp-room-status-badge').textContent = 'Activa';
 
-    // Jugadores — usar standings para contar
+    // Progreso
     document.getElementById('cp-room-player-count').textContent = `${standings.length} inscritos`;
-
-    // Barra de progreso de fechas
     const pct = Math.round((league.current_round||0) / league.rounds_total * 100);
     document.getElementById('cp-room-players').innerHTML = `
       <div style="margin-bottom:10px">
@@ -6967,39 +7023,55 @@ window.cpOpenLeague = async function(leagueId){
         </div>
       </div>`;
 
-    // Acción — inscribirse si no está en standings
+    // Fecha activa
+    const activeRound = rounds.find(r=>r.status==='active' && new Date(r.active_until)>new Date());
     const meInStandings = standings.find(s => s.user_id === cpUserId);
     const actionEl = document.getElementById('cp-room-action-content');
+
     if(!meInStandings){
       actionEl.innerHTML = `
         <div class="cp-sec">Participar en la liga</div>
-        <div class="cp-muted" style="font-size:12px;margin-bottom:10px">Inscríbete para aparecer en la tabla de posiciones y competir en cada fecha.</div>
+        <div class="cp-muted" style="font-size:12px;margin-bottom:10px">Inscríbete para aparecer en la tabla y competir en cada fecha.</div>
         <button class="cp-btn cp-btn-y" onclick="cpJoinLeague('${leagueId}')">Inscribirme a la liga →</button>`;
+    } else if(activeRound){
+      // Hay fecha activa — mostrar timer y botón de tirar
+      const msLeft = new Date(activeRound.active_until) - Date.now();
+      const hLeft = Math.floor(msLeft/3600000);
+      const mLeft = Math.floor((msLeft%3600000)/60000);
+      const disc = activeRound.discipline || league.discipline || 'indoor-30';
+      actionEl.innerHTML = `
+        <div style="background:rgba(93,202,165,0.08);border:0.5px solid rgba(93,202,165,0.3);border-radius:10px;padding:12px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-size:13px;font-weight:600;color:#5dcaa5">⏱ Fecha ${activeRound.round_number} activa</div>
+            <div id="cp-league-timer" style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#5dcaa5">${hLeft}h ${mLeft}m</div>
+          </div>
+          <div class="cp-muted" style="font-size:11px">${DISC_LABELS[disc]||disc} · Tienes hasta que cierre el tiempo</div>
+        </div>
+        <button class="cp-btn cp-btn-y" onclick="cpGoLeagueScore('${leagueId}','${activeRound.id}','${disc}')">🏹 Tirar esta fecha →</button>`;
+      // Timer en vivo
+      cpStartLeagueTimer(activeRound.active_until);
     } else {
-      const cfg = league.points_config || {};
+      // No hay fecha activa
       actionEl.innerHTML = `
         <div class="cp-sec">Mis puntos</div>
-        <div style="display:flex;gap:12px;align-items:center">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
           <div><div class="cp-num" style="font-size:36px;color:#d8d15a">${meInStandings.total_points}</div><div class="cp-muted" style="font-size:10px;text-transform:uppercase">Puntos totales</div></div>
           <div><div class="cp-num" style="font-size:24px;color:#5dcaa5">+${meInStandings.last_round_points||0}</div><div class="cp-muted" style="font-size:10px;text-transform:uppercase">Última fecha</div></div>
           <div><div class="cp-num" style="font-size:24px;color:#fff">${meInStandings.rounds_played||0}</div><div class="cp-muted" style="font-size:10px;text-transform:uppercase">Fechas jugadas</div></div>
-        </div>`;
+        </div>
+        <div class="cp-muted" style="font-size:11px">Sin fecha activa — espera a que el coach active la siguiente.</div>`;
     }
 
     // Tabla de posiciones
     document.getElementById('cp-podium-section').style.display='block';
     document.getElementById('cp-podium-section').querySelector('.cp-sec').textContent = 'Tabla de posiciones';
     document.getElementById('cp-podium').style.display = standings.length >= 3 ? 'flex' : 'none';
-
     if(standings.length >= 3){
-      const top3 = standings.slice(0,3);
-      const order = [1,0,2];
-      const heights = [80,110,60];
-      const colors = ['#C0C0C0','#FFD700','#CD7F32'];
-      const medals = ['🥈','🥇','🥉'];
-      document.getElementById('cp-podium').innerHTML = order.map((idx,i) => {
-        const s = top3[idx]; if(!s) return '';
-        return `<div class="cp-podium-step">
+      const top3=standings.slice(0,3);
+      const order=[1,0,2],heights=[80,110,60],colors=['#C0C0C0','#FFD700','#CD7F32'],medals=['🥈','🥇','🥉'];
+      document.getElementById('cp-podium').innerHTML=order.map((idx,i)=>{
+        const s=top3[idx]; if(!s) return'';
+        return`<div class="cp-podium-step">
           <div style="font-size:20px">${medals[i]}</div>
           <div class="cp-avatar" style="width:40px;height:40px;font-size:16px">${(s.user_id||'?').charAt(0).toUpperCase()}</div>
           <div class="cp-num" style="font-size:16px;color:${colors[i]}">${s.total_points}</div>
@@ -7007,12 +7079,11 @@ window.cpOpenLeague = async function(leagueId){
         </div>`;
       }).join('');
     }
-
     document.getElementById('cp-results-list').innerHTML = standings.length
-      ? standings.map((s,i) => {
-          const isMe = s.user_id === cpUserId;
-          const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-          return `<div class="cp-row">
+      ? standings.map((s,i)=>{
+          const isMe=s.user_id===cpUserId;
+          const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+          return`<div class="cp-row">
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-family:'Bebas Neue';font-size:20px;color:rgba(255,255,255,0.4);min-width:24px">${i+1}</span>
               <span style="font-size:13px;font-weight:600;color:${isMe?'#d8d15a':'#fff'}">${medal} ${isMe?cpUserName+' (tú)':'Arquero'}</span>
@@ -7023,9 +7094,65 @@ window.cpOpenLeague = async function(leagueId){
             </div>
           </div>`;
         }).join('')
-      : '<div class="cp-muted" style="text-align:center;padding:16px 0">Sin participantes aún — ¡sé el primero!</div>';
+      : '<div class="cp-muted" style="text-align:center;padding:16px 0">Sin participantes aún</div>';
 
   } catch(e){ console.error('cpOpenLeague error:',e); cpToast('Error cargando liga'); }
+}
+
+// Timer en vivo para la fecha activa
+let _cpLeagueTimerInterval=null;
+function cpStartLeagueTimer(activeUntil){
+  if(_cpLeagueTimerInterval) clearInterval(_cpLeagueTimerInterval);
+  _cpLeagueTimerInterval=setInterval(()=>{
+    const el=document.getElementById('cp-league-timer');
+    if(!el){ clearInterval(_cpLeagueTimerInterval); return; }
+    const ms=new Date(activeUntil)-Date.now();
+    if(ms<=0){ el.textContent='¡Cerrado!'; el.style.color='#e05555'; clearInterval(_cpLeagueTimerInterval); return; }
+    const h=Math.floor(ms/3600000), m=Math.floor((ms%3600000)/60000), s=Math.floor((ms%60000)/1000);
+    el.textContent=`${h}h ${m}m ${s}s`;
+  },1000);
+}
+
+// Ir a tirar la fecha de liga
+window.cpGoLeagueScore = function(leagueId, roundId, discipline){
+  window._cpPendingTournament = null; // no es torneo
+  window._cpPendingLeague = {leagueId, roundId, discipline};
+  if(typeof switchTab==='function') switchTab('bitacora', document.getElementById('sb-bitacora'));
+  if(typeof btShowMain==='function') btShowMain('nueva');
+  setTimeout(()=>{
+    const banner=document.getElementById('bt-tournament-banner');
+    if(banner){
+      banner.style.display='block';
+      banner.style.background='rgba(93,202,165,0.08)';
+      banner.style.borderColor='rgba(93,202,165,0.3)';
+      banner.innerHTML=`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-size:18px">🏆</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:600;color:#5dcaa5">Fecha de liga activa</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tu score se enviará a la liga al guardar.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="bt-btn bt-btn-sm" style="flex:1;background:rgba(93,202,165,0.15);color:#5dcaa5;border-color:rgba(93,202,165,0.4)" onclick="btUseTournamentScore()">Registrar para liga</button>
+          <button class="bt-btn bt-btn-sm" onclick="btPauseTournament()" style="font-size:11px;color:rgba(255,255,255,0.5)">Anotar sin liga</button>
+        </div>`;
+    }
+    // Pre-seleccionar modalidad
+    const discMap={'indoor-15':'indoor','indoor-30':'indoor','indoor-60':'indoor','outdoor-15':'outdoor','outdoor-36':'outdoor','outdoor-72':'outdoor','field-c':'field','field-d':'field','3d':'3d'};
+    const group=discMap[discipline]||discipline.split('-')[0];
+    const card=document.querySelector(`#bt-s-inicio .bt-disc-card[data-group="${group}"]`);
+    if(card && typeof btSelGroup==='function'){
+      btSelGroup(group,card);
+      setTimeout(()=>{
+        document.querySelectorAll('#bt-cfg-opts .bt-sub-card').forEach(sc=>{
+          if(sc.getAttribute('onclick')&&sc.getAttribute('onclick').includes(`'${discipline}'`))
+            if(typeof btSetCM==='function') btSetCM(discipline,sc);
+        });
+      },150);
+    }
+  },200);
+  cpToast('🏆 Tira y guarda — tu score va a la liga');
 }
 
 window.cpJoinLeague = async function(leagueId){
