@@ -4470,41 +4470,131 @@ let roundTimerRemaining = 0;
 
 function startRoundTimer() {
   stopRoundTimer();
+  _showCountdownOverlay(() => {
+    // Después del 3,2,1 — arranca el timer de 40s
+    roundTimerRemaining = ROUND_TIMER_SECS;
+    updateTimerDisplay();
+    roundTimerInterval = setInterval(() => {
+      roundTimerRemaining--;
+      updateTimerDisplay();
+      if (roundTimerRemaining <= 0) {
+        stopRoundTimer();
+        if (gameState && gameState.phase === 'playing') {
+          showToast('⏰ Tiempo agotado — disciplina es también saber cuándo soltar.');
+          endRound(true);
+        }
+      }
+    }, 1000);
+  });
+}
 
-  // 3 segundos de preparación antes de empezar
-  let countdown = 3;
-  const pill = document.getElementById('hud-timer-pill');
+function _showCountdownOverlay(onDone) {
+  const a = window.selectedArcher;
+  const c = window.selectedCoach;
+  const STORAGE = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/';
 
-  // Mostrar cuenta regresiva de preparación
-  if (pill) {
-    pill.textContent = '🎯 ' + countdown;
-    pill.style.borderColor = 'var(--purple)';
-    pill.style.color       = 'var(--purple)';
-    pill.style.background  = 'rgba(154,136,221,0.12)';
+  function avatarHTML(p, size) {
+    if (!p) return '';
+    return p.foto
+      ? `<img src="${STORAGE}${p.foto}.webp" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;border:2px solid ${p.color}88">`
+      : `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${p.color}33;border:2px solid ${p.color}88;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:${size/2.5}px;color:${p.color}">${p.avatar}</div>`;
   }
 
-  const prepInterval = setInterval(() => {
-    countdown--;
-    if (countdown > 0) {
-      if (pill) {
-        pill.textContent = '🎯 ' + countdown;
-      }
+  // Crear overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'countdown-overlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:99999;
+    background:rgba(14,14,14,0.92);
+    backdrop-filter:blur(8px);
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    gap:24px;
+    animation:fadeInOverlay .3s ease;
+  `;
+
+  overlay.innerHTML = `
+    <style>
+      @keyframes fadeInOverlay { from{opacity:0} to{opacity:1} }
+      @keyframes fadeOutOverlay { from{opacity:1} to{opacity:0} }
+      @keyframes popIn { 0%{transform:scale(0.5);opacity:0} 60%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+      @keyframes popOut { 0%{transform:scale(1);opacity:1} 100%{transform:scale(1.5);opacity:0} }
+      #countdown-number { animation: popIn .35s cubic-bezier(.34,1.56,.64,1) forwards; }
+      #countdown-number.out { animation: popOut .3s ease forwards; }
+    </style>
+
+    <!-- Equipo -->
+    <div style="display:flex;align-items:center;gap:20px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        ${avatarHTML(a, 56)}
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.05em;color:var(--text)">${a?.name || '—'}</div>
+        <div style="font-size:9px;color:var(--blue);letter-spacing:.06em;text-transform:uppercase">Arquero</div>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--border2)">VS</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        ${avatarHTML(c, 56)}
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.05em;color:var(--text)">${c?.name || '—'}</div>
+        <div style="font-size:9px;color:var(--coral);letter-spacing:.06em;text-transform:uppercase">Coach</div>
+      </div>
+    </div>
+
+    <!-- Número grande -->
+    <div id="countdown-number" style="
+      font-family:'Bebas Neue',sans-serif;
+      font-size:120px;
+      line-height:1;
+      color:var(--yellow);
+      text-shadow:0 0 60px rgba(216,209,90,0.4);
+      letter-spacing:.02em;
+    ">3</div>
+
+    <div style="font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase">Prepárate</div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  let count = 3;
+  const numEl = () => document.getElementById('countdown-number');
+
+  const tick = setInterval(() => {
+    count--;
+    const el = numEl();
+    if (!el) { clearInterval(tick); return; }
+
+    if (count > 0) {
+      // Animar salida del número actual
+      el.classList.add('out');
+      setTimeout(() => {
+        if (!numEl()) return;
+        numEl().textContent = count;
+        numEl().className = '';
+        // Re-trigger animation
+        void numEl().offsetWidth;
+        numEl().style.animation = 'none';
+        numEl().style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1) forwards';
+      }, 280);
     } else {
-      clearInterval(prepInterval);
-      // Ahora sí empieza el timer de 40 segundos
-      roundTimerRemaining = ROUND_TIMER_SECS;
-      updateTimerDisplay();
-      roundTimerInterval = setInterval(() => {
-        roundTimerRemaining--;
-        updateTimerDisplay();
-        if (roundTimerRemaining <= 0) {
-          stopRoundTimer();
-          if (gameState && gameState.phase === 'playing') {
-            showToast('⏰ Tiempo agotado — disciplina es también saber cuándo soltar.');
-            endRound(true);
-          }
-        }
-      }, 1000);
+      // ¡YA! — mostrar "GO" y cerrar
+      el.classList.add('out');
+      setTimeout(() => {
+        if (!numEl()) return;
+        numEl().textContent = '¡YA!';
+        numEl().style.color = 'var(--green)';
+        numEl().style.textShadow = '0 0 60px rgba(93,202,165,0.5)';
+        numEl().className = '';
+        numEl().style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1) forwards';
+      }, 280);
+
+      clearInterval(tick);
+
+      // Fade out y remover
+      setTimeout(() => {
+        overlay.style.animation = 'fadeOutOverlay .4s ease forwards';
+        setTimeout(() => {
+          overlay.remove();
+          onDone();
+        }, 400);
+      }, 700);
     }
   }, 1000);
 }
