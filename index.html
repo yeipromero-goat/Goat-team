@@ -6664,8 +6664,8 @@ window.cpCreateTournament = async function(){
     const res=await cpFetch('/rest/v1/tournaments',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(payload)});
     const data=await res.json();
     const t=Array.isArray(data)?data[0]:data;
-    // Creador declara su arco si hay handicap por serie
-    if(hcapPayload.handicap_config?.serie){
+    // Siempre preguntar arco si hay handicap habilitado
+    if(hcapPayload.handicap_enabled){
       await cpShowBowDeclaration(t.id, ()=>cpOpenRoom(t.id));
     } else {
       await cpJoinTournament(t.id);
@@ -6750,12 +6750,12 @@ window.cpJoinByCode = async function(){
   const code=document.getElementById('cp-join-code').value.trim().toUpperCase();
   if(!code) return;
   try{
-    const tRes=await cpFetch(`/rest/v1/tournaments?code=eq.${code}&select=id,status,handicap_config`);
+    const tRes=await cpFetch(`/rest/v1/tournaments?code=eq.${code}&select=id,status,handicap_enabled`);
     const tData=await tRes.json();
     if(tData.length){
       if(tData[0].status==='closed') return cpToast('Este torneo ya cerró');
       const t=tData[0];
-      if(t.handicap_config?.serie){
+      if(t.handicap_enabled){
         await cpShowBowDeclaration(t.id, ()=>cpOpenRoom(t.id));
       } else {
         await cpJoinTournament(t.id);
@@ -6906,10 +6906,9 @@ window.cpChangeBow = async function(tournamentId){
 }
 
 window.cpJoinAndReload = async function(id){
-  const tRes=await cpFetch(`/rest/v1/tournaments?id=eq.${id}&select=handicap_config,status`);
+  const tRes=await cpFetch(`/rest/v1/tournaments?id=eq.${id}&select=handicap_enabled,status`);
   const tData=await tRes.json();
-  const needsBow=tData[0]?.handicap_config?.serie;
-  if(needsBow){
+  if(tData[0]?.handicap_enabled){
     await cpShowBowDeclaration(id, ()=>cpOpenRoom(id));
   } else {
     await cpJoinTournament(id);
