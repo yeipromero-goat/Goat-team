@@ -7225,6 +7225,7 @@ async function cpLoadAdminLeagues(){
         </div>`:''}
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${l.status==='active'&&nextRound<=l.rounds_total&&!activeRound?`<button class="cp-btn cp-btn-sm cp-btn-g" onclick="cpAdminActivarFecha('${l.id}',${nextRound},'${l.discipline||'indoor-30'}')">▶ Activar Fecha ${nextRound}</button>`:''}
+          ${activeRound?`<button class="cp-btn cp-btn-sm cp-btn-r" onclick="cpAdminCerrarFecha('${activeRound.id}','${l.id}')">⏹ Cerrar Fecha ${activeRound.round_number}</button>`:''}
           ${l.status==='active'?`<button class="cp-btn cp-btn-sm cp-btn-r" onclick="cpAdminCloseLeague('${l.id}')">Terminar liga</button>`:''}
           <button class="cp-btn cp-btn-sm" onclick="cpAdminToggleLeagueVisible('${l.id}',${!l.visible})">${l.visible?'Ocultar':'Mostrar'}</button>
           <button class="cp-btn cp-btn-sm" onclick="cpOpenLeague('${l.id}')">Ver tabla →</button>
@@ -7257,6 +7258,24 @@ window.cpAdminClose = async function(id){
 window.cpAdminToggleVisible = async function(id, visible){
   await cpFetch('/rest/v1/tournaments?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({visible})});
   cpLoadAdminTournaments();
+}
+
+window.cpAdminCerrarFecha = async function(roundId, leagueId){
+  if(!confirm('¿Cerrar esta fecha ahora? Ya no se podrán subir scores.')) return;
+  try{
+    const res=await cpFetch('/rest/v1/league_rounds?id=eq.'+roundId,{
+      method:'PATCH',
+      headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({status:'finished', active_until: new Date().toISOString()})
+    });
+    if(res.ok||res.status===204){
+      cpToast('✓ Fecha cerrada');
+      cpLoadAdminLeagues();
+    } else {
+      const err=await res.text();
+      cpToast('Error: '+err.slice(0,60));
+    }
+  } catch(e){ console.error(e); cpToast('Error: '+e.message); }
 }
 
 window.cpAdminCloseLeague = async function(id){
