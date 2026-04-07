@@ -2266,13 +2266,41 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── TAB SWITCHING ─────────────────────────────────────────────────────────
 function switchTab(id, el){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.add('active');
+  const panel = document.getElementById('tab-'+id);
+  if(panel) panel.classList.add('active');
   document.querySelectorAll('.sb-item').forEach(t=>t.classList.remove('active'));
   const sbItem = document.getElementById('sb-'+id);
   if(sbItem) sbItem.classList.add('active');
   if(typeof updatePageTitle === 'function') updatePageTitle(id);
   if(typeof closeSidebar === 'function') closeSidebar();
+  // Registrar navegación en el historial para que el botón regresar no salga de la app
+  history.pushState({tab: id}, '', '#'+id);
 }
+
+// ── Interceptar botón regresar ────────────────────────────────────
+// Siempre regresar al tablero principal, nunca salir de la app
+window.addEventListener('popstate', function(e){
+  const tab = e.state?.tab || 'score';
+  const scoreEl = document.getElementById('sb-score');
+  if(tab === 'score' || !document.getElementById('tab-'+tab)){
+    // Ya estamos en tablero o tab no existe — bloquear salida
+    history.pushState({tab:'score'}, '', '#score');
+    switchTab('score', scoreEl);
+  } else {
+    switchTab(tab, document.getElementById('sb-'+tab) || scoreEl);
+  }
+});
+
+// Al cargar — empujar un estado inicial para tener historial
+window.addEventListener('DOMContentLoaded', function(){
+  // Leer hash si viene de un bookmark, si no ir al score
+  const hash = location.hash.replace('#','');
+  const validTabs = ['score','cards','mi-arco','sobres','bitacora'];
+  const startTab = validTabs.includes(hash) ? hash : 'score';
+  history.replaceState({tab: startTab}, '', '#'+startTab);
+  // Empujar una entrada extra para que el primer "regresar" no salga
+  history.pushState({tab: startTab}, '', '#'+startTab);
+});
 
 // ── SCORING SYSTEM ────────────────────────────────────────────────────────
 
