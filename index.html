@@ -6291,18 +6291,57 @@ async function cpLoadMisPartidas(){
   const listEl=document.getElementById('cp-mis-list');
   if(!cpUserId){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:24px 0">Inicia sesión</div>'; return; }
   try{
-    const res=await cpFetch(`/rest/v1/tournament_players?user_id=eq.${cpUserId}&select=*,tournaments(*)&order=joined_at.desc&limit=20`);
-    const data=await res.json();
-    const active=data.filter(d=>d.tournaments&&d.tournaments.status!=='closed');
-    const past=data.filter(d=>d.tournaments&&d.tournaments.status==='closed');
-    if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:24px 0">Sin partidas aún.<br>¡Crea o únete a una!</div>'; return; }
+    // Cargar torneos y ligas en paralelo
+    const [tRes, lRes] = await Promise.all([
+      cpFetch(`/rest/v1/tournament_players?user_id=eq.${cpUserId}&select=*,tournaments(*)&order=joined_at.desc&limit=20`),
+      cpFetch(`/rest/v1/league_standings?user_id=eq.${cpUserId}&select=*,leagues(*)&order=total_points.desc&limit=10`)
+    ]);
+    const [tData, lData] = await Promise.all([tRes.json(), lRes.json()]);
+
+    const active=tData.filter(d=>d.tournaments&&d.tournaments.status!=='closed');
+    const past=tData.filter(d=>d.tournaments&&d.tournaments.status==='closed');
+    const activeLeagues=lData.filter(d=>d.leagues&&d.leagues.status==='active');
+    const pastLeagues=lData.filter(d=>d.leagues&&d.leagues.status==='finished');
+
+    if(!tData.length && !lData.length){
+      listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:24px 0">Sin partidas aún.<br>¡Crea o únete a una!</div>';
+      return;
+    }
+
     let html='';
+
+    // Ligas activas
+    if(activeLeagues.length){
+      html+=`<div class="cp-sec">Mis ligas</div>`;
+      html+=activeLeagues.map(d=>{
+        const l=d.leagues;
+        const pct=Math.round((l.current_round||0)/l.rounds_total*100);
+        return`<div class="cp-card" style="margin-bottom:8px;cursor:pointer" onclick="cpOpenLeague('${l.id}')">
+          <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#fff">${l.title}</div>
+              <div class="cp-muted" style="font-size:11px">Fecha ${l.current_round||0} / ${l.rounds_total}</div>
+            </div>
+            <span class="cp-pill cp-badge-playing">Activa</span>
+          </div>
+          <div style="height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:8px">
+            <div style="height:100%;background:#d8d15a;border-radius:2px;width:${pct}%"></div>
+          </div>
+          <div style="display:flex;gap:12px">
+            <div><span class="cp-num" style="font-size:20px;color:#d8d15a">${d.total_points}</span><span class="cp-muted" style="font-size:10px"> pts</span></div>
+            <div><span class="cp-num" style="font-size:20px;color:#5dcaa5">+${d.last_round_points||0}</span><span class="cp-muted" style="font-size:10px"> última fecha</span></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // Torneos activos
     if(active.length){
-      html+=`<div class="cp-sec">Activas</div>`;
+      html+=`<div class="cp-sec" style="margin-top:${activeLeagues.length?'8px':'0'}">Torneos activos</div>`;
       html+=active.map(d=>{
         const t=d.tournaments;
         const isActive=window._cpPendingTournament===t.id;
-        const needsScore=d.qualifying_score==null;
         return`<div class="cp-card" style="margin-bottom:8px">
           <div class="cp-ca" style="background:linear-gradient(90deg,${isActive?'#d8d15a,#5dcaa5':'#5dcaa5,#5ab4d6'})"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -6325,8 +6364,10 @@ async function cpLoadMisPartidas(){
         </div>`;
       }).join('');
     }
+
+    // Historial torneos
     if(past.length){
-      html+=`<div class="cp-sec" style="margin-top:8px">Historial</div>`;
+      html+=`<div class="cp-sec" style="margin-top:8px">Historial torneos</div>`;
       html+=past.map(d=>{
         const t=d.tournaments;
         const pos=d.final_position;
@@ -6345,8 +6386,29 @@ async function cpLoadMisPartidas(){
         </div>`;
       }).join('');
     }
+
+    // Historial ligas
+    if(pastLeagues.length){
+      html+=`<div class="cp-sec" style="margin-top:8px">Historial ligas</div>`;
+      html+=pastLeagues.map(d=>{
+        const l=d.leagues;
+        return`<div class="cp-card" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#fff">${l.title}</div>
+              <div class="cp-muted" style="font-size:11px">${l.rounds_total} fechas</div>
+            </div>
+            <div style="text-align:right">
+              <div class="cp-num" style="font-size:18px;color:#d8d15a">${d.total_points} pts</div>
+              <div class="cp-muted" style="font-size:11px">${d.rounds_played||0} fechas jugadas</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
     listEl.innerHTML=html;
-  } catch(e){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error cargando partidas</div>'; }
+  } catch(e){ console.error(e); listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error cargando partidas</div>'; }
 }
 
 // ── CREAR TORNEO (amigos) ─────────────────────────────────────────
