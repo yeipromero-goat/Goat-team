@@ -5824,11 +5824,12 @@ setTimeout(()=>{
   <!-- Unirse con código -->
   <div class="cp-card">
     <div class="cp-ca" style="background:linear-gradient(90deg,#5ab4d6,#9a88dd)"></div>
-    <div class="cp-label">Unirse con código de sala</div>
+    <div class="cp-label">Unirse con código — torneos o ligas</div>
     <div style="display:flex;gap:8px">
       <input class="cp-input" id="cp-join-code" placeholder="Ej: GOAT-3829" style="margin-bottom:0;flex:1;text-transform:uppercase" maxlength="9" oninput="this.value=this.value.toUpperCase()">
       <button class="cp-btn cp-btn-y cp-btn-sm" onclick="cpJoinByCode()" style="white-space:nowrap">Unirse →</button>
     </div>
+    <div class="cp-muted" style="font-size:10px;margin-top:4px">Tu coach o el creador del evento te da el código</div>
   </div>
 
   <!-- Torneos de club activos -->
@@ -5837,11 +5838,7 @@ setTimeout(()=>{
     <div class="cp-muted" style="text-align:center;padding:20px 0">Cargando torneos...</div>
   </div>
 
-  <!-- Ligas activas -->
-  <div class="cp-sec" style="margin-top:8px">Ligas activas</div>
-  <div id="cp-leagues-list">
-    <div class="cp-muted" style="text-align:center;padding:16px 0">Sin ligas activas</div>
-  </div>
+  <!-- Ligas — solo por código, no público -->
 
 </div>
 
@@ -6259,7 +6256,6 @@ function cpToast(msg){
 // ── CARGAR LOBBY ──────────────────────────────────────────────────
 async function cpLoadLobby(){
   const listEl=document.getElementById('cp-club-list');
-  const leaguesEl=document.getElementById('cp-leagues-list');
   if(!cpUserId){
     listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Inicia sesión para ver torneos</div>';
     return;
@@ -6288,31 +6284,6 @@ async function cpLoadLobby(){
         </div>`).join('');
     }
   } catch(e){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error cargando torneos</div>'; }
-
-  // ── Ligas activas ─────────────────────────────────────────────
-  try{
-    const res=await cpFetch('/rest/v1/leagues?status=eq.active&visible=eq.true&order=created_at.desc&limit=10');
-    const data=await res.json();
-    if(!data.length){
-      leaguesEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Sin ligas activas</div>';
-    } else {
-      leaguesEl.innerHTML=data.map(l=>`
-        <div class="cp-card" style="margin-bottom:8px">
-          <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div style="font-size:14px;font-weight:600;color:#fff">${l.title}</div>
-            <span class="cp-pill cp-badge-playing">Activa</span>
-          </div>
-          <div class="cp-muted" style="font-size:11px;margin-bottom:8px">
-            Fecha ${l.current_round||0} de ${l.rounds_total} · ${l.has_bracket?'Score + llaves':'Solo score'}
-          </div>
-          <div style="height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:8px">
-            <div style="height:100%;background:#d8d15a;border-radius:2px;width:${Math.round((l.current_round||0)/l.rounds_total*100)}%"></div>
-          </div>
-          <button class="cp-btn cp-btn-sm cp-btn-y" onclick="cpOpenLeague('${l.id}')">Ver tabla →</button>
-        </div>`).join('');
-    }
-  } catch(e){ leaguesEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error cargando ligas</div>'; console.error('ligas error:',e); }
 }
 
 // ── CARGAR MIS PARTIDAS ───────────────────────────────────────────
