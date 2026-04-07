@@ -6791,7 +6791,126 @@ window.cpAdminToggleVisible = async function(id, visible){
 }
 
 window.cpOpenLeague = async function(leagueId){
-  cpToast('Liga — próximamente tabla completa de posiciones');
+  cpShowTab('room');
+  document.getElementById('cp-room-code-section').style.display='none';
+  document.getElementById('cp-bracket-section').style.display='none';
+  document.getElementById('cp-podium-section').style.display='none';
+
+  try{
+    const [lRes, rRes, sRes] = await Promise.all([
+      cpFetch(`/rest/v1/leagues?id=eq.${leagueId}`),
+      cpFetch(`/rest/v1/league_rounds?league_id=eq.${leagueId}&order=round_number.asc`),
+      cpFetch(`/rest/v1/league_standings?league_id=eq.${leagueId}&order=total_points.desc`)
+    ]);
+    const [lData, rounds, standings] = await Promise.all([lRes.json(), rRes.json(), sRes.json()]);
+    const league = lData[0]; if(!league) return;
+
+    // Header
+    document.getElementById('cp-room-title').textContent = league.title;
+    document.getElementById('cp-room-sub').textContent = `Liga · ${league.rounds_total} fechas`;
+    document.getElementById('cp-room-status-badge').className = 'cp-pill cp-badge-playing';
+    document.getElementById('cp-room-status-badge').textContent = 'Activa';
+
+    // Jugadores — usar standings para contar
+    document.getElementById('cp-room-player-count').textContent = `${standings.length} inscritos`;
+
+    // Barra de progreso de fechas
+    const pct = Math.round((league.current_round||0) / league.rounds_total * 100);
+    document.getElementById('cp-room-players').innerHTML = `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span class="cp-muted" style="font-size:11px">Progreso de la liga</span>
+          <span class="cp-muted" style="font-size:11px">Fecha ${league.current_round||0} / ${league.rounds_total}</span>
+        </div>
+        <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden">
+          <div style="height:100%;background:#d8d15a;border-radius:2px;width:${pct}%"></div>
+        </div>
+      </div>`;
+
+    // Acción — inscribirse si no está en standings
+    const meInStandings = standings.find(s => s.user_id === cpUserId);
+    const actionEl = document.getElementById('cp-room-action-content');
+    if(!meInStandings){
+      actionEl.innerHTML = `
+        <div class="cp-sec">Participar en la liga</div>
+        <div class="cp-muted" style="font-size:12px;margin-bottom:10px">Inscríbete para aparecer en la tabla de posiciones y competir en cada fecha.</div>
+        <button class="cp-btn cp-btn-y" onclick="cpJoinLeague('${leagueId}')">Inscribirme a la liga →</button>`;
+    } else {
+      const cfg = league.points_config || {};
+      actionEl.innerHTML = `
+        <div class="cp-sec">Mis puntos</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div><div class="cp-num" style="font-size:36px;color:#d8d15a">${meInStandings.total_points}</div><div class="cp-muted" style="font-size:10px;text-transform:uppercase">Puntos totales</div></div>
+          <div><div class="cp-num" style="font-size:24px;color:#5dcaa5">+${meInStandings.last_round_points||0}</div><div class="cp-muted" style="font-size:10px;text-transform:uppercase">Última fecha</div></div>
+          <div><div class="cp-num" style="font-size:24px;color:#fff">${meInStandings.rounds_played||0}</div><div class="cp-muted" style="font-size:10px;text-transform:uppercase">Fechas jugadas</div></div>
+        </div>`;
+    }
+
+    // Tabla de posiciones
+    document.getElementById('cp-podium-section').style.display='block';
+    document.getElementById('cp-podium-section').querySelector('.cp-sec').textContent = 'Tabla de posiciones';
+    document.getElementById('cp-podium').style.display = standings.length >= 3 ? 'flex' : 'none';
+
+    if(standings.length >= 3){
+      const top3 = standings.slice(0,3);
+      const order = [1,0,2];
+      const heights = [80,110,60];
+      const colors = ['#C0C0C0','#FFD700','#CD7F32'];
+      const medals = ['🥈','🥇','🥉'];
+      document.getElementById('cp-podium').innerHTML = order.map((idx,i) => {
+        const s = top3[idx]; if(!s) return '';
+        return `<div class="cp-podium-step">
+          <div style="font-size:20px">${medals[i]}</div>
+          <div class="cp-avatar" style="width:40px;height:40px;font-size:16px">${(s.user_id||'?').charAt(0).toUpperCase()}</div>
+          <div class="cp-num" style="font-size:16px;color:${colors[i]}">${s.total_points}</div>
+          <div class="cp-podium-block" style="width:80px;height:${heights[i]}px;background:${colors[i]}22;border:0.5px solid ${colors[i]}44">${idx+1}</div>
+        </div>`;
+      }).join('');
+    }
+
+    document.getElementById('cp-results-list').innerHTML = standings.length
+      ? standings.map((s,i) => {
+          const isMe = s.user_id === cpUserId;
+          const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+          return `<div class="cp-row">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:'Bebas Neue';font-size:20px;color:rgba(255,255,255,0.4);min-width:24px">${i+1}</span>
+              <span style="font-size:13px;font-weight:600;color:${isMe?'#d8d15a':'#fff'}">${medal} ${isMe?cpUserName+' (tú)':'Arquero'}</span>
+            </div>
+            <div style="text-align:right">
+              <div class="cp-num" style="font-size:18px;color:${isMe?'#d8d15a':'#fff'}">${s.total_points} pts</div>
+              <div class="cp-muted" style="font-size:10px">${s.rounds_played||0} fechas · +${s.last_round_points||0} última</div>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div class="cp-muted" style="text-align:center;padding:16px 0">Sin participantes aún — ¡sé el primero!</div>';
+
+  } catch(e){ console.error('cpOpenLeague error:',e); cpToast('Error cargando liga'); }
+}
+
+window.cpJoinLeague = async function(leagueId){
+  try{
+    // Insertar en league_standings con 0 puntos
+    const res = await cpFetch('/rest/v1/league_standings', {
+      method: 'POST',
+      headers: {'Prefer':'return=minimal'},
+      body: JSON.stringify({
+        league_id: leagueId,
+        user_id: cpUserId,
+        total_points: 0,
+        rounds_played: 0,
+        last_round_points: 0
+      })
+    });
+    if(res.ok || res.status === 201 || res.status === 204){
+      cpToast('✓ Inscrito a la liga');
+      cpOpenLeague(leagueId);
+    } else {
+      const err = await res.text();
+      console.error('Error inscripción liga:', err);
+      cpToast('Error: ' + err.slice(0,60));
+    }
+  } catch(e){ console.error(e); cpToast('Error al inscribirse'); }
 }
 
 window.cpSetActiveTournament = function(tournamentId, discipline){
