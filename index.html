@@ -6167,6 +6167,7 @@ setTimeout(()=>{
       <div id="cp-results-list"></div>
     </div>
   </div>
+  <div id="cp-last-round-card" style="display:none;margin-top:10px"></div>
 </div>
 
 <!-- ══ ADMIN ═══════════════════════════════════════════════════ -->
@@ -7390,6 +7391,9 @@ window.cpOpenLeague = async function(leagueId){
   document.getElementById('cp-room-code-section').style.display='none';
   document.getElementById('cp-bracket-section').style.display='none';
   document.getElementById('cp-podium-section').style.display='none';
+  // Limpiar card de última fecha de ligas anteriores
+  const lrc=document.getElementById('cp-last-round-card');
+  if(lrc){lrc.style.display='none';lrc.innerHTML='';}
 
   try{
     const [lRes, rRes, sRes] = await Promise.all([
@@ -7517,17 +7521,21 @@ window.cpOpenLeague = async function(leagueId){
         }).join('')
       : '<div class="cp-muted" style="text-align:center;padding:16px 0">Sin participantes aún</div>';
 
-    // Podium de última fecha si ya hubo al menos una fecha cerrada
+    // Limpiar card de última fecha antes de renderizar
+    const lastRoundCard = document.getElementById('cp-last-round-card');
+    if(lastRoundCard) { lastRoundCard.style.display='none'; lastRoundCard.innerHTML=''; }
+
     const lastRound = rounds.filter(r=>r.status==='finished').sort((a,b)=>b.round_number-a.round_number)[0];
-    if(lastRound){
+    if(lastRound && lastRoundCard){
       const lrScoresRes = await cpFetch(`/rest/v1/league_round_scores?round_id=eq.${lastRound.id}&order=score.desc&limit=5`);
       const lrScores = await lrScoresRes.json();
       if(lrScores.length){
-        const lastRoundHtml=`
-          <div class="cp-card" style="margin-top:10px">
+        lastRoundCard.style.display='block';
+        lastRoundCard.innerHTML=`
+          <div class="cp-card">
             <div class="cp-ca" style="background:linear-gradient(90deg,#5ab4d6,#9a88dd)"></div>
             <div class="cp-sec">Última fecha — Fecha ${lastRound.round_number}</div>
-            ${lrScores.slice(0,3).map((sc,i)=>{
+            ${lrScores.map((sc,i)=>{
               const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
               const isMe=sc.user_id===cpUserId;
               return`<div class="cp-row">
@@ -7539,7 +7547,6 @@ window.cpOpenLeague = async function(leagueId){
               </div>`;
             }).join('')}
           </div>`;
-        document.getElementById('cp-podium-section').insertAdjacentHTML('afterend', lastRoundHtml.replace(/\n\s+/g,' '));
       }
     }
 
