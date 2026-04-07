@@ -5548,13 +5548,47 @@ window.btSaveSession=function(){
   // Si hay TORNEO pendiente — subir score automáticamente
   const pendingTournament = window._cpPendingTournament;
   if(pendingTournament && userId){
-    fetch(`${SUPA}/rest/v1/tournament_players?tournament_id=eq.${pendingTournament}&user_id=eq.${userId}`, {
-      method:'PATCH', headers,
-      body:JSON.stringify({qualifying_score:s.total, qualifying_detail:s.ends, qualifying_at:s.date})
-    }).then(()=>{
-      window._cpPendingTournament=null;
-      if(typeof switchTab==='function') switchTab('competencias', document.getElementById('sb-competencias'));
-      setTimeout(()=>{ if(typeof cpOpenRoom==='function') cpOpenRoom(pendingTournament); }, 300);
+    // Leer bow_type del jugador y config del torneo para aplicar handicap
+    Promise.all([
+      fetch(`${SUPA}/rest/v1/tournament_players?tournament_id=eq.${pendingTournament}&user_id=eq.${userId}&select=bow_type,handicap_value`, {headers}),
+      fetch(`${SUPA}/rest/v1/tournaments?id=eq.${pendingTournament}&select=handicap_enabled,handicap_config`, {headers})
+    ]).then(async([pRes, tRes])=>{
+      const [pData, tData] = await Promise.all([pRes.json(), tRes.json()]);
+      const player = pData[0] || {};
+      const tournament = tData[0] || {};
+      const cfg = tournament.handicap_config || {};
+
+      let bonusPerEnd = 0;
+
+      // 1. Bonus por tipo de arco (puntos por serie)
+      if(cfg.serie && player.bow_type){
+        if(player.bow_type==='compuesto') bonusPerEnd += cfg.serie_config?.compound ?? -2;
+        else if(player.bow_type==='barebow') bonusPerEnd += cfg.serie_config?.barebow ?? 3;
+        // recurvo = 0 (base)
+      }
+
+      // 2. Handicap manual asignado por el creador
+      if(player.handicap_value) bonusPerEnd += parseFloat(player.handicap_value);
+
+      // Calcular score ajustado: bonus × número de ends
+      const numEnds = s.ends ? s.ends.length : Math.ceil(s.n / 3);
+      const handicapTotal = Math.round(bonusPerEnd * numEnds * 10) / 10;
+      const adjustedScore = s.total + handicapTotal;
+
+      // Guardar score raw + ajustado
+      fetch(`${SUPA}/rest/v1/tournament_players?tournament_id=eq.${pendingTournament}&user_id=eq.${userId}`, {
+        method:'PATCH', headers,
+        body:JSON.stringify({
+          qualifying_score: adjustedScore,      // con handicap — para la tabla
+          qualifying_detail: s.ends,
+          qualifying_at: s.date,
+          handicap_value: bonusPerEnd           // guardar el bonus aplicado
+        })
+      }).then(()=>{
+        window._cpPendingTournament=null;
+        if(typeof switchTab==='function') switchTab('competencias', document.getElementById('sb-competencias'));
+        setTimeout(()=>{ if(typeof cpOpenRoom==='function') cpOpenRoom(pendingTournament); }, 300);
+      });
     });
   } else {
     btResetState();btShowMain('historial');
@@ -6872,19 +6906,23 @@ function cpRenderRoomAction(t, players){
         <div class="cp-muted" style="font-size:12px;margin-bottom:10px">Sube tu score de la modalidad <strong style="color:#fff">${DISC_LABELS[t.discipline]}</strong> para clasificar.</div>
         <button class="cp-btn cp-btn-y" onclick="cpGoScore('${t.id}','${t.discipline}')">Ir a registrar score →</button>`;
     } else if(!me.validated&&t.status==='validating'){
+      const hBonus = me.handicap_value ? ` <span style="font-size:12px;color:${me.handicap_value>0?'#5dcaa5':'#e05555'}">${me.handicap_value>0?'+':''}${me.handicap_value}/end</span>` : '';
       el.innerHTML=`<div class="cp-sec">Validación pendiente</div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
           <span class="cp-num" style="font-size:32px;color:#5dcaa5">${me.qualifying_score}</span>
-          <span class="cp-muted">pts · ${DISC_LABELS[t.discipline]}</span>
+          <span class="cp-muted">pts con handicap · ${DISC_LABELS[t.discipline]}</span>
         </div>
+        ${me.handicap_value?`<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:8px">Handicap aplicado: ${me.handicap_value>0?'+':''}${me.handicap_value} pts/end${hBonus}</div>`:''}
         <div class="cp-muted" style="font-size:11px;margin-bottom:10px">¿Confirmas este resultado? (auto-cierre en 24h)</div>
         <button class="cp-btn cp-btn-g" onclick="cpValidate('${t.id}')">✓ Confirmar resultado</button>`;
     } else if(me.qualifying_score!=null){
+      const hVal = me.handicap_value || 0;
       el.innerHTML=`<div class="cp-sec">Mi score</div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
           <span class="cp-num" style="font-size:36px;color:#5dcaa5">${me.qualifying_score}</span>
-          <div><span class="cp-muted">pts</span>${me.validated?'<div style="font-size:11px;color:#5dcaa5;margin-top:2px">✓ Validado</div>':'<div class="cp-muted" style="font-size:11px;margin-top:2px">Pendiente validación</div>'}</div>
-        </div>`;
+          <div><span class="cp-muted" style="font-size:11px">pts en torneo</span>${me.validated?'<div style="font-size:11px;color:#5dcaa5;margin-top:2px">✓ Validado</div>':'<div class="cp-muted" style="font-size:11px;margin-top:2px">Pendiente validación</div>'}</div>
+        </div>
+        ${hVal?`<div style="font-size:11px;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45)">Handicap: <span style="color:${hVal>0?'#5dcaa5':'#e05555'}">${hVal>0?'+':''}${hVal} pts/end</span> aplicado</div>`:''}`;
     }
   } else if(t.status==='closed'){
     const pos=me.final_position;
