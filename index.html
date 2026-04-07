@@ -6839,7 +6839,7 @@ window.cpAdminClose = async function(id){
     const res=await cpFetch('/rest/v1/tournaments?id=eq.'+id,{
       method:'PATCH',
       headers:{'Prefer':'return=minimal'},
-      body:JSON.stringify({status:'closed',visible:false})
+      body:JSON.stringify({status:'closed'})
     });
     if(res.status===204||res.status===200||res.ok){
       cpToast('✓ Torneo cerrado');
