@@ -2278,42 +2278,165 @@ function switchTab(id, el){
 
 // ── PESOS BASE (suma 1.0) ──
 // TEC=32% IEM=28% EST=18% COM=12% FUE=6% RES=4%
+// ══════════════════════════════════════════════════════════════════
+// SISTEMA DE SCORE — basado en Calculo_-_Video_Juego.xlsx
+// ══════════════════════════════════════════════════════════════════
+
+// ── PESOS GLOBALES (del CSV, suman 1.0) ──────────────────────────
 const W = {T:.32, C:.12, E:.18, I:.28, FUE:.06, RES:.04};
 const SS = ['T','C','E','I','FUE','RES'];
-let comp='indoor', selCards=[], openSlot=null;
-window.playerDeck = window.playerDeck || [];
-let playerDeck = window.playerDeck;
-let activeCatFilter='all';
-let envMods={T:0,C:0,E:0,I:0,FUE:0,RES:0};
 
-// ── MODIFICADORES POR DISCIPLINA (arquero) — de tabla real ──
-// Muy relevante=1.3 | Relevante=1.0 | Poco relevante=0.6
-const COMP_ARCHER_MULT = {
-  indoor:  {T:1.3, C:1.3, E:1.3, I:1.0, FUE:0.6, RES:0.6},
-  outdoor: {T:1.2, C:1.2, E:1.2, I:1.0, FUE:1.0, RES:1.3},
-  field:   {T:1.4, C:1.0, E:1.0, I:1.3, FUE:1.0, RES:1.0},
-  '3d':    {T:1.0, C:1.4, E:1.3, I:1.4, FUE:0.6, RES:0.6}
+// ── RELEVANCIA POR DISCIPLINA (escala 1-3 del CSV) ───────────────
+// 3 = muy relevante, 2 = relevante, 1 = poco relevante
+// Convierte a multiplicador: 3→1.15, 2→1.0, 1→0.75
+const DISC_ARCHER = {
+  indoor:  {T:3, C:3, E:3, I:2, FUE:1, RES:1},
+  outdoor: {T:3, C:3, E:3, I:2, FUE:2, RES:3},
+  field:   {T:3, C:2, E:2, I:3, FUE:2, RES:2},
+  '3d':    {T:2, C:3, E:3, I:3, FUE:1, RES:1}
 };
 
-// ── MODIFICADORES DEL ARCO POR DISCIPLINA ──
-// fps: Indoor no relevante | Outdoor poco | Field relevante | 3D muy relevante
-// ata: Indoor 36"+ muy relevante | Outdoor 35"+ | Field 33-37" | 3D 32-36"
-// bh:  Indoor muy relevante | Outdoor relevante | Field/3D poco
-// let: Siempre ayuda, mas en Indoor/3D donde sostienes mas
-const COMP_BOW_MULT = {
-  indoor:  {fps:0.2, ata:1.4, bh:1.4, let:1.3, draw:0.3},
-  outdoor: {fps:0.8, ata:1.2, bh:1.0, let:1.0, draw:1.0},
-  field:   {fps:1.2, ata:1.0, bh:0.5, let:0.8, draw:1.0},
-  '3d':    {fps:1.4, ata:0.8, bh:0.5, let:1.2, draw:0.8}
+// ── RELEVANCIA DEL ARCO POR DISCIPLINA (escala 0-3 del CSV) ──────
+const DISC_BOW = {
+  indoor:  {fps:0, ata:3, bh:3, letoff:2},
+  outdoor: {fps:1, ata:2, bh:2, letoff:1},
+  field:   {fps:2, ata:2, bh:1, letoff:1},
+  '3d':    {fps:3, ata:1, bh:1, letoff:3}
 };
 
-// ── MODS de competencia (offset base) — solo afecta T,C,E,I ──
-// Ahora los multiplicadores son los que definen el perfil; MODS solo finos ajustes
+// ── RANGOS IDEALES DEL ARCO POR DISCIPLINA (del CSV) ────────────
+const BOW_RANGES = {
+  indoor:  {fps:[260,330], ata:[38,42], bh:[7.0,8.0], letoff:[75,85]},
+  outdoor: {fps:[275,330], ata:[36,40], bh:[6.5,7.5], letoff:[65,75]},
+  field:   {fps:[290,340], ata:[34,37], bh:[6.0,7.0], letoff:[70,80]},
+  '3d':    {fps:[300,340], ata:[30,35], bh:[6.0,7.0], letoff:[75,90]}
+};
+
+// ── Convierte relevancia 0-3 a multiplicador ──────────────────────
+function _discMult(relevance) {
+  // 0→0.70, 1→0.85, 2→1.0, 3→1.15
+  return 0.70 + relevance * 0.15;
+}
+
+// ── Evalúa si un stat del arco está en rango ideal ────────────────
+// Retorna factor entre -1.0 (muy fuera) y +1.0 (dentro del rango)
+function _bowRangeFactor(value, range) {
+  const [min, max] = range;
+  const mid = (min + max) / 2;
+  const half = (max - min) / 2;
+  if (value >= min && value <= max) return 1.0;           // dentro del rango
+  const dist = value < min ? min - value : value - max;
+  const pct = dist / (half + 1);
+  return Math.max(-1.0, 1.0 - pct * 2.5);                // penaliza proporcional
+}
+
+// ── NÚCLEO DE CÁLCULO DE SCORE ────────────────────────────────────
+function _computeScore(archerData, bowData, cards, comp, envMods){
+  const discArcher = DISC_ARCHER[comp] || {T:2,C:2,E:2,I:2,FUE:2,RES:2};
+  const discBow    = DISC_BOW[comp]    || {fps:1,ata:1,bh:1,letoff:1};
+  const bowRanges  = BOW_RANGES[comp]  || BOW_RANGES.indoor;
+  const raw = {T:0, C:0, E:0, I:0, FUE:0, RES:0};
+
+  // ── 1. STATS DEL ARQUERO × relevancia de disciplina + clima ──────
+  const archerBase = archerData ? {
+    T:   archerData.T   || 50,
+    C:   archerData.C   || 50,
+    E:   archerData.E   || 50,
+    I:   archerData.I   || 50,
+    FUE: archerData.FUE || 60,
+    RES: archerData.RES || 60,
+  } : {
+    T:   parseInt(document.getElementById('as-T')?.value)   || 50,
+    C:   parseInt(document.getElementById('as-C')?.value)   || 50,
+    E:   parseInt(document.getElementById('as-E')?.value)   || 50,
+    I:   parseInt(document.getElementById('as-I')?.value)   || 50,
+    FUE: parseInt(document.getElementById('as-FUE')?.value) || 60,
+    RES: parseInt(document.getElementById('as-RES')?.value) || 60,
+  };
+
+  SS.forEach(s => {
+    const mult = _discMult(discArcher[s] || 2);
+    const clima = (s !== 'FUE' && s !== 'RES') ? (envMods[s] || 0) : 0;
+    raw[s] = archerBase[s] * mult + clima;
+  });
+
+  // ── 2. CARTAS — suman al stat antes del arco (amplifican disciplina) ──
+  // Tope de +20 pts totales para no dominar
+  if (cards && cards.length) {
+    let cardTotal = 0;
+    cards.forEach(c => {
+      if (!c) return;
+      const adds = {T: c.T||0, C: c.C||0, E: c.E||0, I: c.I||0};
+      ['T','C','E','I'].forEach(s => {
+        if (adds[s] !== 0 && Math.abs(cardTotal) < 20) {
+          raw[s] += adds[s];
+          cardTotal += Math.abs(adds[s]);
+        }
+      });
+    });
+  }
+
+  // ── 3. FACTOR DEL ARCO — hasta ±10 pts sobre el score final ─────
+  let bowFactor = 0;
+  if (bowData) {
+    const fps    = bowData.fps  || 280;
+    const ata    = bowData.ata  || 30;
+    const bh     = bowData.bh   || 6.5;
+    const letoff = bowData.let  || 72;
+    const draw   = bowData.draw || 60;
+
+    // Cada stat del arco contribuye según su relevancia en la disciplina
+    // Relevancia 0-3 → peso máx 0-3 pts
+    const fpsFactor    = _bowRangeFactor(fps,    bowRanges.fps)    * discBow.fps    * 1.0;
+    const ataFactor    = _bowRangeFactor(ata,    bowRanges.ata)    * discBow.ata    * 1.0;
+    const bhFactor     = _bowRangeFactor(bh,     bowRanges.bh)     * discBow.bh     * 1.0;
+    const letoffFactor = _bowRangeFactor(letoff, bowRanges.letoff) * discBow.letoff * 1.0;
+
+    // Suma total: máx teórico ±(0+3+3+2)=±8 pts, en práctica ±6-10
+    bowFactor = Math.round(fpsFactor + ataFactor + bhFactor + letoffFactor);
+    bowFactor = Math.max(-10, Math.min(10, bowFactor)); // clamp duro
+
+    // ── Penalización física: draw muy alto + FUE baja ────────────────
+    if (draw > 65 && archerBase.FUE < 65) {
+      raw.T -= 4;  // fatiga afecta técnica
+      raw.E -= 3;  // más tensión = más estrés
+    }
+  }
+
+  // ── 4. CLAMP por stat + SCORE FINAL ──────────────────────────────
+  // Factor de dificultad: arquero élite en disciplina ideal → ~82, no 100
+  const DIFFICULTY = 0.84;
+  const fin = {};
+  SS.forEach(s => {
+    fin[s] = Math.min(100, Math.max(0, Math.round(raw[s] * DIFFICULTY)));
+  });
+
+  const scoreBase = SS.reduce((acc, s) => acc + fin[s] * W[s], 0);
+  const score = Math.round(Math.max(0, Math.min(100, scoreBase + bowFactor)));
+
+  return {fin, score, bowFactor};
+}
+
+// ── MODS legacy (usados por updateEnv, se mantienen en 0 ─────────
 const MODS = {
-  indoor:  {T:0, C:0, E:0, I:0, FUE:0, RES:0},
-  outdoor: {T:0, C:0, E:0, I:0, FUE:0, RES:0},
-  field:   {T:0, C:0, E:0, I:0, FUE:0, RES:0},
-  '3d':    {T:0, C:0, E:0, I:0, FUE:0, RES:0}
+  indoor:  {T:0,C:0,E:0,I:0,FUE:0,RES:0},
+  outdoor: {T:0,C:0,E:0,I:0,FUE:0,RES:0},
+  field:   {T:0,C:0,E:0,I:0,FUE:0,RES:0},
+  '3d':    {T:0,C:0,E:0,I:0,FUE:0,RES:0}
+};
+
+// ── MODIFICADORES DEL ARCO (legacy — ya no se usan en _computeScore) ──
+const COMP_ARCHER_MULT = {
+  indoor:  {T:1.0,C:1.0,E:1.0,I:1.0,FUE:1.0,RES:1.0},
+  outdoor: {T:1.0,C:1.0,E:1.0,I:1.0,FUE:1.0,RES:1.0},
+  field:   {T:1.0,C:1.0,E:1.0,I:1.0,FUE:1.0,RES:1.0},
+  '3d':    {T:1.0,C:1.0,E:1.0,I:1.0,FUE:1.0,RES:1.0}
+};
+const COMP_BOW_MULT = {
+  indoor:  {fps:0,ata:0,bh:0,let:0,draw:0},
+  outdoor: {fps:0,ata:0,bh:0,let:0,draw:0},
+  field:   {fps:0,ata:0,bh:0,let:0,draw:0},
+  '3d':    {fps:0,ata:0,bh:0,let:0,draw:0}
 };
 
 function selComp(el){
@@ -2438,77 +2561,6 @@ function pickCard(idx){
 }
 
 
-// ── NÚCLEO DE CÁLCULO DE SCORE ──────────────────────────────────────
-// Arquero + Arco + Disciplina + Clima. Coaches = solo colección.
-function _computeScore(archerData, bowData, cards, comp, envMods){
-  const am = COMP_ARCHER_MULT[comp] || {T:1,C:1,E:1,I:1,FUE:1,RES:1};
-  const bm = COMP_BOW_MULT[comp]   || {fps:1,ata:1,bh:1,let:1,draw:1};
-  const raw = {T:0, C:0, E:0, I:0, FUE:0, RES:0};
-
-  if(archerData){
-    // Stats del arquero × multiplicador de disciplina + ajuste climático
-    raw.T   = (archerData.T   || 50) * am.T   + (envMods.T   || 0);
-    raw.C   = (archerData.C   || 50) * am.C   + (envMods.C   || 0);
-    raw.E   = (archerData.E   || 50) * am.E   + (envMods.E   || 0);
-    raw.I   = (archerData.I   || 50) * am.I   + (envMods.I   || 0);
-    raw.FUE = (archerData.FUE || 70) * am.FUE;
-    raw.RES = (archerData.RES || 70) * am.RES;
-  } else {
-    // Sin arquero: usar valores de inputs (setup manual)
-    raw.T   = (parseInt(document.getElementById('as-T')?.value)||50) * am.T   + (envMods.T||0);
-    raw.C   = (parseInt(document.getElementById('as-C')?.value)||50) * am.C   + (envMods.C||0);
-    raw.E   = (parseInt(document.getElementById('as-E')?.value)||50) * am.E   + (envMods.E||0);
-    raw.I   = (parseInt(document.getElementById('as-I')?.value)||50) * am.I   + (envMods.I||0);
-    raw.FUE = (parseInt(document.getElementById('as-FUE')?.value)||70) * am.FUE;
-    raw.RES = (parseInt(document.getElementById('as-RES')?.value)||70) * am.RES;
-  }
-
-  // ── BONO DEL ARCO ──────────────────────────────────────────────────
-  if(bowData){
-    const fps  = bowData.fps  || 280;
-    const ata  = bowData.ata  || 30;
-    const bh   = bowData.bh   || 6.5;
-    const letv = bowData.let  || 72;
-    const draw = bowData.draw || 60;
-
-    // FPS: referencia neutral 280fps. +/- 1pt por cada 10fps × mult
-    raw.T   += Math.round((fps - 280) / 10 * bm.fps);
-
-    // AxA: referencia neutral 30". Indoor quiere >36", Outdoor >35", Field 33-37", 3D 32-36"
-    // Cada pulgada sobre 30 aporta al score × mult disciplina
-    raw.E   += Math.round((ata - 30) * 0.5 * bm.ata);
-
-    // Brace Height: referencia neutral 6.5". Mas alto = mas perdonador
-    // Muy relevante Indoor (precision), poco Field/3D
-    raw.E   += Math.round((bh - 6.5) * 1.5 * bm.bh);
-
-    // LetOff: referencia neutral 72%. Cada 2% extra ayuda al EST (menos esfuerzo)
-    raw.E   += Math.round((letv - 72) / 2 * bm.let);
-
-    // Draw weight: >65lbs da FUE. Si draw>75 y FUE<75 -> penaliza EST (fatiga)
-    if(draw > 65) raw.FUE += Math.round((draw - 65) / 5 * bm.draw);
-    const arcFUE = archerData ? (archerData.FUE||70) : (parseInt(document.getElementById('as-FUE')?.value)||70);
-    if(draw > 75 && arcFUE < 75) raw.E -= 3;
-  }
-
-  // ── BONUS DE CARTAS (solo T,C,E,I) ────────────────────────────────
-  if(cards){
-    cards.forEach(c => {
-      if(!c) return;
-      raw.T += c.T||0; raw.C += c.C||0;
-      raw.E += c.E||0; raw.I += c.I||0;
-    });
-  }
-
-  // ── CLAMP y SCORE FINAL ───────────────────────────────────────────
-  // Factor de dificultad: reduce el raw para que los scores no empiecen saturados.
-  // Un arquero élite (95 stats) en su disciplina ideal llega ~85, no 100.
-  const DIFFICULTY = 0.82;
-  const fin = {};
-  SS.forEach(s=>{ fin[s] = Math.min(100, Math.max(0, Math.round(raw[s] * DIFFICULTY))); });
-  const score = Math.round(SS.reduce((acc,s)=>acc + fin[s]*W[s], 0));
-  return {fin, score};
-}
 function recalc(){
   const archerData = selectedArcher || null;
   const bowData    = (selectedBow !== null && selectedBow !== undefined) ? BOWS[selectedBow] : null;
