@@ -5266,12 +5266,69 @@ const BT_MODES={
 function btSpLabel(g){return{outdoor:"X's",indoor:"X's",field:"6's",'3d':"12/11's"}[g]||"X's";}
 
 let btSessions=[], btFDays=90, btFMod='all', btCurMode=null, btState={};
+let btUsingDemo=false;
 
-// Cargar sesiones guardadas desde Supabase si está disponible
+const BT_DEMO_NOTES=['Sin viento','Viento leve norte','Torneo clasificatorio','Entrenamiento técnico','Concentración +','Temperatura ideal','Sesión matutina','Fatiga últimos ends','Mejor del mes','Nuevo anclaje','Práctica larga','Con coach JPR'];
+const BT_DEMO_RAW=[
+  {mode:'outdoor-36',g:'outdoor',lbl:'36 tiros',d:3, total:301,n:36,sp:2,max:360},
+  {mode:'outdoor-36',g:'outdoor',lbl:'36 tiros',d:11,total:312,n:36,sp:3,max:360},
+  {mode:'outdoor-36',g:'outdoor',lbl:'36 tiros',d:22,total:287,n:36,sp:1,max:360},
+  {mode:'outdoor-72',g:'outdoor',lbl:'72 tiros',d:35,total:608,n:72,sp:4,max:720},
+  {mode:'outdoor-72',g:'outdoor',lbl:'72 tiros',d:58,total:589,n:72,sp:2,max:720},
+  {mode:'outdoor-15',g:'outdoor',lbl:'15 tiros',d:70,total:118,n:15,sp:1,max:150},
+  {mode:'outdoor-15',g:'outdoor',lbl:'15 tiros',d:82,total:124,n:15,sp:0,max:150},
+  {mode:'outdoor-36',g:'outdoor',lbl:'36 tiros',d:91,total:274,n:36,sp:1,max:360},
+  {mode:'indoor-30',g:'indoor',lbl:'30 tiros',d:5, total:268,n:30,sp:4,max:300},
+  {mode:'indoor-30',g:'indoor',lbl:'30 tiros',d:14,total:275,n:30,sp:5,max:300},
+  {mode:'indoor-60',g:'indoor',lbl:'60 tiros',d:18,total:534,n:60,sp:8,max:600},
+  {mode:'indoor-15',g:'indoor',lbl:'15 tiros',d:25,total:138,n:15,sp:2,max:150},
+  {mode:'indoor-30',g:'indoor',lbl:'30 tiros',d:32,total:281,n:30,sp:6,max:300},
+  {mode:'indoor-60',g:'indoor',lbl:'60 tiros',d:45,total:548,n:60,sp:9,max:600},
+  {mode:'indoor-15',g:'indoor',lbl:'15 tiros',d:52,total:132,n:15,sp:1,max:150},
+  {mode:'indoor-30',g:'indoor',lbl:'30 tiros',d:61,total:259,n:30,sp:3,max:300},
+  {mode:'field-c',g:'field',lbl:'Conocidas',d:8,  total:187,n:42,sp:3,max:252},
+  {mode:'field-d',g:'field',lbl:'Desconocidas',d:19,total:172,n:42,sp:1,max:252},
+  {mode:'field-c',g:'field',lbl:'Conocidas',d:38, total:194,n:42,sp:4,max:252},
+  {mode:'field-d',g:'field',lbl:'Desconocidas',d:55,total:168,n:42,sp:2,max:252},
+  {mode:'field-c',g:'field',lbl:'Conocidas',d:78, total:181,n:42,sp:3,max:252},
+  {mode:'field-d',g:'field',lbl:'Desconocidas',d:95,total:165,n:42,sp:1,max:252},
+  {mode:'3d',g:'3d',lbl:'20 animales',d:2,  total:218,n:20,sp:2,max:240},
+  {mode:'3d',g:'3d',lbl:'20 animales',d:9,  total:204,n:20,sp:1,max:240},
+  {mode:'3d',g:'3d',lbl:'15 animales',d:16, total:159,n:15,sp:3,max:180},
+  {mode:'3d',g:'3d',lbl:'20 animales',d:28, total:211,n:20,sp:2,max:240},
+  {mode:'3d',g:'3d',lbl:'25 animales',d:44, total:268,n:25,sp:4,max:300},
+  {mode:'3d',g:'3d',lbl:'20 animales',d:63, total:198,n:20,sp:1,max:240},
+];
+
+function btMakeDemoSessions(){
+  const now=Date.now();
+  return BT_DEMO_RAW.map((s,i)=>({
+    ...s,
+    id: now-s.d*86400000,
+    date: new Date(now-s.d*86400000).toISOString(),
+    avg: parseFloat((s.total/s.n).toFixed(2)),
+    notes: BT_DEMO_NOTES[i%BT_DEMO_NOTES.length],
+    ends: [],
+    _demo: true
+  })).sort((a,b)=>new Date(b.date)-new Date(a.date));
+}
+
 function btLoadSessions(){
   if(typeof window.supabaseLoadScores==='function'){
-    window.supabaseLoadScores().then(data=>{if(data)btSessions=data;btRenderH();});
+    window.supabaseLoadScores().then(data=>{
+      if(data && data.length>0){
+        btSessions=data;
+        btUsingDemo=false;
+      } else {
+        // Sin datos reales — mostrar demo
+        btSessions=btMakeDemoSessions();
+        btUsingDemo=true;
+      }
+      btRenderH();
+    });
   } else {
+    btSessions=btMakeDemoSessions();
+    btUsingDemo=true;
     btRenderH();
   }
 }
@@ -5409,8 +5466,9 @@ function btShowResumen(){
 window.btSaveSession=function(){
   const m=BT_MODES[btState.mode];
   const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,ends:btState.ends.map(e=>[...e])};
+  // Si había demo, limpiarlo al guardar la primera sesión real
+  if(btUsingDemo){ btSessions=[]; btUsingDemo=false; }
   btSessions.unshift(s);
-  // Guardar en Supabase si está disponible
   if(typeof window.supabaseSaveScore==='function') window.supabaseSaveScore(s);
   btResetState();btShowMain('historial');
 }
@@ -5431,6 +5489,17 @@ function btFilt(){
 
 function btRenderH(){
   const fs=btFilt();const now=Date.now();
+
+  // Banner demo
+  const existingBanner=document.getElementById('bt-demo-banner');
+  if(existingBanner) existingBanner.remove();
+  if(btUsingDemo){
+    const banner=document.createElement('div');
+    banner.id='bt-demo-banner';
+    banner.style.cssText='background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.25);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px';
+    banner.innerHTML=`<span style="font-size:16px">✨</span><div><div style="font-size:12px;font-weight:600;color:#d8d15a">Datos de ejemplo</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px">Graba tu primera sesión para ver tus estadísticas reales aquí.</div></div>`;
+    document.getElementById('bt-main-historial').insertBefore(banner, document.getElementById('bt-fd'));
+  }
   document.getElementById('bt-ms').textContent=fs.length;
   document.getElementById('bt-sc').textContent=fs.length+' sesiones';
   const spLbl=btFMod!=='all'?btSpLabel(btFMod):"X/6/11's";
