@@ -6416,13 +6416,26 @@ window.cpJoinByCode = async function(){
   const code=document.getElementById('cp-join-code').value.trim().toUpperCase();
   if(!code) return;
   try{
-    const res=await cpFetch(`/rest/v1/tournaments?code=eq.${code}&select=id,status`);
-    const data=await res.json();
-    if(!data.length) return cpToast('Código no encontrado');
-    if(data[0].status==='closed') return cpToast('Este torneo ya cerró');
-    await cpJoinTournament(data[0].id);
-    cpOpenRoom(data[0].id);
-  } catch(e){ cpToast('Error al unirse'); }
+    // Buscar en torneos primero
+    const tRes=await cpFetch(`/rest/v1/tournaments?code=eq.${code}&select=id,status`);
+    const tData=await tRes.json();
+    if(tData.length){
+      if(tData[0].status==='closed') return cpToast('Este torneo ya cerró');
+      await cpJoinTournament(tData[0].id);
+      cpOpenRoom(tData[0].id);
+      return;
+    }
+    // Buscar en ligas
+    const lRes=await cpFetch(`/rest/v1/leagues?code=eq.${code}&select=id,status`);
+    const lData=await lRes.json();
+    if(lData.length){
+      if(lData[0].status==='finished') return cpToast('Esta liga ya terminó');
+      await cpJoinLeague(lData[0].id);
+      cpOpenLeague(lData[0].id);
+      return;
+    }
+    cpToast('Código no encontrado');
+  } catch(e){ cpToast('Error al unirse'); console.error(e); }
 }
 
 async function cpJoinTournament(tournamentId){
@@ -6703,6 +6716,7 @@ window.cpAdminCreateLeague = async function(){
   if(!title) return cpToast('Escribe un nombre');
   const payload={
     created_by:cpUserId, title,
+    code: cpGenCode(),
     rounds_total:parseInt(document.getElementById('cp-lg-rounds').value),
     match_format:document.getElementById('cp-lg-mfmt').value,
     has_bracket:document.getElementById('cp-lg-fmt').value==='bracket',
@@ -6717,9 +6731,11 @@ window.cpAdminCreateLeague = async function(){
     status:'active', visible:true
   };
   try{
-    const res=await cpFetch('/rest/v1/leagues',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});
+    const res=await cpFetch('/rest/v1/leagues',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(payload)});
     if(!res.ok){ const err=await res.text(); console.error('Error liga:',err); return cpToast('Error: '+err.slice(0,80)); }
-    cpToast('✓ Liga creada');
+    const data=await res.json();
+    const league=Array.isArray(data)?data[0]:data;
+    cpToast(`✓ Liga creada · Código: ${league?.code||''}`);
     cpAdminTab('ligas');
   } catch(e){ console.error(e); cpToast('Error: '+e.message); }
 }
@@ -6754,13 +6770,25 @@ async function cpLoadAdminLeagues(){
     if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Sin ligas</div>'; return; }
     listEl.innerHTML=data.map(l=>`
       <div class="cp-card" style="margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="font-size:13px;font-weight:600;color:#fff">${l.title}</div>
           <span class="cp-pill ${l.status==='active'?'cp-badge-playing':'cp-badge-closed'}">${l.status==='active'?'Activa':'Finalizada'}</span>
         </div>
-        <div class="cp-muted" style="font-size:11px">${l.current_round||0}/${l.rounds_total} fechas jugadas</div>
+        <div class="cp-muted" style="font-size:11px;margin-bottom:4px">${l.current_round||0}/${l.rounds_total} fechas · ${l.visible?'Visible':'Oculta'}</div>
+        ${l.code?`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.2);border-radius:8px;padding:6px 10px">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4)">CÓDIGO</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#d8d15a;letter-spacing:.08em">${l.code}</span>
+          <button class="cp-btn cp-btn-sm" onclick="navigator.clipboard?.writeText('${l.code}').then(()=>cpToast('Copiado ✓'))" style="padding:4px 8px;font-size:10px;margin-left:auto">Copiar</button>
+        </div>`:''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${l.status==='active'?`<button class="cp-btn cp-btn-sm cp-btn-r" onclick="cpAdminCloseLeague('${l.id}')">Terminar liga</button>`:''}
+          <button class="cp-btn cp-btn-sm" onclick="cpAdminToggleLeagueVisible('${l.id}',${!l.visible})">${l.visible?'Ocultar':'Mostrar'}</button>
+          <button class="cp-btn cp-btn-sm" onclick="cpOpenLeague('${l.id}')">Ver tabla →</button>
+        </div>
       </div>`).join('');
-  } catch(e){}
+  } catch(e){ console.error(e); }
 }
 
 window.cpAdminClose = async function(id){
@@ -6771,11 +6799,9 @@ window.cpAdminClose = async function(id){
       headers:{'Prefer':'return=minimal'},
       body:JSON.stringify({status:'closed',visible:false})
     });
-    // 204 = éxito sin contenido, 200 = éxito con contenido
     if(res.status===204||res.status===200||res.ok){
       cpToast('✓ Torneo cerrado');
       await cpLoadAdminTournaments();
-      // Refrescar lobby para que desaparezca
       await cpLoadLobby();
     } else {
       const err=await res.text();
@@ -6788,6 +6814,78 @@ window.cpAdminClose = async function(id){
 window.cpAdminToggleVisible = async function(id, visible){
   await cpFetch('/rest/v1/tournaments?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({visible})});
   cpLoadAdminTournaments();
+}
+
+window.cpAdminCloseLeague = async function(id){
+  if(!confirm('¿Terminar esta liga? Se guardará el resultado final.')) return;
+  try{
+    const res=await cpFetch('/rest/v1/leagues?id=eq.'+id,{
+      method:'PATCH',
+      headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({status:'finished',visible:false})
+    });
+    if(res.status===204||res.status===200||res.ok){
+      cpToast('✓ Liga terminada');
+      await cpLoadAdminLeagues();
+      await cpLoadLobby();
+    } else {
+      const err=await res.text();
+      console.error('Error terminando liga:',res.status,err);
+      cpToast('Error '+res.status+': '+err.slice(0,60));
+    }
+  } catch(e){ console.error(e); cpToast('Error: '+e.message); }
+}
+
+window.cpAdminToggleLeagueVisible = async function(id, visible){
+  try{
+    const res=await cpFetch('/rest/v1/leagues?id=eq.'+id,{
+      method:'PATCH',
+      headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({visible})
+    });
+    if(res.status===204||res.status===200||res.ok){
+      cpToast(visible?'Liga visible':'Liga oculta');
+      await cpLoadAdminLeagues();
+      await cpLoadLobby();
+    } else {
+      const err=await res.text();
+      cpToast('Error: '+err.slice(0,60));
+    }
+  } catch(e){ console.error(e); cpToast('Error: '+e.message); }
+}
+
+window.cpAdminCloseLeague = async function(id){
+  if(!confirm('¿Terminar esta liga? Se guardará el resultado final.')) return;
+  try{
+    const res=await cpFetch('/rest/v1/leagues?id=eq.'+id,{
+      method:'PATCH',
+      headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({status:'finished',visible:false})
+    });
+    if(res.status===204||res.status===200||res.ok){
+      cpToast('✓ Liga terminada');
+      await cpLoadAdminLeagues();
+      await cpLoadLobby();
+    } else {
+      const err=await res.text();
+      console.error('Error terminando liga:',res.status,err);
+      cpToast('Error: '+err.slice(0,60));
+    }
+  } catch(e){ console.error(e); cpToast('Error: '+e.message); }
+}
+
+window.cpAdminToggleLeagueVisible = async function(id, visible){
+  try{
+    const res=await cpFetch('/rest/v1/leagues?id=eq.'+id,{
+      method:'PATCH',
+      headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({visible})
+    });
+    if(res.status===204||res.status===200||res.ok){
+      cpToast(visible?'Liga visible':'Liga oculta');
+      cpLoadAdminLeagues();
+    }
+  } catch(e){ console.error(e); }
 }
 
 window.cpOpenLeague = async function(leagueId){
