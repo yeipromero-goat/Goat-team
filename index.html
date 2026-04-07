@@ -5614,6 +5614,8 @@ window.btResumeTournament = function(){
       </div>`;
   }
 }
+
+window.btSf=function(v,el,id){
   if(id==='bt-fd')btFDays=v;else btFMod=v;
   document.getElementById(id).querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
   el.classList.add('act');btRenderH();
