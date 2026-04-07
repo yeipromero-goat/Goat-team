@@ -6329,9 +6329,18 @@ async function cpLoadLobby(){
     const leaguesListEl=document.getElementById('cp-my-leagues-list');
     if(activeLeagues.length){
       section.style.display='block';
+      // Cargar rounds activos de mis ligas
+      const leagueIds=activeLeagues.map(d=>d.league_id).join(',');
+      const arRes=await cpFetch(`/rest/v1/league_rounds?league_id=in.(${leagueIds})&status=eq.active&order=round_number.desc`);
+      const activeRounds=await arRes.json();
+
       leaguesListEl.innerHTML=activeLeagues.map(d=>{
         const l=d.leagues;
         const pct=Math.round((l.current_round||0)/l.rounds_total*100);
+        const ar=activeRounds.find(r=>r.league_id===d.league_id&&new Date(r.active_until)>new Date());
+        const msLeft=ar?new Date(ar.active_until)-Date.now():0;
+        const hLeft=Math.floor(msLeft/3600000);
+        const mLeft=Math.floor((msLeft%3600000)/60000);
         return`<div class="cp-card" style="margin-bottom:8px;cursor:pointer" onclick="cpOpenLeague('${l.id}')">
           <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -6339,8 +6348,11 @@ async function cpLoadLobby(){
               <div style="font-size:14px;font-weight:600;color:#fff">${l.title}</div>
               <div class="cp-muted" style="font-size:11px">Fecha ${l.current_round||0} / ${l.rounds_total}</div>
             </div>
-            <span class="cp-pill cp-badge-playing">Activa</span>
+            ${ar
+              ?`<span class="cp-pill" style="background:rgba(93,202,165,0.15);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3)">⏱ ${hLeft}h ${mLeft}m</span>`
+              :`<span class="cp-pill cp-badge-playing">Activa</span>`}
           </div>
+          ${ar?`<div style="font-size:11px;color:#5dcaa5;margin-bottom:6px;font-weight:500">🏹 Fecha ${ar.round_number} corriendo — toca para tirar</div>`:''}
           <div style="height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:8px">
             <div style="height:100%;background:#d8d15a;border-radius:2px;width:${pct}%"></div>
           </div>
@@ -7037,7 +7049,7 @@ window.cpOpenLeague = async function(leagueId){
         </div>
       </div>`;
 
-    // Fecha activa
+    // Fecha activa — verificar si ya tiró
     const activeRound = rounds.find(r=>r.status==='active' && new Date(r.active_until)>new Date());
     const meInStandings = standings.find(s => s.user_id === cpUserId);
     const actionEl = document.getElementById('cp-room-action-content');
@@ -7048,21 +7060,36 @@ window.cpOpenLeague = async function(leagueId){
         <div class="cp-muted" style="font-size:12px;margin-bottom:10px">Inscríbete para aparecer en la tabla y competir en cada fecha.</div>
         <button class="cp-btn cp-btn-y" onclick="cpJoinLeague('${leagueId}')">Inscribirme a la liga →</button>`;
     } else if(activeRound){
-      // Hay fecha activa — mostrar timer y botón de tirar
       const msLeft = new Date(activeRound.active_until) - Date.now();
       const hLeft = Math.floor(msLeft/3600000);
       const mLeft = Math.floor((msLeft%3600000)/60000);
       const disc = activeRound.discipline || league.discipline || 'indoor-30';
-      actionEl.innerHTML = `
+
+      // Verificar si ya subió score esta fecha
+      const scoreRes = await cpFetch(`/rest/v1/league_round_scores?round_id=eq.${activeRound.id}&user_id=eq.${cpUserId}`);
+      const myScore = await scoreRes.json();
+      const alreadyShot = myScore.length > 0;
+
+      const timerHtml = `
         <div style="background:rgba(93,202,165,0.08);border:0.5px solid rgba(93,202,165,0.3);border-radius:10px;padding:12px;margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <div style="font-size:13px;font-weight:600;color:#5dcaa5">⏱ Fecha ${activeRound.round_number} activa</div>
             <div id="cp-league-timer" style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#5dcaa5">${hLeft}h ${mLeft}m</div>
           </div>
-          <div class="cp-muted" style="font-size:11px">${DISC_LABELS[disc]||disc} · Tienes hasta que cierre el tiempo</div>
-        </div>
-        <button class="cp-btn cp-btn-y" onclick="cpGoLeagueScore('${leagueId}','${activeRound.id}','${disc}')">🏹 Tirar esta fecha →</button>`;
-      // Timer en vivo
+          <div class="cp-muted" style="font-size:11px">${DISC_LABELS[disc]||disc} · Cierra en ${hLeft}h ${mLeft}m</div>
+        </div>`;
+
+      if(alreadyShot){
+        actionEl.innerHTML = timerHtml + `
+          <div style="background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:14px;font-weight:600;color:#d8d15a">✓ Ya registraste esta fecha</div>
+            <div class="cp-num" style="font-size:28px;color:#fff;margin:4px 0">${myScore[0].score} pts</div>
+            <div class="cp-muted" style="font-size:11px">Espera a que cierren los resultados</div>
+          </div>`;
+      } else {
+        actionEl.innerHTML = timerHtml +
+          `<button class="cp-btn cp-btn-y" onclick="cpGoLeagueScore('${leagueId}','${activeRound.id}','${disc}')">🏹 Tirar esta fecha →</button>`;
+      }
       cpStartLeagueTimer(activeRound.active_until);
     } else {
       // No hay fecha activa
