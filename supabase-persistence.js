@@ -167,9 +167,10 @@ async function loadUserSelections() {
     // 💰 Puntos
     if (typeof row.points === 'number') window.points = row.points;
 
-    // 🃏 Deck
+    // 🃏 Deck — mutar el array existente para no romper referencias locales
     if (Array.isArray(row.deck) && row.deck.length > 0) {
-      window.playerDeck = row.deck;
+      window.playerDeck.length = 0;
+      row.deck.forEach(id => window.playerDeck.push(id));
     }
 
     // 👥 Coach

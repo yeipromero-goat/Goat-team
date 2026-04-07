@@ -2873,7 +2873,7 @@ function toggleDeckCard(cardId) {
     if (playerDeck.length >= DECK_SIZE) return;
     playerDeck.push(cardId);
   }
-  window.playerDeck = playerDeck;
+  // No reasignar window.playerDeck — ya apunta al mismo array
   updateDeckUI();
   renderItemGrid();
   if (typeof refreshLineupUI === 'function') refreshLineupUI();
@@ -2897,7 +2897,7 @@ function updateDeckUI() {
 
 function clearDeck() {
   playerDeck.length = 0;
-  window.playerDeck = playerDeck;
+  // No reasignar window.playerDeck — ya apunta al mismo array
   updateDeckUI();
   renderItemGrid();
   if (typeof saveUserSelections === 'function') saveUserSelections();
@@ -2908,7 +2908,7 @@ function randomDeck() {
   playerDeck.length = 0;
   const shuffled = [...CARDS].sort(() => Math.random() - 0.5);
   shuffled.slice(0, DECK_SIZE).forEach(c => playerDeck.push(c.id));
-  window.playerDeck = playerDeck;
+  // No reasignar window.playerDeck — ya apunta al mismo array
   updateDeckUI();
   renderItemGrid();
   if (typeof saveUserSelections === 'function') saveUserSelections();
