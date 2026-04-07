@@ -1372,9 +1372,9 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
       <span class="sb-item-icon">🎁</span>
       <span class="sb-item-label">Sobres</span>
     </div>
-    <div class="sb-item" id="sb-habilidades" onclick="switchTab('habilidades',this)">
-      <span class="sb-item-icon">⚡</span>
-      <span class="sb-item-label">Habilidades</span>
+    <div class="sb-item" id="sb-bitacora" onclick="switchTab('bitacora',this)">
+      <span class="sb-item-icon">📊</span>
+      <span class="sb-item-label">Puntuaciones</span>
     </div>
   </nav>
 
@@ -1423,11 +1423,11 @@ function closeSidebar(){
 
 // ── switchTab: actualiza tabs Y sidebar ──
 const TAB_META = {
-  'score':       { icon:'🎯', label:'Tablero',    sub:'Puntuación y partidas' },
-  'cards':       { icon:'🃏', label:'Cartas',      sub:'Arqueros y coaches' },
-  'mi-arco':     { icon:'🏹', label:'Mi Arco',     sub:'Equipo y stats' },
-  'sobres':      { icon:'🎁', label:'Sobres',      sub:'Tienda y packs' },
-  'habilidades': { icon:'⚡', label:'Habilidades', sub:'Habilidades especiales' },
+  'score':       { icon:'🎯', label:'Tablero',       sub:'Puntuación y partidas' },
+  'cards':       { icon:'🃏', label:'Cartas',         sub:'Arqueros y coaches' },
+  'mi-arco':     { icon:'🏹', label:'Mi Arco',        sub:'Equipo y stats' },
+  'sobres':      { icon:'🎁', label:'Sobres',         sub:'Tienda y packs' },
+  'bitacora':    { icon:'📊', label:'Puntuaciones',   sub:'Bitácora y estadísticas' },
 };
 
 function updatePageTitle(name){

@@ -283,3 +283,83 @@ window.initSupabasePersistence = initSupabasePersistence;
 window.addArcherToLineup       = addArcherToLineup;
 window.addBowToLineup          = addBowToLineup;
 window.setCoachInLineup        = setCoachInLineup;
+
+
+// ══════════════════════════════════════════════════════════════════
+//  BITÁCORA DE PUNTUACIONES — guardar y cargar sesiones reales
+// ══════════════════════════════════════════════════════════════════
+
+window.supabaseSaveScore = async function(session) {
+  const token = window._supabaseToken;
+  if (!token) { console.warn('supabaseSaveScore: sin token'); return; }
+
+  const userId = window._supabaseUserId;
+  if (!userId) { console.warn('supabaseSaveScore: sin userId'); return; }
+
+  const payload = {
+    id:           session.id,
+    user_id:      userId,
+    mode:         session.mode,
+    group_name:   session.g,
+    label:        session.lbl,
+    total:        session.total,
+    arrow_count:  session.n,
+    avg_arrow:    session.avg,
+    specials:     session.sp,
+    max_possible: session.max || null,
+    ends:         session.ends || [],
+    notes:        session.notes || '',
+    session_date: session.date,
+  };
+
+  try {
+    const res = await _userFetch(
+      `${SUPABASE_URL}/rest/v1/scores`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payload)
+      }
+    );
+    if (res.ok) {
+      console.log('✅ Puntuación guardada');
+    } else {
+      const err = await res.text();
+      console.error('❌ Error guardando puntuación:', err);
+    }
+  } catch(e) {
+    console.error('❌ supabaseSaveScore error:', e);
+  }
+};
+
+window.supabaseLoadScores = async function() {
+  const token = window._supabaseToken;
+  if (!token) return [];
+
+  try {
+    const res = await _userFetch(
+      `${SUPABASE_URL}/rest/v1/scores?order=session_date.desc&limit=200`,
+      { method: 'GET' }
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    // Mapear columnas de Supabase al formato de la bitácora
+    return rows.map(r => ({
+      id:       r.id,
+      date:     r.session_date,
+      mode:     r.mode,
+      g:        r.group_name,
+      lbl:      r.label,
+      total:    r.total,
+      n:        r.arrow_count,
+      avg:      parseFloat(r.avg_arrow),
+      sp:       r.specials,
+      max:      r.max_possible,
+      ends:     r.ends || [],
+      notes:    r.notes || '',
+    }));
+  } catch(e) {
+    console.error('❌ supabaseLoadScores error:', e);
+    return [];
+  }
+};
