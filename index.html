@@ -5127,6 +5127,14 @@ window.BOW_IDEAL_RANGES      = BOW_IDEAL_RANGES;
 <div id="bt-main-nueva" style="display:none">
 
   <div id="bt-s-inicio">
+    <!-- Banner torneo activo -->
+    <div id="bt-tournament-banner" style="display:none;background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">🏆</span>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:#d8d15a">Torneo activo</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tu score se enviará automáticamente al torneo al guardar.</div>
+      </div>
+    </div>
     <div class="bt-sec">Elige modalidad</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="bt-disc-card" onclick="btSelGroup('outdoor',this)">
@@ -5487,11 +5495,38 @@ function btShowResumen(){
 window.btSaveSession=function(){
   const m=BT_MODES[btState.mode];
   const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,ends:btState.ends.map(e=>[...e])};
-  // Si había demo, limpiarlo al guardar la primera sesión real
   if(btUsingDemo){ btSessions=[]; btUsingDemo=false; }
   btSessions.unshift(s);
   if(typeof window.supabaseSaveScore==='function') window.supabaseSaveScore(s);
-  btResetState();btShowMain('historial');
+
+  // Si hay torneo pendiente — subir score automáticamente
+  const pendingTournament = window._cpPendingTournament;
+  if(pendingTournament){
+    const userId = window._supabaseUserId;
+    if(userId){
+      fetch('https://axaiyaflubssaghvhefe.supabase.co/rest/v1/tournament_players?tournament_id=eq.'+pendingTournament+'&user_id=eq.'+userId, {
+        method:'PATCH',
+        headers:{
+          'apikey': window._supabaseAnonKey||'',
+          'Authorization':'Bearer '+(window._supabaseToken||''),
+          'Content-Type':'application/json',
+          'Prefer':'return=minimal'
+        },
+        body:JSON.stringify({
+          qualifying_score: s.total,
+          qualifying_detail: s.ends,
+          qualifying_at: s.date
+        })
+      }).then(()=>{
+        window._cpPendingTournament=null;
+        // Regresar a la sala del torneo
+        if(typeof switchTab==='function') switchTab('competencias', document.getElementById('sb-competencias'));
+        setTimeout(()=>{ if(typeof cpOpenRoom==='function') cpOpenRoom(pendingTournament); }, 300);
+      });
+    }
+  } else {
+    btResetState();btShowMain('historial');
+  }
 }
 
 window.btSf=function(v,el,id){
@@ -6392,11 +6427,15 @@ window.cpJoinAndReload = async function(id){
 }
 
 window.cpGoScore = function(tournamentId, discipline){
-  // Navegar a bitácora con el torneo activo
+  window._cpPendingTournament = tournamentId;
   if(typeof switchTab==='function') switchTab('bitacora', document.getElementById('sb-bitacora'));
   if(typeof btShowMain==='function') btShowMain('nueva');
-  cpToast('Registra tu score y regresa a Competencias');
-  window._cpPendingTournament=tournamentId;
+  // Mostrar banner de torneo activo
+  setTimeout(()=>{
+    const banner = document.getElementById('bt-tournament-banner');
+    if(banner) banner.style.display='flex';
+  }, 200);
+  cpToast('🏆 Registra tu score — se enviará al torneo al guardar');
 }
 
 window.cpValidate = async function(tournamentId){
