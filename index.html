@@ -2278,175 +2278,45 @@ function switchTab(id, el){
 
 // ── PESOS BASE (suma 1.0) ──
 // TEC=32% IEM=28% EST=18% COM=12% FUE=6% RES=4%
-// ══════════════════════════════════════════════════════════════════
-// SISTEMA DE SCORE — basado en Calculo_-_Video_Juego.xlsx
-// ══════════════════════════════════════════════════════════════════
-
-// ── PESOS GLOBALES (del CSV, suman 1.0) ──────────────────────────
 const W = {T:.32, C:.12, E:.18, I:.28, FUE:.06, RES:.04};
 const SS = ['T','C','E','I','FUE','RES'];
-
-// ── RELEVANCIA POR DISCIPLINA (escala 1-3 del CSV) ───────────────
-// 3 = muy relevante, 2 = relevante, 1 = poco relevante
-// Convierte a multiplicador: 3→1.15, 2→1.0, 1→0.75
-const DISC_ARCHER = {
-  indoor:  {T:3, C:3, E:3, I:2, FUE:1, RES:1},
-  outdoor: {T:3, C:3, E:3, I:2, FUE:2, RES:3},
-  field:   {T:3, C:2, E:2, I:3, FUE:2, RES:2},
-  '3d':    {T:2, C:3, E:3, I:3, FUE:1, RES:1}
-};
-
-// ── RELEVANCIA DEL ARCO POR DISCIPLINA (escala 0-3 del CSV) ──────
-const DISC_BOW = {
-  indoor:  {fps:0, ata:3, bh:3, letoff:2},
-  outdoor: {fps:1, ata:2, bh:2, letoff:1},
-  field:   {fps:2, ata:2, bh:1, letoff:1},
-  '3d':    {fps:3, ata:1, bh:1, letoff:3}
-};
-
-// ── RANGOS IDEALES DEL ARCO POR DISCIPLINA (del CSV) ────────────
-const BOW_RANGES = {
-  indoor:  {fps:[260,330], ata:[38,42], bh:[7.0,8.0], letoff:[75,85]},
-  outdoor: {fps:[275,330], ata:[36,40], bh:[6.5,7.5], letoff:[65,75]},
-  field:   {fps:[290,340], ata:[34,37], bh:[6.0,7.0], letoff:[70,80]},
-  '3d':    {fps:[300,340], ata:[30,35], bh:[6.0,7.0], letoff:[75,90]}
-};
-
-// ── Convierte relevancia 0-3 a multiplicador ──────────────────────
-function _discMult(relevance) {
-  // 0→0.70, 1→0.85, 2→1.0, 3→1.15
-  return 0.70 + relevance * 0.15;
-}
-
-// ── Evalúa si un stat del arco está en rango ideal ────────────────
-// Retorna factor entre -1.0 (muy fuera) y +1.0 (dentro del rango)
-function _bowRangeFactor(value, range) {
-  const [min, max] = range;
-  const mid = (min + max) / 2;
-  const half = (max - min) / 2;
-  if (value >= min && value <= max) return 1.0;           // dentro del rango
-  const dist = value < min ? min - value : value - max;
-  const pct = dist / (half + 1);
-  return Math.max(-1.0, 1.0 - pct * 2.5);                // penaliza proporcional
-}
-
-// ── NÚCLEO DE CÁLCULO DE SCORE ────────────────────────────────────
-function _computeScore(archerData, bowData, cards, comp, envMods){
-  const discArcher = DISC_ARCHER[comp] || {T:2,C:2,E:2,I:2,FUE:2,RES:2};
-  const discBow    = DISC_BOW[comp]    || {fps:1,ata:1,bh:1,letoff:1};
-  const bowRanges  = BOW_RANGES[comp]  || BOW_RANGES.indoor;
-  const raw = {T:0, C:0, E:0, I:0, FUE:0, RES:0};
-
-  // ── 1. STATS DEL ARQUERO × relevancia de disciplina + clima ──────
-  const archerBase = archerData ? {
-    T:   archerData.T   || 50,
-    C:   archerData.C   || 50,
-    E:   archerData.E   || 50,
-    I:   archerData.I   || 50,
-    FUE: archerData.FUE || 60,
-    RES: archerData.RES || 60,
-  } : {
-    T:   parseInt(document.getElementById('as-T')?.value)   || 50,
-    C:   parseInt(document.getElementById('as-C')?.value)   || 50,
-    E:   parseInt(document.getElementById('as-E')?.value)   || 50,
-    I:   parseInt(document.getElementById('as-I')?.value)   || 50,
-    FUE: parseInt(document.getElementById('as-FUE')?.value) || 60,
-    RES: parseInt(document.getElementById('as-RES')?.value) || 60,
-  };
-
-  SS.forEach(s => {
-    const mult = _discMult(discArcher[s] || 2);
-    const clima = (s !== 'FUE' && s !== 'RES') ? (envMods[s] || 0) : 0;
-    raw[s] = archerBase[s] * mult + clima;
-  });
-
-  // ── 2. CARTAS — suman al stat antes del arco (amplifican disciplina) ──
-  // Tope de +20 pts totales para no dominar
-  if (cards && cards.length) {
-    let cardTotal = 0;
-    cards.forEach(c => {
-      if (!c) return;
-      const adds = {T: c.T||0, C: c.C||0, E: c.E||0, I: c.I||0};
-      ['T','C','E','I'].forEach(s => {
-        if (adds[s] !== 0 && Math.abs(cardTotal) < 20) {
-          raw[s] += adds[s];
-          cardTotal += Math.abs(adds[s]);
-        }
-      });
-    });
-  }
-
-  // ── 3. FACTOR DEL ARCO — hasta ±10 pts sobre el score final ─────
-  let bowFactor = 0;
-  if (bowData) {
-    const fps    = bowData.fps  || 280;
-    const ata    = bowData.ata  || 30;
-    const bh     = bowData.bh   || 6.5;
-    const letoff = bowData.let  || 72;
-    const draw   = bowData.draw || 60;
-
-    // Cada stat del arco contribuye según su relevancia en la disciplina
-    // Relevancia 0-3 → peso máx 0-3 pts
-    const fpsFactor    = _bowRangeFactor(fps,    bowRanges.fps)    * discBow.fps    * 1.0;
-    const ataFactor    = _bowRangeFactor(ata,    bowRanges.ata)    * discBow.ata    * 1.0;
-    const bhFactor     = _bowRangeFactor(bh,     bowRanges.bh)     * discBow.bh     * 1.0;
-    const letoffFactor = _bowRangeFactor(letoff, bowRanges.letoff) * discBow.letoff * 1.0;
-
-    // Suma total: máx teórico ±(0+3+3+2)=±8 pts, en práctica ±6-10
-    bowFactor = Math.round(fpsFactor + ataFactor + bhFactor + letoffFactor);
-    bowFactor = Math.max(-10, Math.min(10, bowFactor)); // clamp duro
-
-    // ── Penalización física: draw muy alto + FUE baja ────────────────
-    if (draw > 65 && archerBase.FUE < 65) {
-      raw.T -= 4;  // fatiga afecta técnica
-      raw.E -= 3;  // más tensión = más estrés
-    }
-  }
-
-  // ── 4. CLAMP por stat + SCORE FINAL ──────────────────────────────
-  // Factor de dificultad: arquero élite en disciplina ideal → ~82, no 100
-  const DIFFICULTY = 0.84;
-  const fin = {};
-  SS.forEach(s => {
-    fin[s] = Math.min(100, Math.max(0, Math.round(raw[s] * DIFFICULTY)));
-  });
-
-  const scoreBase = SS.reduce((acc, s) => acc + fin[s] * W[s], 0);
-  const score = Math.round(Math.max(0, Math.min(100, scoreBase + bowFactor)));
-
-  return {fin, score, bowFactor};
-}
-
-// ── MODS legacy (usados por updateEnv, se mantienen en 0 ─────────
-const MODS = {
-  indoor:  {T:0,C:0,E:0,I:0,FUE:0,RES:0},
-  outdoor: {T:0,C:0,E:0,I:0,FUE:0,RES:0},
-  field:   {T:0,C:0,E:0,I:0,FUE:0,RES:0},
-  '3d':    {T:0,C:0,E:0,I:0,FUE:0,RES:0}
-};
-
-// ── MODIFICADORES DEL ARCO (legacy — ya no se usan en _computeScore) ──
-const COMP_ARCHER_MULT = {
-  indoor:  {T:1.0,C:1.0,E:1.0,I:1.0,FUE:1.0,RES:1.0},
-  outdoor: {T:1.0,C:1.0,E:1.0,I:1.0,FUE:1.0,RES:1.0},
-  field:   {T:1.0,C:1.0,E:1.0,I:1.0,FUE:1.0,RES:1.0},
-  '3d':    {T:1.0,C:1.0,E:1.0,I:1.0,FUE:1.0,RES:1.0}
-};
-const COMP_BOW_MULT = {
-  indoor:  {fps:0,ata:0,bh:0,let:0,draw:0},
-  outdoor: {fps:0,ata:0,bh:0,let:0,draw:0},
-  field:   {fps:0,ata:0,bh:0,let:0,draw:0},
-  '3d':    {fps:0,ata:0,bh:0,let:0,draw:0}
-};
-
-// ── variables de estado ───────────────────────────────────────────
-let comp = 'indoor';
-let selCards = [];
-let openSlot = null;
+let comp='indoor', selCards=[], openSlot=null;
 window.playerDeck = window.playerDeck || [];
 let playerDeck = window.playerDeck;
-let activeCatFilter = 'all';
-let envMods = {T:0, C:0, E:0, I:0, FUE:0, RES:0};
+let activeCatFilter='all';
+let envMods={T:0,C:0,E:0,I:0,FUE:0,RES:0};
+
+// ── MODIFICADORES POR DISCIPLINA (arquero) — de tabla real ──
+// Muy relevante=1.3 | Relevante=1.0 | Poco relevante=0.6
+const COMP_ARCHER_MULT = {
+  indoor:  {T:1.3, C:1.3, E:1.3, I:1.0, FUE:0.6, RES:0.6},
+  outdoor: {T:1.2, C:1.2, E:1.2, I:1.0, FUE:1.0, RES:1.3},
+  field:   {T:1.4, C:1.0, E:1.0, I:1.3, FUE:1.0, RES:1.0},
+  '3d':    {T:1.0, C:1.4, E:1.3, I:1.4, FUE:0.6, RES:0.6}
+};
+
+// ── MODIFICADORES DEL ARCO POR DISCIPLINA ──
+// fps: Indoor no relevante | Outdoor poco | Field relevante | 3D muy relevante
+// ata: Indoor 36"+ muy relevante | Outdoor 35"+ | Field 33-37" | 3D 32-36"
+// bh:  Indoor muy relevante | Outdoor relevante | Field/3D poco
+// let: Siempre ayuda, mas en Indoor/3D donde sostienes mas
+const COMP_BOW_MULT = {
+  indoor:  {fps:0.2, ata:1.4, bh:1.4, let:1.3, draw:0.3},
+  outdoor: {fps:0.8, ata:1.2, bh:1.0, let:1.0, draw:1.0},
+  field:   {fps:1.2, ata:1.0, bh:0.5, let:0.8, draw:1.0},
+  '3d':    {fps:1.4, ata:0.8, bh:0.5, let:1.2, draw:0.8}
+};
+
+// ── MODS de competencia (offset base) — solo afecta T,C,E,I ──
+// Ahora los multiplicadores son los que definen el perfil; MODS solo finos ajustes
+const MODS = {
+  indoor:  {T:0, C:0, E:0, I:0, FUE:0, RES:0},
+  outdoor: {T:0, C:0, E:0, I:0, FUE:0, RES:0},
+  field:   {T:0, C:0, E:0, I:0, FUE:0, RES:0},
+  '3d':    {T:0, C:0, E:0, I:0, FUE:0, RES:0}
+};
+
+function selComp(el){
   document.querySelectorAll('.comp-btn').forEach(b=>b.classList.remove('sel'));
   el.classList.add('sel'); comp=el.dataset.comp; updateEnv();
 }
@@ -2568,6 +2438,103 @@ function pickCard(idx){
 }
 
 
+// ── NÚCLEO DE CÁLCULO DE SCORE ──────────────────────────────────────
+// Sistema basado en Calculo_-_Video_Juego.xlsx
+// Relevancia arquero: 1-3 por disciplina | Rangos ideales del arco | Factor ±10pts
+
+// Relevancia por disciplina (escala 1-3 del CSV)
+const DISC_ARCHER = {
+  indoor:  {T:3, C:3, E:3, I:2, FUE:1, RES:1},
+  outdoor: {T:3, C:3, E:3, I:2, FUE:2, RES:3},
+  field:   {T:3, C:2, E:2, I:3, FUE:2, RES:2},
+  '3d':    {T:2, C:3, E:3, I:3, FUE:1, RES:1}
+};
+// Relevancia del arco (0-3 del CSV)
+const DISC_BOW = {
+  indoor:  {fps:0, ata:3, bh:3, letoff:2},
+  outdoor: {fps:1, ata:2, bh:2, letoff:1},
+  field:   {fps:2, ata:2, bh:1, letoff:1},
+  '3d':    {fps:3, ata:1, bh:1, letoff:3}
+};
+// Rangos ideales del arco (del CSV)
+const BOW_RANGES = {
+  indoor:  {fps:[260,330], ata:[38,42], bh:[7.0,8.0], letoff:[75,85]},
+  outdoor: {fps:[275,330], ata:[36,40], bh:[6.5,7.5], letoff:[65,75]},
+  field:   {fps:[290,340], ata:[34,37], bh:[6.0,7.0], letoff:[70,80]},
+  '3d':    {fps:[300,340], ata:[30,35], bh:[6.0,7.0], letoff:[75,90]}
+};
+
+function _discMult(r){ return 0.70 + r * 0.15; } // 1→0.85, 2→1.0, 3→1.15
+
+function _bowRangeFactor(value, range){
+  const [min, max] = range;
+  if(value >= min && value <= max) return 1.0;
+  const half = (max - min) / 2;
+  const dist = value < min ? min - value : value - max;
+  return Math.max(-1.0, 1.0 - (dist / (half + 1)) * 2.5);
+}
+
+function _computeScore(archerData, bowData, cards, comp, envMods){
+  const da = DISC_ARCHER[comp] || {T:2,C:2,E:2,I:2,FUE:2,RES:2};
+  const db = DISC_BOW[comp]    || {fps:1,ata:1,bh:1,letoff:1};
+  const br = BOW_RANGES[comp]  || BOW_RANGES.indoor;
+  const raw = {T:0, C:0, E:0, I:0, FUE:0, RES:0};
+
+  // 1. Stats del arquero × relevancia de disciplina + clima
+  const base = archerData ? {
+    T: archerData.T||50, C: archerData.C||50,
+    E: archerData.E||50, I: archerData.I||50,
+    FUE: archerData.FUE||60, RES: archerData.RES||60
+  } : {
+    T:   parseInt(document.getElementById('as-T')?.value)||50,
+    C:   parseInt(document.getElementById('as-C')?.value)||50,
+    E:   parseInt(document.getElementById('as-E')?.value)||50,
+    I:   parseInt(document.getElementById('as-I')?.value)||50,
+    FUE: parseInt(document.getElementById('as-FUE')?.value)||60,
+    RES: parseInt(document.getElementById('as-RES')?.value)||60,
+  };
+  SS.forEach(s => {
+    const clima = (s!=='FUE'&&s!=='RES') ? (envMods[s]||0) : 0;
+    raw[s] = base[s] * _discMult(da[s]||2) + clima;
+  });
+
+  // 2. Cartas — suman al stat directo, tope +20 pts totales
+  if(cards && cards.length){
+    let total = 0;
+    cards.forEach(c => {
+      if(!c) return;
+      ['T','C','E','I'].forEach(s => {
+        if(c[s] && Math.abs(total) < 20){ raw[s] += c[s]; total += Math.abs(c[s]); }
+      });
+    });
+  }
+
+  // 3. Factor del arco: compara vs rango ideal, hasta ±10 pts sobre score final
+  let bowFactor = 0;
+  if(bowData){
+    const fps = bowData.fps||280, ata = bowData.ata||30;
+    const bh  = bowData.bh||6.5,  lo  = bowData.let||72;
+    const draw = bowData.draw||60;
+    bowFactor = Math.round(
+      _bowRangeFactor(fps, br.fps)    * db.fps    +
+      _bowRangeFactor(ata, br.ata)    * db.ata    +
+      _bowRangeFactor(bh,  br.bh)     * db.bh     +
+      _bowRangeFactor(lo,  br.letoff) * db.letoff
+    );
+    bowFactor = Math.max(-10, Math.min(10, bowFactor));
+    // Penalización física: draw alto + FUE baja
+    if(draw > 65 && base.FUE < 65){ raw.T -= 4; raw.E -= 3; }
+  }
+
+  // 4. Clamp + score final
+  const DIFF = 0.84;
+  const fin = {};
+  SS.forEach(s => { fin[s] = Math.min(100, Math.max(0, Math.round(raw[s] * DIFF))); });
+  const score = Math.round(Math.max(0, Math.min(100,
+    SS.reduce((a,s) => a + fin[s]*W[s], 0) + bowFactor
+  )));
+  return {fin, score, bowFactor};
+}
 function recalc(){
   const archerData = selectedArcher || null;
   const bowData    = (selectedBow !== null && selectedBow !== undefined) ? BOWS[selectedBow] : null;
@@ -2848,12 +2815,6 @@ function selectPersonCard(id, type) {
   }
   if (typeof saveUserSelections === 'function') saveUserSelections();
   if (typeof refreshLineupUI    === 'function') refreshLineupUI();
-
-  // Si hay partida activa → regresar al tablero y actualizar HUD
-  if (gameState && gameState.phase !== 'end') {
-    if (typeof _fillGameTeamHUD === 'function') _fillGameTeamHUD();
-    setTimeout(() => switchTab('score', document.getElementById('sb-score')), 300);
-  }
 }
 
 function clearPersonCard(type) {
@@ -2986,7 +2947,7 @@ function toggleDeckCard(cardId) {
     if (playerDeck.length >= DECK_SIZE) return;
     playerDeck.push(cardId);
   }
-  // No reasignar window.playerDeck — ya apunta al mismo array
+  window.playerDeck = playerDeck;
   updateDeckUI();
   renderItemGrid();
   if (typeof refreshLineupUI === 'function') refreshLineupUI();
@@ -3010,7 +2971,7 @@ function updateDeckUI() {
 
 function clearDeck() {
   playerDeck.length = 0;
-  // No reasignar window.playerDeck — ya apunta al mismo array
+  window.playerDeck = playerDeck;
   updateDeckUI();
   renderItemGrid();
   if (typeof saveUserSelections === 'function') saveUserSelections();
@@ -3021,7 +2982,7 @@ function randomDeck() {
   playerDeck.length = 0;
   const shuffled = [...CARDS].sort(() => Math.random() - 0.5);
   shuffled.slice(0, DECK_SIZE).forEach(c => playerDeck.push(c.id));
-  // No reasignar window.playerDeck — ya apunta al mismo array
+  window.playerDeck = playerDeck;
   updateDeckUI();
   renderItemGrid();
   if (typeof saveUserSelections === 'function') saveUserSelections();
@@ -3084,10 +3045,7 @@ function updateSetupChecks() {
   const hasBow    = selectedBow !== null && selectedBow !== undefined;
   const hasArcher = selectedArcher !== null;
   const hasCoach  = selectedCoach  !== null;
-  // window.playerDeck es la fuente de verdad — playerDeck local puede estar desync
-  const deckCount = (window.playerDeck || playerDeck).length;
-  const hasDeck   = deckCount >= DECK_SIZE;
-
+  const deckCount = playerDeck.length;
   const ca = document.getElementById('chk-archer');
   if (!ca) return;
   const cbw = document.getElementById('chk-bow');
@@ -3097,12 +3055,12 @@ function updateSetupChecks() {
 
   ca.className = 'dot '+(hasArcher?'dot-ok':'dot-no');
   document.getElementById('chk-coach').className = 'dot '+(hasCoach?'dot-ok':'dot-no');
-  document.getElementById('chk-deck').className  = 'dot '+(hasDeck?'dot-ok':'dot-no');
+  document.getElementById('chk-deck').className  = 'dot '+(deckCount>=PLAY_PER_ROUND?'dot-ok':'dot-no');
   document.getElementById('chk-archer-lbl').textContent = hasArcher?'✓ '+selectedArcher.name:'Arquero no seleccionado';
   document.getElementById('chk-coach-lbl').textContent  = hasCoach?'✓ '+selectedCoach.name:'Coach no seleccionado';
-  document.getElementById('chk-deck-lbl').textContent   = hasDeck?'✓ Deck listo ('+deckCount+' cartas)':'Deck ('+deckCount+'/36)';
+  document.getElementById('chk-deck-lbl').textContent   = deckCount>0?'✓ Deck listo ('+deckCount+' cartas)':'Deck vacío — ve a la pestaña Items';
   const btn = document.getElementById('btn-start-game');
-  if(btn) btn.disabled = !(hasBow && hasArcher && hasCoach && hasDeck);
+  if(btn) btn.disabled = !(hasBow && hasArcher && hasCoach && deckCount>=PLAY_PER_ROUND);
 }
 
 // ── Bow selector in setup ─────────────────────────────────────────
@@ -3162,10 +3120,7 @@ function startGame() {
     console.warn('startGame bloqueado — archer:', !!selectedArcher, 'coach:', !!selectedCoach, 'bow:', selectedBow);
     return;
   }
-
-  // Usar window.playerDeck directamente — es la fuente de verdad
-  const activeDeck = window.playerDeck || playerDeck;
-  const deckCards = activeDeck.map(id => CARDS.find(c => c.id === id)).filter(Boolean);
+  const deckCards = playerDeck.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
   if(deckCards.length < PLAY_PER_ROUND){ alert('Necesitas al menos '+PLAY_PER_ROUND+' cartas en tu deck.'); return; }
   const shuffled = [...deckCards].sort(()=>Math.random()-.5);
   const hand = shuffled.splice(0, HAND_SIZE);
@@ -3174,55 +3129,10 @@ function startGame() {
   document.getElementById('game-setup-panel').style.display = 'none';
   document.getElementById('game-panel').style.display       = 'block';
   document.getElementById('game-end').style.display         = 'none';
-  // Ocultar intro y torneo durante el juego
-  const introEl = document.getElementById('game-intro');
-  const trnEl   = document.getElementById('tournament-panel');
-  if (introEl) introEl.style.display = 'none';
-  if (trnEl)   trnEl.style.display   = 'none';
-
-  // Llenar mini HUD del equipo
-  _fillGameTeamHUD();
-
   applyRoundConditions(roundConditions[0]);
   showRoundConditions(1, roundConditions[0]);
   renderGameUI();
   startRoundTimer();
-}
-
-function _fillGameTeamHUD() {
-  const a = selectedArcher;
-  const c = selectedCoach;
-  const bow = BOWS[activeBow] || null;
-  const STORAGE = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/';
-
-  if (a) {
-    const avEl = document.getElementById('game-archer-avatar');
-    if (avEl) avEl.innerHTML = a.foto
-      ? `<img src="${STORAGE}${a.foto}.webp" style="width:100%;height:100%;object-fit:cover">`
-      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:12px;color:${a.color};background:${a.color}22">${a.avatar}</div>`;
-    const nEl = document.getElementById('game-archer-name');
-    const abEl = document.getElementById('game-archer-ability');
-    if (nEl) nEl.textContent = a.name;
-    if (abEl) abEl.textContent = a.ability ? '⬥ ' + a.ability : '';
-  }
-
-  if (bow) {
-    const nEl = document.getElementById('game-bow-name');
-    const sEl = document.getElementById('game-bow-stats');
-    if (nEl) nEl.textContent = bow.name;
-    if (sEl) sEl.textContent = bow.fps + 'fps · ' + bow.let + '% let';
-  }
-
-  if (c) {
-    const avEl = document.getElementById('game-coach-avatar');
-    if (avEl) avEl.innerHTML = c.foto
-      ? `<img src="${STORAGE}${c.foto}.webp" style="width:100%;height:100%;object-fit:cover">`
-      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:12px;color:${c.color};background:${c.color}22">${c.avatar}</div>`;
-    const nEl = document.getElementById('game-coach-name');
-    const abEl = document.getElementById('game-coach-ability');
-    if (nEl) nEl.textContent = c.name;
-    if (abEl) abEl.textContent = c.ability ? '⬥ ' + c.ability : '';
-  }
 }
 
 // ── Main render ───────────────────────────────────────────────────
@@ -3620,16 +3530,6 @@ function resetGame(){
   document.getElementById('game-setup-panel').style.display='block';
   document.getElementById('game-panel').style.display='none';
   document.getElementById('game-end').style.display='none';
-  // Mostrar intro siempre
-  const introEl = document.getElementById('game-intro');
-  if (introEl) introEl.style.display = '';
-  // Mostrar torneo — si hay sala activa mostrar solo la sala, si no el lobby completo
-  const trnEl = document.getElementById('tournament-panel');
-  if (trnEl) trnEl.style.display = '';
-  if (activeTournamentId) {
-    document.getElementById('tournament-lobby').style.display = 'none';
-    document.getElementById('tournament-room').style.display  = '';
-  }
   // Limpiar picker y grid de cartas
   const pa=document.getElementById('picker-area');
   if(pa) pa.innerHTML='';
@@ -3977,7 +3877,7 @@ function renderBowProfile() {
   const grid2 = document.getElementById('collection-grid-2');
   if (grid2) {
     grid2.innerHTML = BOWS.map((bw, i) => `
-      <div class="bow-card ${activeBow === i ? 'active-bow' : ''}" onclick="openBowDetail(${i})" style="cursor:pointer">
+      <div class="bow-card ${activeBow === i ? 'active-bow' : ''}" onclick="selectBow(${i})">
         <div class="bow-card-name">${bw.name}</div>
         <div class="bow-card-model">${bw.model}</div>
         <div class="bow-card-stats">
@@ -3986,7 +3886,6 @@ function renderBowProfile() {
           <div class="bow-mini-stat"><strong>${bw.ata}"</strong> AxA</div>
           <div class="bow-mini-stat"><strong>${bw.bh}"</strong> BH</div>
         </div>
-        ${activeBow === i ? '<div style="font-size:9px;color:var(--yellow);margin-top:6px;font-weight:600;letter-spacing:.06em">✓ ACTIVO</div>' : '<div style="font-size:9px;color:var(--muted);margin-top:6px">Toca para ver detalle</div>'}
       </div>
     `).join('');
   }
@@ -4144,7 +4043,7 @@ function renderCollection() {
   const grid = document.getElementById('collection-grid');
   if (!grid || BOWS.length === 0) return;
   grid.innerHTML = BOWS.map((bw, i) => `
-    <div class="bow-card ${activeBow === i ? 'active-bow' : ''}" onclick="openBowDetail(${i})" style="cursor:pointer">
+    <div class="bow-card ${activeBow === i ? 'active-bow' : ''}" onclick="selectBow(${i})">
       <div class="bow-card-name">${bw.name}</div>
       <div class="bow-card-model">${bw.model}</div>
       <div class="bow-card-stats">
@@ -4153,7 +4052,6 @@ function renderCollection() {
         <div class="bow-mini-stat"><strong>${bw.ata}"</strong> AxA</div>
         <div class="bow-mini-stat"><strong>${bw.bh}"</strong> BH</div>
       </div>
-      ${activeBow === i ? '<div style="font-size:9px;color:var(--yellow);margin-top:6px;font-weight:600;letter-spacing:.06em">✓ ACTIVO</div>' : '<div style="font-size:9px;color:var(--muted);margin-top:6px">Toca para ver detalle</div>'}
     </div>
   `).join('') + `
     <div class="bow-card" style="border-style:dashed;cursor:default;display:flex;align-items:center;justify-content:center;min-height:90px;flex-direction:column;gap:6px">
@@ -4192,74 +4090,13 @@ function upgradeStat(stat) {
 function selectBow(idx) {
   if (idx >= BOWS.length) return;
   activeBow    = idx;
-  selectedBow  = idx;
-  window.selectedBow = idx;
-  window.activeBow   = idx;
+  selectedBow  = idx;  // ← requerido por startGame()
   renderBowProfile();
+  switchTab('mi-arco', document.getElementById('sb-mi-arco'));
   showToast(`🏹 ${BOWS[idx].name} activado`);
   if (typeof addBowToLineup     === 'function') addBowToLineup(BOWS[idx].id);
   if (typeof saveUserSelections === 'function') saveUserSelections();
   if (typeof refreshLineupUI    === 'function') refreshLineupUI();
-  if (typeof updateSetupChecks  === 'function') updateSetupChecks();
-  if (typeof recalc             === 'function') recalc();
-  // Solo regresar al tablero si hay una partida activa
-  if (gameState && gameState.phase !== 'end') {
-    gameState.bowIdx = idx; // actualizar el arco en el gameState activo
-    if (typeof _fillGameTeamHUD === 'function') _fillGameTeamHUD();
-    setTimeout(() => switchTab('score', document.getElementById('sb-score')), 300);
-  }
-}
-
-// ── BOW DETAIL MODAL ──────────────────────────────────────────────
-function openBowDetail(idx) {
-  const b = BOWS[idx];
-  if (!b) return;
-  const isActive = activeBow === idx;
-  const scores = typeof calcBowScores === 'function' ? calcBowScores(b) : null;
-
-  const modal = document.getElementById('bow-detail-overlay');
-  if (!modal) return;
-
-  document.getElementById('bdm-name').textContent  = b.name;
-  document.getElementById('bdm-model').textContent = b.model || '';
-  document.getElementById('bdm-fps').textContent   = b.fps;
-  document.getElementById('bdm-let').textContent   = b.let;
-  document.getElementById('bdm-ata').textContent   = b.ata;
-  document.getElementById('bdm-bh').textContent    = b.bh;
-  document.getElementById('bdm-draw').textContent  = b.draw;
-
-  if (scores) {
-    document.getElementById('bdm-score-general').textContent = scores.general;
-    document.getElementById('bdm-score-indoor').textContent  = scores.indoor;
-    document.getElementById('bdm-score-outdoor').textContent = scores.outdoor;
-    document.getElementById('bdm-score-field').textContent   = scores.field;
-    document.getElementById('bdm-score-3d').textContent      = scores.d3;
-  }
-
-  const btn = document.getElementById('bdm-select-btn');
-  if (isActive) {
-    btn.textContent = '✓ Arco Activo';
-    btn.style.borderColor = 'var(--green)';
-    btn.style.color       = 'var(--green)';
-    btn.style.background  = 'rgba(93,202,165,.1)';
-    btn.disabled = true;
-  } else {
-    btn.textContent = '▶ Usar este Arco';
-    btn.style.borderColor = 'var(--yellow)';
-    btn.style.color       = 'var(--yellow)';
-    btn.style.background  = 'rgba(216,209,90,.12)';
-    btn.disabled = false;
-  }
-  btn.onclick = () => { selectBow(idx); closeBowDetail(); };
-
-  modal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-function closeBowDetail() {
-  const modal = document.getElementById('bow-detail-overlay');
-  if (modal) modal.style.display = 'none';
-  document.body.style.overflow = '';
 }
 
 // ── USE ABILITY ──
@@ -4614,153 +4451,19 @@ let roundTimerInterval = null;
 let roundTimerRemaining = 0;
 
 function startRoundTimer() {
-  stopRoundTimer();
-  _showCountdownOverlay(() => {
-    // Después del 3,2,1 — arranca el timer de 40s
-    roundTimerRemaining = ROUND_TIMER_SECS;
+  stopRoundTimer(); // clear any existing
+  roundTimerRemaining = ROUND_TIMER_SECS;
+  updateTimerDisplay();
+  roundTimerInterval = setInterval(() => {
+    roundTimerRemaining--;
     updateTimerDisplay();
-    roundTimerInterval = setInterval(() => {
-      roundTimerRemaining--;
-      updateTimerDisplay();
-      if (roundTimerRemaining <= 0) {
-        stopRoundTimer();
-        if (gameState && gameState.phase === 'playing') {
-          showToast('⏰ Tiempo agotado — disciplina es también saber cuándo soltar.');
-          endRound(true);
-        }
+    if (roundTimerRemaining <= 0) {
+      stopRoundTimer();
+      // Auto-close round with whatever cards are played
+      if (gameState && gameState.phase === 'playing') {
+        showToast('⏰ Tiempo agotado — disciplina es también saber cuándo soltar.');
+        endRound(true);
       }
-    }, 1000);
-  });
-}
-
-function _showCountdownOverlay(onDone) {
-  const a = window.selectedArcher;
-  const c = window.selectedCoach;
-  const bow = (window.activeBow != null) ? (window.BOWS || [])[window.activeBow] : null;
-  const STORAGE = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/';
-
-  function avatarHTML(p, size) {
-    if (!p) return '';
-    return p.foto
-      ? `<img src="${STORAGE}${p.foto}.webp" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;border:2px solid ${p.color}88">`
-      : `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${p.color}33;border:2px solid ${p.color}88;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:${size/2.5}px;color:${p.color}">${p.avatar}</div>`;
-  }
-
-  // Crear overlay
-  const overlay = document.createElement('div');
-  overlay.id = 'countdown-overlay';
-  overlay.style.cssText = `
-    position:fixed;inset:0;z-index:99999;
-    background:rgba(14,14,14,0.92);
-    backdrop-filter:blur(8px);
-    display:flex;flex-direction:column;
-    align-items:center;justify-content:center;
-    gap:24px;
-    animation:fadeInOverlay .3s ease;
-  `;
-
-  overlay.innerHTML = `
-    <style>
-      @keyframes fadeInOverlay { from{opacity:0} to{opacity:1} }
-      @keyframes fadeOutOverlay { from{opacity:1} to{opacity:0} }
-      @keyframes popIn { 0%{transform:scale(0.5);opacity:0} 60%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
-      @keyframes popOut { 0%{transform:scale(1);opacity:1} 100%{transform:scale(1.5);opacity:0} }
-      #countdown-number { animation: popIn .35s cubic-bezier(.34,1.56,.64,1) forwards; }
-      #countdown-number.out { animation: popOut .3s ease forwards; }
-    </style>
-
-    <!-- Equipo -->
-    <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
-
-      <!-- Arquero -->
-      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(90,159,216,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
-        ${avatarHTML(a, 44)}
-        <div>
-          <div style="font-size:9px;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Arquero</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.04em;color:var(--text)">${a?.name || '—'}</div>
-          <div style="font-size:10px;color:var(--muted)">${a?.role || ''}</div>
-        </div>
-      </div>
-
-      <!-- Arco -->
-      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(216,209,90,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
-        <div style="width:44px;height:44px;border-radius:50%;background:rgba(216,209,90,0.1);border:2px solid rgba(216,209,90,0.4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏹</div>
-        <div>
-          <div style="font-size:9px;color:var(--yellow);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Arco Activo</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.04em;color:var(--text)">${bow?.name || '—'}</div>
-          <div style="font-size:10px;color:var(--muted)">${bow ? bow.fps+'fps · '+bow.let+'% let · '+bow.draw+'lbs' : ''}</div>
-        </div>
-      </div>
-
-      <!-- Coach -->
-      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(216,120,80,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
-        ${avatarHTML(c, 44)}
-        <div>
-          <div style="font-size:9px;color:var(--coral);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Coach</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.04em;color:var(--text)">${c?.name || '—'}</div>
-          <div style="font-size:10px;color:var(--muted)">${c?.role || ''}</div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Número grande -->
-    <div id="countdown-number" style="
-      font-family:'Bebas Neue',sans-serif;
-      font-size:120px;
-      line-height:1;
-      color:var(--yellow);
-      text-shadow:0 0 60px rgba(216,209,90,0.4);
-      letter-spacing:.02em;
-    ">3</div>
-
-    <div style="font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase">Prepárate</div>
-  `;
-
-  document.body.appendChild(overlay);
-
-  let count = 3;
-  const numEl = () => document.getElementById('countdown-number');
-
-  const tick = setInterval(() => {
-    count--;
-    const el = numEl();
-    if (!el) { clearInterval(tick); return; }
-
-    if (count > 0) {
-      // Animar salida del número actual
-      el.classList.add('out');
-      setTimeout(() => {
-        if (!numEl()) return;
-        numEl().textContent = count;
-        numEl().className = '';
-        // Re-trigger animation
-        void numEl().offsetWidth;
-        numEl().style.animation = 'none';
-        numEl().style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1) forwards';
-      }, 280);
-    } else {
-      // ¡YA! — mostrar "GO" y cerrar
-      el.classList.add('out');
-      setTimeout(() => {
-        if (!numEl()) return;
-        numEl().textContent = '¡YA!';
-        numEl().style.color = 'var(--green)';
-        numEl().style.textShadow = '0 0 60px rgba(93,202,165,0.5)';
-        numEl().className = '';
-        numEl().style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1) forwards';
-      }, 280);
-
-      clearInterval(tick);
-
-      // Fade out y remover
-      setTimeout(() => {
-        overlay.style.animation = 'fadeOutOverlay .4s ease forwards';
-        setTimeout(() => {
-          overlay.remove();
-          onDone();
-        }, 400);
-      }, 700);
     }
   }, 1000);
 }
@@ -5040,88 +4743,6 @@ function selectFromModal() {
       <div id="cdm-already-selected" style="display:none;margin-top:8px;font-size:11px;color:var(--green);text-align:center">
         ✅ Ya seleccionado — haz clic para quitar
       </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ════ BOW DETAIL MODAL ════ -->
-<div id="bow-detail-overlay" onclick="if(event.target===this)closeBowDetail()"
-  style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.78);backdrop-filter:blur(4px);overflow-y:auto;padding:20px 16px;align-items:flex-start;justify-content:center">
-  <div style="max-width:440px;width:100%;margin:0 auto;background:var(--surface);border:0.5px solid var(--border2);border-radius:18px;overflow:hidden;position:relative" onclick="event.stopPropagation()">
-
-    <!-- Top bar -->
-    <div style="height:3px;background:linear-gradient(90deg,var(--yellow),var(--orange),var(--coral))"></div>
-
-    <!-- Header -->
-    <div style="padding:20px 20px 14px;border-bottom:0.5px solid var(--border);position:relative">
-      <button onclick="closeBowDetail()" style="position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;border:0.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:var(--muted);cursor:pointer;font-size:14px">✕</button>
-      <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--yellow);margin-bottom:4px">🏹 ARCO</div>
-      <div id="bdm-name" style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.04em;color:var(--text);line-height:1">—</div>
-      <div id="bdm-model" style="font-size:11px;color:var(--muted);margin-top:3px">—</div>
-    </div>
-
-    <!-- Stats físicos -->
-    <div style="padding:14px 20px;border-bottom:0.5px solid var(--border)">
-      <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Stats del Arco</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-        <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center;border:0.5px solid var(--border)">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--blue)" id="bdm-fps">—</div>
-          <div style="font-size:9px;color:var(--muted)">fps</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center;border:0.5px solid var(--border)">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green)" id="bdm-let">—</div>
-          <div style="font-size:9px;color:var(--muted)">% LetOff</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center;border:0.5px solid var(--border)">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--yellow)" id="bdm-draw">—</div>
-          <div style="font-size:9px;color:var(--muted)">lbs draw</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center;border:0.5px solid var(--border)">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)" id="bdm-ata">—</div>
-          <div style="font-size:9px;color:var(--muted)">" AxA</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center;border:0.5px solid var(--border)">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)" id="bdm-bh">—</div>
-          <div style="font-size:9px;color:var(--muted)">" BH</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Scores por disciplina -->
-    <div style="padding:14px 20px;border-bottom:0.5px solid var(--border)">
-      <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Score por Disciplina</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px">
-          <span style="font-size:11px;color:var(--muted)">General</span>
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--yellow)" id="bdm-score-general">—</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px">
-          <span style="font-size:11px;color:var(--muted)">Indoor</span>
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#5dcaa5" id="bdm-score-indoor">—</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px">
-          <span style="font-size:11px;color:var(--muted)">Outdoor</span>
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#378add" id="bdm-score-outdoor">—</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px">
-          <span style="font-size:11px;color:var(--muted)">Field</span>
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#e05555" id="bdm-score-field">—</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px">
-          <span style="font-size:11px;color:var(--muted)">3D</span>
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#9a88dd" id="bdm-score-3d">—</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Botón seleccionar -->
-    <div style="padding:16px 20px">
-      <button id="bdm-select-btn" style="
-        width:100%;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.06em;
-        padding:12px;border-radius:10px;cursor:pointer;transition:all .2s;
-        border:1.5px solid var(--yellow);background:rgba(216,209,90,.12);color:var(--yellow);
-      ">▶ Usar este Arco</button>
     </div>
 
   </div>
