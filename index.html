@@ -3008,7 +3008,6 @@ function gradeDesc(g){
 
 // ── Setup checks ──────────────────────────────────────────────────
 function updateSetupChecks() {
-  // Sincronizar variables locales desde window (cargadas por supabase-persistence)
   if (window.selectedArcher) selectedArcher = window.selectedArcher;
   if (window.selectedCoach)  selectedCoach  = window.selectedCoach;
   if (activeBow !== null && activeBow !== undefined) selectedBow = activeBow;
@@ -3016,7 +3015,9 @@ function updateSetupChecks() {
   const hasBow    = selectedBow !== null && selectedBow !== undefined;
   const hasArcher = selectedArcher !== null;
   const hasCoach  = selectedCoach  !== null;
-  const deckCount = playerDeck.length;
+  const deckCount = (window.playerDeck || playerDeck).length;
+  const hasDeck   = deckCount >= DECK_SIZE;
+
   const ca = document.getElementById('chk-archer');
   if (!ca) return;
   const cbw = document.getElementById('chk-bow');
@@ -3026,12 +3027,12 @@ function updateSetupChecks() {
 
   ca.className = 'dot '+(hasArcher?'dot-ok':'dot-no');
   document.getElementById('chk-coach').className = 'dot '+(hasCoach?'dot-ok':'dot-no');
-  document.getElementById('chk-deck').className  = 'dot '+(deckCount>=PLAY_PER_ROUND?'dot-ok':'dot-no');
+  document.getElementById('chk-deck').className  = 'dot '+(hasDeck?'dot-ok':'dot-no');
   document.getElementById('chk-archer-lbl').textContent = hasArcher?'✓ '+selectedArcher.name:'Arquero no seleccionado';
   document.getElementById('chk-coach-lbl').textContent  = hasCoach?'✓ '+selectedCoach.name:'Coach no seleccionado';
-  document.getElementById('chk-deck-lbl').textContent   = deckCount>0?'✓ Deck listo ('+deckCount+' cartas)':'Deck vacío — ve a la pestaña Items';
+  document.getElementById('chk-deck-lbl').textContent   = hasDeck?'✓ Deck listo ('+deckCount+' cartas)':'Deck ('+deckCount+'/36)';
   const btn = document.getElementById('btn-start-game');
-  if(btn) btn.disabled = !(hasBow && hasArcher && hasCoach && deckCount>=PLAY_PER_ROUND);
+  if(btn) btn.disabled = !(hasBow && hasArcher && hasCoach && hasDeck);
 }
 
 // ── Bow selector in setup ─────────────────────────────────────────
@@ -3082,7 +3083,6 @@ function selectSetupBow(idx) {
 
 // ── Start game ────────────────────────────────────────────────────
 function startGame() {
-  // Sincronizar variables locales desde window (cargadas por supabase-persistence)
   if (window.selectedArcher) selectedArcher = window.selectedArcher;
   if (window.selectedCoach)  selectedCoach  = window.selectedCoach;
   if (activeBow !== null && activeBow !== undefined) selectedBow = activeBow;
@@ -3091,7 +3091,8 @@ function startGame() {
     console.warn('startGame bloqueado — archer:', !!selectedArcher, 'coach:', !!selectedCoach, 'bow:', selectedBow);
     return;
   }
-  const deckCards = playerDeck.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
+  const activeDeck = window.playerDeck || playerDeck;
+  const deckCards = activeDeck.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
   if(deckCards.length < PLAY_PER_ROUND){ alert('Necesitas al menos '+PLAY_PER_ROUND+' cartas en tu deck.'); return; }
   const shuffled = [...deckCards].sort(()=>Math.random()-.5);
   const hand = shuffled.splice(0, HAND_SIZE);
@@ -3100,6 +3101,11 @@ function startGame() {
   document.getElementById('game-setup-panel').style.display = 'none';
   document.getElementById('game-panel').style.display       = 'block';
   document.getElementById('game-end').style.display         = 'none';
+  const introEl = document.getElementById('game-intro');
+  const trnEl   = document.getElementById('tournament-panel');
+  if (introEl) introEl.style.display = 'none';
+  if (trnEl)   trnEl.style.display   = 'none';
+  _fillGameTeamHUD();
   applyRoundConditions(roundConditions[0]);
   showRoundConditions(1, roundConditions[0]);
   renderGameUI();
@@ -3492,7 +3498,6 @@ function resignGame(){
 function resetGame(){
   gameState=null;
   selCards=[];
-  // Limpiar slots del tablero
   for(let i=0;i<6;i++) selCards[i]=null;
   lockConditionUI(false);
   hideRoundConditions();
@@ -3501,7 +3506,14 @@ function resetGame(){
   document.getElementById('game-setup-panel').style.display='block';
   document.getElementById('game-panel').style.display='none';
   document.getElementById('game-end').style.display='none';
-  // Limpiar picker y grid de cartas
+  const introEl = document.getElementById('game-intro');
+  const trnEl   = document.getElementById('tournament-panel');
+  if (introEl) introEl.style.display = '';
+  if (trnEl)   trnEl.style.display   = '';
+  if (activeTournamentId) {
+    document.getElementById('tournament-lobby').style.display = 'none';
+    document.getElementById('tournament-room').style.display  = '';
+  }
   const pa=document.getElementById('picker-area');
   if(pa) pa.innerHTML='';
   renderSlots();
@@ -3848,9 +3860,9 @@ function renderBowProfile() {
   const grid2 = document.getElementById('collection-grid-2');
   if (grid2) {
     grid2.innerHTML = BOWS.map((bw, i) => `
-      <div class="bow-card ${activeBow === i ? 'active-bow' : ''}" onclick="selectBow(${i})">
+      <div class="bow-card ${activeBow === i ? 'active-bow' : ''}" onclick="openBowDetail(${i})" style="cursor:pointer">
         <div class="bow-card-name">${bw.name}</div>
-        <div class="bow-card-model">${bw.model}</div>
+        <div class="bow-card-model">${bw.model||''}</div>
         <div class="bow-card-stats">
           <div class="bow-mini-stat"><strong>${bw.fps}</strong> fps</div>
           <div class="bow-mini-stat"><strong>${bw.let}</strong>% LetOff</div>
@@ -4014,21 +4026,18 @@ function renderCollection() {
   const grid = document.getElementById('collection-grid');
   if (!grid || BOWS.length === 0) return;
   grid.innerHTML = BOWS.map((bw, i) => `
-    <div class="bow-card ${activeBow === i ? 'active-bow' : ''}" onclick="selectBow(${i})">
+    <div class="bow-card ${activeBow === i ? 'active-bow' : ''}" onclick="openBowDetail(${i})" style="cursor:pointer">
       <div class="bow-card-name">${bw.name}</div>
-      <div class="bow-card-model">${bw.model}</div>
+      <div class="bow-card-model">${bw.model||''}</div>
       <div class="bow-card-stats">
         <div class="bow-mini-stat"><strong>${bw.fps}</strong> fps</div>
         <div class="bow-mini-stat"><strong>${bw.let}</strong>% LetOff</div>
         <div class="bow-mini-stat"><strong>${bw.ata}"</strong> AxA</div>
         <div class="bow-mini-stat"><strong>${bw.bh}"</strong> BH</div>
       </div>
+      ${activeBow===i?'<div style="font-size:9px;color:var(--yellow);margin-top:6px;font-weight:600;letter-spacing:.06em">✓ ACTIVO</div>':'<div style="font-size:9px;color:var(--muted);margin-top:6px">Toca para ver detalle</div>'}
     </div>
-  `).join('') + `
-    <div class="bow-card" style="border-style:dashed;cursor:default;display:flex;align-items:center;justify-content:center;min-height:90px;flex-direction:column;gap:6px">
-      <div style="font-size:22px;color:var(--hint)">+</div>
-      <div style="font-size:11px;color:var(--hint)">Desbloquear con sobre</div>
-    </div>`;
+  `).join('') + `<div class="bow-card" style="border-style:dashed;cursor:default;display:flex;align-items:center;justify-content:center;min-height:90px;flex-direction:column;gap:6px"><div style="font-size:22px;color:var(--hint)">+</div><div style="font-size:11px;color:var(--hint)">Desbloquear con sobre</div></div>`;
   const countEl = document.getElementById('collection-count');
   if (countEl) countEl.textContent = BOWS.length;
 }
@@ -4060,14 +4069,72 @@ function upgradeStat(stat) {
 // ── SELECT BOW ──
 function selectBow(idx) {
   if (idx >= BOWS.length) return;
-  activeBow    = idx;
-  selectedBow  = idx;  // ← requerido por startGame()
+  activeBow          = idx;
+  selectedBow        = idx;
+  window.selectedBow = idx;
+  window.activeBow   = idx;
   renderBowProfile();
-  switchTab('mi-arco', document.getElementById('sb-mi-arco'));
   showToast(`🏹 ${BOWS[idx].name} activado`);
   if (typeof addBowToLineup     === 'function') addBowToLineup(BOWS[idx].id);
   if (typeof saveUserSelections === 'function') saveUserSelections();
   if (typeof refreshLineupUI    === 'function') refreshLineupUI();
+  if (typeof updateSetupChecks  === 'function') updateSetupChecks();
+  if (typeof recalc             === 'function') recalc();
+  // Solo regresar al tablero si hay partida activa
+  if (gameState && gameState.phase !== 'end') {
+    gameState.bowIdx = idx;
+    if (typeof _fillGameTeamHUD === 'function') _fillGameTeamHUD();
+    if (typeof closeBowDetail   === 'function') closeBowDetail();
+    setTimeout(() => switchTab('score', document.getElementById('sb-score')), 300);
+  } else {
+    if (typeof closeBowDetail === 'function') closeBowDetail();
+  }
+}
+
+function openBowDetail(idx) {
+  const b = BOWS[idx];
+  if (!b) return;
+  const isActive = activeBow === idx;
+  const scores = typeof calcBowScores === 'function' ? calcBowScores(b) : null;
+  const modal = document.getElementById('bow-detail-overlay');
+  if (!modal) return;
+  document.getElementById('bdm-name').textContent  = b.name;
+  document.getElementById('bdm-model').textContent = b.model || '';
+  document.getElementById('bdm-fps').textContent   = b.fps;
+  document.getElementById('bdm-let').textContent   = b.let;
+  document.getElementById('bdm-ata').textContent   = b.ata;
+  document.getElementById('bdm-bh').textContent    = b.bh;
+  document.getElementById('bdm-draw').textContent  = b.draw;
+  if (scores) {
+    document.getElementById('bdm-score-general').textContent = scores.general;
+    document.getElementById('bdm-score-indoor').textContent  = scores.indoor;
+    document.getElementById('bdm-score-outdoor').textContent = scores.outdoor;
+    document.getElementById('bdm-score-field').textContent   = scores.field;
+    document.getElementById('bdm-score-3d').textContent      = scores.d3;
+  }
+  const btn = document.getElementById('bdm-select-btn');
+  if (isActive) {
+    btn.textContent = '✓ Arco Activo';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color       = 'var(--green)';
+    btn.style.background  = 'rgba(93,202,165,.1)';
+    btn.disabled = true;
+  } else {
+    btn.textContent = '▶ Usar este Arco';
+    btn.style.borderColor = 'var(--yellow)';
+    btn.style.color       = 'var(--yellow)';
+    btn.style.background  = 'rgba(216,209,90,.12)';
+    btn.disabled = false;
+  }
+  btn.onclick = () => { selectBow(idx); };
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBowDetail() {
+  const modal = document.getElementById('bow-detail-overlay');
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
 }
 
 // ── USE ABILITY ──
@@ -4422,21 +4489,22 @@ let roundTimerInterval = null;
 let roundTimerRemaining = 0;
 
 function startRoundTimer() {
-  stopRoundTimer(); // clear any existing
-  roundTimerRemaining = ROUND_TIMER_SECS;
-  updateTimerDisplay();
-  roundTimerInterval = setInterval(() => {
-    roundTimerRemaining--;
+  stopRoundTimer();
+  _showCountdownOverlay(() => {
+    roundTimerRemaining = ROUND_TIMER_SECS;
     updateTimerDisplay();
-    if (roundTimerRemaining <= 0) {
-      stopRoundTimer();
-      // Auto-close round with whatever cards are played
-      if (gameState && gameState.phase === 'playing') {
-        showToast('⏰ Tiempo agotado — disciplina es también saber cuándo soltar.');
-        endRound(true);
+    roundTimerInterval = setInterval(() => {
+      roundTimerRemaining--;
+      updateTimerDisplay();
+      if (roundTimerRemaining <= 0) {
+        stopRoundTimer();
+        if (gameState && gameState.phase === 'playing') {
+          showToast('⏰ Tiempo agotado — disciplina es también saber cuándo soltar.');
+          endRound(true);
+        }
       }
-    }
-  }, 1000);
+    }, 1000);
+  });
 }
 
 function stopRoundTimer() {
@@ -4718,7 +4786,171 @@ function selectFromModal() {
 
   </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+<!-- ════ BOW DETAIL MODAL ════ -->
+<div id="bow-detail-overlay" onclick="if(event.target===this)closeBowDetail()"
+  style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.78);backdrop-filter:blur(4px);overflow-y:auto;padding:20px 16px;align-items:flex-start;justify-content:center">
+  <div style="max-width:440px;width:100%;margin:0 auto;background:var(--surface);border:0.5px solid var(--border2);border-radius:18px;overflow:hidden;position:relative" onclick="event.stopPropagation()">
+    <div style="height:3px;background:linear-gradient(90deg,var(--yellow),var(--orange),var(--coral))"></div>
+    <div style="padding:20px 20px 14px;border-bottom:0.5px solid var(--border);position:relative">
+      <button onclick="closeBowDetail()" style="position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;border:0.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:var(--muted);cursor:pointer;font-size:14px">✕</button>
+      <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--yellow);margin-bottom:4px">🏹 ARCO</div>
+      <div id="bdm-name" style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.04em;color:var(--text);line-height:1">—</div>
+      <div id="bdm-model" style="font-size:11px;color:var(--muted);margin-top:3px">—</div>
+    </div>
+    <div style="padding:14px 20px;border-bottom:0.5px solid var(--border)">
+      <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Stats</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center;border:0.5px solid var(--border)"><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--blue)" id="bdm-fps">—</div><div style="font-size:9px;color:var(--muted)">fps</div></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center;border:0.5px solid var(--border)"><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green)" id="bdm-let">—</div><div style="font-size:9px;color:var(--muted)">% LetOff</div></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center;border:0.5px solid var(--border)"><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--yellow)" id="bdm-draw">—</div><div style="font-size:9px;color:var(--muted)">lbs draw</div></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center;border:0.5px solid var(--border)"><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)" id="bdm-ata">—</div><div style="font-size:9px;color:var(--muted)">" AxA</div></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center;border:0.5px solid var(--border)"><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)" id="bdm-bh">—</div><div style="font-size:9px;color:var(--muted)">" BH</div></div>
+      </div>
+    </div>
+    <div style="padding:14px 20px;border-bottom:0.5px solid var(--border)">
+      <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Score por Disciplina</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px"><span style="font-size:11px;color:var(--muted)">General</span><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--yellow)" id="bdm-score-general">—</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px"><span style="font-size:11px;color:var(--muted)">Indoor</span><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#5dcaa5" id="bdm-score-indoor">—</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px"><span style="font-size:11px;color:var(--muted)">Outdoor</span><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#378add" id="bdm-score-outdoor">—</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px"><span style="font-size:11px;color:var(--muted)">Field</span><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#e05555" id="bdm-score-field">—</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:7px 10px"><span style="font-size:11px;color:var(--muted)">3D</span><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#9a88dd" id="bdm-score-3d">—</span></div>
+      </div>
+    </div>
+    <div style="padding:16px 20px">
+      <button id="bdm-select-btn" style="width:100%;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.06em;padding:12px;border-radius:10px;cursor:pointer;transition:all .2s;border:1.5px solid var(--yellow);background:rgba(216,209,90,.12);color:var(--yellow)">▶ Usar este Arco</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── FILL GAME TEAM HUD ────────────────────────────────────────────
+function _fillGameTeamHUD() {
+  const a = selectedArcher || window.selectedArcher;
+  const c = selectedCoach  || window.selectedCoach;
+  const bow = BOWS[activeBow] || null;
+  const S = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/';
+  function av(p, id) {
+    const el = document.getElementById(id);
+    if (!el || !p) return;
+    el.innerHTML = p.foto
+      ? `<img src="${S}${p.foto}.webp" style="width:100%;height:100%;object-fit:cover">`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:12px;color:${p.color};background:${p.color}22">${p.avatar}</div>`;
+  }
+  av(a, 'game-archer-avatar');
+  av(c, 'game-coach-avatar');
+  const an = document.getElementById('game-archer-name');
+  const aa = document.getElementById('game-archer-ability');
+  const cn = document.getElementById('game-coach-name');
+  const ca = document.getElementById('game-coach-ability');
+  const bn = document.getElementById('game-bow-name');
+  const bs = document.getElementById('game-bow-stats');
+  if (an) an.textContent = a?.name || '—';
+  if (aa) aa.textContent = a?.ability ? '⬥ '+a.ability : '';
+  if (cn) cn.textContent = c?.name || '—';
+  if (ca) ca.textContent = c?.ability ? '⬥ '+c.ability : '';
+  if (bn) bn.textContent = bow?.name || '—';
+  if (bs) bs.textContent = bow ? bow.fps+'fps · '+bow.let+'% let' : '';
+}
+window._fillGameTeamHUD = _fillGameTeamHUD;
+
+// ── COUNTDOWN OVERLAY ─────────────────────────────────────────────
+function _showCountdownOverlay(onDone) {
+  const a = window.selectedArcher;
+  const c = window.selectedCoach;
+  const bow = (window.activeBow != null) ? (window.BOWS||[])[window.activeBow] : null;
+  const S = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/';
+  function avatarHTML(p, size) {
+    if (!p) return '';
+    return p.foto
+      ? `<img src="${S}${p.foto}.webp" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;border:2px solid ${p.color}88">`
+      : `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${p.color}33;border:2px solid ${p.color}88;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:${size/2.5}px;color:${p.color}">${p.avatar}</div>`;
+  }
+  const overlay = document.createElement('div');
+  overlay.id = 'countdown-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.92);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;animation:fadeInOverlay .3s ease';
+  overlay.innerHTML = `
+    <style>
+      @keyframes fadeInOverlay{from{opacity:0}to{opacity:1}}
+      @keyframes fadeOutOverlay{from{opacity:1}to{opacity:0}}
+      @keyframes popIn{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+      @keyframes popOut{0%{transform:scale(1);opacity:1}100%{transform:scale(1.5);opacity:0}}
+      #countdown-number{animation:popIn .35s cubic-bezier(.34,1.56,.64,1) forwards}
+      #countdown-number.out{animation:popOut .3s ease forwards}
+    </style>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(90,159,216,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
+        ${avatarHTML(a,44)}
+        <div><div style="font-size:9px;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Arquero</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text)">${a?.name||'—'}</div>
+        <div style="font-size:10px;color:var(--muted)">${a?.role||''}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(216,209,90,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
+        <div style="width:44px;height:44px;border-radius:50%;background:rgba(216,209,90,0.1);border:2px solid rgba(216,209,90,0.4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏹</div>
+        <div><div style="font-size:9px;color:var(--yellow);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Arco</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text)">${bow?.name||'—'}</div>
+        <div style="font-size:10px;color:var(--muted)">${bow?bow.fps+'fps · '+bow.let+'% let':''}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(216,120,80,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
+        ${avatarHTML(c,44)}
+        <div><div style="font-size:9px;color:var(--coral);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Coach</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text)">${c?.name||'—'}</div>
+        <div style="font-size:10px;color:var(--muted)">${c?.role||''}</div></div>
+      </div>
+    </div>
+    <div id="countdown-number" style="font-family:'Bebas Neue',sans-serif;font-size:120px;line-height:1;color:var(--yellow);text-shadow:0 0 60px rgba(216,209,90,0.4);letter-spacing:.02em">3</div>
+    <div style="font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase">Prepárate</div>`;
+  document.body.appendChild(overlay);
+  let count = 3;
+  const numEl = () => document.getElementById('countdown-number');
+  const tick = setInterval(() => {
+    count--;
+    const el = numEl();
+    if (!el) { clearInterval(tick); return; }
+    if (count > 0) {
+      el.classList.add('out');
+      setTimeout(() => {
+        if (!numEl()) return;
+        numEl().textContent = count;
+        numEl().className = '';
+        numEl().style.animation = 'none';
+        void numEl().offsetWidth;
+        numEl().style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1) forwards';
+      }, 280);
+    } else {
+      el.classList.add('out');
+      setTimeout(() => {
+        if (!numEl()) return;
+        numEl().textContent = '¡YA!';
+        numEl().style.color = 'var(--green)';
+        numEl().style.textShadow = '0 0 60px rgba(93,202,165,0.5)';
+        numEl().className = '';
+        numEl().style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1) forwards';
+      }, 280);
+      clearInterval(tick);
+      setTimeout(() => {
+        overlay.style.animation = 'fadeOutOverlay .4s ease forwards';
+        setTimeout(() => { overlay.remove(); onDone(); }, 400);
+      }, 700);
+    }
+  }, 1000);
+}
+
+// ── selectPersonCard game return ──────────────────────────────────
+// Hook para regresar al tablero si hay partida activa al cambiar arquero/coach
+const _origSelectPersonCardGame = window.selectPersonCard;
+if (typeof selectPersonCard === 'function') {
+  const _base = selectPersonCard;
+  selectPersonCard = function(id, type) {
+    _base(id, type);
+    if (gameState && gameState.phase !== 'end') {
+      _fillGameTeamHUD();
+      setTimeout(() => switchTab('score', document.getElementById('sb-score')), 300);
+    }
+  };
+}
+</script>
 <script src="codigos.js"></script>
 <script src="supabase.js"></script>
 <script src="supabase-persistence.js"></script>
