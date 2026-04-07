@@ -2439,7 +2439,14 @@ const COMP_BOW_MULT = {
   '3d':    {fps:0,ata:0,bh:0,let:0,draw:0}
 };
 
-function selComp(el){
+// ── variables de estado ───────────────────────────────────────────
+let comp = 'indoor';
+let selCards = [];
+let openSlot = null;
+window.playerDeck = window.playerDeck || [];
+let playerDeck = window.playerDeck;
+let activeCatFilter = 'all';
+let envMods = {T:0, C:0, E:0, I:0, FUE:0, RES:0};
   document.querySelectorAll('.comp-btn').forEach(b=>b.classList.remove('sel'));
   el.classList.add('sel'); comp=el.dataset.comp; updateEnv();
 }
