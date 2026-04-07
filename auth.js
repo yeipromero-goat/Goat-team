@@ -40,9 +40,11 @@ window.registerEmail = async function(){
 };
 
 window.loginGoogle = async function(){
+  // Limpiar hash del URL para que el redirect de Google funcione correctamente
+  const redirectTo = window.location.origin + window.location.pathname;
   await window._supabaseClient.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    options: { redirectTo }
   });
 };
 
@@ -69,6 +71,9 @@ async function _onUserReady() {
   if (typeof refreshLineupUI === 'function') {
     refreshLineupUI();
   }
+  // Ahora sí activar el historial para el botón regresar
+  history.replaceState({tab:'score'}, '', window.location.pathname);
+  history.pushState({tab:'score'}, '', window.location.pathname + '#score');
 }
 
 document.addEventListener('DOMContentLoaded', function(){

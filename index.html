@@ -2283,23 +2283,11 @@ window.addEventListener('popstate', function(e){
   const tab = e.state?.tab || 'score';
   const scoreEl = document.getElementById('sb-score');
   if(tab === 'score' || !document.getElementById('tab-'+tab)){
-    // Ya estamos en tablero o tab no existe — bloquear salida
-    history.pushState({tab:'score'}, '', '#score');
+    history.pushState({tab:'score'}, '', window.location.pathname+'#score');
     switchTab('score', scoreEl);
   } else {
     switchTab(tab, document.getElementById('sb-'+tab) || scoreEl);
   }
-});
-
-// Al cargar — empujar un estado inicial para tener historial
-window.addEventListener('DOMContentLoaded', function(){
-  // Leer hash si viene de un bookmark, si no ir al score
-  const hash = location.hash.replace('#','');
-  const validTabs = ['score','cards','mi-arco','sobres','bitacora'];
-  const startTab = validTabs.includes(hash) ? hash : 'score';
-  history.replaceState({tab: startTab}, '', '#'+startTab);
-  // Empujar una entrada extra para que el primer "regresar" no salga
-  history.pushState({tab: startTab}, '', '#'+startTab);
 });
 
 // ── SCORING SYSTEM ────────────────────────────────────────────────────────
