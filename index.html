@@ -6192,27 +6192,60 @@ function cpToast(msg){
 // ── CARGAR LOBBY ──────────────────────────────────────────────────
 async function cpLoadLobby(){
   const listEl=document.getElementById('cp-club-list');
-  if(!cpUserId){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Inicia sesión para ver torneos</div>'; return; }
+  const leaguesEl=document.getElementById('cp-leagues-list');
+  if(!cpUserId){
+    listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Inicia sesión para ver torneos</div>';
+    return;
+  }
+  // ── Torneos de club ───────────────────────────────────────────
   try{
-    const res=await cpFetch('/rest/v1/tournaments?type=eq.club&visible=eq.true&status=neq.closed&order=created_at.desc&limit=10');
+    const res=await cpFetch('/rest/v1/tournaments?type=eq.club&status=neq.closed&order=created_at.desc&limit=10');
     const data=await res.json();
-    if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:20px 0">Sin torneos de club activos</div>'; return; }
-    listEl.innerHTML=data.map(t=>`
-      <div class="cp-card" style="cursor:pointer;margin-bottom:8px" onclick="cpOpenRoom('${t.id}')">
-        <div class="cp-ca" style="background:linear-gradient(90deg,#9a88dd,#5ab4d6)"></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:3px">${t.title}</div>
-            <div class="cp-muted" style="font-size:11px">${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}</div>
+    if(!data.length){
+      listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:20px 0">Sin torneos de club activos</div>';
+    } else {
+      listEl.innerHTML=data.map(t=>`
+        <div class="cp-card" style="cursor:pointer;margin-bottom:8px" onclick="cpOpenRoom('${t.id}')">
+          <div class="cp-ca" style="background:linear-gradient(90deg,#9a88dd,#5ab4d6)"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:3px">${t.title}</div>
+              <div class="cp-muted" style="font-size:11px">${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}</div>
+            </div>
+            ${cpStatusBadge(t.status)}
           </div>
-          ${cpStatusBadge(t.status)}
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          ${t.handicap_enabled?'<span class="cp-pill" style="background:rgba(216,209,90,0.1);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3);font-size:9px">Handicap activo</span>':''}
-          <span class="cp-muted" style="font-size:11px">Cupo: ${t.max_players_club||t.max_players} arqueros</span>
-        </div>
-      </div>`).join('');
+          <div style="display:flex;gap:8px;margin-top:8px">
+            ${t.handicap_enabled?'<span class="cp-pill" style="background:rgba(216,209,90,0.1);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3);font-size:9px">Handicap activo</span>':''}
+            <span class="cp-muted" style="font-size:11px">Cupo: ${t.max_players_club||t.max_players} arqueros</span>
+          </div>
+        </div>`).join('');
+    }
   } catch(e){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error cargando torneos</div>'; }
+
+  // ── Ligas activas ─────────────────────────────────────────────
+  try{
+    const res=await cpFetch('/rest/v1/leagues?status=eq.active&visible=eq.true&order=created_at.desc&limit=10');
+    const data=await res.json();
+    if(!data.length){
+      leaguesEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Sin ligas activas</div>';
+    } else {
+      leaguesEl.innerHTML=data.map(l=>`
+        <div class="cp-card" style="margin-bottom:8px">
+          <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:14px;font-weight:600;color:#fff">${l.title}</div>
+            <span class="cp-pill cp-badge-playing">Activa</span>
+          </div>
+          <div class="cp-muted" style="font-size:11px;margin-bottom:8px">
+            Fecha ${l.current_round||0} de ${l.rounds_total} · ${l.has_bracket?'Score + llaves':'Solo score'}
+          </div>
+          <div style="height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:8px">
+            <div style="height:100%;background:#d8d15a;border-radius:2px;width:${Math.round((l.current_round||0)/l.rounds_total*100)}%"></div>
+          </div>
+          <button class="cp-btn cp-btn-sm cp-btn-y" onclick="cpOpenLeague('${l.id}')">Ver tabla →</button>
+        </div>`).join('');
+    }
+  } catch(e){ leaguesEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error cargando ligas</div>'; console.error('ligas error:',e); }
 }
 
 // ── CARGAR MIS PARTIDAS ───────────────────────────────────────────
@@ -6654,15 +6687,33 @@ async function cpLoadAdminLeagues(){
 
 window.cpAdminClose = async function(id){
   if(!confirm('¿Cerrar este torneo? Se calculan posiciones finales.')) return;
-  const res=await cpFetch('/rest/v1/tournaments?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({status:'closed'})});
-  if(!res.ok){ const err=await res.text(); console.error('Error cerrando:',err); return cpToast('Error: '+err.slice(0,80)); }
-  cpToast('✓ Torneo cerrado');
-  cpLoadAdminTournaments();
+  try{
+    const res=await cpFetch('/rest/v1/tournaments?id=eq.'+id,{
+      method:'PATCH',
+      headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({status:'closed',visible:false})
+    });
+    // 204 = éxito sin contenido, 200 = éxito con contenido
+    if(res.status===204||res.status===200||res.ok){
+      cpToast('✓ Torneo cerrado');
+      await cpLoadAdminTournaments();
+      // Refrescar lobby para que desaparezca
+      await cpLoadLobby();
+    } else {
+      const err=await res.text();
+      console.error('Error cerrando torneo:',res.status, err);
+      cpToast('Error '+res.status+': '+err.slice(0,60));
+    }
+  } catch(e){ console.error(e); cpToast('Error: '+e.message); }
 }
 
 window.cpAdminToggleVisible = async function(id, visible){
   await cpFetch('/rest/v1/tournaments?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({visible})});
   cpLoadAdminTournaments();
+}
+
+window.cpOpenLeague = async function(leagueId){
+  cpToast('Liga — próximamente tabla completa de posiciones');
 }
 
 // ── AUTO-INIT ─────────────────────────────────────────────────────
