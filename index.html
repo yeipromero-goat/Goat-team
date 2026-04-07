@@ -5129,11 +5129,17 @@ window.BOW_IDEAL_RANGES      = BOW_IDEAL_RANGES;
 
   <div id="bt-s-inicio">
     <!-- Banner torneo activo -->
-    <div id="bt-tournament-banner" style="display:none;background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
-      <span style="font-size:18px">🏆</span>
-      <div>
-        <div style="font-size:12px;font-weight:600;color:#d8d15a">Torneo activo</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tu score se enviará automáticamente al torneo al guardar.</div>
+    <div id="bt-tournament-banner" style="display:none;background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);border-radius:10px;padding:10px 14px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:18px">🏆</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:#d8d15a">Torneo activo</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tu score se enviará automáticamente al guardar.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="bt-btn bt-btn-sm bt-btn-p" style="flex:1" onclick="btUseTournamentScore()">Registrar para torneo</button>
+        <button class="bt-btn bt-btn-sm" onclick="btPauseTournament()" style="font-size:11px;color:rgba(255,255,255,0.5)">Anotar sin torneo</button>
       </div>
     </div>
     <div class="bt-sec">Elige modalidad</div>
@@ -5531,7 +5537,59 @@ window.btSaveSession=function(){
   }
 }
 
-window.btSf=function(v,el,id){
+// Confirmar que esta sesión va al torneo
+window.btUseTournamentScore = function(){
+  const banner = document.getElementById('bt-tournament-banner');
+  if(banner){
+    banner.style.background = 'rgba(216,209,90,0.12)';
+    banner.style.borderColor = 'rgba(216,209,90,0.5)';
+    banner.querySelector('div div').textContent = '✓ Esta sesión se enviará al torneo';
+  }
+  if(typeof btShowMain==='function') btShowMain('nueva');
+}
+
+// Pausar torneo — anotar sin vincular
+window.btPauseTournament = function(){
+  const saved = window._cpPendingTournament;
+  window._cpPendingTournamentSaved = saved;
+  window._cpPendingTournament = null;
+  const banner = document.getElementById('bt-tournament-banner');
+  if(banner){
+    banner.style.background = 'rgba(255,255,255,0.04)';
+    banner.style.borderColor = 'rgba(255,255,255,0.1)';
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:18px">⏸</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Torneo pausado</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:1px">Esta sesión no se enviará al torneo.</div>
+        </div>
+      </div>
+      <button class="bt-btn bt-btn-sm bt-btn-p" onclick="btResumeTournament()">Reactivar torneo</button>`;
+  }
+}
+
+// Reactivar torneo
+window.btResumeTournament = function(){
+  window._cpPendingTournament = window._cpPendingTournamentSaved || null;
+  const banner = document.getElementById('bt-tournament-banner');
+  if(banner){
+    banner.style.background = 'rgba(216,209,90,0.08)';
+    banner.style.borderColor = 'rgba(216,209,90,0.3)';
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:18px">🏆</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:#d8d15a">Torneo activo</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tu score se enviará automáticamente al guardar.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="bt-btn bt-btn-sm bt-btn-p" style="flex:1" onclick="btUseTournamentScore()">Registrar para torneo</button>
+        <button class="bt-btn bt-btn-sm" onclick="btPauseTournament()" style="font-size:11px;color:rgba(255,255,255,0.5)">Anotar sin torneo</button>
+      </div>`;
+  }
+}
   if(id==='bt-fd')btFDays=v;else btFMod=v;
   document.getElementById(id).querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
   el.classList.add('act');btRenderH();
@@ -5674,6 +5732,13 @@ function btDrawSpark(data){
 
 // Inicializar
 btLoadSessions();
+// Mostrar banner si hay torneo pendiente al cargar
+setTimeout(()=>{
+  if(window._cpPendingTournament){
+    const banner = document.getElementById('bt-tournament-banner');
+    if(banner) banner.style.display='block';
+  }
+}, 500);
 })();
 </script>
 </div>
