@@ -2501,8 +2501,11 @@ function _computeScore(archerData, bowData, cards, comp, envMods){
   }
 
   // ── CLAMP y SCORE FINAL ───────────────────────────────────────────
+  // Factor de dificultad: reduce el raw para que los scores no empiecen saturados.
+  // Un arquero élite (95 stats) en su disciplina ideal llega ~85, no 100.
+  const DIFFICULTY = 0.82;
   const fin = {};
-  SS.forEach(s=>{ fin[s] = Math.min(100, Math.max(0, Math.round(raw[s]))); });
+  SS.forEach(s=>{ fin[s] = Math.min(100, Math.max(0, Math.round(raw[s] * DIFFICULTY))); });
   const score = Math.round(SS.reduce((acc,s)=>acc + fin[s]*W[s], 0));
   return {fin, score};
 }
@@ -4139,8 +4142,10 @@ function selectBow(idx) {
   if (typeof saveUserSelections === 'function') saveUserSelections();
   if (typeof refreshLineupUI    === 'function') refreshLineupUI();
   if (typeof updateSetupChecks  === 'function') updateSetupChecks();
+  if (typeof recalc             === 'function') recalc();
   // Solo regresar al tablero si hay una partida activa
   if (gameState && gameState.phase !== 'end') {
+    gameState.bowIdx = idx; // actualizar el arco en el gameState activo
     if (typeof _fillGameTeamHUD === 'function') _fillGameTeamHUD();
     setTimeout(() => switchTab('score', document.getElementById('sb-score')), 300);
   }
