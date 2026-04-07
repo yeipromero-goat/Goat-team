@@ -2786,6 +2786,12 @@ function selectPersonCard(id, type) {
   }
   if (typeof saveUserSelections === 'function') saveUserSelections();
   if (typeof refreshLineupUI    === 'function') refreshLineupUI();
+
+  // Si hay partida activa → regresar al tablero y actualizar HUD
+  if (gameState && gameState.phase !== 'end') {
+    if (typeof _fillGameTeamHUD === 'function') _fillGameTeamHUD();
+    setTimeout(() => switchTab('score', document.getElementById('sb-score')), 300);
+  }
 }
 
 function clearPersonCard(type) {
@@ -4133,6 +4139,11 @@ function selectBow(idx) {
   if (typeof saveUserSelections === 'function') saveUserSelections();
   if (typeof refreshLineupUI    === 'function') refreshLineupUI();
   if (typeof updateSetupChecks  === 'function') updateSetupChecks();
+  // Solo regresar al tablero si hay una partida activa
+  if (gameState && gameState.phase !== 'end') {
+    if (typeof _fillGameTeamHUD === 'function') _fillGameTeamHUD();
+    setTimeout(() => switchTab('score', document.getElementById('sb-score')), 300);
+  }
 }
 
 // ── BOW DETAIL MODAL ──────────────────────────────────────────────
