@@ -5590,6 +5590,8 @@ window.btResumeTournament = function(){
       </div>`;
   }
 }
+
+window.btSf=function(v,el,id){
   if(id==='bt-fd')btFDays=v;else btFMod=v;
   document.getElementById(id).querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
   el.classList.add('act');btRenderH();
@@ -6328,16 +6330,27 @@ async function cpLoadMisPartidas(){
       html+=`<div class="cp-sec">Activas</div>`;
       html+=active.map(d=>{
         const t=d.tournaments;
-        return`<div class="cp-card" style="cursor:pointer;margin-bottom:8px" onclick="cpOpenRoom('${t.id}')">
-          <div class="cp-ca" style="background:linear-gradient(90deg,#5dcaa5,#5ab4d6)"></div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
+        const isActive=window._cpPendingTournament===t.id;
+        const needsScore=d.qualifying_score==null;
+        return`<div class="cp-card" style="margin-bottom:8px">
+          <div class="cp-ca" style="background:linear-gradient(90deg,${isActive?'#d8d15a,#5dcaa5':'#5dcaa5,#5ab4d6'})"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <div>
               <div style="font-size:13px;font-weight:600;color:#fff">${t.title}</div>
               <div class="cp-muted" style="font-size:11px">${DISC_LABELS[t.discipline]||t.discipline}</div>
             </div>
-            ${cpStatusBadge(t.status)}
+            <div style="display:flex;align-items:center;gap:6px">
+              ${isActive?'<span class="cp-pill" style="background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3);font-size:9px">ACTIVO</span>':''}
+              ${cpStatusBadge(t.status)}
+            </div>
           </div>
-          ${d.qualifying_score!=null?`<div style="margin-top:6px"><span class="cp-num" style="font-size:18px;color:#5dcaa5">${d.qualifying_score}</span><span class="cp-muted" style="font-size:11px"> pts clasificatorio</span></div>`:'<div class="cp-muted" style="font-size:11px;margin-top:6px">Pendiente: sube tu score</div>'}
+          ${d.qualifying_score!=null
+            ?`<div style="margin-bottom:6px"><span class="cp-num" style="font-size:18px;color:#5dcaa5">${d.qualifying_score}</span><span class="cp-muted" style="font-size:11px"> pts clasificatorio ✓</span></div>`
+            :'<div class="cp-muted" style="font-size:11px;margin-bottom:6px">Pendiente: sube tu score</div>'}
+          <div style="display:flex;gap:6px">
+            ${!isActive?`<button class="cp-btn cp-btn-sm cp-btn-y" onclick="cpSetActiveTournament('${t.id}','${t.discipline}')">Seleccionar como activo</button>`:'<button class="cp-btn cp-btn-sm" style="color:rgba(255,255,255,0.4)" onclick="cpClearActiveTournament()">Quitar selección</button>'}
+            <button class="cp-btn cp-btn-sm" onclick="cpOpenRoom('${t.id}')">Ver sala →</button>
+          </div>
         </div>`;
       }).join('');
     }
@@ -6779,6 +6792,25 @@ window.cpAdminToggleVisible = async function(id, visible){
 
 window.cpOpenLeague = async function(leagueId){
   cpToast('Liga — próximamente tabla completa de posiciones');
+}
+
+window.cpSetActiveTournament = function(tournamentId, discipline){
+  window._cpPendingTournament = tournamentId;
+  window._cpPendingTournamentSaved = tournamentId;
+  // Mostrar banner en bitácora si está visible
+  const banner = document.getElementById('bt-tournament-banner');
+  if(banner) banner.style.display='block';
+  cpToast('🏆 Torneo activo seleccionado — ve a Puntuaciones para registrar tu score');
+  cpLoadMisPartidas(); // refrescar para mostrar badge ACTIVO
+}
+
+window.cpClearActiveTournament = function(){
+  window._cpPendingTournament = null;
+  window._cpPendingTournamentSaved = null;
+  const banner = document.getElementById('bt-tournament-banner');
+  if(banner) banner.style.display='none';
+  cpToast('Torneo desactivado');
+  cpLoadMisPartidas();
 }
 
 // ── AUTO-INIT ─────────────────────────────────────────────────────
