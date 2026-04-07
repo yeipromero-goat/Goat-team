@@ -272,6 +272,23 @@ function setCoachInLineup(coachId) {
 
 // ─── INIT ─────────────────────────────────────────────────────────
 async function initSupabasePersistence() {
+  // Exponer datos del usuario para otros módulos (competencias, bitácora)
+  try {
+    const { data: sd } = await window._supabaseClient.auth.getSession();
+    if (sd?.session) {
+      window._supabaseToken   = sd.session.access_token;
+      window._supabaseUserId  = sd.session.user.id;
+      window._supabaseUserName = sd.session.user.user_metadata?.nombre
+        || sd.session.user.user_metadata?.full_name
+        || sd.session.user.email?.split('@')[0]
+        || 'Arquero';
+      // Admin: solo el dueño del proyecto
+      const ADMIN_ID = 'd3847774-77bc-4adf-bb04-4feb3d9315e7'; // ← reemplaza con tu user_id real
+      window._supabaseIsAdmin = sd.session.user.id === ADMIN_ID;
+      // Anon key para requests públicos
+      window._supabaseAnonKey = window._supabaseClient?.supabaseKey || '';
+    }
+  } catch(e) {}
   await loadUserSelections();
   window.dispatchEvent(new CustomEvent('supabase-user-ready'));
 }

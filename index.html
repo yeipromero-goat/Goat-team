@@ -1376,6 +1376,10 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
       <span class="sb-item-icon">📊</span>
       <span class="sb-item-label">Puntuaciones</span>
     </div>
+    <div class="sb-item" id="sb-competencias" onclick="switchTab('competencias',this)">
+      <span class="sb-item-icon">🏆</span>
+      <span class="sb-item-label">Competencias</span>
+    </div>
   </nav>
 
   <!-- User -->
@@ -1428,6 +1432,7 @@ const TAB_META = {
   'mi-arco':     { icon:'🏹', label:'Mi Arco',        sub:'Equipo y stats' },
   'sobres':      { icon:'🎁', label:'Sobres',         sub:'Tienda y packs' },
   'bitacora':    { icon:'📊', label:'Puntuaciones',   sub:'Bitácora y estadísticas' },
+  'competencias':{ icon:'🏆', label:'Competencias',   sub:'Torneos y ligas' },
 };
 
 function updatePageTitle(name){
@@ -5632,6 +5637,975 @@ function btDrawSpark(data){
 
 // Inicializar
 btLoadSessions();
+})();
+</script>
+</div>
+
+<div id="tab-competencias" class="tab-panel">
+<style>
+.cp{max-width:480px;margin:0 auto;font-family:'DM Sans',sans-serif}
+.cp-card{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden}
+.cp-ca{position:absolute;top:0;left:0;right:0;height:2px}
+.cp-btn{width:100%;padding:11px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:transparent;color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s}
+.cp-btn:hover{background:rgba(255,255,255,0.06)}
+.cp-btn-y{background:rgba(216,209,90,0.15);color:#d8d15a;border-color:rgba(216,209,90,0.4)}
+.cp-btn-y:hover{background:rgba(216,209,90,0.25)}
+.cp-btn-r{background:rgba(255,80,80,0.1);color:#e05555;border-color:rgba(255,80,80,0.3)}
+.cp-btn-g{background:rgba(93,202,165,0.1);color:#5dcaa5;border-color:rgba(93,202,165,0.3)}
+.cp-btn-sm{padding:7px 14px;width:auto;font-size:12px}
+.cp-sec{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:8px}
+.cp-num{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em}
+.cp-pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:600}
+.cp-muted{color:rgba(255,255,255,0.4);font-size:12px}
+.cp-input{width:100%;padding:10px 12px;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:13px;font-family:'DM Sans',sans-serif;margin-bottom:8px}
+.cp-select{width:100%;padding:10px 12px;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;background:#1a1a1a;color:#fff;font-size:13px;font-family:'DM Sans',sans-serif;margin-bottom:8px}
+.cp-label{font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px;display:block}
+.cp-divider{border:none;border-top:0.5px solid rgba(255,255,255,0.07);margin:12px 0}
+.cp-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid rgba(255,255,255,0.07)}
+.cp-row:last-child{border-bottom:none}
+.cp-avatar{width:32px;height:32px;border-radius:50%;background:rgba(216,209,90,0.15);border:1.5px solid rgba(216,209,90,0.3);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#d8d15a;flex-shrink:0}
+.cp-tab-bar{display:flex;border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.cp-tab-bar button{flex:1;padding:9px;border:none;background:transparent;color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.cp-tab-bar button.act{background:rgba(216,209,90,0.12);color:#d8d15a}
+.cp-badge-open{background:rgba(93,202,165,0.15);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3)}
+.cp-badge-playing{background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3)}
+.cp-badge-validating{background:rgba(216,120,80,0.15);color:#d87850;border:0.5px solid rgba(216,120,80,0.3)}
+.cp-badge-closed{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.35)}
+.cp-check{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.cp-check.done{background:rgba(93,202,165,0.2);border-color:#5dcaa5;color:#5dcaa5}
+/* Bracket */
+.cp-bracket{overflow-x:auto;padding-bottom:8px}
+.cp-round-col{display:flex;flex-direction:column;gap:8px;min-width:140px;flex-shrink:0}
+.cp-match{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px}
+.cp-match.winner-decided{border-color:rgba(216,209,90,0.3)}
+.cp-match-player{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px}
+.cp-match-player.winner{color:#d8d15a;font-weight:600}
+.cp-match-player.loser{color:rgba(255,255,255,0.35)}
+/* Podium */
+.cp-podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:20px 0}
+.cp-podium-step{display:flex;flex-direction:column;align-items:center;gap:6px}
+.cp-podium-block{border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:24px;color:rgba(255,255,255,0.6)}
+/* Animación ganador */
+@keyframes cpWinPop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+@keyframes cpConfetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(80px) rotate(360deg);opacity:0}}
+.cp-win-overlay{position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.cp-win-trophy{font-size:80px;animation:cpWinPop .5s cubic-bezier(.34,1.56,.64,1) forwards}
+.cp-confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;animation:cpConfetti 1.5s ease forwards}
+</style>
+
+<div class="cp" id="cp-app">
+
+<!-- TABS PRINCIPALES -->
+<div class="cp-tab-bar" id="cp-main-tabs">
+  <button class="act" onclick="cpShowTab('lobby')">Competencias</button>
+  <button onclick="cpShowTab('mis')">Mis partidas</button>
+  <button id="cp-admin-tab" onclick="cpShowTab('admin')" style="display:none">Admin ⚡</button>
+</div>
+
+<!-- ══ LOBBY ══════════════════════════════════════════════════ -->
+<div id="cp-tab-lobby">
+
+  <!-- Crear sala amigos -->
+  <div class="cp-card" style="cursor:pointer" onclick="cpShowCreate()">
+    <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:28px">🏹</div>
+      <div>
+        <div style="font-size:14px;font-weight:600;color:#fff">Crear torneo entre amigos</div>
+        <div class="cp-muted" style="font-size:11px;margin-top:2px">Invita a 2-10 arqueros · Asíncrono · Clasificatorio + llaves opcional</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unirse con código -->
+  <div class="cp-card">
+    <div class="cp-ca" style="background:linear-gradient(90deg,#5ab4d6,#9a88dd)"></div>
+    <div class="cp-label">Unirse con código de sala</div>
+    <div style="display:flex;gap:8px">
+      <input class="cp-input" id="cp-join-code" placeholder="Ej: GOAT-3829" style="margin-bottom:0;flex:1;text-transform:uppercase" maxlength="9" oninput="this.value=this.value.toUpperCase()">
+      <button class="cp-btn cp-btn-y cp-btn-sm" onclick="cpJoinByCode()" style="white-space:nowrap">Unirse →</button>
+    </div>
+  </div>
+
+  <!-- Torneos de club activos -->
+  <div class="cp-sec" style="margin-top:4px">Torneos de club</div>
+  <div id="cp-club-list">
+    <div class="cp-muted" style="text-align:center;padding:20px 0">Cargando torneos...</div>
+  </div>
+
+  <!-- Ligas activas -->
+  <div class="cp-sec" style="margin-top:8px">Ligas activas</div>
+  <div id="cp-leagues-list">
+    <div class="cp-muted" style="text-align:center;padding:16px 0">Sin ligas activas</div>
+  </div>
+
+</div>
+
+<!-- ══ MIS PARTIDAS ═══════════════════════════════════════════ -->
+<div id="cp-tab-mis" style="display:none">
+  <div id="cp-mis-list">
+    <div class="cp-muted" style="text-align:center;padding:24px 0">Sin partidas activas.<br>¡Crea o únete a una!</div>
+  </div>
+</div>
+
+<!-- ══ CREAR TORNEO (amigos) ══════════════════════════════════ -->
+<div id="cp-tab-create" style="display:none">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button class="cp-btn cp-btn-sm" onclick="cpShowTab('lobby')" style="width:34px;padding:7px">←</button>
+    <span style="font-size:15px;font-weight:600;color:#fff">Nuevo torneo</span>
+  </div>
+
+  <div class="cp-card">
+    <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
+    <div class="cp-sec">Nombre del torneo</div>
+    <input class="cp-input" id="cp-new-title" placeholder="Ej: Domingo en el campo">
+
+    <div class="cp-sec" style="margin-top:4px">Modalidad del clasificatorio</div>
+    <select class="cp-select" id="cp-new-disc">
+      <optgroup label="Indoor">
+        <option value="indoor-15">Indoor 15 tiros (5×3)</option>
+        <option value="indoor-30" selected>Indoor 30 tiros (10×3)</option>
+        <option value="indoor-60">Indoor 60 tiros (20×2)</option>
+      </optgroup>
+      <optgroup label="Outdoor">
+        <option value="outdoor-15">Outdoor 15 tiros (5×3)</option>
+        <option value="outdoor-36">Outdoor 36 tiros (6×6)</option>
+        <option value="outdoor-72">Outdoor 72 tiros (12×6)</option>
+      </optgroup>
+      <optgroup label="Field">
+        <option value="field-c">Field Conocidas (14×3)</option>
+        <option value="field-d">Field Desconocidas (14×3)</option>
+      </optgroup>
+      <optgroup label="3D">
+        <option value="3d">3D (tú eliges animales)</option>
+      </optgroup>
+    </select>
+
+    <div class="cp-sec" style="margin-top:4px">Formato</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div id="cp-fmt-score" onclick="cpSetFmt('score')" style="border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center">
+        <div style="font-size:13px;font-weight:600;color:#d8d15a">Solo score</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">Clasificatorio → podium</div>
+      </div>
+      <div id="cp-fmt-bracket" onclick="cpSetFmt('bracket')" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center">
+        <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.5)">Score + llaves</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">Clasificatorio → eliminación</div>
+      </div>
+    </div>
+
+    <div id="cp-match-fmt-section" style="display:none">
+      <div class="cp-sec">Formato de matches (llaves)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div id="cp-mfmt-score" onclick="cpSetMatchFmt('score')" style="border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center">
+          <div style="font-size:13px;font-weight:600;color:#d8d15a">15 flechas</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">Sumatoria total</div>
+        </div>
+        <div id="cp-mfmt-sets" onclick="cpSetMatchFmt('sets')" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center">
+          <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.5)">Sets</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">A 6 puntos · 3 flechas/set</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cp-sec" style="margin-top:4px">Handicap</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px" id="cp-hcap-grid">
+      <div class="cp-hcap-opt sel" onclick="cpToggleHcap('none',this)" style="border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:#d8d15a">Sin handicap</div>
+      </div>
+      <div class="cp-hcap-opt" onclick="cpToggleHcap('auto',this)" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">✨ Auto historial</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px">Top feature</div>
+      </div>
+      <div class="cp-hcap-opt" onclick="cpToggleHcap('equipment',this)" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Por equipo</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px">Recurvo +2/end</div>
+      </div>
+      <div class="cp-hcap-opt" onclick="cpToggleHcap('age',this)" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Por edad</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px">&lt;18 o &gt;50 +2/end</div>
+      </div>
+      <div class="cp-hcap-opt" onclick="cpToggleHcap('dynamic',this)" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Dinámico</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px">Si vas -10 pts ×1.2</div>
+      </div>
+      <div class="cp-hcap-opt" onclick="cpToggleHcap('custom',this)" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Personalizado</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px">Tú defines el valor</div>
+      </div>
+    </div>
+
+    <div class="cp-sec" style="margin-top:4px">Jugadores</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <span class="cp-muted">Mín.</span>
+      <select class="cp-select" id="cp-new-min" style="margin-bottom:0;flex:1">
+        <option value="2">2</option><option value="3">3</option><option value="4">4</option>
+      </select>
+      <span class="cp-muted">Máx.</span>
+      <select class="cp-select" id="cp-new-max" style="margin-bottom:0;flex:1">
+        <option value="4">4</option><option value="6">6</option><option value="8">8</option><option value="10" selected>10</option>
+      </select>
+    </div>
+
+    <button class="cp-btn cp-btn-y" onclick="cpCreateTournament()">Crear torneo →</button>
+  </div>
+</div>
+
+<!-- ══ SALA DE TORNEO ══════════════════════════════════════════ -->
+<div id="cp-tab-room" style="display:none">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button class="cp-btn cp-btn-sm" onclick="cpShowTab('lobby')" style="width:34px;padding:7px">←</button>
+    <div style="flex:1">
+      <div style="font-size:15px;font-weight:600;color:#fff" id="cp-room-title">—</div>
+      <div class="cp-muted" style="font-size:11px" id="cp-room-sub">—</div>
+    </div>
+    <span id="cp-room-status-badge" class="cp-pill"></span>
+  </div>
+
+  <!-- Código de sala -->
+  <div id="cp-room-code-section" class="cp-card" style="text-align:center">
+    <div class="cp-sec">Código de sala</div>
+    <div class="cp-num" style="font-size:36px;color:#d8d15a;letter-spacing:.1em" id="cp-room-code">—</div>
+    <div class="cp-muted" style="font-size:11px;margin-top:4px">Comparte este código con los arqueros</div>
+    <button class="cp-btn cp-btn-sm cp-btn-y" style="margin-top:10px" onclick="cpCopyCode()">Copiar código</button>
+  </div>
+
+  <!-- Jugadores -->
+  <div class="cp-card">
+    <div class="cp-ca" style="background:linear-gradient(90deg,#5ab4d6,#9a88dd)"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="cp-sec" style="margin-bottom:0">Arqueros</div>
+      <span class="cp-muted" style="font-size:11px" id="cp-room-player-count">0/10</span>
+    </div>
+    <div id="cp-room-players"></div>
+  </div>
+
+  <!-- Mi score / acción -->
+  <div class="cp-card" id="cp-room-action">
+    <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
+    <div id="cp-room-action-content"></div>
+  </div>
+
+  <!-- Bracket (si aplica) -->
+  <div id="cp-bracket-section" style="display:none">
+    <div class="cp-sec">Llaves</div>
+    <div class="cp-bracket">
+      <div style="display:flex;gap:12px" id="cp-bracket-cols"></div>
+    </div>
+  </div>
+
+  <!-- Podium -->
+  <div id="cp-podium-section" style="display:none">
+    <div class="cp-sec">Resultados finales</div>
+    <div class="cp-podium" id="cp-podium"></div>
+    <div class="cp-card">
+      <div id="cp-results-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN ═══════════════════════════════════════════════════ -->
+<div id="cp-tab-admin" style="display:none">
+  <div class="cp-sec">Panel de admin</div>
+
+  <div class="cp-tab-bar" id="cp-admin-tabs" style="margin-bottom:12px">
+    <button class="act" onclick="cpAdminTab('torneos')">Torneos</button>
+    <button onclick="cpAdminTab('ligas')">Ligas</button>
+  </div>
+
+  <!-- Admin: Torneos -->
+  <div id="cp-admin-torneos">
+    <button class="cp-btn cp-btn-y" onclick="cpShowAdminCreate()" style="margin-bottom:12px">+ Nuevo torneo de club</button>
+    <div id="cp-admin-tour-list">
+      <div class="cp-muted" style="text-align:center;padding:16px 0">Sin torneos creados</div>
+    </div>
+  </div>
+
+  <!-- Admin: Ligas -->
+  <div id="cp-admin-ligas" style="display:none">
+    <button class="cp-btn cp-btn-y" onclick="cpShowAdminLeague()" style="margin-bottom:12px">+ Nueva liga</button>
+    <div id="cp-admin-league-list">
+      <div class="cp-muted" style="text-align:center;padding:16px 0">Sin ligas creadas</div>
+    </div>
+  </div>
+
+  <!-- Admin: Crear torneo de club -->
+  <div id="cp-admin-create-form" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <button class="cp-btn cp-btn-sm" onclick="cpAdminTab('torneos')" style="width:34px;padding:7px">←</button>
+      <span style="font-size:14px;font-weight:600;color:#fff">Nuevo torneo de club</span>
+    </div>
+    <div class="cp-card">
+      <div class="cp-ca" style="background:linear-gradient(90deg,#9a88dd,#d8d15a)"></div>
+      <label class="cp-label">Nombre del torneo</label>
+      <input class="cp-input" id="cp-adm-title" placeholder="Ej: Torneo Mensual Enero">
+      <label class="cp-label">Modalidad</label>
+      <select class="cp-select" id="cp-adm-disc">
+        <optgroup label="Indoor"><option value="indoor-15">Indoor 15</option><option value="indoor-30" selected>Indoor 30</option><option value="indoor-60">Indoor 60</option></optgroup>
+        <optgroup label="Outdoor"><option value="outdoor-15">Outdoor 15</option><option value="outdoor-36">Outdoor 36</option><option value="outdoor-72">Outdoor 72</option></optgroup>
+        <optgroup label="Field"><option value="field-c">Field Conocidas</option><option value="field-d">Field Desconocidas</option></optgroup>
+        <optgroup label="3D"><option value="3d">3D</option></optgroup>
+      </select>
+      <label class="cp-label">Formato final</label>
+      <select class="cp-select" id="cp-adm-fmt">
+        <option value="score">Solo score — podium directo</option>
+        <option value="bracket">Score + llaves de eliminación</option>
+      </select>
+      <label class="cp-label">Formato de matches (si hay llaves)</label>
+      <select class="cp-select" id="cp-adm-mfmt">
+        <option value="score">15 flechas sumatoria</option>
+        <option value="sets">Sets a 6 puntos</option>
+      </select>
+      <label class="cp-label">Cupo máximo</label>
+      <select class="cp-select" id="cp-adm-cupo">
+        <option value="8">8 arqueros</option><option value="16" selected>16 arqueros</option><option value="32">32 arqueros</option>
+      </select>
+      <label class="cp-label">Handicap (opcional)</label>
+      <select class="cp-select" id="cp-adm-hcap">
+        <option value="none">Sin handicap</option>
+        <option value="recurvo">Recurvo +2 pts/end</option>
+        <option value="age_young">Menores de 18 +2 pts/end</option>
+        <option value="age_senior">Mayores de 50 +2 pts/end</option>
+        <option value="custom">Personalizado</option>
+      </select>
+      <div id="cp-adm-hcap-custom" style="display:none">
+        <label class="cp-label">Valor personalizado (pts/end)</label>
+        <input class="cp-input" id="cp-adm-hcap-val" type="number" min="0" max="10" step="0.5" placeholder="Ej: 1.5">
+        <label class="cp-label">Condición</label>
+        <input class="cp-input" id="cp-adm-hcap-cond" placeholder="Ej: Arqueros nuevos">
+      </div>
+      <button class="cp-btn cp-btn-y" onclick="cpAdminCreateTournament()">Publicar torneo</button>
+    </div>
+  </div>
+
+  <!-- Admin: Crear liga -->
+  <div id="cp-admin-league-form" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <button class="cp-btn cp-btn-sm" onclick="cpAdminTab('ligas')" style="width:34px;padding:7px">←</button>
+      <span style="font-size:14px;font-weight:600;color:#fff">Nueva liga</span>
+    </div>
+    <div class="cp-card">
+      <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+      <label class="cp-label">Nombre de la liga</label>
+      <input class="cp-input" id="cp-lg-title" placeholder="Ej: Liga Indoor Primavera 2026">
+      <label class="cp-label">Número de fechas</label>
+      <select class="cp-select" id="cp-lg-rounds">
+        <option value="4">4 fechas</option><option value="6" selected>6 fechas</option><option value="8">8 fechas</option><option value="12">12 fechas</option>
+      </select>
+      <label class="cp-label">Formato de cada fecha</label>
+      <select class="cp-select" id="cp-lg-fmt">
+        <option value="score">Solo score</option>
+        <option value="bracket">Score + llaves</option>
+      </select>
+      <label class="cp-label">Formato de matches</label>
+      <select class="cp-select" id="cp-lg-mfmt">
+        <option value="score">15 flechas sumatoria</option>
+        <option value="sets">Sets a 6 puntos</option>
+      </select>
+      <div class="cp-sec" style="margin-top:8px">Puntos por posición</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label class="cp-label">1er lugar</label><input class="cp-input" id="cp-lg-p1" value="100" type="number" style="margin-bottom:0"></div>
+        <div><label class="cp-label">2do lugar</label><input class="cp-input" id="cp-lg-p2" value="75" type="number" style="margin-bottom:0"></div>
+        <div><label class="cp-label">3er lugar</label><input class="cp-input" id="cp-lg-p3" value="50" type="number" style="margin-bottom:0"></div>
+        <div><label class="cp-label">4to lugar</label><input class="cp-input" id="cp-lg-p4" value="30" type="number" style="margin-bottom:0"></div>
+        <div><label class="cp-label">5to lugar</label><input class="cp-input" id="cp-lg-p5" value="20" type="number" style="margin-bottom:0"></div>
+        <div><label class="cp-label">Participación</label><input class="cp-input" id="cp-lg-pp" value="10" type="number" style="margin-bottom:0"></div>
+      </div>
+      <button class="cp-btn cp-btn-y" onclick="cpAdminCreateLeague()">Crear liga</button>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- end cp-app -->
+
+<script>
+(function(){
+const SUPABASE_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
+const DISC_LABELS = {
+  'indoor-15':'Indoor 15','indoor-30':'Indoor 30','indoor-60':'Indoor 60',
+  'outdoor-15':'Outdoor 15','outdoor-36':'Outdoor 36','outdoor-72':'Outdoor 72',
+  'field-c':'Field Conocidas','field-d':'Field Desconocidas','3d':'3D'
+};
+const STATUS_LABELS = {open:'Abierto',playing:'En juego',validating:'Validando',closed:'Cerrado'};
+const STATUS_CLASS  = {open:'cp-badge-open',playing:'cp-badge-playing',validating:'cp-badge-validating',closed:'cp-badge-closed'};
+
+let cpFmt='score', cpMatchFmt='score', cpHcap='none';
+let cpCurrentTournament=null;
+let cpUserId=null, cpUserName=null;
+
+// ── INIT ─────────────────────────────────────────────────────────
+function cpInit(){
+  cpUserId = window._supabaseUserId || null;
+  cpUserName = window._supabaseUserName || 'Arquero';
+  // Mostrar tab admin si es admin
+  if(window._supabaseIsAdmin){
+    document.getElementById('cp-admin-tab').style.display='block';
+  }
+  cpLoadLobby();
+  cpLoadMisPartidas();
+}
+
+// ── NAVEGACIÓN ────────────────────────────────────────────────────
+window.cpShowTab = function(tab){
+  ['lobby','mis','create','room','admin'].forEach(t=>{
+    const el=document.getElementById('cp-tab-'+t);
+    if(el) el.style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('#cp-main-tabs button').forEach((b,i)=>{
+    b.classList.toggle('act',(tab==='lobby'&&i===0)||(tab==='mis'&&i===1)||(tab==='admin'&&i===2));
+  });
+  if(tab==='lobby') cpLoadLobby();
+  if(tab==='mis') cpLoadMisPartidas();
+}
+
+window.cpAdminTab = function(tab){
+  ['torneos','ligas','create-form','league-form'].forEach(t=>{
+    const el=document.getElementById('cp-admin-'+t);
+    if(el) el.style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('#cp-admin-tabs button').forEach((b,i)=>{
+    b.classList.toggle('act',(tab==='torneos'&&i===0)||(tab==='ligas'&&i===1));
+  });
+  if(tab==='torneos') cpLoadAdminTournaments();
+  if(tab==='ligas') cpLoadAdminLeagues();
+}
+
+window.cpShowCreate = function(){ cpShowTab('create'); }
+window.cpShowAdminCreate = function(){
+  ['torneos','ligas','create-form','league-form'].forEach(t=>{
+    const el=document.getElementById('cp-admin-'+t);
+    if(el) el.style.display=t==='create-form'?'block':'none';
+  });
+}
+window.cpShowAdminLeague = function(){
+  ['torneos','ligas','create-form','league-form'].forEach(t=>{
+    const el=document.getElementById('cp-admin-'+t);
+    if(el) el.style.display=t==='league-form'?'block':'none';
+  });
+}
+
+// ── FORMATO ───────────────────────────────────────────────────────
+window.cpSetFmt = function(fmt){
+  cpFmt=fmt;
+  const isBracket=fmt==='bracket';
+  document.getElementById('cp-fmt-score').style.cssText=
+    !isBracket?'border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center':'border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
+  document.getElementById('cp-fmt-bracket').style.cssText=
+    isBracket?'border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center':'border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
+  document.getElementById('cp-fmt-score').querySelector('div').style.color=!isBracket?'#d8d15a':'rgba(255,255,255,0.5)';
+  document.getElementById('cp-fmt-bracket').querySelector('div').style.color=isBracket?'#d8d15a':'rgba(255,255,255,0.5)';
+  document.getElementById('cp-match-fmt-section').style.display=isBracket?'block':'none';
+}
+
+window.cpSetMatchFmt = function(fmt){
+  cpMatchFmt=fmt;
+  ['score','sets'].forEach(f=>{
+    const el=document.getElementById('cp-mfmt-'+f);
+    const sel=f===fmt;
+    el.style.cssText=sel?'border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center':'border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
+    el.querySelector('div').style.color=sel?'#d8d15a':'rgba(255,255,255,0.5)';
+  });
+}
+
+window.cpToggleHcap = function(type, el){
+  cpHcap=type;
+  document.querySelectorAll('.cp-hcap-opt').forEach(o=>{
+    o.style.cssText='border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center';
+    o.querySelector('div').style.color='rgba(255,255,255,0.5)';
+  });
+  el.style.cssText='border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:8px;cursor:pointer;text-align:center';
+  el.querySelector('div').style.color='#d8d15a';
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function cpFetch(path, opts={}){
+  const token=window._supabaseToken;
+  return fetch(SUPABASE_URL+path, {
+    ...opts,
+    headers:{
+      'apikey': window._supabaseAnonKey || '',
+      'Authorization': token ? 'Bearer '+token : '',
+      'Content-Type':'application/json',
+      ...(opts.headers||{})
+    }
+  });
+}
+
+function cpGenCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code='GOAT-';
+  for(let i=0;i<4;i++) code+=chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
+
+function cpStatusBadge(status){
+  return `<span class="cp-pill ${STATUS_CLASS[status]||''}">${STATUS_LABELS[status]||status}</span>`;
+}
+
+window.cpCopyCode = function(){
+  const code=document.getElementById('cp-room-code').textContent;
+  navigator.clipboard?.writeText(code).then(()=>cpToast('Código copiado ✓'));
+}
+
+function cpToast(msg){
+  if(typeof showToast==='function') showToast(msg);
+  else console.log(msg);
+}
+
+// ── CARGAR LOBBY ──────────────────────────────────────────────────
+async function cpLoadLobby(){
+  const listEl=document.getElementById('cp-club-list');
+  if(!cpUserId){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Inicia sesión para ver torneos</div>'; return; }
+  try{
+    const res=await cpFetch('/rest/v1/tournaments?type=eq.club&visible=eq.true&status=neq.closed&order=created_at.desc&limit=10');
+    const data=await res.json();
+    if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:20px 0">Sin torneos de club activos</div>'; return; }
+    listEl.innerHTML=data.map(t=>`
+      <div class="cp-card" style="cursor:pointer;margin-bottom:8px" onclick="cpOpenRoom('${t.id}')">
+        <div class="cp-ca" style="background:linear-gradient(90deg,#9a88dd,#5ab4d6)"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:3px">${t.title}</div>
+            <div class="cp-muted" style="font-size:11px">${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}</div>
+          </div>
+          ${cpStatusBadge(t.status)}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          ${t.handicap_enabled?'<span class="cp-pill" style="background:rgba(216,209,90,0.1);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3);font-size:9px">Handicap activo</span>':''}
+          <span class="cp-muted" style="font-size:11px">Cupo: ${t.max_players_club||t.max_players} arqueros</span>
+        </div>
+      </div>`).join('');
+  } catch(e){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error cargando torneos</div>'; }
+}
+
+// ── CARGAR MIS PARTIDAS ───────────────────────────────────────────
+async function cpLoadMisPartidas(){
+  const listEl=document.getElementById('cp-mis-list');
+  if(!cpUserId){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:24px 0">Inicia sesión</div>'; return; }
+  try{
+    const res=await cpFetch(`/rest/v1/tournament_players?user_id=eq.${cpUserId}&select=*,tournaments(*)&order=joined_at.desc&limit=20`);
+    const data=await res.json();
+    const active=data.filter(d=>d.tournaments&&d.tournaments.status!=='closed');
+    const past=data.filter(d=>d.tournaments&&d.tournaments.status==='closed');
+    if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:24px 0">Sin partidas aún.<br>¡Crea o únete a una!</div>'; return; }
+    let html='';
+    if(active.length){
+      html+=`<div class="cp-sec">Activas</div>`;
+      html+=active.map(d=>{
+        const t=d.tournaments;
+        return`<div class="cp-card" style="cursor:pointer;margin-bottom:8px" onclick="cpOpenRoom('${t.id}')">
+          <div class="cp-ca" style="background:linear-gradient(90deg,#5dcaa5,#5ab4d6)"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#fff">${t.title}</div>
+              <div class="cp-muted" style="font-size:11px">${DISC_LABELS[t.discipline]||t.discipline}</div>
+            </div>
+            ${cpStatusBadge(t.status)}
+          </div>
+          ${d.qualifying_score!=null?`<div style="margin-top:6px"><span class="cp-num" style="font-size:18px;color:#5dcaa5">${d.qualifying_score}</span><span class="cp-muted" style="font-size:11px"> pts clasificatorio</span></div>`:'<div class="cp-muted" style="font-size:11px;margin-top:6px">Pendiente: sube tu score</div>'}
+        </div>`;
+      }).join('');
+    }
+    if(past.length){
+      html+=`<div class="cp-sec" style="margin-top:8px">Historial</div>`;
+      html+=past.map(d=>{
+        const t=d.tournaments;
+        const pos=d.final_position;
+        const medal=pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
+        return`<div class="cp-card" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#fff">${medal} ${t.title}</div>
+              <div class="cp-muted" style="font-size:11px">${DISC_LABELS[t.discipline]||t.discipline}</div>
+            </div>
+            <div style="text-align:right">
+              ${pos?`<div class="cp-num" style="font-size:18px;color:#fff">${pos}° lugar</div>`:''}
+              ${d.points_earned?`<div class="cp-muted" style="font-size:11px">+${d.points_earned} pts arco</div>`:''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    listEl.innerHTML=html;
+  } catch(e){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error cargando partidas</div>'; }
+}
+
+// ── CREAR TORNEO (amigos) ─────────────────────────────────────────
+window.cpCreateTournament = async function(){
+  const title=document.getElementById('cp-new-title').value.trim();
+  if(!title) return cpToast('Escribe un nombre para el torneo');
+  const disc=document.getElementById('cp-new-disc').value;
+  const discGroup=disc.split('-')[0]==='3d'?'3d':disc.split('-')[0];
+  const payload={
+    created_by: cpUserId,
+    type: 'friends',
+    title,
+    code: cpGenCode(),
+    discipline: disc,
+    disc_group: discGroup,
+    has_bracket: cpFmt==='bracket',
+    match_format: cpMatchFmt,
+    handicap_enabled: cpHcap!=='none',
+    handicap_rules: cpHcap!=='none'?[{type:cpHcap}]:[],
+    min_players: parseInt(document.getElementById('cp-new-min').value),
+    max_players: parseInt(document.getElementById('cp-new-max').value),
+    status: 'open',
+    admin_only: false,
+    visible: true
+  };
+  try{
+    const res=await cpFetch('/rest/v1/tournaments',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(payload)});
+    const data=await res.json();
+    const t=Array.isArray(data)?data[0]:data;
+    // Unirse automáticamente como creador
+    await cpJoinTournament(t.id);
+    cpOpenRoom(t.id);
+  } catch(e){ cpToast('Error creando torneo'); }
+}
+
+// ── UNIRSE A TORNEO ───────────────────────────────────────────────
+window.cpJoinByCode = async function(){
+  const code=document.getElementById('cp-join-code').value.trim().toUpperCase();
+  if(!code) return;
+  try{
+    const res=await cpFetch(`/rest/v1/tournaments?code=eq.${code}&select=id,status`);
+    const data=await res.json();
+    if(!data.length) return cpToast('Código no encontrado');
+    if(data[0].status==='closed') return cpToast('Este torneo ya cerró');
+    await cpJoinTournament(data[0].id);
+    cpOpenRoom(data[0].id);
+  } catch(e){ cpToast('Error al unirse'); }
+}
+
+async function cpJoinTournament(tournamentId){
+  const check=await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${cpUserId}`);
+  const exists=await check.json();
+  if(exists.length) return; // ya está unido
+  await cpFetch('/rest/v1/tournament_players',{
+    method:'POST',
+    headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({tournament_id:tournamentId,user_id:cpUserId})
+  });
+}
+
+// ── ABRIR SALA ────────────────────────────────────────────────────
+window.cpOpenRoom = async function(tournamentId){
+  cpShowTab('room');
+  try{
+    const [tRes, pRes] = await Promise.all([
+      cpFetch(`/rest/v1/tournaments?id=eq.${tournamentId}`),
+      cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=*`)
+    ]);
+    const [tData, pData] = await Promise.all([tRes.json(), pRes.json()]);
+    const t=tData[0]; if(!t) return;
+    cpCurrentTournament=t;
+    cpRenderRoom(t, pData);
+  } catch(e){ cpToast('Error cargando sala'); }
+}
+
+function cpRenderRoom(t, players){
+  document.getElementById('cp-room-title').textContent=t.title;
+  document.getElementById('cp-room-sub').textContent=`${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}`;
+  document.getElementById('cp-room-status-badge').className='cp-pill '+STATUS_CLASS[t.status];
+  document.getElementById('cp-room-status-badge').textContent=STATUS_LABELS[t.status];
+  // Código solo para torneos de amigos
+  const codeSection=document.getElementById('cp-room-code-section');
+  if(t.type==='friends'&&t.status==='open'){
+    codeSection.style.display='block';
+    document.getElementById('cp-room-code').textContent=t.code||'—';
+  } else { codeSection.style.display='none'; }
+  // Jugadores
+  document.getElementById('cp-room-player-count').textContent=`${players.length}/${t.max_players_club||t.max_players}`;
+  document.getElementById('cp-room-players').innerHTML=players.map(p=>{
+    const isMe=p.user_id===cpUserId;
+    const hasScore=p.qualifying_score!=null;
+    const validated=p.validated;
+    return`<div class="cp-row">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="cp-avatar">${(p.user_id||'?').charAt(0).toUpperCase()}</div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#fff">${isMe?cpUserName+' (tú)':'Arquero'}</div>
+          ${p.handicap_value?`<div class="cp-muted" style="font-size:10px">+${p.handicap_value} pts/end</div>`:''}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${hasScore?`<span class="cp-num" style="font-size:16px;color:#5dcaa5">${p.qualifying_score}</span>`:'<span class="cp-muted" style="font-size:11px">Pendiente</span>'}
+        <div class="cp-check${validated?' done':''}">✓</div>
+      </div>
+    </div>`;
+  }).join('');
+  // Acción del usuario
+  cpRenderRoomAction(t, players);
+  // Bracket si aplica
+  if(t.has_bracket&&t.status==='playing'){
+    document.getElementById('cp-bracket-section').style.display='block';
+    cpLoadBracket(t.id);
+  }
+  // Podium si cerrado
+  if(t.status==='closed'){
+    document.getElementById('cp-podium-section').style.display='block';
+    cpRenderPodium(players);
+  }
+}
+
+function cpRenderRoomAction(t, players){
+  const me=players.find(p=>p.user_id===cpUserId);
+  const el=document.getElementById('cp-room-action-content');
+  if(!me){
+    // No está unido — botón de unirse
+    el.innerHTML=`<div style="font-size:13px;color:#fff;margin-bottom:10px">¿Quieres participar?</div>
+      <button class="cp-btn cp-btn-y" onclick="cpJoinAndReload('${t.id}')">Unirse al torneo</button>`;
+    return;
+  }
+  if(t.status==='open'||t.status==='playing'){
+    if(me.qualifying_score==null){
+      el.innerHTML=`<div class="cp-sec">Mi clasificatorio</div>
+        <div class="cp-muted" style="font-size:12px;margin-bottom:10px">Sube tu score de la modalidad <strong style="color:#fff">${DISC_LABELS[t.discipline]}</strong> para clasificar.</div>
+        <button class="cp-btn cp-btn-y" onclick="cpGoScore('${t.id}','${t.discipline}')">Ir a registrar score →</button>`;
+    } else if(!me.validated&&t.status==='validating'){
+      el.innerHTML=`<div class="cp-sec">Validación pendiente</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+          <span class="cp-num" style="font-size:32px;color:#5dcaa5">${me.qualifying_score}</span>
+          <span class="cp-muted">pts · ${DISC_LABELS[t.discipline]}</span>
+        </div>
+        <div class="cp-muted" style="font-size:11px;margin-bottom:10px">¿Confirmas este resultado? (auto-cierre en 24h)</div>
+        <button class="cp-btn cp-btn-g" onclick="cpValidate('${t.id}')">✓ Confirmar resultado</button>`;
+    } else if(me.qualifying_score!=null){
+      el.innerHTML=`<div class="cp-sec">Mi score</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="cp-num" style="font-size:36px;color:#5dcaa5">${me.qualifying_score}</span>
+          <div><span class="cp-muted">pts</span>${me.validated?'<div style="font-size:11px;color:#5dcaa5;margin-top:2px">✓ Validado</div>':'<div class="cp-muted" style="font-size:11px;margin-top:2px">Pendiente validación</div>'}</div>
+        </div>`;
+    }
+  } else if(t.status==='closed'){
+    const pos=me.final_position;
+    const medal=pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
+    el.innerHTML=`<div class="cp-sec">Mi resultado final</div>
+      <div style="font-size:28px;margin-bottom:4px">${medal}</div>
+      <div class="cp-num" style="font-size:32px;color:#fff">${pos?pos+'° lugar':'—'}</div>
+      ${me.points_earned?`<div style="margin-top:6px"><span class="cp-pill" style="background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3)">+${me.points_earned} pts de arco</span></div>`:''}`;
+  }
+}
+
+window.cpJoinAndReload = async function(id){
+  await cpJoinTournament(id); cpOpenRoom(id);
+}
+
+window.cpGoScore = function(tournamentId, discipline){
+  // Navegar a bitácora con el torneo activo
+  if(typeof switchTab==='function') switchTab('bitacora', document.getElementById('sb-bitacora'));
+  if(typeof btShowMain==='function') btShowMain('nueva');
+  cpToast('Registra tu score y regresa a Competencias');
+  window._cpPendingTournament=tournamentId;
+}
+
+window.cpValidate = async function(tournamentId){
+  await cpFetch('/rest/v1/tournament_players?tournament_id=eq.'+tournamentId+'&user_id=eq.'+cpUserId,{
+    method:'PATCH',headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({validated:true,validated_at:new Date().toISOString()})
+  });
+  cpToast('✓ Resultado confirmado');
+  cpOpenRoom(tournamentId);
+}
+
+// ── BRACKET ───────────────────────────────────────────────────────
+async function cpLoadBracket(tournamentId){
+  try{
+    const res=await cpFetch(`/rest/v1/brackets?tournament_id=eq.${tournamentId}&order=round.asc,match_number.asc`);
+    const matches=await res.json();
+    cpRenderBracket(matches);
+  } catch(e){}
+}
+
+function cpRenderBracket(matches){
+  const rounds=[...new Set(matches.map(m=>m.round))];
+  const roundOrder=['r32','r16','qf','sf','bronze','final'];
+  rounds.sort((a,b)=>roundOrder.indexOf(a)-roundOrder.indexOf(b));
+  const roundLabels={r32:'32vos',r16:'16vos',qf:'Cuartos',sf:'Semis',bronze:'Bronce',final:'Final'};
+  const cols=document.getElementById('cp-bracket-cols');
+  cols.innerHTML=rounds.map(round=>{
+    const ms=matches.filter(m=>m.round===round);
+    return`<div class="cp-round-col">
+      <div class="cp-sec" style="margin-bottom:6px">${roundLabels[round]||round}</div>
+      ${ms.map(m=>`
+        <div class="cp-match${m.winner_id?' winner-decided':''}">
+          <div class="cp-match-player${m.winner_id===m.player1_id?' winner':m.winner_id?' loser':''}">
+            <span>${m.player1_id?m.player1_id.slice(0,6):'BYE'}</span>
+            <span>${m.score1!=null?m.score1:'—'}</span>
+          </div>
+          <div class="cp-match-player${m.winner_id===m.player2_id?' winner':m.winner_id?' loser':''}">
+            <span>${m.player2_id?m.player2_id.slice(0,6):'BYE'}</span>
+            <span>${m.score2!=null?m.score2:'—'}</span>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ── PODIUM ────────────────────────────────────────────────────────
+function cpRenderPodium(players){
+  const sorted=[...players].filter(p=>p.final_position).sort((a,b)=>a.final_position-b.final_position);
+  const top3=sorted.slice(0,3);
+  const order=[1,0,2]; // 2do, 1ro, 3ro en el podium visual
+  const heights=[80,110,60];
+  const colors=['#C0C0C0','#FFD700','#CD7F32'];
+  const medals=['🥈','🥇','🥉'];
+  document.getElementById('cp-podium').innerHTML=order.map((idx,i)=>{
+    const p=top3[idx]; if(!p) return'';
+    return`<div class="cp-podium-step">
+      <div style="font-size:20px">${medals[i]}</div>
+      <div class="cp-avatar" style="width:40px;height:40px;font-size:16px">${(p.user_id||'?').charAt(0).toUpperCase()}</div>
+      <div class="cp-num" style="font-size:16px;color:${colors[i]}">${p.qualifying_score||0}</div>
+      <div class="cp-podium-block" style="width:80px;height:${heights[i]}px;background:${colors[i]}22;border:0.5px solid ${colors[i]}44">
+        ${idx+1}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('cp-results-list').innerHTML=sorted.map(p=>`
+    <div class="cp-row">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-family:'Bebas Neue';font-size:20px;color:rgba(255,255,255,0.4);min-width:24px">${p.final_position}</span>
+        <span style="font-size:13px;font-weight:600;color:#fff">${p.user_id===cpUserId?cpUserName+' (tú)':'Arquero'}</span>
+      </div>
+      <div style="text-align:right">
+        <div class="cp-num" style="font-size:16px;color:#fff">${p.qualifying_score||0} pts</div>
+        ${p.points_earned?`<div style="font-size:10px;color:#d8d15a">+${p.points_earned} pts arco</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ── ANIMACIÓN GANADOR ─────────────────────────────────────────────
+function cpShowWinAnimation(playerName){
+  const overlay=document.createElement('div');
+  overlay.className='cp-win-overlay';
+  // Confetti
+  for(let i=0;i<20;i++){
+    const c=document.createElement('div');
+    c.className='cp-confetti-piece';
+    c.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*40}%;background:${['#d8d15a','#5dcaa5','#5ab4d6','#e03030','#9a88dd'][i%5]};animation-delay:${Math.random()*0.5}s;animation-duration:${1+Math.random()}s`;
+    overlay.appendChild(c);
+  }
+  overlay.innerHTML+=`
+    <div class="cp-win-trophy">🏆</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#d8d15a;letter-spacing:.06em;text-align:center">¡CAMPEÓN!</div>
+    <div style="font-size:16px;font-weight:600;color:#fff;text-align:center">${playerName}</div>
+    <div class="cp-muted" style="font-size:12px;text-align:center;margin-top:4px">Toca para continuar</div>`;
+  overlay.onclick=()=>overlay.remove();
+  document.body.appendChild(overlay);
+}
+window.cpShowWinAnimation=cpShowWinAnimation;
+
+// ── ADMIN: CREAR TORNEO CLUB ──────────────────────────────────────
+window.cpAdminCreateTournament = async function(){
+  const title=document.getElementById('cp-adm-title').value.trim();
+  if(!title) return cpToast('Escribe un nombre');
+  const disc=document.getElementById('cp-adm-disc').value;
+  const fmt=document.getElementById('cp-adm-fmt').value;
+  const mfmt=document.getElementById('cp-adm-mfmt').value;
+  const cupo=parseInt(document.getElementById('cp-adm-cupo').value);
+  const hcap=document.getElementById('cp-adm-hcap').value;
+  const payload={
+    created_by:cpUserId, type:'club', title, discipline:disc,
+    disc_group:disc.split('-')[0]==='3d'?'3d':disc.split('-')[0],
+    has_bracket:fmt==='bracket', match_format:mfmt,
+    max_players:cupo, max_players_club:cupo,
+    handicap_enabled:hcap!=='none',
+    handicap_rules:hcap!=='none'?[{type:hcap}]:[],
+    status:'open', admin_only:true, visible:true
+  };
+  try{
+    await cpFetch('/rest/v1/tournaments',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});
+    cpToast('✓ Torneo publicado');
+    cpAdminTab('torneos');
+  } catch(e){ cpToast('Error creando torneo'); }
+}
+
+// ── ADMIN: CREAR LIGA ─────────────────────────────────────────────
+window.cpAdminCreateLeague = async function(){
+  const title=document.getElementById('cp-lg-title').value.trim();
+  if(!title) return cpToast('Escribe un nombre');
+  const payload={
+    created_by:cpUserId, title,
+    rounds_total:parseInt(document.getElementById('cp-lg-rounds').value),
+    match_format:document.getElementById('cp-lg-mfmt').value,
+    has_bracket:document.getElementById('cp-lg-fmt').value==='bracket',
+    points_config:{
+      '1':parseInt(document.getElementById('cp-lg-p1').value),
+      '2':parseInt(document.getElementById('cp-lg-p2').value),
+      '3':parseInt(document.getElementById('cp-lg-p3').value),
+      '4':parseInt(document.getElementById('cp-lg-p4').value),
+      '5':parseInt(document.getElementById('cp-lg-p5').value),
+      'participation':parseInt(document.getElementById('cp-lg-pp').value)
+    },
+    status:'active', visible:true
+  };
+  try{
+    await cpFetch('/rest/v1/leagues',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});
+    cpToast('✓ Liga creada');
+    cpAdminTab('ligas');
+  } catch(e){ cpToast('Error creando liga'); }
+}
+
+async function cpLoadAdminTournaments(){
+  const listEl=document.getElementById('cp-admin-tour-list');
+  try{
+    const res=await cpFetch('/rest/v1/tournaments?order=created_at.desc&limit=20');
+    const data=await res.json();
+    if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Sin torneos</div>'; return; }
+    listEl.innerHTML=data.map(t=>`
+      <div class="cp-card" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:13px;font-weight:600;color:#fff">${t.title}</div>
+          ${cpStatusBadge(t.status)}
+        </div>
+        <div class="cp-muted" style="font-size:11px;margin-bottom:8px">${DISC_LABELS[t.discipline]} · ${t.type==='club'?'Club':'Amigos'}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${t.status!=='closed'?`<button class="cp-btn cp-btn-sm cp-btn-r" onclick="cpAdminClose('${t.id}')">Cerrar torneo</button>`:''}
+          ${t.status==='open'?`<button class="cp-btn cp-btn-sm" onclick="cpAdminToggleVisible('${t.id}',${!t.visible})">${t.visible?'Ocultar':'Mostrar'}</button>`:''}
+          <button class="cp-btn cp-btn-sm" onclick="cpOpenRoom('${t.id}')">Ver sala →</button>
+        </div>
+      </div>`).join('');
+  } catch(e){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error</div>'; }
+}
+
+async function cpLoadAdminLeagues(){
+  const listEl=document.getElementById('cp-admin-league-list');
+  try{
+    const res=await cpFetch('/rest/v1/leagues?order=created_at.desc&limit=10');
+    const data=await res.json();
+    if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Sin ligas</div>'; return; }
+    listEl.innerHTML=data.map(l=>`
+      <div class="cp-card" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-size:13px;font-weight:600;color:#fff">${l.title}</div>
+          <span class="cp-pill ${l.status==='active'?'cp-badge-playing':'cp-badge-closed'}">${l.status==='active'?'Activa':'Finalizada'}</span>
+        </div>
+        <div class="cp-muted" style="font-size:11px">${l.current_round||0}/${l.rounds_total} fechas jugadas</div>
+      </div>`).join('');
+  } catch(e){}
+}
+
+window.cpAdminClose = async function(id){
+  if(!confirm('¿Cerrar este torneo? Se calculan posiciones finales.')) return;
+  await cpFetch('/rest/v1/tournaments?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({status:'closed'})});
+  cpToast('Torneo cerrado');
+  cpLoadAdminTournaments();
+}
+
+window.cpAdminToggleVisible = async function(id, visible){
+  await cpFetch('/rest/v1/tournaments?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({visible})});
+  cpLoadAdminTournaments();
+}
+
+// ── AUTO-INIT ─────────────────────────────────────────────────────
+// Esperar a que el usuario esté listo
+if(window._supabaseUserId){
+  cpInit();
+} else {
+  document.addEventListener('supabase-user-ready', cpInit);
+  window.addEventListener('supabase-user-ready', cpInit);
+}
+
 })();
 </script>
 </div>
