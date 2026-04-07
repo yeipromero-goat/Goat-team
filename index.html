@@ -3061,6 +3061,11 @@ function startGame() {
   document.getElementById('game-setup-panel').style.display = 'none';
   document.getElementById('game-panel').style.display       = 'block';
   document.getElementById('game-end').style.display         = 'none';
+  // Ocultar intro y torneo durante el juego
+  const introEl = document.getElementById('game-intro');
+  const trnEl   = document.getElementById('tournament-panel');
+  if (introEl) introEl.style.display = 'none';
+  if (trnEl)   trnEl.style.display   = 'none';
 
   // Llenar mini HUD del equipo
   _fillGameTeamHUD();
@@ -3494,6 +3499,16 @@ function resetGame(){
   document.getElementById('game-setup-panel').style.display='block';
   document.getElementById('game-panel').style.display='none';
   document.getElementById('game-end').style.display='none';
+  // Mostrar intro siempre
+  const introEl = document.getElementById('game-intro');
+  if (introEl) introEl.style.display = '';
+  // Mostrar torneo — si hay sala activa mostrar solo la sala, si no el lobby completo
+  const trnEl = document.getElementById('tournament-panel');
+  if (trnEl) trnEl.style.display = '';
+  if (activeTournamentId) {
+    document.getElementById('tournament-lobby').style.display = 'none';
+    document.getElementById('tournament-room').style.display  = '';
+  }
   // Limpiar picker y grid de cartas
   const pa=document.getElementById('picker-area');
   if(pa) pa.innerHTML='';
@@ -4493,6 +4508,7 @@ function startRoundTimer() {
 function _showCountdownOverlay(onDone) {
   const a = window.selectedArcher;
   const c = window.selectedCoach;
+  const bow = (window.activeBow != null) ? (window.BOWS || [])[window.activeBow] : null;
   const STORAGE = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/';
 
   function avatarHTML(p, size) {
@@ -4526,18 +4542,38 @@ function _showCountdownOverlay(onDone) {
     </style>
 
     <!-- Equipo -->
-    <div style="display:flex;align-items:center;gap:20px">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        ${avatarHTML(a, 56)}
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.05em;color:var(--text)">${a?.name || '—'}</div>
-        <div style="font-size:9px;color:var(--blue);letter-spacing:.06em;text-transform:uppercase">Arquero</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+
+      <!-- Arquero -->
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(90,159,216,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
+        ${avatarHTML(a, 44)}
+        <div>
+          <div style="font-size:9px;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Arquero</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.04em;color:var(--text)">${a?.name || '—'}</div>
+          <div style="font-size:10px;color:var(--muted)">${a?.role || ''}</div>
+        </div>
       </div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--border2)">VS</div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        ${avatarHTML(c, 56)}
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.05em;color:var(--text)">${c?.name || '—'}</div>
-        <div style="font-size:9px;color:var(--coral);letter-spacing:.06em;text-transform:uppercase">Coach</div>
+
+      <!-- Arco -->
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(216,209,90,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
+        <div style="width:44px;height:44px;border-radius:50%;background:rgba(216,209,90,0.1);border:2px solid rgba(216,209,90,0.4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏹</div>
+        <div>
+          <div style="font-size:9px;color:var(--yellow);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Arco Activo</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.04em;color:var(--text)">${bow?.name || '—'}</div>
+          <div style="font-size:10px;color:var(--muted)">${bow ? bow.fps+'fps · '+bow.let+'% let · '+bow.draw+'lbs' : ''}</div>
+        </div>
       </div>
+
+      <!-- Coach -->
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(216,120,80,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
+        ${avatarHTML(c, 44)}
+        <div>
+          <div style="font-size:9px;color:var(--coral);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Coach</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.04em;color:var(--text)">${c?.name || '—'}</div>
+          <div style="font-size:10px;color:var(--muted)">${c?.role || ''}</div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Número grande -->
