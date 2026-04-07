@@ -5937,29 +5937,147 @@ setTimeout(()=>{
     </div>
 
     <div class="cp-sec" style="margin-top:4px">Handicap</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px" id="cp-hcap-grid">
-      <div class="cp-hcap-opt sel" onclick="cpToggleHcap('none',this)" style="border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
-        <div style="font-size:12px;font-weight:600;color:#d8d15a">Sin handicap</div>
+
+    <!-- AUTO HISTORIAL — gobierna solo -->
+    <div id="cp-hcap-auto" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .15s" onclick="cpHcapToggle('auto')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.8)">✨ Automático historial</span>
+            <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(170,160,236,0.15);color:#afa9ec;border:0.5px solid rgba(170,160,236,0.3)">Inteligente</span>
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35)">Calcula el bonus de cada arquero por su historial. Gobierna solo — no combina.</div>
+        </div>
+        <div id="tog-auto" style="width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,0.12);border:none;cursor:pointer;position:relative;flex-shrink:0;margin-left:8px;transition:background .2s">
+          <div id="tog-auto-dot" style="position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s"></div>
+        </div>
       </div>
-      <div class="cp-hcap-opt" onclick="cpToggleHcap('auto',this)" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
-        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">✨ Auto historial</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px">Top feature</div>
+      <div id="cp-hcap-auto-detail" style="display:none;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.08)">
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:6px">Sensibilidad</div>
+        <input type="range" min="1" max="3" step="1" value="2" id="cp-auto-sens" oninput="document.getElementById('cp-auto-sens-lbl').textContent=['','Suave','Balanceado','Agresivo'][this.value]" style="width:100%;margin-bottom:4px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.3)">
+          <span>Suave</span><span id="cp-auto-sens-lbl" style="color:#d8d15a">Balanceado</span><span>Agresivo</span>
+        </div>
+        <div style="margin-top:8px;padding:7px 10px;border-radius:6px;background:rgba(170,160,236,0.08);border:0.5px solid rgba(170,160,236,0.2);font-size:11px;color:#afa9ec">🔒 Activo — las otras opciones están deshabilitadas</div>
       </div>
-      <div class="cp-hcap-opt" onclick="cpToggleHcap('equipment',this)" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
-        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Por equipo</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px">Recurvo +2/end</div>
+    </div>
+
+    <!-- COMBINABLES -->
+    <div id="cp-hcap-combinables">
+      <!-- Puntos por serie -->
+      <div id="cp-hcap-serie" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .15s" onclick="cpHcapToggle('serie')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+              <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.8)">Puntos por serie</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(90,180,214,0.15);color:#5ab4d6;border:0.5px solid rgba(90,180,214,0.3)">Por arco</span>
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.35)">Bonus/penalización según el tipo de arco real. Recurvo = base.</div>
+          </div>
+          <div id="tog-serie" style="width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,0.12);border:none;cursor:pointer;position:relative;flex-shrink:0;margin-left:8px;transition:background .2s">
+            <div id="tog-serie-dot" style="position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s"></div>
+          </div>
+        </div>
+        <div id="cp-hcap-serie-detail" style="display:none;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.08)">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:6px;background:rgba(255,255,255,0.04)">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:14px">🏹</span>
+                <div><div style="font-size:12px;color:#fff">Recurvo</div><div style="font-size:10px;color:rgba(255,255,255,0.35)">Arco base</div></div>
+              </div>
+              <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(93,202,165,0.15);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3)">Base</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:6px;background:rgba(255,255,255,0.04)">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:14px">🎯</span>
+                <div><div style="font-size:12px;color:#fff">Compuesto</div><div style="font-size:10px;color:rgba(255,255,255,0.35)">Ventaja mecánica</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
+                <button class="cp-abtn" onclick="cpStepHcap('comp',-0.5)">−</button>
+                <span id="cp-comp-v" style="font-family:'Bebas Neue',sans-serif;font-size:18px;min-width:36px;text-align:center;color:#e05555">−2</span>
+                <button class="cp-abtn" onclick="cpStepHcap('comp',0.5)">+</button>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:6px;background:rgba(255,255,255,0.04)">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:14px">🪃</span>
+                <div><div style="font-size:12px;color:#fff">Bare bow</div><div style="font-size:10px;color:rgba(255,255,255,0.35)">Sin mira</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
+                <button class="cp-abtn" onclick="cpStepHcap('bare',-0.5)">−</button>
+                <span id="cp-bare-v" style="font-family:'Bebas Neue',sans-serif;font-size:18px;min-width:36px;text-align:center;color:#5dcaa5">+3</span>
+                <button class="cp-abtn" onclick="cpStepHcap('bare',0.5)">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="cp-hcap-opt" onclick="cpToggleHcap('age',this)" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
-        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Por edad</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px">&lt;18 o &gt;50 +2/end</div>
+
+      <!-- Dinámico en vivo -->
+      <div id="cp-hcap-dinamico" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .15s" onclick="cpHcapToggle('dinamico')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+              <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.8)">Dinámico en vivo</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(224,85,85,0.15);color:#e05555;border:0.5px solid rgba(224,85,85,0.3)">Emocionante</span>
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.35)">Si vas perdiendo por N pts, tus flechas valen más.</div>
+          </div>
+          <div id="tog-dinamico" style="width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,0.12);border:none;cursor:pointer;position:relative;flex-shrink:0;margin-left:8px;transition:background .2s">
+            <div id="tog-dinamico-dot" style="position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s"></div>
+          </div>
+        </div>
+        <div id="cp-hcap-dinamico-detail" style="display:none;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.08)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" onclick="event.stopPropagation()">
+            <div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:6px">Activar si van −</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <button class="cp-abtn" onclick="cpStepHcap('dg',-5)">−</button>
+                <span id="cp-dg-v" style="font-family:'Bebas Neue',sans-serif;font-size:18px;min-width:36px;text-align:center;color:#fff">10</span>
+                <button class="cp-abtn" onclick="cpStepHcap('dg',5)">+</button>
+              </div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px">puntos abajo</div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:6px">Factor de boost</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <button class="cp-abtn" onclick="cpStepHcap('db',-0.1)">−</button>
+                <span id="cp-db-v" style="font-family:'Bebas Neue',sans-serif;font-size:18px;min-width:44px;text-align:center;color:#fff">×1.2</span>
+                <button class="cp-abtn" onclick="cpStepHcap('db',0.1)">+</button>
+              </div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px">por flecha</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="cp-hcap-opt" onclick="cpToggleHcap('dynamic',this)" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
-        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Dinámico</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px">Si vas -10 pts ×1.2</div>
-      </div>
-      <div class="cp-hcap-opt" onclick="cpToggleHcap('custom',this)" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center">
-        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Personalizado</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px">Tú defines el valor</div>
+
+      <!-- Multiplicador global -->
+      <div id="cp-hcap-multi" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;transition:all .15s" onclick="cpHcapToggle('multi')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+              <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.8)">Multiplicador global</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3)">Manual</span>
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.35)">Multiplica el score final de jugadores específicos. ×1.1 a ×2.0</div>
+          </div>
+          <div id="tog-multi" style="width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,0.12);border:none;cursor:pointer;position:relative;flex-shrink:0;margin-left:8px;transition:background .2s">
+            <div id="tog-multi-dot" style="position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s"></div>
+          </div>
+        </div>
+        <div id="cp-hcap-multi-detail" style="display:none;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.08)">
+          <div onclick="event.stopPropagation()">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+              <span style="font-size:11px;color:rgba(255,255,255,0.4)">×1.1</span>
+              <input type="range" min="1.1" max="2.0" step="0.1" value="1.3" id="cp-multi-range" oninput="cpUpdMulti()" style="flex:1">
+              <span style="font-size:11px;color:rgba(255,255,255,0.4)">×2.0</span>
+            </div>
+            <div style="text-align:center">
+              <span id="cp-multi-val" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#d8d15a">×1.3</span>
+              <span style="font-size:11px;color:rgba(255,255,255,0.4)"> máximo asignable por jugador</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -6243,15 +6361,71 @@ window.cpSetMatchFmt = function(fmt){
   });
 }
 
-window.cpToggleHcap = function(type, el){
-  cpHcap=type;
-  document.querySelectorAll('.cp-hcap-opt').forEach(o=>{
-    o.style.cssText='border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px;cursor:pointer;text-align:center';
-    o.querySelector('div').style.color='rgba(255,255,255,0.5)';
-  });
-  el.style.cssText='border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:8px;cursor:pointer;text-align:center';
-  el.querySelector('div').style.color='#d8d15a';
+// ── NUEVO SISTEMA HANDICAP ────────────────────────────────────────
+const cpHcapState={auto:false,serie:false,dinamico:false,multi:false};
+const cpHcapVals={comp:-2,bare:3,dg:10,db:1.2,multi:1.3,sens:2};
+
+window.cpHcapToggle = function(key){
+  if(key==='auto'){
+    cpHcapState.auto=!cpHcapState.auto;
+    cpApplyToggle('auto',cpHcapState.auto);
+    // bloquear/desbloquear combinables
+    const comb=document.getElementById('cp-hcap-combinables');
+    if(comb) comb.style.opacity=cpHcapState.auto?'0.35':'1';
+    if(comb) comb.style.pointerEvents=cpHcapState.auto?'none':'auto';
+    if(cpHcapState.auto){ ['serie','dinamico','multi'].forEach(k=>{cpHcapState[k]=false;cpApplyToggle(k,false);}); }
+  } else {
+    if(cpHcapState.auto) return;
+    cpHcapState[key]=!cpHcapState[key];
+    cpApplyToggle(key,cpHcapState[key]);
+  }
 }
+
+function cpApplyToggle(key,on){
+  const tog=document.getElementById('tog-'+key);
+  const dot=document.getElementById('tog-'+key+'-dot');
+  const detail=document.getElementById('cp-hcap-'+key+'-detail');
+  const card=document.getElementById('cp-hcap-'+key);
+  if(tog) tog.style.background=on?'#d8d15a':'rgba(255,255,255,0.12)';
+  if(dot) dot.style.transform=on?'translateX(16px)':'translateX(0)';
+  if(detail) detail.style.display=on?'block':'none';
+  if(card) card.style.borderColor=on?'rgba(216,209,90,0.5)':'rgba(255,255,255,0.12)';
+  if(card) card.style.background=on?'rgba(216,209,90,0.06)':'transparent';
+}
+
+window.cpStepHcap = function(key,delta){
+  if(key==='comp'){ cpHcapVals.comp=Math.round(Math.min(0,Math.max(-5,cpHcapVals.comp+delta))*10)/10; const el=document.getElementById('cp-comp-v'); if(el){el.textContent=(cpHcapVals.comp>=0?'+':'')+cpHcapVals.comp; el.style.color=cpHcapVals.comp<0?'#e05555':'#5dcaa5';} }
+  else if(key==='bare'){ cpHcapVals.bare=Math.round(Math.max(0,Math.min(5,cpHcapVals.bare+delta))*10)/10; const el=document.getElementById('cp-bare-v'); if(el){el.textContent='+'+cpHcapVals.bare; el.style.color='#5dcaa5';} }
+  else if(key==='dg'){ cpHcapVals.dg=Math.max(5,cpHcapVals.dg+delta); const el=document.getElementById('cp-dg-v'); if(el) el.textContent=cpHcapVals.dg; }
+  else if(key==='db'){ cpHcapVals.db=Math.round(Math.max(1.1,Math.min(2.0,cpHcapVals.db+delta))*10)/10; const el=document.getElementById('cp-db-v'); if(el) el.textContent='×'+cpHcapVals.db; }
+}
+
+window.cpUpdMulti = function(){
+  const v=parseFloat(document.getElementById('cp-multi-range').value).toFixed(1);
+  cpHcapVals.multi=parseFloat(v);
+  document.getElementById('cp-multi-val').textContent='×'+v;
+}
+
+function cpBuildHcapPayload(){
+  return {
+    handicap_enabled: Object.values(cpHcapState).some(v=>v),
+    handicap_config: {
+      auto: cpHcapState.auto,
+      serie: cpHcapState.serie,
+      dinamico: cpHcapState.dinamico,
+      multi: cpHcapState.multi,
+      serie_config: {compound: cpHcapVals.comp, barebow: cpHcapVals.bare},
+      dinamico_config: {gap: cpHcapVals.dg, boost: cpHcapVals.db},
+      multi_config: {max: cpHcapVals.multi},
+      auto_config: {sensitivity: parseInt(document.getElementById('cp-auto-sens')?.value||2)}
+    }
+  };
+}
+
+// Mantener compatibilidad con código viejo
+window.cpToggleHcap = function(type,el){}
+
+
 
 // ── HELPERS ───────────────────────────────────────────────────────
 function cpFetch(path, opts={}){
@@ -6469,6 +6643,7 @@ window.cpCreateTournament = async function(){
   if(!title) return cpToast('Escribe un nombre para el torneo');
   const disc=document.getElementById('cp-new-disc').value;
   const discGroup=disc.split('-')[0]==='3d'?'3d':disc.split('-')[0];
+  const hcapPayload=cpBuildHcapPayload();
   const payload={
     created_by: cpUserId,
     type: 'friends',
@@ -6478,22 +6653,96 @@ window.cpCreateTournament = async function(){
     disc_group: discGroup,
     has_bracket: cpFmt==='bracket',
     match_format: cpMatchFmt,
-    handicap_enabled: cpHcap!=='none',
-    handicap_rules: cpHcap!=='none'?[{type:cpHcap}]:[],
     min_players: parseInt(document.getElementById('cp-new-min').value),
     max_players: parseInt(document.getElementById('cp-new-max').value),
     status: 'open',
     admin_only: false,
-    visible: true
+    visible: true,
+    ...hcapPayload
   };
   try{
     const res=await cpFetch('/rest/v1/tournaments',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(payload)});
     const data=await res.json();
     const t=Array.isArray(data)?data[0]:data;
-    // Unirse automáticamente como creador
-    await cpJoinTournament(t.id);
-    cpOpenRoom(t.id);
-  } catch(e){ cpToast('Error creando torneo'); }
+    // Creador declara su arco si hay handicap por serie
+    if(hcapPayload.handicap_config?.serie){
+      await cpShowBowDeclaration(t.id, ()=>cpOpenRoom(t.id));
+    } else {
+      await cpJoinTournament(t.id);
+      cpOpenRoom(t.id);
+    }
+  } catch(e){ console.error(e); cpToast('Error creando torneo'); }
+}
+
+// ── DECLARAR ARCO ─────────────────────────────────────────────────
+window.cpShowBowDeclaration = async function(tournamentId, onDone){
+  // Modal de selección de arco
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.92);display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:340px">
+      <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:4px">¿Con qué arco compites?</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">Se aplica en el cálculo de handicap del torneo</div>
+      <div style="display:flex;flex-direction:column;gap:8px" id="bow-opts">
+        <div class="bow-opt" data-bow="recurvo" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s">
+          <span style="font-size:24px">🏹</span>
+          <div><div style="font-size:14px;font-weight:500;color:#fff">Recurvo</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Arco base — sin ventaja mecánica</div></div>
+        </div>
+        <div class="bow-opt" data-bow="compuesto" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s">
+          <span style="font-size:24px">🎯</span>
+          <div><div style="font-size:14px;font-weight:500;color:#fff">Compuesto</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Ventaja mecánica — penalización aplicada</div></div>
+        </div>
+        <div class="bow-opt" data-bow="barebow" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s">
+          <span style="font-size:24px">🪃</span>
+          <div><div style="font-size:14px;font-weight:500;color:#fff">Bare bow</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Sin mira — bonus aplicado</div></div>
+        </div>
+      </div>
+      <div id="bow-bonus-preview" style="margin-top:12px;display:none;padding:10px;border-radius:8px;background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);text-align:center">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:2px">Tu bonus/penalización</div>
+        <div id="bow-bonus-val" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#d8d15a"></div>
+      </div>
+      <button id="bow-confirm-btn" onclick="cpConfirmBow('${tournamentId}')" disabled style="width:100%;margin-top:14px;padding:11px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);font-size:14px;font-family:'DM Sans',sans-serif;cursor:not-allowed">Confirmar arco →</button>
+    </div>`;
+  overlay.id='cp-bow-overlay';
+  window._cpBowCallback=onDone;
+  window._cpBowTournamentId=tournamentId;
+  document.body.appendChild(overlay);
+}
+
+let _cpSelectedBow=null;
+window.cpSelBow=function(el){
+  _cpSelectedBow=el.dataset.bow;
+  document.querySelectorAll('.bow-opt').forEach(o=>{
+    o.style.borderColor='rgba(255,255,255,0.15)';o.style.background='transparent';
+  });
+  el.style.borderColor='#d8d15a';el.style.background='rgba(216,209,90,0.08)';
+  // Calcular bonus según config
+  const cfg=cpHcapVals;
+  let bonus=0,label='';
+  if(_cpSelectedBow==='compuesto'){ bonus=cfg.comp; label=(bonus>=0?'+':'')+bonus+' pts/end'; }
+  else if(_cpSelectedBow==='barebow'){ bonus=cfg.bare; label='+'+bonus+' pts/end'; }
+  else { label='Base — sin bonus'; }
+  const preview=document.getElementById('bow-bonus-preview');
+  const val=document.getElementById('bow-bonus-val');
+  const btn=document.getElementById('bow-confirm-btn');
+  if(preview) preview.style.display='block';
+  if(val) val.textContent=label;
+  if(val) val.style.color=bonus<0?'#e05555':bonus>0?'#5dcaa5':'rgba(255,255,255,0.5)';
+  if(btn){ btn.disabled=false;btn.style.background='rgba(216,209,90,0.15)';btn.style.color='#d8d15a';btn.style.borderColor='rgba(216,209,90,0.4)';btn.style.cursor='pointer'; }
+}
+
+window.cpConfirmBow=async function(tournamentId){
+  if(!_cpSelectedBow) return;
+  await cpJoinTournament(tournamentId);
+  // Guardar bow_type
+  await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${cpUserId}`,{
+    method:'PATCH',headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({bow_type:_cpSelectedBow, bow_declared_at:new Date().toISOString()})
+  });
+  const overlay=document.getElementById('cp-bow-overlay');
+  if(overlay) overlay.remove();
+  _cpSelectedBow=null;
+  if(typeof window._cpBowCallback==='function') window._cpBowCallback();
 }
 
 // ── UNIRSE A TORNEO ───────────────────────────────────────────────
@@ -6501,16 +6750,19 @@ window.cpJoinByCode = async function(){
   const code=document.getElementById('cp-join-code').value.trim().toUpperCase();
   if(!code) return;
   try{
-    // Buscar en torneos primero
-    const tRes=await cpFetch(`/rest/v1/tournaments?code=eq.${code}&select=id,status`);
+    const tRes=await cpFetch(`/rest/v1/tournaments?code=eq.${code}&select=id,status,handicap_config`);
     const tData=await tRes.json();
     if(tData.length){
       if(tData[0].status==='closed') return cpToast('Este torneo ya cerró');
-      await cpJoinTournament(tData[0].id);
-      cpOpenRoom(tData[0].id);
+      const t=tData[0];
+      if(t.handicap_config?.serie){
+        await cpShowBowDeclaration(t.id, ()=>cpOpenRoom(t.id));
+      } else {
+        await cpJoinTournament(t.id);
+        cpOpenRoom(t.id);
+      }
       return;
     }
-    // Buscar en ligas
     const lRes=await cpFetch(`/rest/v1/leagues?code=eq.${code}&select=id,status`);
     const lData=await lRes.json();
     if(lData.length){
@@ -6562,20 +6814,31 @@ function cpRenderRoom(t, players){
   } else { codeSection.style.display='none'; }
   // Jugadores
   document.getElementById('cp-room-player-count').textContent=`${players.length}/${t.max_players_club||t.max_players}`;
+  const bowIcons={recurvo:'🏹',compuesto:'🎯',barebow:'🪃'};
+  const bowLabels={recurvo:'Recurvo',compuesto:'Compuesto',barebow:'Bare bow'};
+  const hasSerie=t.handicap_config?.serie;
+  const canChangeBow=t.status==='open';
+
   document.getElementById('cp-room-players').innerHTML=players.map(p=>{
     const isMe=p.user_id===cpUserId;
     const hasScore=p.qualifying_score!=null;
     const validated=p.validated;
+    const bowIcon=bowIcons[p.bow_type]||'';
+    const bowLabel=bowLabels[p.bow_type]||'';
     return`<div class="cp-row">
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex:1">
         <div class="cp-avatar">${(p.user_id||'?').charAt(0).toUpperCase()}</div>
         <div>
           <div style="font-size:12px;font-weight:600;color:#fff">${isMe?cpUserName+' (tú)':'Arquero'}</div>
-          ${p.handicap_value?`<div class="cp-muted" style="font-size:10px">+${p.handicap_value} pts/end</div>`:''}
+          <div style="display:flex;align-items:center;gap:5px;margin-top:2px;flex-wrap:wrap">
+            ${hasSerie&&bowLabel?`<span style="font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:0.5px solid rgba(255,255,255,0.12)">${bowIcon} ${bowLabel}</span>`:''}
+            ${p.handicap_value?`<span style="font-size:10px;color:#d8d15a">+${p.handicap_value}/end</span>`:''}
+          </div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         ${hasScore?`<span class="cp-num" style="font-size:16px;color:#5dcaa5">${p.qualifying_score}</span>`:'<span class="cp-muted" style="font-size:11px">Pendiente</span>'}
+        ${isMe&&hasSerie&&canChangeBow?`<button class="cp-btn cp-btn-sm" style="padding:4px 8px;font-size:10px;color:rgba(255,255,255,0.5)" onclick="cpChangeBow('${t.id}')">Cambiar arco</button>`:''}
         <div class="cp-check${validated?' done':''}">✓</div>
       </div>
     </div>`;
@@ -6633,8 +6896,25 @@ function cpRenderRoomAction(t, players){
   }
 }
 
+window.cpChangeBow = async function(tournamentId){
+  await cpShowBowDeclaration(tournamentId, ()=>cpOpenRoom(tournamentId));
+  // Cambiar título del modal
+  setTimeout(()=>{
+    const title=document.querySelector('#cp-bow-overlay div div:first-child');
+    if(title) title.textContent='Cambiar tipo de arco';
+  },100);
+}
+
 window.cpJoinAndReload = async function(id){
-  await cpJoinTournament(id); cpOpenRoom(id);
+  const tRes=await cpFetch(`/rest/v1/tournaments?id=eq.${id}&select=handicap_config,status`);
+  const tData=await tRes.json();
+  const needsBow=tData[0]?.handicap_config?.serie;
+  if(needsBow){
+    await cpShowBowDeclaration(id, ()=>cpOpenRoom(id));
+  } else {
+    await cpJoinTournament(id);
+    cpOpenRoom(id);
+  }
 }
 
 window.cpGoScore = function(tournamentId, discipline){
