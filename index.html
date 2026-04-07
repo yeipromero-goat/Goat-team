@@ -3043,14 +3043,16 @@ function startGame() {
   // Sincronizar variables locales desde window (cargadas por supabase-persistence)
   if (window.selectedArcher) selectedArcher = window.selectedArcher;
   if (window.selectedCoach)  selectedCoach  = window.selectedCoach;
-  if (window.playerDeck?.length) { playerDeck.length = 0; window.playerDeck.forEach(id => playerDeck.push(id)); }
   if (activeBow !== null && activeBow !== undefined) selectedBow = activeBow;
 
   if (!selectedArcher || !selectedCoach || selectedBow === null || selectedBow === undefined) {
     console.warn('startGame bloqueado — archer:', !!selectedArcher, 'coach:', !!selectedCoach, 'bow:', selectedBow);
     return;
   }
-  const deckCards = playerDeck.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
+
+  // Usar window.playerDeck directamente — es la fuente de verdad
+  const activeDeck = window.playerDeck || playerDeck;
+  const deckCards = activeDeck.map(id => CARDS.find(c => c.id === id)).filter(Boolean);
   if(deckCards.length < PLAY_PER_ROUND){ alert('Necesitas al menos '+PLAY_PER_ROUND+' cartas en tu deck.'); return; }
   const shuffled = [...deckCards].sort(()=>Math.random()-.5);
   const hand = shuffled.splice(0, HAND_SIZE);
