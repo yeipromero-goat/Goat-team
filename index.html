@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Goat Team — Plataforma</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="icon" type="image/webp" href="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -6578,10 +6579,11 @@ window.cpAdminCreateTournament = async function(){
     status:'open', admin_only:true, visible:true
   };
   try{
-    await cpFetch('/rest/v1/tournaments',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});
+    const res=await cpFetch('/rest/v1/tournaments',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});
+    if(!res.ok){ const err=await res.text(); console.error('Error torneo:',err); return cpToast('Error: '+err.slice(0,80)); }
     cpToast('✓ Torneo publicado');
     cpAdminTab('torneos');
-  } catch(e){ cpToast('Error creando torneo'); }
+  } catch(e){ console.error(e); cpToast('Error: '+e.message); }
 }
 
 // ── ADMIN: CREAR LIGA ─────────────────────────────────────────────
@@ -6604,10 +6606,11 @@ window.cpAdminCreateLeague = async function(){
     status:'active', visible:true
   };
   try{
-    await cpFetch('/rest/v1/leagues',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});
+    const res=await cpFetch('/rest/v1/leagues',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});
+    if(!res.ok){ const err=await res.text(); console.error('Error liga:',err); return cpToast('Error: '+err.slice(0,80)); }
     cpToast('✓ Liga creada');
     cpAdminTab('ligas');
-  } catch(e){ cpToast('Error creando liga'); }
+  } catch(e){ console.error(e); cpToast('Error: '+e.message); }
 }
 
 async function cpLoadAdminTournaments(){
@@ -6651,8 +6654,9 @@ async function cpLoadAdminLeagues(){
 
 window.cpAdminClose = async function(id){
   if(!confirm('¿Cerrar este torneo? Se calculan posiciones finales.')) return;
-  await cpFetch('/rest/v1/tournaments?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({status:'closed'})});
-  cpToast('Torneo cerrado');
+  const res=await cpFetch('/rest/v1/tournaments?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({status:'closed'})});
+  if(!res.ok){ const err=await res.text(); console.error('Error cerrando:',err); return cpToast('Error: '+err.slice(0,80)); }
+  cpToast('✓ Torneo cerrado');
   cpLoadAdminTournaments();
 }
 
