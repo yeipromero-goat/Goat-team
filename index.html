@@ -7263,18 +7263,68 @@ window.cpAdminToggleVisible = async function(id, visible){
 window.cpAdminCerrarFecha = async function(roundId, leagueId){
   if(!confirm('¿Cerrar esta fecha ahora? Ya no se podrán subir scores.')) return;
   try{
-    const res=await cpFetch('/rest/v1/league_rounds?id=eq.'+roundId,{
+    // 1. Cerrar el round
+    const closeRes=await cpFetch('/rest/v1/league_rounds?id=eq.'+roundId,{
       method:'PATCH',
       headers:{'Prefer':'return=minimal'},
       body:JSON.stringify({status:'finished', active_until: new Date().toISOString()})
     });
-    if(res.ok||res.status===204){
-      cpToast('✓ Fecha cerrada');
-      cpLoadAdminLeagues();
-    } else {
-      const err=await res.text();
-      cpToast('Error: '+err.slice(0,60));
+    if(!closeRes.ok&&closeRes.status!==204){
+      const err=await closeRes.text(); return cpToast('Error: '+err.slice(0,60));
     }
+
+    // 2. Leer scores de esta fecha y config de puntos de la liga
+    const [scoresRes, leagueRes] = await Promise.all([
+      cpFetch(`/rest/v1/league_round_scores?round_id=eq.${roundId}&order=score.desc`),
+      cpFetch(`/rest/v1/leagues?id=eq.${leagueId}&select=points_config,current_round`)
+    ]);
+    const [scores, leagueData] = await Promise.all([scoresRes.json(), leagueRes.json()]);
+    const cfg = leagueData[0]?.points_config || {'1':100,'2':75,'3':50,'4':30,'5':20,'participation':10};
+
+    // 3. Calcular puntos por posición y actualizar standings
+    const updates = scores.map((s, i) => {
+      const pos = i + 1;
+      const pts = parseInt(cfg[String(pos)] ?? cfg['participation'] ?? 10);
+      return { user_id: s.user_id, roundPts: pts, roundPos: pos, roundScore: s.score };
+    });
+
+    // 4. Para cada jugador: leer standing actual, sumar puntos y actualizar
+    await Promise.all(updates.map(async u => {
+      const stRes = await cpFetch(`/rest/v1/league_standings?league_id=eq.${leagueId}&user_id=eq.${u.user_id}`);
+      const stData = await stRes.json();
+      const current = stData[0] || {};
+      await cpFetch(`/rest/v1/league_standings?league_id=eq.${leagueId}&user_id=eq.${u.user_id}`,{
+        method:'PATCH',
+        headers:{'Prefer':'return=minimal'},
+        body:JSON.stringify({
+          total_points: (current.total_points||0) + u.roundPts,
+          last_round_points: u.roundPts,
+          last_round_position: u.roundPos,
+          rounds_played: (current.rounds_played||0) + 1
+        })
+      });
+    }));
+
+    // 5. Participantes sin score también reciben puntos de participación
+    const standingsRes = await cpFetch(`/rest/v1/league_standings?league_id=eq.${leagueId}`);
+    const allStandings = await standingsRes.json();
+    const scoredUsers = new Set(scores.map(s=>s.user_id));
+    const noScore = allStandings.filter(st=>!scoredUsers.has(st.user_id));
+    const partPts = parseInt(cfg['participation']??10);
+    await Promise.all(noScore.map(async st => {
+      await cpFetch(`/rest/v1/league_standings?league_id=eq.${leagueId}&user_id=eq.${st.user_id}`,{
+        method:'PATCH',
+        headers:{'Prefer':'return=minimal'},
+        body:JSON.stringify({
+          last_round_points: partPts,
+          last_round_position: null,
+          rounds_played: (st.rounds_played||0) + 1
+        })
+      });
+    }));
+
+    cpToast(`✓ Fecha cerrada · ${updates.length} scores procesados`);
+    cpLoadAdminLeagues();
   } catch(e){ console.error(e); cpToast('Error: '+e.message); }
 }
 
