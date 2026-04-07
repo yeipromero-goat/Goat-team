@@ -5137,19 +5137,20 @@ window.BOW_IDEAL_RANGES      = BOW_IDEAL_RANGES;
     </div>
     <div class="bt-sec">Elige modalidad</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="bt-disc-card" onclick="btSelGroup('outdoor',this)">
+    <!-- Outdoor -->
+      <div class="bt-disc-card" data-group="outdoor" onclick="btSelGroup('outdoor',this)">
         <svg viewBox="0 0 80 80" width="68" height="68"><circle cx="40" cy="40" r="40" fill="#5ab4d6"/><circle cx="40" cy="40" r="30" fill="#e8e8e8"/><circle cx="40" cy="40" r="26" fill="#e03030"/><circle cx="40" cy="40" r="19" fill="#e03030"/><circle cx="40" cy="40" r="17" fill="#e8c800"/><circle cx="40" cy="40" r="11" fill="#e8c800"/><circle cx="40" cy="40" r="5" fill="#e8c800" stroke="#ccc" stroke-width="0.5"/><circle cx="40" cy="40" r="1.5" fill="#333"/></svg>
         <div class="dname">Outdoor</div><div class="dsub">15 · 36 · 72 tiros</div>
       </div>
-      <div class="bt-disc-card" onclick="btSelGroup('indoor',this)">
+      <div class="bt-disc-card" data-group="indoor" onclick="btSelGroup('indoor',this)">
         <svg viewBox="0 0 80 80" width="68" height="68"><circle cx="40" cy="22" r="19" fill="#5ab4d6"/><circle cx="40" cy="22" r="14" fill="#e03030"/><circle cx="40" cy="22" r="9" fill="#e8c800"/><circle cx="40" cy="22" r="4" fill="#e8c800"/><circle cx="40" cy="22" r="1.2" fill="#333"/><circle cx="22" cy="60" r="19" fill="#5ab4d6"/><circle cx="22" cy="60" r="14" fill="#e03030"/><circle cx="22" cy="60" r="9" fill="#e8c800"/><circle cx="22" cy="60" r="4" fill="#e8c800"/><circle cx="22" cy="60" r="1.2" fill="#333"/><circle cx="58" cy="60" r="19" fill="#5ab4d6"/><circle cx="58" cy="60" r="14" fill="#e03030"/><circle cx="58" cy="60" r="9" fill="#e8c800"/><circle cx="58" cy="60" r="4" fill="#e8c800"/><circle cx="58" cy="60" r="1.2" fill="#333"/></svg>
         <div class="dname">Indoor</div><div class="dsub">15 · 30 · 60 tiros</div>
       </div>
-      <div class="bt-disc-card" onclick="btSelGroup('field',this)">
+      <div class="bt-disc-card" data-group="field" onclick="btSelGroup('field',this)">
         <svg viewBox="0 0 80 80" width="68" height="68"><circle cx="40" cy="40" r="40" fill="#1a1a1a"/><circle cx="40" cy="40" r="32" fill="#1a1a1a" stroke="#444" stroke-width="0.8"/><circle cx="40" cy="40" r="24" fill="#1a1a1a" stroke="#555" stroke-width="0.8"/><circle cx="40" cy="40" r="16" fill="#1a1a1a" stroke="#666" stroke-width="0.8"/><circle cx="40" cy="40" r="8" fill="#e8c800"/><circle cx="40" cy="40" r="3.5" fill="#e8c800"/><circle cx="40" cy="40" r="1.2" fill="#333"/></svg>
         <div class="dname">Field</div><div class="dsub">Conocidas · Desconocidas</div>
       </div>
-      <div class="bt-disc-card" onclick="btSelGroup('3d',this)">
+      <div class="bt-disc-card" data-group="3d" onclick="btSelGroup('3d',this)">
         <svg viewBox="0 0 80 80" width="68" height="68"><ellipse cx="46" cy="50" rx="26" ry="16" fill="#b8864e"/><rect x="24" y="34" width="12" height="18" rx="5" fill="#b8864e"/><ellipse cx="22" cy="30" rx="9" ry="7" fill="#b8864e"/><ellipse cx="15" cy="32" rx="5" ry="3.5" fill="#c9956a"/><circle cx="18" cy="27" r="1.8" fill="#222"/><circle cx="18" cy="27" r="0.7" fill="#fff"/><path d="M24 22 Q20 14 17 8" stroke="#3d2b1a" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M28 20 Q32 12 34 7" stroke="#3d2b1a" stroke-width="1.8" fill="none" stroke-linecap="round"/><rect x="30" y="62" width="5" height="12" rx="2.5" fill="#8a6035"/><rect x="42" y="62" width="5" height="12" rx="2.5" fill="#8a6035"/><rect x="55" y="62" width="5" height="12" rx="2.5" fill="#8a6035"/><ellipse cx="46" cy="48" rx="9" ry="7" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="2,1"/><ellipse cx="70" cy="48" rx="4" ry="6" fill="#e8e0d0"/></svg>
         <div class="dname">3D</div><div class="dsub">A tu elección</div>
       </div>
@@ -6430,12 +6431,36 @@ window.cpGoScore = function(tournamentId, discipline){
   window._cpPendingTournament = tournamentId;
   if(typeof switchTab==='function') switchTab('bitacora', document.getElementById('sb-bitacora'));
   if(typeof btShowMain==='function') btShowMain('nueva');
-  // Mostrar banner de torneo activo
+
+  // Pre-seleccionar modalidad automáticamente
   setTimeout(()=>{
     const banner = document.getElementById('bt-tournament-banner');
     if(banner) banner.style.display='flex';
+
+    // Mapear disciplina del torneo al grupo correcto
+    const discMap = {
+      'indoor-15':'indoor','indoor-30':'indoor','indoor-60':'indoor',
+      'outdoor-15':'outdoor','outdoor-36':'outdoor','outdoor-72':'outdoor',
+      'field-c':'field','field-d':'field','3d':'3d'
+    };
+    const group = discMap[discipline] || discipline.split('-')[0];
+
+    // Seleccionar con data-group
+    const card = document.querySelector(`#bt-s-inicio .bt-disc-card[data-group="${group}"]`);
+    if(card && typeof btSelGroup==='function'){
+      btSelGroup(group, card);
+      // Seleccionar variante específica después del render
+      setTimeout(()=>{
+        document.querySelectorAll('#bt-cfg-opts .bt-sub-card').forEach(sc => {
+          if(sc.getAttribute('onclick')&&sc.getAttribute('onclick').includes(`'${discipline}'`)){
+            if(typeof btSetCM==='function') btSetCM(discipline, sc);
+          }
+        });
+      }, 150);
+    }
   }, 200);
-  cpToast('🏆 Registra tu score — se enviará al torneo al guardar');
+
+  cpToast('🏆 Modalidad pre-seleccionada — solo confirma y empieza');
 }
 
 window.cpValidate = async function(tournamentId){
