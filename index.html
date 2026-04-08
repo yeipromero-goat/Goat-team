@@ -7269,28 +7269,41 @@ window.cpAdminCerrarFecha = async function(roundId, leagueId){
     const cfg = leagueData[0]?.points_config || {'1':100,'2':75,'3':50,'4':30,'5':20,'participation':10};
 
     // 3. Calcular puntos por posición y actualizar standings
+    console.log('points_config:', cfg);
+    const DEFAULT_CFG = {'1':100,'2':75,'3':50,'4':30,'5':20,'participation':10};
+    const safeCfg = (cfg && Object.keys(cfg).length > 0) ? cfg : DEFAULT_CFG;
+
     const updates = scores.map((s, i) => {
       const pos = i + 1;
-      const pts = parseInt(cfg[String(pos)] ?? cfg['participation'] ?? 10);
+      // Intentar con string y con número como key
+      const pts = parseInt(safeCfg[String(pos)] ?? safeCfg[pos] ?? safeCfg['participation'] ?? DEFAULT_CFG[String(pos)] ?? 10);
+      console.log(`Pos ${pos} → ${pts} pts (user: ${s.user_id.slice(0,8)})`);
       return { user_id: s.user_id, roundPts: pts, roundPos: pos, roundScore: s.score };
     });
 
     // 4. Para cada jugador: leer standing actual, sumar puntos y actualizar
-    await Promise.all(updates.map(async u => {
+    // Procesar secuencialmente para evitar race conditions
+    for(const u of updates){
       const stRes = await cpFetch(`/rest/v1/league_standings?league_id=eq.${leagueId}&user_id=eq.${u.user_id}`);
       const stData = await stRes.json();
       const current = stData[0] || {};
-      await cpFetch(`/rest/v1/league_standings?league_id=eq.${leagueId}&user_id=eq.${u.user_id}`,{
+      const newTotal = (current.total_points||0) + u.roundPts;
+      console.log(`Actualizando ${u.user_id.slice(0,8)}: ${current.total_points||0} + ${u.roundPts} = ${newTotal}`);
+      const pRes = await cpFetch(`/rest/v1/league_standings?league_id=eq.${leagueId}&user_id=eq.${u.user_id}`,{
         method:'PATCH',
         headers:{'Prefer':'return=minimal'},
         body:JSON.stringify({
-          total_points: (current.total_points||0) + u.roundPts,
+          total_points: newTotal,
           last_round_points: u.roundPts,
           last_round_position: u.roundPos,
           rounds_played: (current.rounds_played||0) + 1
         })
       });
-    }));
+      if(!pRes.ok&&pRes.status!==204){
+        const err=await pRes.text();
+        console.error(`Error actualizando standing ${u.user_id.slice(0,8)}:`, pRes.status, err);
+      }
+    }
 
     // 5. Participantes sin score también reciben puntos de participación
     const standingsRes = await cpFetch(`/rest/v1/league_standings?league_id=eq.${leagueId}`);
