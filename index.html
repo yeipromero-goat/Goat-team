@@ -5524,7 +5524,8 @@ window.btSaveSession=function(){
 
     window._cpPendingLeague=null;
     btResetState();
-    cpToast('✓ Score enviado a la liga');
+    if(typeof window.cpToast==='function') window.cpToast('✓ Score enviado a la liga');
+    else if(typeof showToast==='function') showToast('✓ Score enviado a la liga');
     if(typeof switchTab==='function') switchTab('competencias', document.getElementById('sb-competencias'));
     setTimeout(()=>{ if(typeof cpOpenLeague==='function') cpOpenLeague(leagueId); }, 300);
     return;
