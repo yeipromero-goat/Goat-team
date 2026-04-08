@@ -283,7 +283,7 @@ async function initSupabasePersistence() {
         || sd.session.user.email?.split('@')[0]
         || 'Arquero';
       // Admin: solo el dueño del proyecto
-      const ADMIN_ID = 'f1b2c3d4-0000-0000-0000-000000000000'; // ← reemplaza con tu user_id real
+      const ADMIN_ID = 'd3847774-77bc-4adf-bb04-4feb3d9315e7';
       window._supabaseIsAdmin = sd.session.user.id === ADMIN_ID;
       // Anon key para requests públicos
       window._supabaseAnonKey = window._supabaseClient?.supabaseKey || '';
