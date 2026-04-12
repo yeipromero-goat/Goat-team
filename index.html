@@ -7108,41 +7108,84 @@ function cpRenderBracket(matches, nameMap, matchFmt, tournamentId){
   const rounds=[...new Set(matches.map(m=>m.round))];
   const roundOrder=['r32','r16','qf','sf','bronze','final'];
   rounds.sort((a,b)=>roundOrder.indexOf(a)-roundOrder.indexOf(b));
-  const roundLabels={r32:'32vos',r16:'16vos',qf:'Cuartos',sf:'Semis',bronze:'3° lugar',final:'Final'};
-  const cols=document.getElementById('cp-bracket-cols');
 
-  cols.innerHTML=rounds.map(round=>{
-    const ms=matches.filter(m=>m.round===round);
-    return`<div class="cp-round-col" style="min-width:160px">
-      <div class="cp-sec" style="margin-bottom:8px;text-align:center">${roundLabels[round]||round}</div>
-      ${ms.map(m=>{
-        const n1 = m.player1_id ? (nameMap[m.player1_id]||m.player1_id.slice(0,6)) : 'BYE';
-        const n2 = m.player2_id ? (nameMap[m.player2_id]||m.player2_id.slice(0,6)) : 'BYE';
-        const isMe = m.player1_id===cpUserId || m.player2_id===cpUserId;
-        const done = !!m.winner_id;
-        const p1win = m.winner_id===m.player1_id;
-        const p2win = m.winner_id===m.player2_id;
-        const scoreLabel = matchFmt==='sets'
-          ? (m.sets1!=null&&m.sets2!=null ? `${m.sets1} - ${m.sets2} sets` : '')
-          : (m.score1!=null&&m.score2!=null ? `${m.score1} vs ${m.score2}` : '');
-        return`<div class="cp-match${done?' cp-match-done':''}"
-          style="cursor:${isMe&&!done?'pointer':'default'};border-color:${isMe&&!done?'rgba(216,209,90,0.5)':'rgba(255,255,255,0.1)'};margin-bottom:8px"
-          ${isMe&&!done?`onclick="cpOpenMatch('${m.id}','${tournamentId}','${matchFmt}')"`:''}>          <div class="cp-match-player${p1win?' winner':done?' loser':''}">
-            <span style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px">${n1}</span>
-            <span style="font-family:'Bebas Neue';font-size:14px">${matchFmt==='sets'?(m.sets1??'—'):(m.score1??'—')}</span>
-          </div>
-          <div class="cp-match-player${p2win?' winner':done?' loser':''}">
-            <span style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px">${n2}</span>
-            <span style="font-family:'Bebas Neue';font-size:14px">${matchFmt==='sets'?(m.sets2??'—'):(m.score2??'—')}</span>
-          </div>
-          ${isMe&&!done?`<div style="font-size:9px;color:#d8d15a;text-align:center;margin-top:4px">Toca para jugar</div>`:''}
-          ${done?`<div style="font-size:9px;color:#5dcaa5;text-align:center;margin-top:4px">✓ ${p1win?n1:n2} ganó</div>`:''}
-        </div>`;
-      }).join('')}
+  const roundConfig={
+    r32:   {label:'32avos',  accent:'rgba(255,255,255,0.4)', icon:'',   w:150},
+    r16:   {label:'16avos',  accent:'rgba(255,255,255,0.4)', icon:'',   w:150},
+    qf:    {label:'Cuartos', accent:'#5ab4d6',               icon:'',   w:155},
+    sf:    {label:'Semis',   accent:'#afa9ec',               icon:'',   w:160},
+    bronze:{label:'3er Lugar',accent:'#CD7F32',              icon:'\u{1F949}', w:175},
+    final: {label:'FINAL',   accent:'#FFD700',               icon:'\u{1F3C6}', w:200},
+  };
+
+  const renderMatch=(m,round)=>{
+    const cfg=roundConfig[round]||{accent:'#fff',icon:'',w:150};
+    const isFinal=round==='final', isBronze=round==='bronze';
+    const n1=m.player1_id?(nameMap[m.player1_id]||m.player1_id.slice(0,6)):'BYE';
+    const n2=m.player2_id?(nameMap[m.player2_id]||m.player2_id.slice(0,6)):'BYE';
+    const isMe=m.player1_id===cpUserId||m.player2_id===cpUserId;
+    const done=!!m.winner_id;
+    const p1win=m.winner_id===m.player1_id;
+    const p2win=m.winner_id===m.player2_id;
+    const sc1=matchFmt==='sets'?(m.sets1??'\u2014'):(m.score1??'\u2014');
+    const sc2=matchFmt==='sets'?(m.sets2??'\u2014'):(m.score2??'\u2014');
+
+    const pRow=(name,score,win,lose)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:${isFinal?'10px 12px':'7px 10px'};border-radius:6px;margin-bottom:2px;
+        background:${win?`rgba(255,255,255,0.07)`:'rgba(255,255,255,0.02)'};
+        border-left:2px solid ${win?cfg.accent:'transparent'};
+        opacity:${lose?'0.4':'1'}">
+        <span style="font-size:${isFinal?'13px':'11px'};font-weight:${win?'500':'400'};
+          color:${win?cfg.accent:'#fff'};overflow:hidden;text-overflow:ellipsis;
+          white-space:nowrap;max-width:${isFinal?'115px':'90px'}">${win?'\u{1F3C5} ':''} ${name}</span>
+        <span style="font-family:'Bebas Neue';font-size:${isFinal?'20px':'14px'};
+          color:${win?cfg.accent:'rgba(255,255,255,0.5)'}">${score}</span>
+      </div>`;
+
+    return`<div style="
+        border:${isFinal?`1.5px solid rgba(255,215,0,0.4)`:isBronze?'1px solid rgba(205,127,50,0.3)':'0.5px solid rgba(255,255,255,0.1)'};
+        border-radius:${isFinal?'12px':'8px'};
+        background:${isFinal?'rgba(255,215,0,0.04)':isBronze?'rgba(205,127,50,0.04)':'rgba(255,255,255,0.02)'};
+        padding:${isFinal?'12px':'8px'};margin-bottom:8px;
+        cursor:${isMe&&!done?'pointer':'default'}"
+        ${isMe&&!done?`onclick="cpOpenMatch('${m.id}','${m.tournament_id}','${matchFmt}')"`:''}> 
+      ${pRow(n1,sc1,p1win,done&&!p1win)}
+      ${pRow(n2,sc2,p2win,done&&!p2win)}
+      ${isMe&&!done?`<div style="font-size:9px;font-weight:500;color:${cfg.accent};text-align:center;margin-top:6px">
+        ${isFinal?'\u{1F3C6} Toca para jugar la FINAL':'Toca para jugar'}</div>`:''}
+      ${done?`<div style="font-size:10px;color:${cfg.accent};text-align:center;margin-top:6px">
+        ${isFinal?'\u{1F947}':isBronze?'\u{1F949}':'\u2713'} ${p1win?n1:n2} ${isFinal?'CAMPEON':isBronze?'3er lugar':'gano'}</div>`:''}
     </div>`;
-  }).join('');
-}
+  };
 
+  const renderCol=(round)=>{
+    const cfg=roundConfig[round]||{label:round,accent:'rgba(255,255,255,0.4)',icon:'',w:155};
+    const isFinal=round==='final', isBronze=round==='bronze';
+    const ms=matches.filter(m=>m.round===round);
+    return`<div style="min-width:${cfg.w}px;flex-shrink:0">
+      <div style="text-align:center;margin-bottom:${isFinal?'12px':'8px'};
+        font-size:${isFinal?'12px':'10px'};font-weight:500;letter-spacing:.1em;text-transform:uppercase;
+        color:${cfg.accent};${isFinal?'border-bottom:1px solid rgba(255,215,0,0.2);padding-bottom:8px;':''}">
+        ${cfg.icon} ${cfg.label}
+      </div>
+      ${ms.map(m=>renderMatch(m,round)).join('')}
+    </div>`;
+  };
+
+  const mainRounds=rounds.filter(r=>r!=='bronze'&&r!=='final');
+  const endRounds=rounds.filter(r=>r==='final'||r==='bronze');
+
+  document.getElementById('cp-bracket-cols').innerHTML=`
+    <div style="display:flex;gap:10px;align-items:flex-end">
+      ${mainRounds.map(r=>renderCol(r)).join('')}
+    </div>
+    ${endRounds.length?`<div style="display:flex;flex-direction:column;gap:8px;margin-left:${mainRounds.length?'10px':'0'}">
+      ${endRounds.includes('final')?renderCol('final'):''}
+      ${endRounds.includes('bronze')?renderCol('bronze'):''}
+    </div>`:''}
+  `;
+}
 // ── ABRIR MATCH ──────────────────────────────────────────────────
 window.cpOpenMatch = async function(matchId, tournamentId, matchFmt){
   const res = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
