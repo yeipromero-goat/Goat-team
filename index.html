@@ -5562,8 +5562,7 @@ window.btSaveSession=function(){
         body:JSON.stringify({
           qualifying_score: adjustedScore,
           qualifying_detail: s.ends,
-          qualifying_at: s.date,
-          handicap_value: bonusPerEnd
+          qualifying_at: s.date
         })
       });
       console.log('PATCH status:', patchRes.status);
