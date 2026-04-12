@@ -7063,14 +7063,18 @@ window.cpIniciarLlaves = async function(tournamentId, pendingCount){
     if(!bRes.ok && bRes.status!==201 && bRes.status!==204){
       const err=await bRes.text(); return cpToast('Error: '+err.slice(0,60));
     }
-    const createdMatches = await bRes.json();
+    let createdMatches = [];
+    try{ createdMatches = await bRes.json(); if(!Array.isArray(createdMatches)) createdMatches=[]; }
+    catch(e){ createdMatches=[]; }
+    console.log('Matches creados:', createdMatches.length, createdMatches);
 
-    // Auto-resolver byes: si un match tiene bye, llamar cpResolveMatch para que avance
-    // Solo aplica cuando hay más de una ronda (bracketSize >= 4)
+    // Auto-resolver byes leyendo de Supabase (más robusto que confiar en el response)
     if(bracketSize >= 4){
-      const byeMatches = createdMatches.filter(m=>m.is_bye && m.winner_id);
+      const freshRes = await cpFetch(`/rest/v1/brackets?tournament_id=eq.${tournamentId}&is_bye=eq.true&winner_id=not.is.null`);
+      const byeMatches = await freshRes.json();
+      console.log('Byes a resolver:', byeMatches.length, byeMatches);
       for(const byeMatch of byeMatches){
-        await cpResolveMatch(byeMatch, tournamentId, true); // true = silencioso
+        await cpResolveMatch(byeMatch, tournamentId, true);
       }
     }
 
