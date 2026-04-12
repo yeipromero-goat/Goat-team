@@ -5534,7 +5534,7 @@ window.btSaveSession=function(){
   // Si hay TORNEO pendiente — subir score automáticamente
   const pendingTournament = window._cpPendingTournament;
   if(pendingTournament && userId){
-    // Leer bow_type del jugador y config del torneo para aplicar handicap
+    console.log('💾 Guardando score torneo:', pendingTournament, 'score:', s.total);
     Promise.all([
       fetch(`${SUPA}/rest/v1/tournament_players?tournament_id=eq.${pendingTournament}&user_id=eq.${userId}&select=bow_type,handicap_value`, {headers}),
       fetch(`${SUPA}/rest/v1/tournaments?id=eq.${pendingTournament}&select=handicap_enabled,handicap_config`, {headers})
@@ -5543,38 +5543,33 @@ window.btSaveSession=function(){
       const player = pData[0] || {};
       const tournament = tData[0] || {};
       const cfg = tournament.handicap_config || {};
+      console.log('Player data:', player, 'Tournament cfg:', cfg);
 
       let bonusPerEnd = 0;
-
-      // 1. Bonus por tipo de arco (puntos por serie)
       if(cfg.serie && player.bow_type){
         if(player.bow_type==='compuesto') bonusPerEnd += cfg.serie_config?.compound ?? -2;
         else if(player.bow_type==='barebow') bonusPerEnd += cfg.serie_config?.barebow ?? 3;
-        // recurvo = 0 (base)
       }
-
-      // 2. Handicap manual asignado por el creador
       if(player.handicap_value) bonusPerEnd += parseFloat(player.handicap_value);
 
-      // Calcular score ajustado: bonus × número de ends
-      const numEnds = s.ends ? s.ends.length : Math.ceil(s.n / 3);
+      const numEnds = s.ends ? s.ends.filter(e=>e.length>0).length : Math.ceil(s.n / 3);
       const handicapTotal = Math.round(bonusPerEnd * numEnds * 10) / 10;
       const adjustedScore = s.total + handicapTotal;
+      console.log('Score ajustado:', s.total, '+', handicapTotal, '=', adjustedScore);
 
-      // Guardar score raw + ajustado
-      fetch(`${SUPA}/rest/v1/tournament_players?tournament_id=eq.${pendingTournament}&user_id=eq.${userId}`, {
+      const patchRes = await fetch(`${SUPA}/rest/v1/tournament_players?tournament_id=eq.${pendingTournament}&user_id=eq.${userId}`, {
         method:'PATCH', headers,
         body:JSON.stringify({
-          qualifying_score: adjustedScore,      // con handicap — para la tabla
+          qualifying_score: adjustedScore,
           qualifying_detail: s.ends,
           qualifying_at: s.date,
-          handicap_value: bonusPerEnd           // guardar el bonus aplicado
+          handicap_value: bonusPerEnd
         })
-      }).then(()=>{
-        window._cpPendingTournament=null;
-        if(typeof switchTab==='function') switchTab('competencias', document.getElementById('sb-competencias'));
-        setTimeout(()=>{ if(typeof cpOpenRoom==='function') cpOpenRoom(pendingTournament); }, 300);
       });
+      console.log('PATCH status:', patchRes.status);
+      window._cpPendingTournament=null;
+      if(typeof switchTab==='function') switchTab('competencias', document.getElementById('sb-competencias'));
+      setTimeout(()=>{ if(typeof cpOpenRoom==='function') cpOpenRoom(pendingTournament); }, 300);
     });
   } else {
     btResetState();btShowMain('historial');
@@ -6311,8 +6306,17 @@ let cpUserId=null, cpUserName=null;
 // ── INIT ─────────────────────────────────────────────────────────
 function cpInit(){
   cpUserId = window._supabaseUserId || null;
-  cpUserName = window._supabaseUserName || 'Arquero';
-  // Mostrar tab admin si es admin
+  // Intentar obtener nombre en orden de prioridad
+  cpUserName = window._supabaseUserName
+    || window.username          // del juego (user_selections)
+    || 'Arquero';
+  // Si aún es genérico, intentar leer de user_selections
+  if(cpUserName === 'Arquero' && cpUserId){
+    cpFetch(`/rest/v1/user_selections?user_id=eq.${cpUserId}&select=username`).then(async r=>{
+      const d = await r.json();
+      if(d[0]?.username) cpUserName = d[0].username;
+    }).catch(()=>{});
+  }
   if(window._supabaseIsAdmin){
     document.getElementById('cp-admin-tab').style.display='block';
   }
@@ -6814,6 +6818,13 @@ async function cpJoinTournament(tournamentId){
 // ── ABRIR SALA ────────────────────────────────────────────────────
 window.cpOpenRoom = async function(tournamentId){
   cpShowTab('room');
+  // Limpiar restos de liga anterior
+  document.getElementById('cp-podium-section').style.display='none';
+  document.getElementById('cp-podium-section').querySelector('.cp-sec').textContent='Resultados finales';
+  document.getElementById('cp-podium').innerHTML='';
+  document.getElementById('cp-results-list').innerHTML='';
+  const lrc=document.getElementById('cp-last-round-card');
+  if(lrc){lrc.style.display='none';lrc.innerHTML='';}
   try{
     const [tRes, pRes] = await Promise.all([
       cpFetch(`/rest/v1/tournaments?id=eq.${tournamentId}`),
