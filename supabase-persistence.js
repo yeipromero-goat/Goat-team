@@ -287,6 +287,21 @@ async function initSupabasePersistence() {
       window._supabaseIsAdmin = sd.session.user.id === ADMIN_ID;
       // Anon key para requests públicos
       window._supabaseAnonKey = window._supabaseClient?.supabaseKey || '';
+
+      // Registrar actividad silenciosamente
+      fetch(`${SUPABASE_URL}/rest/v1/user_activity`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + sd.session.access_token,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          user_id: sd.session.user.id,
+          last_seen_at: new Date().toISOString()
+        })
+      }).catch(()=>{});
     }
   } catch(e) {}
   await loadUserSelections();
