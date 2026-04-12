@@ -6970,18 +6970,26 @@ function cpRenderRoomAction(t, players){
     }
   } else if(t.status==='closed'){
     const pos=me.final_position;
-    const medal=pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
+    const medal=pos===1?'\u{1F947}':pos===2?'\u{1F948}':pos===3?'\u{1F949}':'\u{1F3C5}';
+    const posColor=pos===1?'#FFD700':pos===2?'#C0C0C0':pos===3?'#CD7F32':'rgba(255,255,255,0.6)';
+    const posLabel=pos===1?'CAMPEON':pos===2?'Subcampeon':pos===3?'Tercer lugar':pos?pos+'° lugar':'—';
     el.innerHTML=`<div class="cp-sec">Mi resultado final</div>
-      <div style="font-size:28px;margin-bottom:4px">${medal}</div>
-      <div class="cp-num" style="font-size:32px;color:#fff">${pos?pos+'° lugar':'—'}</div>
-      ${me.points_earned?`<div style="margin-top:6px"><span class="cp-pill" style="background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3)">+${me.points_earned} pts de arco</span></div>`:''}`;
-  } else if(t.status==='playing'){
-    // Verificar si ya hay campeón y 3er lugar para mostrar botón de cierre
+      <div style="background:${pos===1?'rgba(255,215,0,0.06)':`rgba(255,255,255,0.03)`};border:1px solid ${posColor}33;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:36px;margin-bottom:6px">${medal}</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:${posColor};letter-spacing:.06em">${posLabel}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px">${me.qualifying_score||0} pts clasificatorio</div>
+      </div>`;
+  } else if(t.status==='playing'||t.status==='open'){
+    // Verificar si ya hay campeón (bracket) o todos tienen score (solo score)
     const hasChampion = players.some(p=>p.final_position===1);
     const has3rd = players.some(p=>p.final_position===3) || players.length<=2;
+    const withScore = players.filter(p=>p.qualifying_score!=null);
+    const isScoreOnly = !t.has_bracket && withScore.length >= 2;
+
     if(hasChampion && (has3rd || !t.has_bracket)){
+      // Bracket terminado — mostrar campeón
       const champion = players.find(p=>p.final_position===1);
-      const champName = champion?.display_name || champion?.archer_name || 'Campeón';
+      const champName = champion?.archer_name || champion?.display_name || 'Campeon';
       el.innerHTML=`
         <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:14px;text-align:center;margin-bottom:10px">
           <div style="font-size:22px;margin-bottom:4px">🏆</div>
@@ -6989,13 +6997,47 @@ function cpRenderRoomAction(t, players){
           <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">Campeon del torneo</div>
         </div>
         <button class="cp-btn cp-btn-y" onclick="cpCerrarTorneo('${t.id}')">Cerrar torneo y ver resultados →</button>`;
+    } else if(isScoreOnly && me?.qualifying_score!=null){
+      // Solo score — mostrar tabla provisional y botón cerrar
+      const sorted = [...withScore].sort((a,b)=>(b.qualifying_score||0)-(a.qualifying_score||0));
+      const leader = sorted[0];
+      const leaderName = leader?.archer_name || leader?.display_name || 'Lider';
+      el.innerHTML=`
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Tabla provisional</div>
+        ${sorted.slice(0,3).map((p,i)=>{
+          const nm = p.archer_name||p.display_name||'Arquero';
+          const isMe2 = p.user_id===cpUserId;
+          const medals3=['🥇','🥈','🥉'];
+          return`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid rgba(255,255,255,0.06)">
+            <span style="font-size:12px;color:${isMe2?'#d8d15a':'#fff'}">${medals3[i]} ${nm}${isMe2?' (tú)':''}</span>
+            <span style="font-family:'Bebas Neue';font-size:16px;color:${isMe2?'#5dcaa5':'rgba(255,255,255,0.6)'}">${p.qualifying_score}</span>
+          </div>`;
+        }).join('')}
+        <button class="cp-btn cp-btn-y" style="margin-top:10px" onclick="cpCerrarTorneo('${t.id}')">Cerrar y ver resultados finales →</button>`;
     }
   }
 }
 
 // ── CERRAR TORNEO AMISTOSO ────────────────────────────────────────
+// Asignar posiciones finales por qualifying_score (para torneos sin bracket o solo score)
+async function cpAssignPositionsByScore(tournamentId){
+  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&qualifying_score=not.is.null&order=qualifying_score.desc`);
+  const players = await pRes.json();
+  if(!players.length) return;
+  // Solo asignar si no tienen ya posición (respeta el bracket si ya corrió)
+  const needsPos = players.filter(p=>!p.final_position);
+  if(!needsPos.length) return;
+  await Promise.all(players.map((p,i)=>
+    cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${p.user_id}`,{
+      method:'PATCH', headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({final_position: i+1})
+    })
+  ));
+}
+
 window.cpCerrarTorneo = async function(tournamentId){
   if(!confirm('¿Cerrar el torneo? Los resultados quedarán guardados.')) return;
+  await cpAssignPositionsByScore(tournamentId);
   await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{
     method:'PATCH', headers:{'Prefer':'return=minimal'},
     body:JSON.stringify({status:'closed'})
@@ -7312,76 +7354,175 @@ window.cpOpenMatch = async function(matchId, tournamentId, matchFmt){
 
 // ── MATCH SUMATORIA ──────────────────────────────────────────────
 function cpRenderMatchScore(overlay, m, matchId, tournamentId, myKey, rivalKey, myName, rivalName){
-  const myScore = m[`score${myKey==='p1'?1:2}`];
-  const rivalScore = m[`score${rivalKey==='p1'?1:2}`];
+  const myScoreField = myKey==='p1'?'score1':'score2';
+  const rivalScoreField = rivalKey==='p1'?'score1':'score2';
+  const myScore = m[myScoreField];
+  const rivalScore = m[rivalScoreField];
   const myConfirmed = m[`${myKey}_confirmed`];
   const rivalConfirmed = m[`${rivalKey}_confirmed`];
+  const ends = m.set_scores || [];
+  const currentEnd = m.current_set || 1; // reusar current_set para llevar el end actual
+  const isDesempate = currentEnd > 5;
+  const myEnds = ends.map(e=>e[myKey]||0);
+  const myTotal = myEnds.reduce((a,b)=>a+b,0);
+
+  // Estado: registrando ends, o ya terminó y esperando confirmacion
+  const allEndsRecorded = isDesempate ? ends.length >= currentEnd : ends.length >= 5;
+  const myEndDone = ends[currentEnd-1]?.[myKey] != null;
 
   overlay.innerHTML=`
-    <div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:360px;margin-top:20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div style="font-size:16px;font-weight:600;color:#fff">Match — Sumatoria</div>
+    <div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:380px;margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="font-size:15px;font-weight:600;color:#fff">Match — Sumatoria</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4)">${isDesempate?'Flecha de desempate':('End '+currentEnd+' de 5 — 3 flechas')}</div>
+        </div>
         <button onclick="clearInterval(window._cpBracketPoll);document.getElementById('cp-match-overlay').remove()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer">✕</button>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <div style="background:rgba(216,209,90,0.08);border:1px solid rgba(216,209,90,0.3);border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:11px;color:#d8d15a;margin-bottom:4px">${myName} (tú)</div>
-          <div style="font-family:'Bebas Neue';font-size:40px;color:#fff">${myScore??'—'}</div>
-          ${myConfirmed?'<div style="font-size:10px;color:#5dcaa5">✓ Confirmado</div>':''}
+      <!-- Marcador -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:rgba(216,209,90,0.08);border:1px solid rgba(216,209,90,0.3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:#d8d15a;margin-bottom:3px">${myName} (tú)</div>
+          <div style="font-family:'Bebas Neue';font-size:38px;color:#fff;line-height:1">${myScore!=null?myScore:(myTotal||'—')}</div>
+          ${myConfirmed?'<div style="font-size:9px;color:#5dcaa5;margin-top:2px">✓ Listo</div>':''}
         </div>
-        <div style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px">${rivalName}</div>
-          <div style="font-family:'Bebas Neue';font-size:40px;color:#fff">${rivalScore??'—'}</div>
-          ${rivalConfirmed?'<div style="font-size:10px;color:#5dcaa5">✓ Confirmado</div>':'<div style="font-size:10px;color:rgba(255,255,255,0.3)">Esperando...</div>'}
+        <div style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:3px">${rivalName}</div>
+          <div style="font-family:'Bebas Neue';font-size:38px;color:#fff;line-height:1">${rivalScore??'—'}</div>
+          ${rivalConfirmed?'<div style="font-size:9px;color:#5dcaa5;margin-top:2px">✓ Listo</div>':'<div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px">Esperando...</div>'}
         </div>
       </div>
 
-      ${myScore==null?`
-        <div style="margin-bottom:12px">
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Tu score total (15 flechas)</div>
-          <input id="cp-match-score-input" type="number" min="0" max="300" placeholder="0 - 300" style="width:100%;padding:10px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:16px;text-align:center;font-family:'Bebas Neue'">
+      <!-- Historial de ends -->
+      ${ends.length&&!isDesempate?`<div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+        ${ends.map((e,i)=>{
+          const ep=e[myKey]||0;
+          return`<div style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5)">E${i+1}: ${ep}</div>`;
+        }).join('')}
+        <div style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(216,209,90,0.15);color:#d8d15a">Total: ${myTotal}</div>
+      </div>`:''}
+
+      <!-- Input del end actual -->
+      ${!allEndsRecorded&&!myEndDone?`
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">
+            ${isDesempate?'Tu flecha de desempate (valor 1-10)':'Tu score en este end (3 flechas, máx 30)'}
+          </div>
+          <input id="cp-match-end-input" type="number" min="0" max="${isDesempate?10:30}" placeholder="0 - ${isDesempate?10:30}"
+            style="width:100%;padding:10px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:18px;text-align:center;font-family:'Bebas Neue'">
         </div>
-        <button class="cp-btn cp-btn-y" onclick="cpSubmitMatchScore('${matchId}','${myKey}','${tournamentId}')">Enviar mi score →</button>
+        <button class="cp-btn cp-btn-y" onclick="cpSubmitMatchEnd('${matchId}','${myKey}','${rivalKey}','${tournamentId}',${currentEnd},${isDesempate})">
+          Enviar ${isDesempate?'flecha':'end '+currentEnd} →
+        </button>
+      `:myEndDone&&!allEndsRecorded?`
+        <div style="text-align:center;padding:10px;background:rgba(93,202,165,0.08);border-radius:8px;color:#5dcaa5;font-size:13px;margin-bottom:10px">
+          ✓ End ${currentEnd} enviado · Esperando a ${rivalName}
+        </div>
+      `:allEndsRecorded&&!myConfirmed?`
+        <button class="cp-btn cp-btn-g" onclick="cpConfirmMatchScore('${matchId}','${myKey}','${rivalKey}','${tournamentId}')">
+          ✓ Confirmar mi total de ${myTotal} pts
+        </button>
       `:myConfirmed?`
         <div style="text-align:center;padding:10px;background:rgba(93,202,165,0.08);border-radius:8px;color:#5dcaa5;font-size:13px">
-          ✓ Score enviado · Esperando a ${rivalName}
+          ✓ Confirmado · Esperando a ${rivalName}
         </div>
-      `:`
-        <button class="cp-btn cp-btn-g" onclick="cpConfirmMatchScore('${matchId}','${myKey}','${rivalKey}','${tournamentId}')">✓ Confirmar mi score de ${myScore}</button>
-      `}
+      `:''}
     </div>`;
 }
 
-window.cpSubmitMatchScore = async function(matchId, myKey, tournamentId){
-  const val = parseInt(document.getElementById('cp-match-score-input').value);
-  if(isNaN(val)||val<0||val>300) return cpToast('Score inválido');
-  const scoreField = myKey==='p1' ? 'score1' : 'score2';
+window.cpSubmitMatchEnd = async function(matchId, myKey, rivalKey, tournamentId, endNum, isDesempate){
+  const max = isDesempate ? 10 : 30;
+  const val = parseInt(document.getElementById('cp-match-end-input').value);
+  if(isNaN(val)||val<0||val>max) return cpToast('Score invalido (0-'+max+')');
+
+  // Leer estado actual
+  const res = await cpFetch('/rest/v1/brackets?id=eq.'+matchId);
+  const d = await res.json();
+  const m = d[0];
+  const ends = [...(m.set_scores||[])];
+  if(!ends[endNum-1]) ends[endNum-1]={};
+  ends[endNum-1][myKey] = val;
+
+  // Verificar si el rival ya metio este end
+  const rivalVal = ends[endNum-1]?.[rivalKey];
+  const bothEndDone = rivalVal != null;
+
+  let patch = {set_scores: ends};
+
+  if(bothEndDone){
+    // Ambos metieron este end — avanzar al siguiente o cerrar
+    if(!isDesempate && endNum < 5){
+      // Avanzar al siguiente end
+      patch.current_set = endNum + 1;
+      patch.p1_confirmed = false;
+      patch.p2_confirmed = false;
+    } else if(!isDesempate && endNum >= 5){
+      // Todos los ends listos — calcular totales
+      const total1 = ends.reduce((a,e)=>a+(e.p1||0),0);
+      const total2 = ends.reduce((a,e)=>a+(e.p2||0),0);
+      patch.score1 = total1;
+      patch.score2 = total2;
+      // Si empatan — flecha de desempate
+      if(total1 === total2){
+        patch.current_set = 6; // end 6 = desempate
+        patch.p1_confirmed = false;
+        patch.p2_confirmed = false;
+      }
+    } else if(isDesempate){
+      // Desempate — calcular
+      const myDesempate = val;
+      const rivalDesempate = rivalVal;
+      if(myDesempate !== rivalDesempate){
+        // Hay ganador
+        const winnerKey = myDesempate > rivalDesempate ? myKey : rivalKey;
+        const winnerId = winnerKey==='p1' ? m.player1_id : m.player2_id;
+        patch.winner_id = winnerId;
+        patch.status = 'done';
+      } else {
+        // Otro desempate
+        const nextDesempate = endNum + 1;
+        patch.current_set = nextDesempate;
+        patch.p1_confirmed = false;
+        patch.p2_confirmed = false;
+      }
+    }
+  }
+
   await cpFetch('/rest/v1/brackets?id=eq.'+matchId,{
     method:'PATCH', headers:{'Prefer':'return=minimal'},
-    body:JSON.stringify({[scoreField]: val})
+    body:JSON.stringify(patch)
   });
-  cpToast('✓ Score enviado');
-  const res = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
-  const d = await res.json();
-  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name,archer_name,club_name`);
-  const players = await pRes.json();
-  const nameMap = {}; players.forEach(p=>nameMap[p.user_id]=p.display_name||'Arquero');
+
+  // Si hay ganador definido por desempate, resolver
+  if(patch.winner_id){
+    const res2 = await cpFetch('/rest/v1/brackets?id=eq.'+matchId);
+    const d2 = await res2.json();
+    await cpResolveMatch(d2[0], tournamentId);
+    return;
+  }
+
+  cpToast(bothEndDone ? (patch.current_set>5?'¡Empate! Flecha de desempate':'End '+endNum+' listo') : '✓ End enviado');
+
+  // Refrescar
+  const res3 = await cpFetch('/rest/v1/brackets?id=eq.'+matchId);
+  const d3 = await res3.json();
+  const pRes = await cpFetch('/rest/v1/tournament_players?tournament_id=eq.'+tournamentId+'&select=user_id,display_name,archer_name');
+  const pl = await pRes.json();
+  const nameMap={}; pl.forEach(p=>nameMap[p.user_id]=p.archer_name||p.display_name||'Arquero');
   const myName=nameMap[cpUserId]||cpUserName;
-  const m=d[0];
-  const rivalId = myKey==='p1'?m.player2_id:m.player1_id;
+  const rivalId=myKey==='p1'?d3[0].player2_id:d3[0].player1_id;
   const rivalName=nameMap[rivalId]||'Rival';
-  const rivalKey=myKey==='p1'?'p2':'p1';
-  cpRenderMatchScore(document.getElementById('cp-match-overlay'), m, matchId, tournamentId, myKey, rivalKey, myName, rivalName);
+  cpRenderMatchScore(document.getElementById('cp-match-overlay'), d3[0], matchId, tournamentId, myKey, rivalKey, myName, rivalName);
 }
 
+// Mantener compatibilidad con botones generados en sesiones anteriores
 window.cpConfirmMatchScore = async function(matchId, myKey, rivalKey, tournamentId){
   const confirmedField = `${myKey}_confirmed`;
   await cpFetch('/rest/v1/brackets?id=eq.'+matchId,{
     method:'PATCH', headers:{'Prefer':'return=minimal'},
     body:JSON.stringify({[confirmedField]: true})
   });
-  // Verificar si ambos confirmaron → determinar ganador
   const res = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
   const d = await res.json();
   const m = d[0];
@@ -7389,10 +7530,17 @@ window.cpConfirmMatchScore = async function(matchId, myKey, rivalKey, tournament
     await cpResolveMatch(m, tournamentId);
   } else {
     cpToast('✓ Confirmado · Esperando al rival');
+    // Refrescar UI
+    const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name,archer_name`);
+    const pl = await pRes.json();
+    const nameMap={}; pl.forEach(p=>nameMap[p.user_id]=p.archer_name||p.display_name||'Arquero');
+    const myName=nameMap[cpUserId]||cpUserName;
+    const rivalId=myKey==='p1'?m.player2_id:m.player1_id;
+    const rivalName=nameMap[rivalId]||'Rival';
+    cpRenderMatchScore(document.getElementById('cp-match-overlay'), m, matchId, tournamentId, myKey, rivalKey, myName, rivalName);
   }
 }
-
-// ── MATCH SETS ───────────────────────────────────────────────────
+window.cpSubmitMatchScore = window.cpSubmitMatchEnd; // alias legacy
 function cpRenderMatchSets(overlay, m, matchId, tournamentId, myKey, rivalKey, myName, rivalName, nameMap){
   const sets = m.set_scores || [];
   const myIdx = myKey==='p1'?0:1;
@@ -7768,34 +7916,39 @@ async function cpResolveMatch(m, tournamentId, silent=false){
 function cpRenderPodium(players){
   const sorted=[...players].filter(p=>p.final_position).sort((a,b)=>a.final_position-b.final_position);
   const top3=sorted.slice(0,3);
-  const order=[1,0,2]; // 2do, 1ro, 3ro en el podium visual
+  const order=top3.length>=3?[1,0,2]:top3.length===2?[1,0]:[0];
   const heights=[80,110,60];
   const colors=['#C0C0C0','#FFD700','#CD7F32'];
-  const medals=['🥈','🥇','🥉'];
+  const medals=['\u{1F948}','\u{1F947}','\u{1F949}'];
   document.getElementById('cp-podium').innerHTML=order.map((idx,i)=>{
     const p=top3[idx]; if(!p) return'';
+    const name=p.user_id===cpUserId?cpUserName:(p.archer_name||p.display_name||'Arquero');
     return`<div class="cp-podium-step">
-      <div style="font-size:20px">${medals[i]}</div>
-      <div class="cp-avatar" style="width:40px;height:40px;font-size:16px">${(p.user_id||'?').charAt(0).toUpperCase()}</div>
-      <div class="cp-num" style="font-size:16px;color:${colors[i]}">${p.qualifying_score||0}</div>
-      <div class="cp-podium-block" style="width:80px;height:${heights[i]}px;background:${colors[i]}22;border:0.5px solid ${colors[i]}44">
-        ${idx+1}
+      <div style="font-size:22px">${medals[i]}</div>
+      <div class="cp-avatar" style="width:40px;height:40px;font-size:16px">${name.charAt(0).toUpperCase()}</div>
+      <div style="font-size:11px;color:${colors[i]};text-align:center;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
+      <div class="cp-podium-block" style="width:80px;height:${heights[i]}px;background:${colors[i]}22;border:0.5px solid ${colors[i]}44">${idx+1}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('cp-results-list').innerHTML=sorted.map(p=>{
+    const name=p.user_id===cpUserId?cpUserName:(p.archer_name||p.display_name||'Arquero');
+    const medal=p.final_position===1?'\u{1F947}':p.final_position===2?'\u{1F948}':p.final_position===3?'\u{1F949}':'';
+    const posColor=p.final_position===1?'#FFD700':p.final_position===2?'#C0C0C0':p.final_position===3?'#CD7F32':'rgba(255,255,255,0.5)';
+    const isMe=p.user_id===cpUserId;
+    return`<div class="cp-row" style="${isMe?'background:rgba(216,209,90,0.04);border-radius:8px;':''}">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">${medal}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:${isMe?'#d8d15a':'#fff'}">${name}${isMe?' (tú)':''}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35)">${p.final_position}° lugar</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="cp-num" style="font-size:16px;color:${posColor}">${p.qualifying_score||0} pts</div>
       </div>
     </div>`;
   }).join('');
-  document.getElementById('cp-results-list').innerHTML=sorted.map(p=>`
-    <div class="cp-row">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-family:'Bebas Neue';font-size:20px;color:rgba(255,255,255,0.4);min-width:24px">${p.final_position}</span>
-        <span style="font-size:13px;font-weight:600;color:#fff">${p.user_id===cpUserId?cpUserName+' (tú)':'Arquero'}</span>
-      </div>
-      <div style="text-align:right">
-        <div class="cp-num" style="font-size:16px;color:#fff">${p.qualifying_score||0} pts</div>
-        ${p.points_earned?`<div style="font-size:10px;color:#d8d15a">+${p.points_earned} pts arco</div>`:''}
-      </div>
-    </div>`).join('');
 }
-
 // ── ANIMACIÓN GANADOR ─────────────────────────────────────────────
 function cpShowWinAnimation(playerName){
   const overlay=document.createElement('div');
@@ -7969,6 +8122,7 @@ async function cpLoadAdminLeagues(){
 window.cpAdminClose = async function(id){
   if(!confirm('¿Cerrar este torneo? Se calculan posiciones finales.')) return;
   try{
+    await cpAssignPositionsByScore(id);
     const res=await cpFetch('/rest/v1/tournaments?id=eq.'+id,{
       method:'PATCH',
       headers:{'Prefer':'return=minimal'},
@@ -7980,7 +8134,6 @@ window.cpAdminClose = async function(id){
       await cpLoadLobby();
     } else {
       const err=await res.text();
-      console.error('Error cerrando torneo:',res.status, err);
       cpToast('Error '+res.status+': '+err.slice(0,60));
     }
   } catch(e){ console.error(e); cpToast('Error: '+e.message); }
