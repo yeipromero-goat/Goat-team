@@ -5554,14 +5554,13 @@ window.btSaveSession=function(){
 
       const numEnds = s.ends ? s.ends.filter(e=>e.length>0).length : Math.ceil(s.n / 3);
       const handicapTotal = Math.round(bonusPerEnd * numEnds * 10) / 10;
-      const adjustedScore = s.total + handicapTotal;
+      const adjustedScore = Math.round(s.total + handicapTotal);
       console.log('Score ajustado:', s.total, '+', handicapTotal, '=', adjustedScore);
 
       const patchRes = await fetch(`${SUPA}/rest/v1/tournament_players?tournament_id=eq.${pendingTournament}&user_id=eq.${userId}`, {
         method:'PATCH', headers,
         body:JSON.stringify({
           qualifying_score: adjustedScore,
-          qualifying_detail: s.ends,
           qualifying_at: s.date
         })
       });
