@@ -2301,7 +2301,7 @@ window.addEventListener('popstate', function(e){
 // ── PESOS BASE (suma 1.0) ──
 // TEC=32% IEM=28% EST=18% COM=12% FUE=6% RES=4%
 const W = {T:.32, C:.12, E:.18, I:.28, FUE:.06, RES:.04};
-const SS = ['T','C','E','I','FUE','RES'];
+const SS = ['T','C','E','I','F','R'];
 let comp='indoor', selCards=[], openSlot=null;
 window.playerDeck = window.playerDeck || [];
 let playerDeck = window.playerDeck;
@@ -2855,18 +2855,65 @@ function renderItemGrid() {
 
   const el = document.getElementById('item-grid');
   if (!el || CARDS.length === 0) return;
+
+  const statLabels = {T:'Técnica',C:'Competitividad',E:'G.Estrés',I:'Int.Emocional',F:'Fuerza',R:'Resistencia'};
+  const statIcons  = {T:'⚡',C:'🎯',E:'😤',I:'🧠',F:'💪',R:'🏃'};
+  const ttLabels   = {indoor:'Indoor',outdoor:'Outdoor',field:'Field',3:'3D'};
+  const ttColors   = {indoor:'rgba(90,180,214,0.2)',outdoor:'rgba(93,202,165,0.2)',field:'rgba(216,209,90,0.15)','3d':'rgba(224,85,85,0.2)'};
+  const ttText     = {indoor:'#5ab4d6',outdoor:'#5dcaa5',field:'#d8d15a','3d':'#e05555'};
+
   el.innerHTML = filtered.map(c => {
     const inDeck = playerDeck.includes(c.id);
     const limited = atLimit && !inDeck;
-    const stats = ['T','C','E','I']
-      .filter(s => c[s] !== 0)
-      .map(s => `<span class="ic-stat ${c[s]>0?'pos':'neg'}">${c[s]>0?'+':''}${c[s]}${s}</span>`)
-      .join('');
+
+    // Todos los 6 stats
+    const allStats = ['T','C','E','I','F','R'];
+    const activeStats = allStats.filter(s => c[s] !== undefined && c[s] !== 0);
+    const statsHtml = activeStats.map(s => {
+      const v = c[s];
+      return `<div style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:0.5px solid rgba(255,255,255,0.05)">
+        <span style="font-size:11px;min-width:16px">${statIcons[s]}</span>
+        <span style="font-size:10px;color:rgba(255,255,255,0.5);flex:1">${statLabels[s]}</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:${v>0?'#5dcaa5':'#e05555'}">${v>0?'+':''}${v}</span>
+      </div>`;
+    }).join('');
+
+    // Tipos de torneo
+    const tTypes = c.tournament_types || [];
+    const ttHtml = tTypes.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">
+      ${tTypes.map(t=>`<span style="font-size:9px;padding:2px 6px;border-radius:10px;background:${ttColors[t]||'rgba(255,255,255,0.1)'};color:${ttText[t]||'#fff'}">${t==='3d'?'3D':t.charAt(0).toUpperCase()+t.slice(1)}</span>`).join('')}
+    </div>` : '';
+
+    // Descripción
+    const descHtml = c.description ? `<div style="font-size:10px;color:rgba(255,255,255,0.45);line-height:1.5;margin-top:6px;font-style:italic">${c.description}</div>` : '';
+
+    // Impacto
+    const impactHtml = c.skill_impact ? `<div style="margin-top:6px;padding:5px 7px;border-radius:6px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.2)">
+      <span style="font-size:9px;color:rgba(216,209,90,0.7);text-transform:uppercase;letter-spacing:.06em">Beneficio</span>
+      <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:2px">${c.skill_impact}</div>
+    </div>` : '';
+
     return `<div class="icard ${inDeck?'in-deck':''} ${limited?'at-limit':''}"
-      onclick="toggleDeckCard('${c.id}')">
-      <div class="ic-cat">${c.cat}</div>
-      <div class="ic-name">${c.n}</div>
-      <div class="ic-stats">${stats}</div>
+      onclick="${limited?'':'toggleDeckCard(\''+c.id+'\')'}"
+      style="cursor:${limited?'not-allowed':'pointer'};opacity:${limited?'0.5':'1'};
+        display:flex;flex-direction:column;padding:12px;border-radius:10px;
+        background:${inDeck?'rgba(93,202,165,0.06)':'rgba(255,255,255,0.03)'};
+        border:1px solid ${inDeck?'rgba(93,202,165,0.4)':'rgba(255,255,255,0.1)'};
+        transition:all .15s">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,0.35);margin-bottom:3px">${c.cat}</div>
+          <div style="font-size:14px;font-weight:600;color:${inDeck?'#5dcaa5':'#fff'};line-height:1.2">${c.n}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          ${inDeck?'<span style="font-size:9px;padding:2px 6px;border-radius:10px;background:rgba(93,202,165,0.2);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.4)">✓ En deck</span>':''}
+          <span style="font-size:10px;font-family:\'DM Mono\',monospace;color:rgba(255,255,255,0.25)">${c.id}</span>
+        </div>
+      </div>
+      ${activeStats.length ? `<div style="margin-bottom:4px">${statsHtml}</div>` : '<div style="font-size:10px;color:rgba(255,255,255,0.25);padding:4px 0">Sin modificadores de stats</div>'}
+      ${ttHtml}
+      ${descHtml}
+      ${impactHtml}
     </div>`;
   }).join('');
 }
@@ -3250,7 +3297,7 @@ function renderPlayingPhase(){
     const full   = !played && gs.played.length>=PLAY_PER_ROUND;
     const div = document.createElement('div');
     div.className = 'hcard'+(played?' played':'')+(full?' at-limit':'');
-    const stats = ['T','C','E','I'].filter(s=>c[s]!==0)
+    const stats = ['T','C','E','I','F','R'].filter(s=>c[s]!==0)
       .map(s=>`<span class="${c[s]>0?'hstat-p':'hstat-n'}">${c[s]>0?'+':''}${c[s]}${s}</span>`).join('');
     div.innerHTML = `<div class="hcard-cat">${c.cat}</div><div class="hcard-name">${c.n}</div><div class="hcard-stats">${stats}</div>`;
     div.onclick = ()=>{
@@ -3304,7 +3351,7 @@ function renderDiscardPhase(){
     const atMax      = !isSelected && pending.length >= maxDiscard;
     const div = document.createElement('div');
     div.className = 'hcard' + (isSelected ? ' selected-discard' : '') + (atMax ? ' at-limit' : '');
-    const stats = ['T','C','E','I'].filter(s=>c[s]!==0)
+    const stats = ['T','C','E','I','F','R'].filter(s=>c[s]!==0)
       .map(s=>`<span class="${c[s]>0?'hstat-p':'hstat-n'}">${c[s]>0?'+':''}${c[s]}${s}</span>`).join('');
     div.innerHTML = `<div class="hcard-cat">${c.cat}</div><div class="hcard-name">${c.n}</div><div class="hcard-stats">${stats}</div>`;
     if(!atMax || isSelected) div.onclick = () => discardCard(idx);
@@ -3693,17 +3740,12 @@ function renderArcherCards() {
 document.addEventListener('DOMContentLoaded', async function() {
 
   // ── 1. Cargar todos los datos en paralelo (archers, coaches, bows, cards) ──
-  if(typeof initAppData === 'function'){
-    await initAppData();
-  } else {
-    // Fallback: funciones individuales si existen
-    await Promise.all([
-      typeof loadArchersFromSupabase === 'function' ? loadArchersFromSupabase() : Promise.resolve(),
-      typeof loadCoachesFromSupabase === 'function' ? loadCoachesFromSupabase() : Promise.resolve(),
-      typeof loadBowsFromSupabase    === 'function' ? loadBowsFromSupabase()    : Promise.resolve(),
-      typeof loadCardsFromSupabase   === 'function' ? loadCardsFromSupabase()   : Promise.resolve(),
-    ]);
-  }
+  await Promise.all([
+    loadArchersFromSupabase(),
+    loadCoachesFromSupabase(),
+    loadBowsFromSupabase(),
+    loadCardsFromSupabase(),
+  ]);
 
   // ── 2. Cargar selecciones del usuario (necesita ARCHERS, COACHES, BOWS y CARDS) ──
   await loadUserSelections();
@@ -4918,7 +4960,7 @@ if (typeof selectPersonCard === 'function') {
 }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-
+<script src="scoring.js"></script>
 <script src="codigos.js"></script>
 <script src="supabase.js"></script>
 <script src="supabase-persistence.js"></script>
@@ -5020,15 +5062,18 @@ function _scoreCompute(archerData, bowData, cards, discipline, climate) {
   });
 
   // 3. Cartas — suman al stat directo, tope +20 pts totales
+  // F en carta → FUE del arquero | R en carta → RES del arquero
   if (cards && cards.length) {
     let cardTotal = 0;
     cards.forEach(card => {
       if (!card) return;
-      ['T','C','E','I'].forEach(s => {
-        const val = card[s] || 0;
+      // Mapeo: keys de carta → keys internos de scoring
+      const statMap = {T:'T', C:'C', E:'E', I:'I', F:'FUE', R:'RES'};
+      Object.entries(statMap).forEach(([cardKey, rawKey]) => {
+        const val = card[cardKey] || 0;
         if (val !== 0 && Math.abs(cardTotal) < 20) {
-          raw[s]    += val;
-          cardTotal += Math.abs(val);
+          raw[rawKey] = (raw[rawKey] || 0) + val;
+          cardTotal   += Math.abs(val);
         }
       });
     });

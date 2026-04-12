@@ -85,7 +85,12 @@ const mappers = {
     C: c.c || 0,
     E: c.e || 0,
     I: c.i || 0,
-    rarity: c.rarity || 'common'
+    F: c.f || 0,
+    R: c.r || 0,
+    rarity: c.rarity || 'common',
+    description: c.description || null,
+    skill_impact: c.skill_impact || null,
+    tournament_types: c.tournament_types || []
   }),
 
   bows: (b) => ({
@@ -224,6 +229,7 @@ async function initAppData() {
     console.log('📦 DATA READY');
 
     renderAll();
+
     APP_STATE.ready = true;
 
     // Restaurar lineup del usuario ahora que ARCHERS/COACHES/BOWS están listos

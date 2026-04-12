@@ -1485,6 +1485,7 @@ function newCarta() {
 }
 
 function renderCartaEditor(c) {
+  const tTypes = c.tournament_types || [];
   document.getElementById('carta-editor').innerHTML = `
     <div class="editor-form">
       <div class="form-header">
@@ -1499,11 +1500,29 @@ function renderCartaEditor(c) {
           <div class="field"><label>ID</label><input id="ca-id" value="${c.id}" ${!isNewCarta?'readonly style="opacity:.5"':''}></div>
           <div class="field"><label>Nombre de la carta</label><input id="ca-name" value="${c.name||''}" placeholder="Ej: Arco 34&quot;"></div>
         </div>
-        <div class="field">
+        <div class="field" style="margin-bottom:12px">
           <label>Categoría</label>
           <select id="ca-cat">
             ${CARTA_CATS.map(cat=>`<option value="${cat}" ${c.category===cat?'selected':''}>${cat}</option>`).join('')}
           </select>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>Descripción — qué hace esta carta y cómo beneficia al arquero</label>
+          <textarea id="ca-desc" rows="3" placeholder="Ej: Un arco más largo que mejora la estabilidad del disparo, reduciendo la variación de técnica en condiciones de presión.">${c.description||''}</textarea>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>Impacto / Beneficio — en qué aspecto del juego ayuda más</label>
+          <input id="ca-impact" value="${c.skill_impact||''}" placeholder="Ej: Mejora la consistencia en distancias largas, especialmente bajo fatiga">
+        </div>
+        <div class="field">
+          <label>Tipos de torneo donde es más efectiva</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+            ${['indoor','outdoor','field','3d'].map(t=>`
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--text)">
+                <input type="checkbox" id="ca-tt-${t}" ${tTypes.includes(t)?'checked':''} style="accent-color:var(--yellow);width:14px;height:14px">
+                ${t.charAt(0).toUpperCase()+t.slice(1)}
+              </label>`).join('')}
+          </div>
         </div>
       </div>
 
@@ -1551,10 +1570,14 @@ function updateCartaStat(id, val) {
 }
 
 async function saveCarta() {
+  const tTypes = ['indoor','outdoor','field','3d'].filter(t=>document.getElementById('ca-tt-'+t)?.checked);
   const data = {
     id: document.getElementById('ca-id').value.trim(),
     name: document.getElementById('ca-name').value.trim(),
     category: document.getElementById('ca-cat').value,
+    description: document.getElementById('ca-desc').value.trim() || null,
+    skill_impact: document.getElementById('ca-impact').value.trim() || null,
+    tournament_types: tTypes,
     t: parseInt(document.getElementById('ca-t').value) || 0,
     c: parseInt(document.getElementById('ca-c').value) || 0,
     e: parseInt(document.getElementById('ca-e').value) || 0,
