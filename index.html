@@ -7001,11 +7001,21 @@ window.cpIniciarLlaves = async function(tournamentId, pendingCount){
     // Insertar matches en Supabase
     const bRes = await cpFetch('/rest/v1/brackets',{
       method:'POST',
-      headers:{'Prefer':'return=minimal'},
+      headers:{'Prefer':'return=representation'},
       body:JSON.stringify(matches)
     });
     if(!bRes.ok && bRes.status!==201 && bRes.status!==204){
       const err=await bRes.text(); return cpToast('Error: '+err.slice(0,60));
+    }
+    const createdMatches = await bRes.json();
+
+    // Auto-resolver byes: si un match tiene bye, llamar cpResolveMatch para que avance
+    // Solo aplica cuando hay más de una ronda (bracketSize >= 4)
+    if(bracketSize >= 4){
+      const byeMatches = createdMatches.filter(m=>m.is_bye && m.winner_id);
+      for(const byeMatch of byeMatches){
+        await cpResolveMatch(byeMatch, tournamentId, true); // true = silencioso
+      }
     }
 
     // Cambiar status del torneo a playing
@@ -7489,21 +7499,207 @@ window.cpResolveSet = async function(m, matchId, tournamentId, myKey, rivalKey){
 }
 
 // ── RESOLVER GANADOR Y AVANZAR ────────────────────────────────────
-async function cpResolveMatch(m, tournamentId){
+async function cpResolveMatch(m, tournamentId, silent=false){
   const winnerId = m.winner_id || (
     m.sets1!=null ? (m.sets1>m.sets2?m.player1_id:m.player2_id)
-                  : (m.score1>m.score2?m.player1_id:m.player2_id)
+                  : ((m.score1||0)>(m.score2||0)?m.player1_id:m.player2_id)
   );
-  // Guardar ganador
-  await cpFetch('/rest/v1/brackets?id=eq.'+m.id,{
-    method:'PATCH', headers:{'Prefer':'return=minimal'},
-    body:JSON.stringify({winner_id:winnerId, status:'done'})
-  });
-  cpToast('🏆 ¡Match terminado!');
-  clearInterval(_cpBracketPoll);
-  const overlay=document.getElementById('cp-match-overlay');
-  if(overlay) overlay.remove();
-  cpOpenRoom(tournamentId);
+  const loserId = winnerId===m.player1_id ? m.player2_id : m.player1_id;
+
+  // Score del perdedor en este match (para desempate dentro de ronda)
+  const loserMatchScore = winnerId===m.player1_id
+    ? (m.sets2!=null ? m.sets2 : (m.score2||0))
+    : (m.sets1!=null ? m.sets1 : (m.score1||0));
+
+  // 1. Guardar ganador
+  if(!m.winner_id){
+    await cpFetch('/rest/v1/brackets?id=eq.'+m.id,{
+      method:'PATCH', headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({winner_id:winnerId, status:'done'})
+    });
+  }
+
+  // 2. Leer todos los matches actualizados
+  const allRes = await cpFetch(`/rest/v1/brackets?tournament_id=eq.${tournamentId}&order=round.asc,match_number.asc`);
+  const allMatches = await allRes.json();
+
+  // Posición base dinámica — depende del total de jugadores en el torneo
+  // El que pierde más tarde siempre queda más arriba
+  // Ronda → cuántos jugadores quedan vivos al entrar a esa ronda
+  // sf: 4 vivos → eliminados en sf = 3°/4° (bronce) o 5°/6° sin bronce
+  // qf: 8 vivos → eliminados en qf = 5° en adelante
+  // r16: 16 vivos → eliminados en r16 = 9° en adelante
+  // r32: 32 vivos → eliminados en r32 = 17° en adelante
+  const roundPlayersAlive = {sf:4, qf:8, r16:16, r32:32};
+  // Base = (jugadores vivos / 2) + 1 → el puesto inmediato siguiente al último ganador
+  const calcBasePos = (round) => {
+    const alive = roundPlayersAlive[round];
+    if(!alive) return 5;
+    return (alive / 2) + 1; // la mitad avanza, la otra mitad empieza desde aquí
+  };
+
+  const assignRoundPositions = async (losersData, basePos) => {
+    losersData.sort((a,b) => {
+      if(b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+      return Math.random() - 0.5;
+    });
+    for(let i=0; i<losersData.length; i++){
+      if(!losersData[i].userId) continue;
+      await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${losersData[i].userId}`,{
+        method:'PATCH', headers:{'Prefer':'return=minimal'},
+        body:JSON.stringify({final_position: basePos + i})
+      });
+    }
+  };
+
+  const nextRoundMap = {r32:'r16', r16:'qf', qf:'sf', sf:'final'};
+  const currentRound = m.round;
+  const nextRound = nextRoundMap[currentRound];
+
+  // ── SEMIS ────────────────────────────────────────────────────────
+  if(currentRound === 'sf'){
+    const sfMatches = allMatches.filter(x=>x.round==='sf');
+    const updatedSfs = sfMatches.map(x=>x.id===m.id?{...x,winner_id:winnerId}:x);
+    const allSfDone = updatedSfs.every(x=>x.winner_id);
+
+    if(allSfDone){
+      const realSfs = updatedSfs.filter(x=>!x.is_bye);
+      const winners = updatedSfs.map(x=>x.winner_id);
+      const losers  = realSfs.map(x=>({
+        userId: x.winner_id===x.player1_id ? x.player2_id : x.player1_id,
+        matchScore: x.winner_id===x.player1_id ? (x.sets2??x.score2??0) : (x.sets1??x.score1??0)
+      })).filter(l=>l.userId);
+
+      if(realSfs.length === 1){
+        // Solo 1 semi real (3 jugadores) — perdedor es 3ro automatico, sin bronce
+        if(losers[0]?.userId){
+          await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${losers[0].userId}`,{
+            method:'PATCH', headers:{'Prefer':'return=minimal'},
+            body:JSON.stringify({final_position:3})
+          });
+        }
+        await cpFetch('/rest/v1/brackets',{
+          method:'POST', headers:{'Prefer':'return=minimal'},
+          body:JSON.stringify([{
+            tournament_id:tournamentId, round:'final', match_number:1,
+            player1_id:winners[0], player2_id:winners[1], status:'pending'
+          }])
+        });
+        if(!silent) cpToast('Final lista - 3er lugar asignado automaticamente');
+      } else {
+        // 2 semis reales — Final + Bronce
+        await cpFetch('/rest/v1/brackets',{
+          method:'POST', headers:{'Prefer':'return=minimal'},
+          body:JSON.stringify([
+            {tournament_id:tournamentId, round:'final',  match_number:1, player1_id:winners[0], player2_id:winners[1], status:'pending'},
+            {tournament_id:tournamentId, round:'bronze', match_number:1, player1_id:losers[0]?.userId, player2_id:losers[1]?.userId, status:'pending'},
+          ])
+        });
+        if(!silent) cpToast('Semis listas - Final y 3er lugar generados');
+      }
+    } else {
+      if(!silent) cpToast('Semi terminada - Esperando la otra semi');
+    }
+
+  // ── FINAL ────────────────────────────────────────────────────────
+  } else if(currentRound === 'final'){
+    await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${winnerId}`,{
+      method:'PATCH', headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({final_position:1})
+    });
+    await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${loserId}`,{
+      method:'PATCH', headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({final_position:2})
+    });
+    // Cerrar torneo si no hay bronce o el bronce ya terminó
+    const bronzeMatch = allMatches.find(x=>x.round==='bronze');
+    if(!bronzeMatch || bronzeMatch.winner_id){
+      await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{
+        method:'PATCH', headers:{'Prefer':'return=minimal'},
+        body:JSON.stringify({status:'closed'})
+      });
+    }
+    if(!silent) cpToast('🥇 ¡Tenemos campeón!');
+
+  // ── BRONCE ───────────────────────────────────────────────────────
+  } else if(currentRound === 'bronze'){
+    await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${winnerId}`,{
+      method:'PATCH', headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({final_position:3})
+    });
+    await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${loserId}`,{
+      method:'PATCH', headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({final_position:4})
+    });
+    const finalMatch = allMatches.find(x=>x.round==='final');
+    if(finalMatch?.winner_id){
+      await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{
+        method:'PATCH', headers:{'Prefer':'return=minimal'},
+        body:JSON.stringify({status:'closed'})
+      });
+    }
+    if(!silent) cpToast('🥉 3er lugar definido');
+
+  // ── RONDAS INTERMEDIAS (qf, r16, r32) ────────────────────────────
+  } else if(nextRound){
+    const roundMatches = allMatches.filter(x=>x.round===currentRound);
+    const matchIdx = roundMatches.findIndex(x=>x.id===m.id);
+    const pairIdx = Math.floor(matchIdx/2);
+    const pairMatches = roundMatches.slice(pairIdx*2, pairIdx*2+2);
+    const updatedPair = pairMatches.map(x=>x.id===m.id?{...x,winner_id:winnerId}:x);
+    const bothDone = updatedPair.every(x=>x.winner_id);
+
+    // Asignar posición al perdedor de este match
+    const basePos = calcBasePos(currentRound);
+    // Recoger todos los perdedores de esta ronda (los que ya tienen winner_id)
+    const allRoundDone = roundMatches.map(x=>x.id===m.id?{...x,winner_id:winnerId}:x).filter(x=>x.winner_id);
+    const allLosers = allRoundDone.map(x=>({
+      userId: x.winner_id===x.player1_id ? x.player2_id : x.player1_id,
+      matchScore: x.winner_id===x.player1_id ? (x.sets2??x.score2??0) : (x.sets1??x.score1??0)
+    })).filter(l=>l.userId);
+
+    // Asignar posiciones a todos los perdedores de la ronda ordenados
+    await assignRoundPositions(allLosers, basePos);
+
+    if(bothDone){
+      const pairWinners = updatedPair.map(x=>x.winner_id);
+      // Si el par es impar (último match sin par), avanza solo
+      const nextMatchNum = pairIdx + 1;
+      if(updatedPair.length === 1){
+        // Match impar — bye automático al siguiente
+        await cpFetch('/rest/v1/brackets',{
+          method:'POST', headers:{'Prefer':'return=minimal'},
+          body:JSON.stringify([{
+            tournament_id:tournamentId, round:nextRound,
+            match_number:nextMatchNum, player1_id:pairWinners[0], player2_id:null,
+            is_bye:true, status:'done', winner_id:pairWinners[0]
+          }])
+        });
+        // Resolver el bye silenciosamente
+        const byeRes = await cpFetch(`/rest/v1/brackets?tournament_id=eq.${tournamentId}&round=eq.${nextRound}&match_number=eq.${nextMatchNum}`);
+        const byeData = await byeRes.json();
+        if(byeData[0]) await cpResolveMatch(byeData[0], tournamentId, true);
+      } else {
+        await cpFetch('/rest/v1/brackets',{
+          method:'POST', headers:{'Prefer':'return=minimal'},
+          body:JSON.stringify([{
+            tournament_id:tournamentId, round:nextRound,
+            match_number:nextMatchNum, player1_id:pairWinners[0], player2_id:pairWinners[1], status:'pending'
+          }])
+        });
+      }
+      if(!silent) cpToast(`✓ Avanzando a ${nextRound}`);
+    } else {
+      if(!silent) cpToast('✓ Match listo · Esperando el otro match del par');
+    }
+  }
+
+  if(!silent){
+    clearInterval(_cpBracketPoll);
+    const overlay=document.getElementById('cp-match-overlay');
+    if(overlay) overlay.remove();
+    cpOpenRoom(tournamentId);
+  }
 }
 
 // ── PODIUM ────────────────────────────────────────────────────────
