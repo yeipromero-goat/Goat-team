@@ -6692,12 +6692,11 @@ window.cpCreateTournament = async function(){
     const res=await cpFetch('/rest/v1/tournaments',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(payload)});
     const data=await res.json();
     const t=Array.isArray(data)?data[0]:data;
-    // Siempre preguntar arco si hay handicap habilitado
+    // Siempre pedir nombre+club, arco solo si hay handicap
     if(hcapPayload.handicap_enabled){
-      await cpShowBowDeclaration(t.id, ()=>cpOpenRoom(t.id));
+      await cpShowBowDeclaration(t.id, ()=>cpOpenRoom(t.id), 'friends');
     } else {
-      await cpJoinTournament(t.id);
-      cpOpenRoom(t.id);
+      await cpShowBowDeclaration(t.id, ()=>cpOpenRoom(t.id), 'club');
     }
   } catch(e){ console.error(e); cpToast('Error creando torneo'); }
 }
@@ -6812,25 +6811,22 @@ window.cpJoinByCode = async function(){
   const code=document.getElementById('cp-join-code').value.trim().toUpperCase();
   if(!code) return;
   try{
-    const tRes=await cpFetch(`/rest/v1/tournaments?code=eq.${code}&select=id,status,handicap_enabled`);
+    const tRes=await cpFetch(`/rest/v1/tournaments?code=eq.${code}&select=id,status,type,handicap_enabled`);
     const tData=await tRes.json();
     if(tData.length){
       if(tData[0].status==='closed') return cpToast('Este torneo ya cerró');
       const t=tData[0];
-      if(t.handicap_enabled){
-        await cpShowBowDeclaration(t.id, ()=>cpOpenRoom(t.id));
-      } else {
-        await cpJoinTournament(t.id);
-        cpOpenRoom(t.id);
-      }
+      const tType = t.type==='friends' ? 'friends' : 'club';
+      const needsBow = t.handicap_enabled && tType==='friends';
+      // Siempre pedir nombre+club, arco solo si aplica
+      await cpShowBowDeclaration(t.id, ()=>cpOpenRoom(t.id), needsBow?'friends':tType);
       return;
     }
     const lRes=await cpFetch(`/rest/v1/leagues?code=eq.${code}&select=id,status`);
     const lData=await lRes.json();
     if(lData.length){
       if(lData[0].status==='finished') return cpToast('Esta liga ya terminó');
-      await cpJoinLeague(lData[0].id);
-      cpOpenLeague(lData[0].id);
+      cpShowLeagueRegistration(lData[0].id);
       return;
     }
     cpToast('Código no encontrado');
@@ -7091,22 +7087,24 @@ window.cpIniciarLlaves = async function(tournamentId, pendingCount){
 }
 
 window.cpChangeBow = async function(tournamentId){
-  await cpShowBowDeclaration(tournamentId, ()=>cpOpenRoom(tournamentId));
-  // Cambiar título del modal
+  await cpShowBowDeclaration(tournamentId, ()=>cpOpenRoom(tournamentId), 'friends');
   setTimeout(()=>{
     const title=document.querySelector('#cp-bow-overlay div div:first-child');
-    if(title) title.textContent='Cambiar tipo de arco';
+    if(title) title.textContent='Cambiar datos de inscripcion';
   },100);
 }
 
 window.cpJoinAndReload = async function(id){
-  const tRes=await cpFetch(`/rest/v1/tournaments?id=eq.${id}&select=handicap_enabled,status`);
+  const tRes=await cpFetch(`/rest/v1/tournaments?id=eq.${id}&select=handicap_enabled,status,type`);
   const tData=await tRes.json();
-  if(tData[0]?.handicap_enabled){
-    await cpShowBowDeclaration(id, ()=>cpOpenRoom(id));
+  const t=tData[0]||{};
+  const tType = t.type==='friends' ? 'friends' : 'club';
+  // Siempre pedir nombre+club, y arco solo si hay handicap en torneo amistoso
+  const needsBow = t.handicap_enabled && tType==='friends';
+  if(needsBow){
+    await cpShowBowDeclaration(id, ()=>cpOpenRoom(id), 'friends');
   } else {
-    await cpJoinTournament(id);
-    cpOpenRoom(id);
+    await cpShowBowDeclaration(id, ()=>cpOpenRoom(id), tType);
   }
 }
 
