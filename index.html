@@ -6703,33 +6703,56 @@ window.cpCreateTournament = async function(){
 }
 
 // ── DECLARAR ARCO ─────────────────────────────────────────────────
-window.cpShowBowDeclaration = async function(tournamentId, onDone){
-  // Modal de selección de arco
+// Modal de inscripcion: arco + nombre (torneo amigos) o solo nombre+club (club/liga)
+// tournamentType: 'friends' | 'club' | 'league'
+window.cpShowBowDeclaration = async function(tournamentId, onDone, tournamentType){
+  const isFriends = !tournamentType || tournamentType === 'friends';
   const overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.92);display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.92);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
+  const defaultName = cpUserName && cpUserName !== 'Arquero' ? cpUserName : '';
   overlay.innerHTML=`
-    <div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:340px">
-      <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:4px">¿Con qué arco compites?</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">Se aplica en el cálculo de handicap del torneo</div>
-      <div style="display:flex;flex-direction:column;gap:8px" id="bow-opts">
-        <div class="bow-opt" data-bow="recurvo" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s">
-          <span style="font-size:24px">🏹</span>
-          <div><div style="font-size:14px;font-weight:500;color:#fff">Recurvo</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Arco base — sin ventaja mecánica</div></div>
+    <div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:340px;margin-top:20px">
+      <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:4px">Inscribirse</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">Tu nombre aparecerá en la tabla y el bracket</div>
+
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Tu nombre</div>
+        <input id="cp-reg-name" type="text" placeholder="Nombre completo" value="${defaultName}"
+          style="width:100%;padding:9px 12px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:13px;font-family:'DM Sans',sans-serif">
+      </div>
+      <div style="margin-bottom:${isFriends?'14px':'10px'}">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Club / Arqueria <span style="color:rgba(255,255,255,0.25)">(opcional)</span></div>
+        <input id="cp-reg-club" type="text" placeholder="Ej: Club Arco Norte"
+          style="width:100%;padding:9px 12px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:13px;font-family:'DM Sans',sans-serif">
+      </div>
+
+      ${isFriends ? `
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:8px;margin-top:4px">Tipo de arco</div>
+      <div style="display:flex;flex-direction:column;gap:6px" id="bow-opts">
+        <div class="bow-opt" data-bow="recurvo" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">&#127987;</span>
+          <div><div style="font-size:13px;font-weight:500;color:#fff">Recurvo</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">Arco base</div></div>
         </div>
-        <div class="bow-opt" data-bow="compuesto" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s">
-          <span style="font-size:24px">🎯</span>
-          <div><div style="font-size:14px;font-weight:500;color:#fff">Compuesto</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Ventaja mecánica — penalización aplicada</div></div>
+        <div class="bow-opt" data-bow="compuesto" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">&#127919;</span>
+          <div><div style="font-size:13px;font-weight:500;color:#fff">Compuesto</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">Ventaja mecanica</div></div>
         </div>
-        <div class="bow-opt" data-bow="barebow" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s">
-          <span style="font-size:24px">🪃</span>
-          <div><div style="font-size:14px;font-weight:500;color:#fff">Bare bow</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Sin mira — bonus aplicado</div></div>
+        <div class="bow-opt" data-bow="barebow" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">&#129411;</span>
+          <div><div style="font-size:13px;font-weight:500;color:#fff">Bare bow</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">Sin mira</div></div>
         </div>
       </div>
-      <div id="bow-bonus-preview" style="margin-top:12px;display:none;padding:10px;border-radius:8px;background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);text-align:center">
-        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:2px">Tu bonus/penalización</div>
-        <div id="bow-bonus-val" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#d8d15a"></div>
-      </div>
-      <button id="bow-confirm-btn" onclick="cpConfirmBow('${tournamentId}')" disabled style="width:100%;margin-top:14px;padding:11px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);font-size:14px;font-family:'DM Sans',sans-serif;cursor:not-allowed">Confirmar arco →</button>
+      <div id="bow-bonus-preview" style="margin-top:10px;display:none;padding:8px 12px;border-radius:8px;background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);text-align:center">
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:2px">Tu bonus/penalizacion</div>
+        <div id="bow-bonus-val" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#d8d15a"></div>
+      </div>` : ''}
+
+      <button id="bow-confirm-btn"
+        onclick="cpConfirmBow('${tournamentId}','${isFriends}')"
+        ${isFriends ? 'disabled' : ''}
+        style="width:100%;margin-top:14px;padding:11px;border-radius:8px;border:0.5px solid ${isFriends?'rgba(255,255,255,0.2)':'rgba(216,209,90,0.4)'};background:${isFriends?'rgba(255,255,255,0.05)':'rgba(216,209,90,0.15)'};color:${isFriends?'rgba(255,255,255,0.4)':'#d8d15a'};font-size:14px;font-family:'DM Sans',sans-serif;cursor:${isFriends?'not-allowed':'pointer'}">
+        Confirmar inscripcion
+      </button>
     </div>`;
   overlay.id='cp-bow-overlay';
   window._cpBowCallback=onDone;
@@ -6744,12 +6767,11 @@ window.cpSelBow=function(el){
     o.style.borderColor='rgba(255,255,255,0.15)';o.style.background='transparent';
   });
   el.style.borderColor='#d8d15a';el.style.background='rgba(216,209,90,0.08)';
-  // Calcular bonus según config
   const cfg=cpHcapVals;
   let bonus=0,label='';
   if(_cpSelectedBow==='compuesto'){ bonus=cfg.comp; label=(bonus>=0?'+':'')+bonus+' pts/end'; }
   else if(_cpSelectedBow==='barebow'){ bonus=cfg.bare; label='+'+bonus+' pts/end'; }
-  else { label='Base — sin bonus'; }
+  else { label='Base - sin bonus'; }
   const preview=document.getElementById('bow-bonus-preview');
   const val=document.getElementById('bow-bonus-val');
   const btn=document.getElementById('bow-confirm-btn');
@@ -6759,20 +6781,32 @@ window.cpSelBow=function(el){
   if(btn){ btn.disabled=false;btn.style.background='rgba(216,209,90,0.15)';btn.style.color='#d8d15a';btn.style.borderColor='rgba(216,209,90,0.4)';btn.style.cursor='pointer'; }
 }
 
-window.cpConfirmBow=async function(tournamentId){
-  if(!_cpSelectedBow) return;
+window.cpConfirmBow=async function(tournamentId, isFriends){
+  const nameEl=document.getElementById('cp-reg-name');
+  const clubEl=document.getElementById('cp-reg-club');
+  const name=(nameEl?.value.trim())||cpUserName||'Arquero';
+  const club=(clubEl?.value.trim())||'';
+  if(isFriends==='true'&&!_cpSelectedBow) return cpToast('Elige tu tipo de arco');
+  if(!name) return cpToast('Escribe tu nombre');
   await cpJoinTournament(tournamentId);
-  // Guardar bow_type
+  const patch={
+    display_name: name,
+    archer_name: name,
+    club_name: club||null,
+    bow_declared_at: new Date().toISOString()
+  };
+  if(isFriends==='true') patch.bow_type=_cpSelectedBow;
   await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${cpUserId}`,{
     method:'PATCH',headers:{'Prefer':'return=minimal'},
-    body:JSON.stringify({bow_type:_cpSelectedBow, bow_declared_at:new Date().toISOString()})
+    body:JSON.stringify(patch)
   });
+  // Actualizar cpUserName local para esta sesion
+  if(name && name !== 'Arquero') cpUserName = name;
   const overlay=document.getElementById('cp-bow-overlay');
   if(overlay) overlay.remove();
   _cpSelectedBow=null;
   if(typeof window._cpBowCallback==='function') window._cpBowCallback();
 }
-
 // ── UNIRSE A TORNEO ───────────────────────────────────────────────
 window.cpJoinByCode = async function(){
   const code=document.getElementById('cp-join-code').value.trim().toUpperCase();
@@ -6868,7 +6902,7 @@ function cpRenderRoom(t, players){
       <div style="display:flex;align-items:center;gap:8px;flex:1">
         <div class="cp-avatar">${(p.user_id||'?').charAt(0).toUpperCase()}</div>
         <div>
-          <div style="font-size:12px;font-weight:600;color:#fff">${isMe?cpUserName+' (tú)':(p.display_name||'Arquero')}</div>
+          <div style="font-size:12px;font-weight:600;color:#fff">${isMe?cpUserName+' (tú)':(p.archer_name||p.display_name||'Arquero')}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:2px;flex-wrap:wrap">
             ${hasSerie&&bowLabel?`<span style="font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:0.5px solid rgba(255,255,255,0.12)">${bowIcon} ${bowLabel}</span>`:''}
             ${p.handicap_value?`<span style="font-size:10px;color:#d8d15a">+${p.handicap_value}/end</span>`:''}
@@ -6945,7 +6979,33 @@ function cpRenderRoomAction(t, players){
       <div style="font-size:28px;margin-bottom:4px">${medal}</div>
       <div class="cp-num" style="font-size:32px;color:#fff">${pos?pos+'° lugar':'—'}</div>
       ${me.points_earned?`<div style="margin-top:6px"><span class="cp-pill" style="background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3)">+${me.points_earned} pts de arco</span></div>`:''}`;
+  } else if(t.status==='playing'){
+    // Verificar si ya hay campeón y 3er lugar para mostrar botón de cierre
+    const hasChampion = players.some(p=>p.final_position===1);
+    const has3rd = players.some(p=>p.final_position===3) || players.length<=2;
+    if(hasChampion && (has3rd || !t.has_bracket)){
+      const champion = players.find(p=>p.final_position===1);
+      const champName = champion?.display_name || champion?.archer_name || 'Campeón';
+      el.innerHTML=`
+        <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:14px;text-align:center;margin-bottom:10px">
+          <div style="font-size:22px;margin-bottom:4px">🏆</div>
+          <div style="font-size:13px;font-weight:600;color:#FFD700">${champName}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">Campeon del torneo</div>
+        </div>
+        <button class="cp-btn cp-btn-y" onclick="cpCerrarTorneo('${t.id}')">Cerrar torneo y ver resultados →</button>`;
+    }
   }
+}
+
+// ── CERRAR TORNEO AMISTOSO ────────────────────────────────────────
+window.cpCerrarTorneo = async function(tournamentId){
+  if(!confirm('¿Cerrar el torneo? Los resultados quedarán guardados.')) return;
+  await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{
+    method:'PATCH', headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({status:'closed'})
+  });
+  cpToast('✓ Torneo cerrado');
+  cpOpenRoom(tournamentId);
 }
 
 // ── GENERAR BRACKET ───────────────────────────────────────────────
@@ -7103,13 +7163,13 @@ async function cpLoadBracket(tournamentId){
   try{
     const [bRes, pRes, tRes] = await Promise.all([
       cpFetch(`/rest/v1/brackets?tournament_id=eq.${tournamentId}&order=round.asc,match_number.asc`),
-      cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name,qualifying_score`),
+      cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name,archer_name,club_name,qualifying_score`),
       cpFetch(`/rest/v1/tournaments?id=eq.${tournamentId}&select=match_format`)
     ]);
     const [matches, players, tData] = await Promise.all([bRes.json(), pRes.json(), tRes.json()]);
     const matchFmt = tData[0]?.match_format || 'score';
     const nameMap = {};
-    players.forEach(p => nameMap[p.user_id] = p.display_name || 'Arquero');
+    players.forEach(p => nameMap[p.user_id] = p.archer_name || p.display_name || 'Arquero');
     cpRenderBracket(matches, nameMap, matchFmt, tournamentId);
   } catch(e){ console.error('cpLoadBracket error:', e); }
 }
@@ -7206,10 +7266,10 @@ window.cpOpenMatch = async function(matchId, tournamentId, matchFmt){
   console.log('🎯 player1_id:', m.player1_id, '| player2_id:', m.player2_id);
   console.log('🎯 amP1:', m.player1_id===cpUserId, '| amP2:', m.player2_id===cpUserId);
 
-  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name`);
+  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name,archer_name,club_name`);
   const players = await pRes.json();
   const nameMap = {};
-  players.forEach(p => nameMap[p.user_id] = p.display_name||'Arquero');
+  players.forEach(p => nameMap[p.user_id] = p.archer_name||p.display_name||'Arquero');
 
   const amP1 = m.player1_id === cpUserId;
   const amP2 = m.player2_id === cpUserId;
@@ -7302,7 +7362,7 @@ window.cpSubmitMatchScore = async function(matchId, myKey, tournamentId){
   cpToast('✓ Score enviado');
   const res = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
   const d = await res.json();
-  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name`);
+  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name,archer_name,club_name`);
   const players = await pRes.json();
   const nameMap = {}; players.forEach(p=>nameMap[p.user_id]=p.display_name||'Arquero');
   const myName=nameMap[cpUserId]||cpUserName;
@@ -7428,7 +7488,7 @@ window.cpSubmitSetScore = async function(matchId, myKey, rivalKey, tournamentId,
   // Refrescar
   const res2 = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
   const d2 = await res2.json();
-  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name`);
+  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name,archer_name,club_name`);
   const players = await pRes.json();
   const nameMap={}; players.forEach(p=>nameMap[p.user_id]=p.display_name||'Arquero');
   cpRenderMatchSets(document.getElementById('cp-match-overlay'), d2[0], matchId, tournamentId, myKey, rivalKey, nameMap[cpUserId]||cpUserName, nameMap[myKey==='p1'?d2[0].player2_id:d2[0].player1_id]||'Rival', nameMap);
@@ -7487,7 +7547,7 @@ window.cpResolveSet = async function(m, matchId, tournamentId, myKey, rivalKey){
   if(patch.winner_id){
     await cpResolveMatch(m.player1_id===patch.winner_id ? {...m,sets1:newS1,sets2:newS2} : {...m,sets1:newS1,sets2:newS2}, tournamentId);
   } else {
-    const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name`);
+    const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name,archer_name,club_name`);
     const players = await pRes.json();
     const nameMap={}; players.forEach(p=>nameMap[p.user_id]=p.display_name||'Arquero');
     const res2 = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
@@ -8128,7 +8188,7 @@ window.cpOpenLeague = async function(leagueId){
       actionEl.innerHTML = `
         <div class="cp-sec">Participar en la liga</div>
         <div class="cp-muted" style="font-size:12px;margin-bottom:10px">Inscríbete para aparecer en la tabla y competir en cada fecha.</div>
-        <button class="cp-btn cp-btn-y" onclick="cpJoinLeague('${leagueId}')">Inscribirme a la liga →</button>`;
+        <button class="cp-btn cp-btn-y" onclick="cpShowLeagueRegistration('${leagueId}')">Inscribirme a la liga →</button>`;
     } else if(activeRound){
       const msLeft = new Date(activeRound.active_until) - Date.now();
       const hLeft = Math.floor(msLeft/3600000);
@@ -8188,7 +8248,7 @@ window.cpOpenLeague = async function(leagueId){
         return`<div class="cp-podium-step">
           <div style="font-size:20px">${medals[i]}</div>
           <div class="cp-avatar" style="width:40px;height:40px;font-size:16px">${(s.display_name||s.user_id||'?').charAt(0).toUpperCase()}</div>
-          <div style="font-size:11px;font-weight:500;color:#fff;max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.user_id===cpUserId?cpUserName:(s.display_name||'Arquero')}</div>
+          <div style="font-size:11px;font-weight:500;color:#fff;max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.user_id===cpUserId?cpUserName:(s.archer_name||s.display_name||'Arquero')}</div>
           <div class="cp-num" style="font-size:14px;color:${colors[i]}">${s.total_points} pts</div>
           <div class="cp-podium-block" style="width:80px;height:${heights[i]}px;background:${colors[i]}22;border:0.5px solid ${colors[i]}44">${idx+1}</div>
         </div>`;
@@ -8206,7 +8266,7 @@ window.cpOpenLeague = async function(leagueId){
             <div style="display:flex;align-items:center;gap:8px;flex:1">
               <span style="font-family:'Bebas Neue';font-size:20px;color:rgba(255,255,255,0.4);min-width:24px">${i+1}</span>
               <div>
-                <span style="font-size:13px;font-weight:600;color:${isMe?'#d8d15a':'#fff'}">${medal} ${isMe?cpUserName+' (tú)':(s.display_name||'Arquero')}</span>
+                <span style="font-size:13px;font-weight:600;color:${isMe?'#d8d15a':'#fff'}">${medal} ${isMe?cpUserName+' (tú)':(s.archer_name||s.display_name||'Arquero')}</span>
                 <div class="cp-muted" style="font-size:10px">${s.rounds_played||0} fechas jugadas</div>
               </div>
             </div>
@@ -8307,7 +8367,44 @@ window.cpGoLeagueScore = function(leagueId, roundId, discipline){
   cpToast('🏆 Tira y guarda — tu score va a la liga');
 }
 
+// Modal de registro para liga (nombre + club)
+window.cpShowLeagueRegistration = function(leagueId){
+  const overlay=document.createElement('div');
+  overlay.id='cp-league-reg-overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.92);display:flex;align-items:center;justify-content:center;padding:20px';
+  const defaultName=cpUserName&&cpUserName!=='Arquero'?cpUserName:'';
+  overlay.innerHTML=`
+    <div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:340px">
+      <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:4px">Inscribirse a la liga</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">Tu nombre aparecera en la tabla de posiciones</div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Tu nombre</div>
+        <input id="cp-lreg-name" type="text" placeholder="Nombre completo" value="${defaultName}"
+          style="width:100%;padding:9px 12px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:13px;font-family:'DM Sans',sans-serif">
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Club / Arqueria <span style="color:rgba(255,255,255,0.25)">(opcional)</span></div>
+        <input id="cp-lreg-club" type="text" placeholder="Ej: Club Arco Norte"
+          style="width:100%;padding:9px 12px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:13px;font-family:'DM Sans',sans-serif">
+      </div>
+      <button class="cp-btn cp-btn-y" onclick="cpJoinLeague('${leagueId}')">Confirmar inscripcion</button>
+      <button class="cp-btn" style="margin-top:8px;color:rgba(255,255,255,0.4)" onclick="document.getElementById('cp-league-reg-overlay').remove()">Cancelar</button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
 window.cpJoinLeague = async function(leagueId){
+  // Leer nombre y club del modal si está abierto
+  const nameEl=document.getElementById('cp-lreg-name');
+  const clubEl=document.getElementById('cp-lreg-club');
+  const name=(nameEl?.value.trim())||cpUserName||'Arquero';
+  const club=(clubEl?.value.trim())||null;
+  if(!name||name==='Arquero') return cpToast('Escribe tu nombre antes de inscribirte');
+  // Cerrar overlay
+  const reg=document.getElementById('cp-league-reg-overlay');
+  if(reg) reg.remove();
+  // Actualizar nombre local
+  if(name!=='Arquero') cpUserName=name;
   try{
     const res = await cpFetch('/rest/v1/league_standings', {
       method: 'POST',
@@ -8315,7 +8412,9 @@ window.cpJoinLeague = async function(leagueId){
       body: JSON.stringify({
         league_id: leagueId,
         user_id: cpUserId,
-        display_name: cpUserName||'Arquero',
+        display_name: name,
+        archer_name: name,
+        club_name: club,
         total_points: 0,
         rounds_played: 0,
         last_round_points: 0
@@ -8326,7 +8425,7 @@ window.cpJoinLeague = async function(leagueId){
       cpOpenLeague(leagueId);
     } else {
       const err = await res.text();
-      console.error('Error inscripción liga:', err);
+      console.error('Error inscripcion liga:', err);
       cpToast('Error: ' + err.slice(0,60));
     }
   } catch(e){ console.error(e); cpToast('Error al inscribirse'); }
