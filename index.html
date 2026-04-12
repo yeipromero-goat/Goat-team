@@ -6799,11 +6799,15 @@ window.cpJoinByCode = async function(){
 async function cpJoinTournament(tournamentId){
   const check=await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${cpUserId}`);
   const exists=await check.json();
-  if(exists.length) return; // ya está unido
+  if(exists.length) return;
   await cpFetch('/rest/v1/tournament_players',{
     method:'POST',
     headers:{'Prefer':'return=minimal'},
-    body:JSON.stringify({tournament_id:tournamentId,user_id:cpUserId})
+    body:JSON.stringify({
+      tournament_id:tournamentId,
+      user_id:cpUserId,
+      display_name:cpUserName||'Arquero'
+    })
   });
 }
 
@@ -6850,7 +6854,7 @@ function cpRenderRoom(t, players){
       <div style="display:flex;align-items:center;gap:8px;flex:1">
         <div class="cp-avatar">${(p.user_id||'?').charAt(0).toUpperCase()}</div>
         <div>
-          <div style="font-size:12px;font-weight:600;color:#fff">${isMe?cpUserName+' (tú)':'Arquero'}</div>
+          <div style="font-size:12px;font-weight:600;color:#fff">${isMe?cpUserName+' (tú)':(p.display_name||'Arquero')}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:2px;flex-wrap:wrap">
             ${hasSerie&&bowLabel?`<span style="font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:0.5px solid rgba(255,255,255,0.12)">${bowIcon} ${bowLabel}</span>`:''}
             ${p.handicap_value?`<span style="font-size:10px;color:#d8d15a">+${p.handicap_value}/end</span>`:''}
@@ -7496,16 +7500,18 @@ window.cpOpenLeague = async function(leagueId){
     document.getElementById('cp-podium-section').style.display='block';
     document.getElementById('cp-podium-section').querySelector('.cp-sec').textContent = 'Tabla acumulada';
 
-    // Podium acumulado
-    document.getElementById('cp-podium').style.display = standings.length >= 3 ? 'flex' : 'none';
-    if(standings.length >= 3){
+    // Podium acumulado — mostrar desde 2 jugadores
+    document.getElementById('cp-podium').style.display = standings.length >= 2 ? 'flex' : 'none';
+    if(standings.length >= 2){
       const top3=standings.slice(0,3);
-      const order=[1,0,2],heights=[80,110,60],colors=['#C0C0C0','#FFD700','#CD7F32'],medals=['🥈','🥇','🥉'];
+      const order=top3.length>=3?[1,0,2]:[1,0]; // 2do, 1ro, 3ro si hay 3; si no, 2do y 1ro
+      const heights=[80,110,60],colors=['#C0C0C0','#FFD700','#CD7F32'],medals=['🥈','🥇','🥉'];
       document.getElementById('cp-podium').innerHTML=order.map((idx,i)=>{
         const s=top3[idx]; if(!s) return'';
         return`<div class="cp-podium-step">
           <div style="font-size:20px">${medals[i]}</div>
-          <div class="cp-avatar" style="width:40px;height:40px;font-size:16px">${(s.user_id||'?').charAt(0).toUpperCase()}</div>
+          <div class="cp-avatar" style="width:40px;height:40px;font-size:16px">${(s.display_name||s.user_id||'?').charAt(0).toUpperCase()}</div>
+          <div style="font-size:11px;font-weight:500;color:#fff;max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.user_id===cpUserId?cpUserName:(s.display_name||'Arquero')}</div>
           <div class="cp-num" style="font-size:14px;color:${colors[i]}">${s.total_points} pts</div>
           <div class="cp-podium-block" style="width:80px;height:${heights[i]}px;background:${colors[i]}22;border:0.5px solid ${colors[i]}44">${idx+1}</div>
         </div>`;
@@ -7523,7 +7529,7 @@ window.cpOpenLeague = async function(leagueId){
             <div style="display:flex;align-items:center;gap:8px;flex:1">
               <span style="font-family:'Bebas Neue';font-size:20px;color:rgba(255,255,255,0.4);min-width:24px">${i+1}</span>
               <div>
-                <span style="font-size:13px;font-weight:600;color:${isMe?'#d8d15a':'#fff'}">${medal} ${isMe?cpUserName+' (tú)':'Arquero'}</span>
+                <span style="font-size:13px;font-weight:600;color:${isMe?'#d8d15a':'#fff'}">${medal} ${isMe?cpUserName+' (tú)':(s.display_name||'Arquero')}</span>
                 <div class="cp-muted" style="font-size:10px">${s.rounds_played||0} fechas jugadas</div>
               </div>
             </div>
@@ -7552,10 +7558,11 @@ window.cpOpenLeague = async function(leagueId){
             ${lrScores.map((sc,i)=>{
               const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
               const isMe=sc.user_id===cpUserId;
+              const playerName = isMe ? cpUserName+' (tú)' : (standings.find(st=>st.user_id===sc.user_id)?.display_name||'Arquero');
               return`<div class="cp-row">
                 <div style="display:flex;align-items:center;gap:8px">
                   <span style="font-size:16px">${medal}</span>
-                  <span style="font-size:13px;color:${isMe?'#d8d15a':'#fff'}">${isMe?cpUserName+' (tú)':'Arquero'}</span>
+                  <span style="font-size:13px;color:${isMe?'#d8d15a':'#fff'}">${playerName}</span>
                 </div>
                 <div class="cp-num" style="font-size:16px;color:${isMe?'#5dcaa5':'#fff'}">${sc.score} pts</div>
               </div>`;
@@ -7625,13 +7632,13 @@ window.cpGoLeagueScore = function(leagueId, roundId, discipline){
 
 window.cpJoinLeague = async function(leagueId){
   try{
-    // Insertar en league_standings con 0 puntos
     const res = await cpFetch('/rest/v1/league_standings', {
       method: 'POST',
       headers: {'Prefer':'return=minimal'},
       body: JSON.stringify({
         league_id: leagueId,
         user_id: cpUserId,
+        display_name: cpUserName||'Arquero',
         total_points: 0,
         rounds_played: 0,
         last_round_points: 0
