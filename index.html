@@ -3693,12 +3693,17 @@ function renderArcherCards() {
 document.addEventListener('DOMContentLoaded', async function() {
 
   // ── 1. Cargar todos los datos en paralelo (archers, coaches, bows, cards) ──
-  await Promise.all([
-    loadArchersFromSupabase(),
-    loadCoachesFromSupabase(),
-    loadBowsFromSupabase(),
-    loadCardsFromSupabase(),
-  ]);
+  if(typeof initAppData === 'function'){
+    await initAppData();
+  } else {
+    // Fallback: funciones individuales si existen
+    await Promise.all([
+      typeof loadArchersFromSupabase === 'function' ? loadArchersFromSupabase() : Promise.resolve(),
+      typeof loadCoachesFromSupabase === 'function' ? loadCoachesFromSupabase() : Promise.resolve(),
+      typeof loadBowsFromSupabase    === 'function' ? loadBowsFromSupabase()    : Promise.resolve(),
+      typeof loadCardsFromSupabase   === 'function' ? loadCardsFromSupabase()   : Promise.resolve(),
+    ]);
+  }
 
   // ── 2. Cargar selecciones del usuario (necesita ARCHERS, COACHES, BOWS y CARDS) ──
   await loadUserSelections();
@@ -4913,7 +4918,7 @@ if (typeof selectPersonCard === 'function') {
 }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="scoring.js"></script>
+
 <script src="codigos.js"></script>
 <script src="supabase.js"></script>
 <script src="supabase-persistence.js"></script>
@@ -6883,6 +6888,9 @@ function cpRenderRoom(t, players){
   if(t.has_bracket&&t.status==='playing'){
     document.getElementById('cp-bracket-section').style.display='block';
     cpLoadBracket(t.id);
+    // Polling cada 5s para actualizar bracket en tiempo real
+    if(_cpBracketPoll) clearInterval(_cpBracketPoll);
+    _cpBracketPoll = setInterval(()=>cpLoadBracket(t.id), 5000);
   }
   // Podium si cerrado
   if(t.status==='closed'){
@@ -7078,37 +7086,377 @@ window.cpValidate = async function(tournamentId){
 }
 
 // ── BRACKET ───────────────────────────────────────────────────────
+// ── BRACKET SYSTEM ───────────────────────────────────────────────
+let _cpBracketPoll = null;
+
 async function cpLoadBracket(tournamentId){
   try{
-    const res=await cpFetch(`/rest/v1/brackets?tournament_id=eq.${tournamentId}&order=round.asc,match_number.asc`);
-    const matches=await res.json();
-    cpRenderBracket(matches);
-  } catch(e){}
+    const [bRes, pRes, tRes] = await Promise.all([
+      cpFetch(`/rest/v1/brackets?tournament_id=eq.${tournamentId}&order=round.asc,match_number.asc`),
+      cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name,qualifying_score`),
+      cpFetch(`/rest/v1/tournaments?id=eq.${tournamentId}&select=match_format`)
+    ]);
+    const [matches, players, tData] = await Promise.all([bRes.json(), pRes.json(), tRes.json()]);
+    const matchFmt = tData[0]?.match_format || 'score';
+    const nameMap = {};
+    players.forEach(p => nameMap[p.user_id] = p.display_name || 'Arquero');
+    cpRenderBracket(matches, nameMap, matchFmt, tournamentId);
+  } catch(e){ console.error('cpLoadBracket error:', e); }
 }
 
-function cpRenderBracket(matches){
+function cpRenderBracket(matches, nameMap, matchFmt, tournamentId){
   const rounds=[...new Set(matches.map(m=>m.round))];
   const roundOrder=['r32','r16','qf','sf','bronze','final'];
   rounds.sort((a,b)=>roundOrder.indexOf(a)-roundOrder.indexOf(b));
-  const roundLabels={r32:'32vos',r16:'16vos',qf:'Cuartos',sf:'Semis',bronze:'Bronce',final:'Final'};
+  const roundLabels={r32:'32vos',r16:'16vos',qf:'Cuartos',sf:'Semis',bronze:'3° lugar',final:'Final'};
   const cols=document.getElementById('cp-bracket-cols');
+
   cols.innerHTML=rounds.map(round=>{
     const ms=matches.filter(m=>m.round===round);
-    return`<div class="cp-round-col">
-      <div class="cp-sec" style="margin-bottom:6px">${roundLabels[round]||round}</div>
-      ${ms.map(m=>`
-        <div class="cp-match${m.winner_id?' winner-decided':''}">
-          <div class="cp-match-player${m.winner_id===m.player1_id?' winner':m.winner_id?' loser':''}">
-            <span>${m.player1_id?m.player1_id.slice(0,6):'BYE'}</span>
-            <span>${m.score1!=null?m.score1:'—'}</span>
+    return`<div class="cp-round-col" style="min-width:160px">
+      <div class="cp-sec" style="margin-bottom:8px;text-align:center">${roundLabels[round]||round}</div>
+      ${ms.map(m=>{
+        const n1 = m.player1_id ? (nameMap[m.player1_id]||m.player1_id.slice(0,6)) : 'BYE';
+        const n2 = m.player2_id ? (nameMap[m.player2_id]||m.player2_id.slice(0,6)) : 'BYE';
+        const isMe = m.player1_id===cpUserId || m.player2_id===cpUserId;
+        const done = !!m.winner_id;
+        const p1win = m.winner_id===m.player1_id;
+        const p2win = m.winner_id===m.player2_id;
+        const scoreLabel = matchFmt==='sets'
+          ? (m.sets1!=null&&m.sets2!=null ? `${m.sets1} - ${m.sets2} sets` : '')
+          : (m.score1!=null&&m.score2!=null ? `${m.score1} vs ${m.score2}` : '');
+        return`<div class="cp-match${done?' cp-match-done':''}" style="${isMe&&!done?'border-color:rgba(216,209,90,0.4);':''}" ${isMe&&!done?`onclick="cpOpenMatch('${m.id}','${tournamentId}','${matchFmt}')" style="cursor:pointer;border-color:rgba(216,209,90,0.5)"`:''}>
+          <div class="cp-match-player${p1win?' winner':done?' loser':''}">
+            <span style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px">${n1}</span>
+            <span style="font-family:'Bebas Neue';font-size:14px">${matchFmt==='sets'?(m.sets1??'—'):(m.score1??'—')}</span>
           </div>
-          <div class="cp-match-player${m.winner_id===m.player2_id?' winner':m.winner_id?' loser':''}">
-            <span>${m.player2_id?m.player2_id.slice(0,6):'BYE'}</span>
-            <span>${m.score2!=null?m.score2:'—'}</span>
+          <div class="cp-match-player${p2win?' winner':done?' loser':''}">
+            <span style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px">${n2}</span>
+            <span style="font-family:'Bebas Neue';font-size:14px">${matchFmt==='sets'?(m.sets2??'—'):(m.score2??'—')}</span>
           </div>
-        </div>`).join('')}
+          ${isMe&&!done?`<div style="font-size:9px;color:#d8d15a;text-align:center;margin-top:4px">Toca para jugar</div>`:''}
+          ${done?`<div style="font-size:9px;color:#5dcaa5;text-align:center;margin-top:4px">✓ ${p1win?n1:n2} ganó</div>`:''}
+        </div>`;
+      }).join('')}
     </div>`;
   }).join('');
+}
+
+// ── ABRIR MATCH ──────────────────────────────────────────────────
+window.cpOpenMatch = async function(matchId, tournamentId, matchFmt){
+  const res = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
+  const data = await res.json();
+  const m = data[0];
+  if(!m) return;
+
+  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name`);
+  const players = await pRes.json();
+  const nameMap = {};
+  players.forEach(p => nameMap[p.user_id] = p.display_name||'Arquero');
+
+  const amP1 = m.player1_id === cpUserId;
+  const amP2 = m.player2_id === cpUserId;
+  const myKey = amP1 ? 'p1' : 'p2';
+  const rivalKey = amP1 ? 'p2' : 'p1';
+  const myName = nameMap[cpUserId] || cpUserName;
+  const rivalName = nameMap[amP1 ? m.player2_id : m.player1_id] || 'Rival';
+
+  // Modal del match
+  const overlay = document.createElement('div');
+  overlay.id = 'cp-match-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.95);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
+
+  if(matchFmt === 'sets'){
+    cpRenderMatchSets(overlay, m, matchId, tournamentId, myKey, rivalKey, myName, rivalName, nameMap);
+  } else {
+    cpRenderMatchScore(overlay, m, matchId, tournamentId, myKey, rivalKey, myName, rivalName);
+  }
+
+  document.body.appendChild(overlay);
+
+  // Polling cada 5s
+  _cpBracketPoll = setInterval(async()=>{
+    const r = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
+    const d = await r.json();
+    if(d[0]?.winner_id){
+      clearInterval(_cpBracketPoll);
+      overlay.remove();
+      cpToast('🏆 Match terminado');
+      cpOpenRoom(tournamentId);
+    } else if(matchFmt==='sets'){
+      cpRenderMatchSets(overlay, d[0], matchId, tournamentId, myKey, rivalKey, myName, rivalName, nameMap);
+    } else {
+      cpRenderMatchScore(overlay, d[0], matchId, tournamentId, myKey, rivalKey, myName, rivalName);
+    }
+  }, 5000);
+}
+
+// ── MATCH SUMATORIA ──────────────────────────────────────────────
+function cpRenderMatchScore(overlay, m, matchId, tournamentId, myKey, rivalKey, myName, rivalName){
+  const myScore = m[`score${myKey==='p1'?1:2}`];
+  const rivalScore = m[`score${rivalKey==='p1'?1:2}`];
+  const myConfirmed = m[`${myKey}_confirmed`];
+  const rivalConfirmed = m[`${rivalKey}_confirmed`];
+
+  overlay.innerHTML=`
+    <div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:360px;margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:600;color:#fff">Match — Sumatoria</div>
+        <button onclick="clearInterval(window._cpBracketPoll);document.getElementById('cp-match-overlay').remove()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer">✕</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:rgba(216,209,90,0.08);border:1px solid rgba(216,209,90,0.3);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:11px;color:#d8d15a;margin-bottom:4px">${myName} (tú)</div>
+          <div style="font-family:'Bebas Neue';font-size:40px;color:#fff">${myScore??'—'}</div>
+          ${myConfirmed?'<div style="font-size:10px;color:#5dcaa5">✓ Confirmado</div>':''}
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px">${rivalName}</div>
+          <div style="font-family:'Bebas Neue';font-size:40px;color:#fff">${rivalScore??'—'}</div>
+          ${rivalConfirmed?'<div style="font-size:10px;color:#5dcaa5">✓ Confirmado</div>':'<div style="font-size:10px;color:rgba(255,255,255,0.3)">Esperando...</div>'}
+        </div>
+      </div>
+
+      ${myScore==null?`
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Tu score total (15 flechas)</div>
+          <input id="cp-match-score-input" type="number" min="0" max="300" placeholder="0 - 300" style="width:100%;padding:10px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:16px;text-align:center;font-family:'Bebas Neue'">
+        </div>
+        <button class="cp-btn cp-btn-y" onclick="cpSubmitMatchScore('${matchId}','${myKey}','${tournamentId}')">Enviar mi score →</button>
+      `:myConfirmed?`
+        <div style="text-align:center;padding:10px;background:rgba(93,202,165,0.08);border-radius:8px;color:#5dcaa5;font-size:13px">
+          ✓ Score enviado · Esperando a ${rivalName}
+        </div>
+      `:`
+        <button class="cp-btn cp-btn-g" onclick="cpConfirmMatchScore('${matchId}','${myKey}','${rivalKey}','${tournamentId}')">✓ Confirmar mi score de ${myScore}</button>
+      `}
+    </div>`;
+}
+
+window.cpSubmitMatchScore = async function(matchId, myKey, tournamentId){
+  const val = parseInt(document.getElementById('cp-match-score-input').value);
+  if(isNaN(val)||val<0||val>300) return cpToast('Score inválido');
+  const scoreField = myKey==='p1' ? 'score1' : 'score2';
+  await cpFetch('/rest/v1/brackets?id=eq.'+matchId,{
+    method:'PATCH', headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({[scoreField]: val})
+  });
+  cpToast('✓ Score enviado');
+  const res = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
+  const d = await res.json();
+  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name`);
+  const players = await pRes.json();
+  const nameMap = {}; players.forEach(p=>nameMap[p.user_id]=p.display_name||'Arquero');
+  const myName=nameMap[cpUserId]||cpUserName;
+  const m=d[0];
+  const rivalId = myKey==='p1'?m.player2_id:m.player1_id;
+  const rivalName=nameMap[rivalId]||'Rival';
+  const rivalKey=myKey==='p1'?'p2':'p1';
+  cpRenderMatchScore(document.getElementById('cp-match-overlay'), m, matchId, tournamentId, myKey, rivalKey, myName, rivalName);
+}
+
+window.cpConfirmMatchScore = async function(matchId, myKey, rivalKey, tournamentId){
+  const confirmedField = `${myKey}_confirmed`;
+  await cpFetch('/rest/v1/brackets?id=eq.'+matchId,{
+    method:'PATCH', headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({[confirmedField]: true})
+  });
+  // Verificar si ambos confirmaron → determinar ganador
+  const res = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
+  const d = await res.json();
+  const m = d[0];
+  if(m.p1_confirmed && m.p2_confirmed){
+    await cpResolveMatch(m, tournamentId);
+  } else {
+    cpToast('✓ Confirmado · Esperando al rival');
+  }
+}
+
+// ── MATCH SETS ───────────────────────────────────────────────────
+function cpRenderMatchSets(overlay, m, matchId, tournamentId, myKey, rivalKey, myName, rivalName, nameMap){
+  const sets = m.set_scores || [];
+  const myIdx = myKey==='p1'?0:1;
+  const s1=m.sets1||0, s2=m.sets2||0;
+  const myPts = myKey==='p1'?s1:s2;
+  const rivalPts = myKey==='p1'?s2:s1;
+  const myConfirmed = m[`${myKey}_confirmed`];
+  const rivalConfirmed = m[`${rivalKey}_confirmed`];
+  const currentSet = m.current_set||1;
+
+  // Score del set actual del jugador
+  const currentSetData = sets[currentSet-1] || {};
+  const mySetScore = currentSetData[myKey] ?? null;
+  const rivalSetScore = currentSetData[rivalKey] ?? null;
+
+  overlay.innerHTML=`
+    <div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:360px;margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:16px;font-weight:600;color:#fff">Match — Sets</div>
+        <button onclick="clearInterval(window._cpBracketPoll);document.getElementById('cp-match-overlay').remove()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer">✕</button>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:14px">Set ${currentSet} de máx. 5 · Primero en 6 pts gana</div>
+
+      <!-- Marcador global -->
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-bottom:16px;text-align:center">
+        <div>
+          <div style="font-size:11px;color:#d8d15a">${myName} (tú)</div>
+          <div style="font-family:'Bebas Neue';font-size:48px;color:#d8d15a;line-height:1">${myPts}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3)">pts set</div>
+        </div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.3)">vs</div>
+        <div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5)">${rivalName}</div>
+          <div style="font-family:'Bebas Neue';font-size:48px;color:#fff;line-height:1">${rivalPts}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3)">pts set</div>
+        </div>
+      </div>
+
+      <!-- Historial sets -->
+      ${sets.length?`<div style="display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap">
+        ${sets.map((s,i)=>{
+          const mp=s[myKey]||0, rp=s[rivalKey]||0;
+          const won=mp>rp;
+          return`<div style="font-size:10px;padding:2px 6px;border-radius:4px;background:${won?'rgba(93,202,165,0.2)':'rgba(255,255,255,0.06)'};color:${won?'#5dcaa5':'rgba(255,255,255,0.4)'}">S${i+1}: ${mp}-${rp}</div>`;
+        }).join('')}
+      </div>`:''}
+
+      <!-- Set actual -->
+      <div style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;margin-bottom:12px">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:8px;text-align:center">Set ${currentSet} — 3 flechas</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center">
+          <div>
+            <div style="font-size:10px;color:#d8d15a;margin-bottom:3px">Tú</div>
+            <div style="font-family:'Bebas Neue';font-size:28px;color:#fff">${mySetScore??'—'}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:3px">${rivalName}</div>
+            <div style="font-family:'Bebas Neue';font-size:28px;color:#fff">${rivalSetScore??'—'}</div>
+            ${rivalConfirmed?'<div style="font-size:9px;color:#5dcaa5">✓</div>':''}
+          </div>
+        </div>
+      </div>
+
+      ${mySetScore==null?`
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Tu score en este set (3 flechas, máx 30)</div>
+          <input id="cp-set-score-input" type="number" min="0" max="30" placeholder="0 - 30" style="width:100%;padding:10px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:16px;text-align:center;font-family:'Bebas Neue'">
+        </div>
+        <button class="cp-btn cp-btn-y" onclick="cpSubmitSetScore('${matchId}','${myKey}','${rivalKey}','${tournamentId}',${currentSet})">Enviar set ${currentSet} →</button>
+      `:myConfirmed?`
+        <div style="text-align:center;padding:10px;background:rgba(93,202,165,0.08);border-radius:8px;color:#5dcaa5;font-size:13px">
+          ✓ Enviado · Esperando a ${rivalName}
+        </div>
+      `:`
+        <button class="cp-btn cp-btn-g" onclick="cpConfirmSet('${matchId}','${myKey}','${rivalKey}','${tournamentId}',${currentSet})">✓ Confirmar set ${currentSet}</button>
+      `}
+    </div>`;
+}
+
+window.cpSubmitSetScore = async function(matchId, myKey, rivalKey, tournamentId, setNum){
+  const val = parseInt(document.getElementById('cp-set-score-input').value);
+  if(isNaN(val)||val<0||val>30) return cpToast('Score inválido (0-30)');
+  // Leer set_scores actual y actualizar
+  const res = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
+  const d = await res.json();
+  const m = d[0];
+  const sets = [...(m.set_scores||[])];
+  if(!sets[setNum-1]) sets[setNum-1]={};
+  sets[setNum-1][myKey] = val;
+  await cpFetch('/rest/v1/brackets?id=eq.'+matchId,{
+    method:'PATCH', headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({set_scores: sets, [`${myKey}_confirmed`]: false})
+  });
+  cpToast('✓ Score del set enviado');
+  // Refrescar
+  const res2 = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
+  const d2 = await res2.json();
+  const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name`);
+  const players = await pRes.json();
+  const nameMap={}; players.forEach(p=>nameMap[p.user_id]=p.display_name||'Arquero');
+  cpRenderMatchSets(document.getElementById('cp-match-overlay'), d2[0], matchId, tournamentId, myKey, rivalKey, nameMap[cpUserId]||cpUserName, nameMap[myKey==='p1'?d2[0].player2_id:d2[0].player1_id]||'Rival', nameMap);
+}
+
+window.cpConfirmSet = async function(matchId, myKey, rivalKey, tournamentId, setNum){
+  await cpFetch('/rest/v1/brackets?id=eq.'+matchId,{
+    method:'PATCH', headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({[`${myKey}_confirmed`]: true})
+  });
+  // Verificar si ambos confirmaron este set
+  const res = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
+  const d = await res.json();
+  const m = d[0];
+  if(m.p1_confirmed && m.p2_confirmed){
+    await cpResolveSet(m, matchId, tournamentId, myKey, rivalKey);
+  } else {
+    cpToast('✓ Confirmado · Esperando al rival');
+  }
+}
+
+window.cpResolveSet = async function(m, matchId, tournamentId, myKey, rivalKey){
+  const sets = m.set_scores||[];
+  const setNum = m.current_set||1;
+  const current = sets[setNum-1]||{};
+  const p1score = current.p1||0;
+  const p2score = current.p2||0;
+  // Asignar puntos del set: 2/1/0
+  let pts1=0,pts2=0;
+  if(p1score>p2score){pts1=2;pts2=0;}
+  else if(p2score>p1score){pts1=0;pts2=2;}
+  else{pts1=1;pts2=1;}
+  const newS1=(m.sets1||0)+pts1;
+  const newS2=(m.sets2||0)+pts2;
+  const nextSet=setNum+1;
+  // ¿Alguien llegó a 6 o se acabaron los 5 sets?
+  const finished = newS1>=6 || newS2>=6 || setNum>=5;
+  const patch = {
+    sets1:newS1, sets2:newS2,
+    p1_confirmed:false, p2_confirmed:false,
+    current_set: nextSet
+  };
+  if(finished){
+    // Desempate si empate en 5 sets: flecha de desempate (set extra tipo score)
+    if(newS1===newS2){
+      Object.assign(patch,{current_set:6}); // set 6 = desempate
+    } else {
+      const winnerId = newS1>newS2 ? m.player1_id : m.player2_id;
+      Object.assign(patch,{winner_id:winnerId, status:'done'});
+    }
+  }
+  await cpFetch('/rest/v1/brackets?id=eq.'+matchId,{
+    method:'PATCH', headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify(patch)
+  });
+  if(patch.winner_id){
+    await cpResolveMatch(m.player1_id===patch.winner_id ? {...m,sets1:newS1,sets2:newS2} : {...m,sets1:newS1,sets2:newS2}, tournamentId);
+  } else {
+    const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name`);
+    const players = await pRes.json();
+    const nameMap={}; players.forEach(p=>nameMap[p.user_id]=p.display_name||'Arquero');
+    const res2 = await cpFetch(`/rest/v1/brackets?id=eq.${matchId}`);
+    const d2 = await res2.json();
+    cpRenderMatchSets(document.getElementById('cp-match-overlay'), d2[0], matchId, tournamentId, myKey, rivalKey, nameMap[cpUserId]||cpUserName, nameMap[myKey==='p1'?m.player2_id:m.player1_id]||'Rival', nameMap);
+    if(finished&&newS1===newS2) cpToast('¡Empate! Flecha de desempate →');
+    else cpToast(`Set ${setNum} listo · ${newS1>newS2?'Vas ganando':'Rival va ganando'}`);
+  }
+}
+
+// ── RESOLVER GANADOR Y AVANZAR ────────────────────────────────────
+async function cpResolveMatch(m, tournamentId){
+  const winnerId = m.winner_id || (
+    m.sets1!=null ? (m.sets1>m.sets2?m.player1_id:m.player2_id)
+                  : (m.score1>m.score2?m.player1_id:m.player2_id)
+  );
+  // Guardar ganador
+  await cpFetch('/rest/v1/brackets?id=eq.'+m.id,{
+    method:'PATCH', headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({winner_id:winnerId, status:'done'})
+  });
+  cpToast('🏆 ¡Match terminado!');
+  clearInterval(_cpBracketPoll);
+  const overlay=document.getElementById('cp-match-overlay');
+  if(overlay) overlay.remove();
+  cpOpenRoom(tournamentId);
 }
 
 // ── PODIUM ────────────────────────────────────────────────────────
@@ -7493,13 +7841,12 @@ window.cpAdminToggleLeagueVisible = async function(id, visible){
 
 window.cpOpenLeague = async function(leagueId){
   cpShowTab('room');
+  if(_cpBracketPoll){ clearInterval(_cpBracketPoll); _cpBracketPoll=null; }
   document.getElementById('cp-room-code-section').style.display='none';
   document.getElementById('cp-bracket-section').style.display='none';
   document.getElementById('cp-podium-section').style.display='none';
-  // Limpiar card de última fecha de ligas anteriores
   const lrc=document.getElementById('cp-last-round-card');
   if(lrc){lrc.style.display='none';lrc.innerHTML='';}
-
   try{
     const [lRes, rRes, sRes] = await Promise.all([
       cpFetch(`/rest/v1/leagues?id=eq.${leagueId}`),
