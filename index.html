@@ -6886,7 +6886,6 @@ function cpRenderRoomAction(t, players){
   const me=players.find(p=>p.user_id===cpUserId);
   const el=document.getElementById('cp-room-action-content');
   if(!me){
-    // No está unido — botón de unirse
     el.innerHTML=`<div style="font-size:13px;color:#fff;margin-bottom:10px">¿Quieres participar?</div>
       <button class="cp-btn cp-btn-y" onclick="cpJoinAndReload('${t.id}')">Unirse al torneo</button>`;
     return;
@@ -6908,12 +6907,19 @@ function cpRenderRoomAction(t, players){
         <button class="cp-btn cp-btn-g" onclick="cpValidate('${t.id}')">✓ Confirmar resultado</button>`;
     } else if(me.qualifying_score!=null){
       const hVal = me.handicap_value || 0;
+      const withScore = players.filter(p=>p.qualifying_score!=null);
+      const pending = players.filter(p=>p.qualifying_score==null);
       el.innerHTML=`<div class="cp-sec">Mi score</div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
           <span class="cp-num" style="font-size:36px;color:#5dcaa5">${me.qualifying_score}</span>
           <div><span class="cp-muted" style="font-size:11px">pts en torneo</span>${me.validated?'<div style="font-size:11px;color:#5dcaa5;margin-top:2px">✓ Validado</div>':'<div class="cp-muted" style="font-size:11px;margin-top:2px">Pendiente validación</div>'}</div>
         </div>
-        ${hVal?`<div style="font-size:11px;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45)">Handicap: <span style="color:${hVal>0?'#5dcaa5':'#e05555'}">${hVal>0?'+':''}${hVal} pts/end</span> aplicado</div>`:''}`;
+        ${hVal?`<div style="font-size:11px;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);margin-bottom:8px">Handicap: <span style="color:${hVal>0?'#5dcaa5':'#e05555'}">${hVal>0?'+':''}${hVal} pts/end</span> aplicado</div>`:''}
+        ${t.has_bracket&&t.status==='open'&&withScore.length>=2?`
+        <div style="border-top:0.5px solid rgba(255,255,255,0.08);padding-top:10px;margin-top:4px">
+          ${pending.length?`<div style="font-size:11px;color:#d8d15a;margin-bottom:8px">⚠️ ${pending.length} arquero${pending.length>1?'s':''} sin score — se excluirán de las llaves</div>`:'<div style="font-size:11px;color:#5dcaa5;margin-bottom:8px">✓ Todos listos para las llaves</div>'}
+          <button class="cp-btn cp-btn-y" onclick="cpIniciarLlaves('${t.id}',${pending.length})">🏆 Iniciar llaves →</button>
+        </div>`:''}`;
     }
   } else if(t.status==='closed'){
     const pos=me.final_position;
@@ -6923,6 +6929,78 @@ function cpRenderRoomAction(t, players){
       <div class="cp-num" style="font-size:32px;color:#fff">${pos?pos+'° lugar':'—'}</div>
       ${me.points_earned?`<div style="margin-top:6px"><span class="cp-pill" style="background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3)">+${me.points_earned} pts de arco</span></div>`:''}`;
   }
+}
+
+// ── GENERAR BRACKET ───────────────────────────────────────────────
+window.cpIniciarLlaves = async function(tournamentId, pendingCount){
+  if(pendingCount > 0){
+    if(!confirm(`${pendingCount} arquero${pendingCount>1?'s':''} sin score serán excluidos de las llaves. ¿Iniciar de todas formas?`)) return;
+  }
+  try{
+    // Leer jugadores con score, ordenados de mayor a menor
+    const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&qualifying_score=not.is.null&order=qualifying_score.desc`);
+    const players = await pRes.json();
+    if(players.length < 2){ return cpToast('Se necesitan al menos 2 arqueros con score'); }
+
+    // Determinar rondas según número de jugadores
+    const n = players.length;
+    const roundOrder = ['r32','r16','qf','sf','final'];
+    const roundNames = {r32:'32vos',r16:'16vos',qf:'Cuartos',sf:'Semis',final:'Final'};
+    let bracketSize = 2;
+    while(bracketSize < n) bracketSize *= 2;
+
+    // Generar seeds — rellenar con byes si no es potencia de 2
+    const seeded = [...players];
+    while(seeded.length < bracketSize) seeded.push(null); // null = bye
+
+    // Determinar rondas necesarias
+    const rounds = [];
+    if(bracketSize >= 32) rounds.push('r32');
+    if(bracketSize >= 16) rounds.push('r16');
+    if(bracketSize >= 8)  rounds.push('qf');
+    if(bracketSize >= 4)  rounds.push('sf');
+    rounds.push('final');
+    if(bracketSize >= 4)  rounds.push('bronze'); // bronce solo si hay 4+
+
+    // Generar matches de la primera ronda
+    const firstRound = rounds[0];
+    const matches = [];
+    for(let i=0; i<seeded.length/2; i++){
+      const p1 = seeded[i];                          // 1°, 2°, 3°... (top)
+      const p2 = seeded[seeded.length-1-i];          // último, penúltimo... (bottom)
+      const isBye = !p1 || !p2;
+      matches.push({
+        tournament_id: tournamentId,
+        round: firstRound,
+        match_number: i+1,
+        player1_id: p1?.user_id || null,
+        player2_id: p2?.user_id || null,
+        is_bye: isBye,
+        status: isBye ? 'done' : 'pending',
+        winner_id: isBye ? (p1?.user_id || null) : null
+      });
+    }
+
+    // Insertar matches en Supabase
+    const bRes = await cpFetch('/rest/v1/brackets',{
+      method:'POST',
+      headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify(matches)
+    });
+    if(!bRes.ok && bRes.status!==201 && bRes.status!==204){
+      const err=await bRes.text(); return cpToast('Error: '+err.slice(0,60));
+    }
+
+    // Cambiar status del torneo a playing
+    await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{
+      method:'PATCH',
+      headers:{'Prefer':'return=minimal'},
+      body:JSON.stringify({status:'playing'})
+    });
+
+    cpToast('🏆 ¡Llaves iniciadas!');
+    cpOpenRoom(tournamentId);
+  } catch(e){ console.error(e); cpToast('Error generando llaves: '+e.message); }
 }
 
 window.cpChangeBow = async function(tournamentId){
