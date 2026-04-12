@@ -7125,8 +7125,9 @@ function cpRenderBracket(matches, nameMap, matchFmt, tournamentId){
         const scoreLabel = matchFmt==='sets'
           ? (m.sets1!=null&&m.sets2!=null ? `${m.sets1} - ${m.sets2} sets` : '')
           : (m.score1!=null&&m.score2!=null ? `${m.score1} vs ${m.score2}` : '');
-        return`<div class="cp-match${done?' cp-match-done':''}" style="${isMe&&!done?'border-color:rgba(216,209,90,0.4);':''}" ${isMe&&!done?`onclick="cpOpenMatch('${m.id}','${tournamentId}','${matchFmt}')" style="cursor:pointer;border-color:rgba(216,209,90,0.5)"`:''}>
-          <div class="cp-match-player${p1win?' winner':done?' loser':''}">
+        return`<div class="cp-match${done?' cp-match-done':''}"
+          style="cursor:${isMe&&!done?'pointer':'default'};border-color:${isMe&&!done?'rgba(216,209,90,0.5)':'rgba(255,255,255,0.1)'};margin-bottom:8px"
+          ${isMe&&!done?`onclick="cpOpenMatch('${m.id}','${tournamentId}','${matchFmt}')"`:''}>          <div class="cp-match-player${p1win?' winner':done?' loser':''}">
             <span style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px">${n1}</span>
             <span style="font-family:'Bebas Neue';font-size:14px">${matchFmt==='sets'?(m.sets1??'—'):(m.score1??'—')}</span>
           </div>
@@ -7148,6 +7149,9 @@ window.cpOpenMatch = async function(matchId, tournamentId, matchFmt){
   const data = await res.json();
   const m = data[0];
   if(!m) return;
+  console.log('🎯 cpOpenMatch — cpUserId:', cpUserId);
+  console.log('🎯 player1_id:', m.player1_id, '| player2_id:', m.player2_id);
+  console.log('🎯 amP1:', m.player1_id===cpUserId, '| amP2:', m.player2_id===cpUserId);
 
   const pRes = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&select=user_id,display_name`);
   const players = await pRes.json();
