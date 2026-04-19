@@ -1615,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', function(){
           <span>🎯</span> Sin seleccionar
         </div>
       </div>
-      <button onclick="switchTab('mi-arco',document.getElementById('sb-mi-arco'))" style="margin-top:8px;font-size:10px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+      <button onclick="window._returnToScore=true;switchTab('mi-arco',document.getElementById('sb-mi-arco'))" style="margin-top:8px;font-size:10px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
         ↺ Cambiar
       </button>
     </div>
@@ -1684,53 +1684,21 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="game-panel" style="display:none">
 
   <!-- Mini equipo activo -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1rem" id="game-team-hud">
-
-    <!-- Arquero — cambiable -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;border-top:2px solid var(--blue)">
-      <div style="font-size:8px;color:var(--blue);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center">
-        Arquero
-        <button onclick="goPickPerson('archer')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--blue);background:rgba(90,159,216,.15);color:var(--blue);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600">↺ Cambiar</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div id="game-archer-avatar" style="width:26px;height:26px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--surface2)"></div>
-        <div style="min-width:0">
-          <div id="game-archer-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
-          <div id="game-archer-ability" style="font-size:8px;color:var(--yellow);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-        </div>
+  <div style="display:flex;gap:8px;margin-bottom:1rem" id="game-team-hud">
+    <div style="flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 12px;border-top:2px solid var(--blue);display:flex;align-items:center;gap:8px">
+      <div id="game-archer-avatar" style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--surface2)"></div>
+      <div style="min-width:0">
+        <div id="game-archer-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div id="game-archer-ability" style="font-size:9px;color:var(--yellow);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
       </div>
     </div>
-
-    <!-- Arco — cambiable -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;border-top:2px solid var(--yellow)">
-      <div style="font-size:8px;color:var(--yellow);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center">
-        Arco
-        <button onclick="switchTab('mi-arco',document.getElementById('sb-mi-arco'))" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--yellow);background:rgba(216,209,90,.15);color:var(--yellow);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600">↺ Cambiar</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div style="width:26px;height:26px;border-radius:50%;background:rgba(216,209,90,0.1);border:1px solid rgba(216,209,90,0.3);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🏹</div>
-        <div style="min-width:0">
-          <div id="game-bow-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
-          <div id="game-bow-stats" style="font-size:8px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-        </div>
+    <div style="flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 12px;border-top:2px solid var(--coral);display:flex;align-items:center;gap:8px">
+      <div id="game-coach-avatar" style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--surface2)"></div>
+      <div style="min-width:0">
+        <div id="game-coach-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div id="game-coach-ability" style="font-size:9px;color:var(--coral);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
       </div>
     </div>
-
-    <!-- Coach — solo lectura -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;border-top:2px solid var(--coral)">
-      <div style="font-size:8px;color:var(--coral);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center">
-        Coach
-        <span style="font-size:8px;color:var(--hint);letter-spacing:.04em">fijo</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div id="game-coach-avatar" style="width:26px;height:26px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--surface2)"></div>
-        <div style="min-width:0">
-          <div id="game-coach-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
-          <div id="game-coach-ability" style="font-size:8px;color:var(--coral);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <!-- HUD -->
@@ -1743,21 +1711,8 @@ document.addEventListener('DOMContentLoaded', function(){
       <div class="hud-pill" id="hud-played-count">0 / 6 jugadas</div>
       <div class="hud-pill" id="hud-deck-remain">Deck: 0</div>
       <div class="hud-pill" id="hud-hand-count">Mano: 10</div>
+      <div id="hud-timer-pill" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.06em;padding:3px 12px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.16);color:var(--text);min-width:56px;text-align:center;transition:all .3s"></div>
     </div>
-    <!-- Timer grande -->
-    <div id="hud-timer-pill" style="
-      font-family:'Bebas Neue',sans-serif;
-      font-size:32px;
-      letter-spacing:.06em;
-      padding:4px 16px;
-      border-radius:10px;
-      border:1.5px solid rgba(255,255,255,0.16);
-      color:var(--text);
-      min-width:72px;
-      text-align:center;
-      transition:all .3s;
-      line-height:1.1;
-    "></div>
     <div class="hud-actions">
       <button class="btn-resign" onclick="resignGame()">Abandonar</button>
       <button class="btn-end-round" id="btn-end-round" onclick="endRound()" disabled>
@@ -4087,8 +4042,12 @@ function selectBow(idx) {
   if (typeof refreshLineupUI    === 'function') refreshLineupUI();
   if (typeof updateSetupChecks  === 'function') updateSetupChecks();
   if (typeof recalc             === 'function') recalc();
-  // Solo regresar al tablero si hay partida activa
-  if (gameState && gameState.phase !== 'end') {
+  // Solo regresar al tablero si hay partida activa O si vino desde el tablero
+  if (window._returnToScore) {
+    window._returnToScore = false;
+    if (typeof closeBowDetail === 'function') closeBowDetail();
+    setTimeout(() => switchTab('score', document.getElementById('sb-score')), 200);
+  } else if (gameState && gameState.phase !== 'end') {
     gameState.bowIdx = idx;
     if (typeof _fillGameTeamHUD === 'function') _fillGameTeamHUD();
     if (typeof closeBowDetail   === 'function') closeBowDetail();
