@@ -302,6 +302,9 @@ h1{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:.06em;color
 
 @media(max-width:900px){.deck{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.deck{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:400px){
+  #lineup-summary{grid-template-columns:1fr !important}
+}
 
 
 /* ── CARD SELECTION ── */
@@ -1915,9 +1918,110 @@ window.refreshLineupUI = refreshLineupUI;
 // Refrescar cuando los datos del juego estén listos
 window.addEventListener('supabase-user-ready', refreshLineupUI);
 document.addEventListener('DOMContentLoaded', () => {
-  // Primer render (puede estar vacío si aún no cargó)
   setTimeout(refreshLineupUI, 500);
 });
+
+// ── GUÍA DE ONBOARDING ────────────────────────────────────────────
+// Muestra tooltips contextuales los primeros 3 juegos
+window.initOnboardingGuide = function(){
+  const games = parseInt(localStorage.getItem('goat_games_played')||'0');
+  if(games >= 3) return; // ya pasó la guía
+
+  const steps = [
+    { targetId:'game-setup-panel', title:'Arma tu equipo', msg:'Elige tu arquero, coach y arco. Si no tienes uno, toca ↺ Cambiar en cada sección.' },
+    { targetId:'chk-deck', title:'Arma tu deck', msg:'Ve a la pestaña Cartas y elige 36 cartas para tu mazo. Toca "Aleatorio" para inicio rápido.' },
+    { targetId:'btn-start-game', title:'¡Inicia la partida!', msg:'Cuando el botón esté activo (todos los checks en verde) toca aquí para comenzar.' },
+    { targetId:'game-setup-panel', title:'Durante el juego', msg:'Toca las cartas de tu mano para jugarlas. Cuando hayas jugado 6, cierra la ronda. Al terminar desplázate abajo para el intercambio de cartas.' },
+  ];
+
+  let currentStep = 0;
+
+  function showStep(idx){
+    removeTooltip();
+    if(idx >= steps.length) return;
+    const step = steps[idx];
+    const target = document.getElementById(step.targetId);
+    if(!target) return;
+
+    const rect = target.getBoundingClientRect();
+    const tip = document.createElement('div');
+    tip.id = 'onboard-tip';
+    tip.style.cssText = `
+      position:fixed;z-index:99990;
+      background:#1a1a1a;border:1.5px solid rgba(216,209,90,0.6);
+      border-radius:12px;padding:14px 16px;max-width:280px;
+      box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    `;
+
+    // Flecha apuntando al elemento
+    const above = rect.top > window.innerHeight/2;
+    tip.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:11px;font-weight:600;color:#d8d15a;text-transform:uppercase;letter-spacing:.08em">${idx+1}/${steps.length} — ${step.title}</div>
+        <button onclick="window.dismissOnboarding()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;padding:0 0 0 8px">✕</button>
+      </div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.8);line-height:1.5">${step.msg}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+        <button onclick="window.dismissOnboarding()" style="font-size:11px;color:rgba(255,255,255,0.3);background:none;border:none;cursor:pointer;padding:0">Saltar guía</button>
+        <button onclick="window.nextOnboardStep()" style="font-size:12px;font-weight:500;padding:6px 16px;border-radius:8px;border:0.5px solid rgba(216,209,90,0.5);background:rgba(216,209,90,0.12);color:#d8d15a;cursor:pointer">
+          ${idx < steps.length-1 ? 'Siguiente →' : '¡Entendido!'}
+        </button>
+      </div>
+    `;
+
+    // Posicionar cerca del target
+    const tipLeft = Math.min(Math.max(8, rect.left), window.innerWidth - 296);
+    const tipTop = above ? rect.top - 10 - 140 : rect.bottom + 10;
+    tip.style.left = tipLeft + 'px';
+    tip.style.top = Math.max(8, Math.min(tipTop, window.innerHeight-180)) + 'px';
+
+    document.body.appendChild(tip);
+
+    // Highlight sutil del target
+    target.style.outline = '2px solid rgba(216,209,90,0.4)';
+    target.style.borderRadius = '12px';
+  }
+
+  function removeTooltip(){
+    const old = document.getElementById('onboard-tip');
+    if(old) old.remove();
+    // Quitar highlights
+    ['game-setup-panel','chk-deck','btn-start-game'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el){ el.style.outline=''; }
+    });
+  }
+
+  window.nextOnboardStep = function(){
+    currentStep++;
+    if(currentStep >= steps.length){
+      removeTooltip();
+    } else {
+      showStep(currentStep);
+    }
+  };
+
+  window.dismissOnboarding = function(){
+    removeTooltip();
+    localStorage.setItem('goat_games_played','3'); // marca como completado
+  };
+
+  // Mostrar primer paso tras 1.5s para que cargue la UI
+  setTimeout(()=> showStep(0), 1500);
+};
+
+// Incrementar contador de partidas al iniciar
+window.addEventListener('supabase-user-ready', ()=>{
+  // Solo iniciar guía si es usuario nuevo (pocas partidas)
+  const games = parseInt(localStorage.getItem('goat_games_played')||'0');
+  if(games < 3) setTimeout(window.initOnboardingGuide, 800);
+});
+
+// Incrementar al terminar una partida
+window._onGameFinished_guide = function(){
+  const games = parseInt(localStorage.getItem('goat_games_played')||'0');
+  localStorage.setItem('goat_games_played', String(games+1));
+};
 </script>
 
 </div><!-- end tab-score -->
@@ -3348,6 +3452,11 @@ function endRound(forced){
   gameState.pendingDiscards = [];
   gameState.phase = 'discard';
   renderGameUI();
+  // Auto-scroll al área de descarte
+  setTimeout(()=>{
+    const el = document.getElementById('phase-discard');
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 150);
 }
 
 // ── confirmDraw is no longer used but keep as no-op ───────────────
@@ -3420,6 +3529,8 @@ function endGame(){
   document.getElementById('game-panel').style.display='none';
   document.getElementById('game-end').style.display='block';
   onGameEndHook();
+  // Incrementar contador para la guía de onboarding
+  if(typeof window._onGameFinished_guide === 'function') window._onGameFinished_guide();
   const scores  = gameState.roundScores;
   const total   = scores.reduce((a,b)=>a+b,0);
   const best    = Math.max(...scores);
