@@ -1687,21 +1687,49 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="game-panel" style="display:none">
 
   <!-- Mini equipo activo -->
-  <div style="display:flex;gap:8px;margin-bottom:1rem" id="game-team-hud">
-    <div style="flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 12px;border-top:2px solid var(--blue);display:flex;align-items:center;gap:8px">
-      <div id="game-archer-avatar" style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--surface2)"></div>
-      <div style="min-width:0">
-        <div id="game-archer-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
-        <div id="game-archer-ability" style="font-size:9px;color:var(--yellow);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:1rem" id="game-team-hud">
+
+    <!-- Arquero -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;border-top:2px solid var(--blue)">
+      <div style="font-size:8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Arquero</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <div id="game-archer-avatar" style="width:24px;height:24px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--surface2)"></div>
+        <div style="min-width:0">
+          <div id="game-archer-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+          <div id="game-archer-ability" style="font-size:9px;color:var(--yellow);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        </div>
+      </div>
+      <button onclick="window._returnToScore=true;switchTab('cards',document.getElementById('sb-cards'));setTimeout(()=>switchSubTab('archers',document.querySelector('.sub-tab')),200)"
+        style="width:100%;font-size:9px;padding:3px 6px;border-radius:5px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+        ↺ Cambiar
+      </button>
+    </div>
+
+    <!-- Coach (solo referencia, sin botón) -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;border-top:2px solid var(--coral)">
+      <div style="font-size:8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Coach</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div id="game-coach-avatar" style="width:24px;height:24px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--surface2)"></div>
+        <div style="min-width:0">
+          <div id="game-coach-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+          <div id="game-coach-ability" style="font-size:9px;color:var(--coral);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        </div>
       </div>
     </div>
-    <div style="flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 12px;border-top:2px solid var(--coral);display:flex;align-items:center;gap:8px">
-      <div id="game-coach-avatar" style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--surface2)"></div>
-      <div style="min-width:0">
-        <div id="game-coach-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
-        <div id="game-coach-ability" style="font-size:9px;color:var(--coral);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+
+    <!-- Arco -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;border-top:2px solid var(--yellow)">
+      <div style="font-size:8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Arco</div>
+      <div style="margin-bottom:6px">
+        <div id="game-bow-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div id="game-bow-stats" style="font-size:9px;color:var(--muted);margin-top:1px"></div>
       </div>
+      <button onclick="window._returnToScore=true;switchTab('mi-arco',document.getElementById('sb-mi-arco'))"
+        style="width:100%;font-size:9px;padding:3px 6px;border-radius:5px;border:0.5px solid rgba(216,209,90,0.4);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+        ↺ Cambiar
+      </button>
     </div>
+
   </div>
 
   <!-- HUD -->
@@ -2769,6 +2797,14 @@ function selectPersonCard(id, type) {
 
   updateCardSelectionUI();
   updateBars(); recalc();
+
+  // Si vino desde el tablero mid-game, actualizar HUD y regresar
+  if (window._returnToScore) {
+    window._returnToScore = false;
+    if (typeof _fillGameTeamHUD === 'function') _fillGameTeamHUD();
+    setTimeout(() => switchTab('score', document.getElementById('sb-score')), 200);
+    return;
+  }
 
   // ── Guided flow: after selecting, go to next step ────────────────
   const wasGuided = guideMode !== null;
@@ -4156,7 +4192,8 @@ function selectBow(idx) {
   // Solo regresar al tablero si hay partida activa O si vino desde el tablero
   if (window._returnToScore) {
     window._returnToScore = false;
-    if (typeof closeBowDetail === 'function') closeBowDetail();
+    if (typeof _fillGameTeamHUD === 'function') _fillGameTeamHUD();
+    if (typeof closeBowDetail   === 'function') closeBowDetail();
     setTimeout(() => switchTab('score', document.getElementById('sb-score')), 200);
   } else if (gameState && gameState.phase !== 'end') {
     gameState.bowIdx = idx;
