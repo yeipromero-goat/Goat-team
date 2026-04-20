@@ -5232,19 +5232,18 @@ function _scoreCompute(archerData, bowData, cards, discipline, climate) {
     raw[s] = base[s] * mult + clima;
   });
 
-  // 3. Cartas — suman al stat directo, tope +20 pts totales
+  // 3. Cartas — cada carta suma sus stats al raw, tope de contribución por carta
   // F en carta → FUE del arquero | R en carta → RES del arquero
   if (cards && cards.length) {
-    let cardTotal = 0;
+    const statMap = {T:'T', C:'C', E:'E', I:'I', F:'FUE', R:'RES'};
     cards.forEach(card => {
       if (!card) return;
-      // Mapeo: keys de carta → keys internos de scoring
-      const statMap = {T:'T', C:'C', E:'E', I:'I', F:'FUE', R:'RES'};
+      let cardContrib = 0; // acumulado por esta carta
       Object.entries(statMap).forEach(([cardKey, rawKey]) => {
         const val = card[cardKey] || 0;
-        if (val !== 0 && Math.abs(cardTotal) < 20) {
+        if (val !== 0 && Math.abs(cardContrib) < 20) {
           raw[rawKey] = (raw[rawKey] || 0) + val;
-          cardTotal   += Math.abs(val);
+          cardContrib += Math.abs(val);
         }
       });
     });
