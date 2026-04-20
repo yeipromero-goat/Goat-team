@@ -1686,8 +1686,31 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- ── GAME IN PROGRESS ────────────────────────────────── -->
 <div id="game-panel" style="display:none">
 
-  <!-- Mini equipo activo -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:1rem" id="game-team-hud">
+  <!-- 1. Condiciones del set (arriba del scroll) -->
+  <div id="round-conditions" style="display:none"></div>
+
+  <!-- 2. HUD — Ronda + Timer + acciones -->
+  <div class="game-hud" style="position:sticky;top:0;z-index:100;background:var(--bg);padding:8px 0">
+    <div>
+      <div class="hud-round">Ronda <span id="hud-round-num">1</span><span style="color:var(--muted);font-size:18px"> / 6</span></div>
+      <div class="hud-phase-lbl" id="hud-phase-lbl">Jugando</div>
+    </div>
+    <div class="hud-pills">
+      <div class="hud-pill" id="hud-played-count">0 / 6 jugadas</div>
+      <div class="hud-pill" id="hud-deck-remain">Deck: 0</div>
+      <div class="hud-pill" id="hud-hand-count">Mano: 10</div>
+      <div id="hud-timer-pill" style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.06em;padding:4px 14px;border-radius:12px;border:2px solid rgba(255,255,255,0.2);color:var(--yellow);min-width:64px;text-align:center;transition:all .3s"></div>
+    </div>
+    <div class="hud-actions">
+      <button class="btn-resign" onclick="resignGame()">Abandonar</button>
+      <button class="btn-end-round" id="btn-end-round" onclick="endRound()" disabled>
+        Cerrar ronda &#10140;
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Mini equipo — Arquero | Arco | Coach -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:1rem;margin-top:.5rem" id="game-team-hud">
 
     <!-- Arquero -->
     <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;border-top:2px solid var(--blue)">
@@ -1705,18 +1728,6 @@ document.addEventListener('DOMContentLoaded', function(){
       </button>
     </div>
 
-    <!-- Coach (solo referencia, sin botón) -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;border-top:2px solid var(--coral)">
-      <div style="font-size:8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Coach</div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div id="game-coach-avatar" style="width:24px;height:24px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--surface2)"></div>
-        <div style="min-width:0">
-          <div id="game-coach-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
-          <div id="game-coach-ability" style="font-size:9px;color:var(--coral);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- Arco -->
     <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;border-top:2px solid var(--yellow)">
       <div style="font-size:8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Arco</div>
@@ -1730,62 +1741,23 @@ document.addEventListener('DOMContentLoaded', function(){
       </button>
     </div>
 
-  </div>
-
-  <!-- HUD -->
-  <div class="game-hud">
-    <div>
-      <div class="hud-round">Ronda <span id="hud-round-num">1</span><span style="color:var(--muted);font-size:18px"> / 6</span></div>
-      <div class="hud-phase-lbl" id="hud-phase-lbl">Jugando</div>
-    </div>
-    <div class="hud-pills">
-      <div class="hud-pill" id="hud-played-count">0 / 6 jugadas</div>
-      <div class="hud-pill" id="hud-deck-remain">Deck: 0</div>
-      <div class="hud-pill" id="hud-hand-count">Mano: 10</div>
-      <div id="hud-timer-pill" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.06em;padding:3px 12px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.16);color:var(--text);min-width:56px;text-align:center;transition:all .3s"></div>
-    </div>
-    <div class="hud-actions">
-      <button class="btn-resign" onclick="resignGame()">Abandonar</button>
-      <button class="btn-end-round" id="btn-end-round" onclick="endRound()" disabled>
-        Cerrar ronda &#10140;
-      </button>
-    </div>
-  </div>
-
-  <!-- Round conditions -->
-  <div id="round-conditions" style="display:none"></div>
-
-  <!-- Score -->
-  <div class="scorebox" style="position:relative;overflow:hidden;margin-bottom:1rem">
-    <div style="position:absolute;right:-20px;bottom:-20px;width:120px;opacity:0.05;pointer-events:none;z-index:0">
-      <img src='https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp' style="width:100%;height:auto" alt=""/>
-    </div>
-    <div style="position:relative;z-index:1">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <div style="display:flex;align-items:baseline;gap:10px">
-          <span class="snum2" id="final-score">0</span>
-          <span class="smax">/ 100</span>
-          <span class="sgrade gC" id="score-grade">C</span>
-          <span style="font-size:10px;color:var(--muted)" id="score-round-label">Setup</span>
+    <!-- Coach (solo referencia) -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:8px 10px;border-top:2px solid var(--coral)">
+      <div style="font-size:8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Coach</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div id="game-coach-avatar" style="width:24px;height:24px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--surface2)"></div>
+        <div style="min-width:0">
+          <div id="game-coach-name" style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+          <div id="game-coach-ability" style="font-size:9px;color:var(--coral);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
         </div>
-        <div class="rsb-history" id="rsb-history"></div>
-      </div>
-      <div class="bkgrid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="bkitem"><div class="bklabel">Técnica · 32%</div><div class="bkval" id="bk-T">0</div><div class="bkw" id="bkw-T">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Int.Emoc. · 28%</div><div class="bkval" id="bk-I">0</div><div class="bkw" id="bkw-I">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">G.Estrés · 18%</div><div class="bkval" id="bk-E">0</div><div class="bkw" id="bkw-E">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Compet. · 12%</div><div class="bkval" id="bk-C">0</div><div class="bkw" id="bkw-C">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Fuerza · 6%</div><div class="bkval" id="bk-FUE">0</div><div class="bkw" id="bkw-FUE">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Resistencia · 4%</div><div class="bkval" id="bk-RES">0</div><div class="bkw" id="bkw-RES">0 pts</div></div>
-      </div>
-      <div class="rsb-total" id="rsb-total" style="display:none;margin-top:10px">
-        Total acumulado: <strong id="rsb-total-num">0</strong>
       </div>
     </div>
+
   </div>
 
   <div id="phase-banner" style="display:none"></div>
 
+  <!-- 4. Cartas a seleccionar -->
   <div id="phase-playing" class="phase-block">
     <div class="phase-header">
       <span class="phase-title">&#9654; Cartas en juego esta ronda</span>
@@ -1822,6 +1794,35 @@ document.addEventListener('DOMContentLoaded', function(){
       <span class="deck-remain" id="deck-remain-label">Deck: 0</span>
     </div>
     <div class="hand-grid" id="hand-grid"></div>
+  </div>
+
+  <!-- 5. Puntuación -->
+  <div class="scorebox" style="position:relative;overflow:hidden;margin-bottom:1rem;margin-top:1rem">
+    <div style="position:absolute;right:-20px;bottom:-20px;width:120px;opacity:0.05;pointer-events:none;z-index:0">
+      <img src='https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp' style="width:100%;height:auto" alt=""/>
+    </div>
+    <div style="position:relative;z-index:1">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div style="display:flex;align-items:baseline;gap:10px">
+          <span class="snum2" id="final-score">0</span>
+          <span class="smax">/ 100</span>
+          <span class="sgrade gC" id="score-grade">C</span>
+          <span style="font-size:10px;color:var(--muted)" id="score-round-label">Setup</span>
+        </div>
+        <div class="rsb-history" id="rsb-history"></div>
+      </div>
+      <div class="bkgrid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="bkitem"><div class="bklabel">Técnica · 32%</div><div class="bkval" id="bk-T">0</div><div class="bkw" id="bkw-T">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Int.Emoc. · 28%</div><div class="bkval" id="bk-I">0</div><div class="bkw" id="bkw-I">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">G.Estrés · 18%</div><div class="bkval" id="bk-E">0</div><div class="bkw" id="bkw-E">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Compet. · 12%</div><div class="bkval" id="bk-C">0</div><div class="bkw" id="bkw-C">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Fuerza · 6%</div><div class="bkval" id="bk-FUE">0</div><div class="bkw" id="bkw-FUE">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Resistencia · 4%</div><div class="bkval" id="bk-RES">0</div><div class="bkw" id="bkw-RES">0 pts</div></div>
+      </div>
+      <div class="rsb-total" id="rsb-total" style="display:none;margin-top:10px">
+        Total acumulado: <strong id="rsb-total-num">0</strong>
+      </div>
+    </div>
   </div>
 
   <div id="round-history-wrap" style="display:none;margin-top:.75rem">
@@ -3612,6 +3613,13 @@ function resetGame(){
   hideRoundConditions();
   stopRoundTimer();
   hideTimerDisplay();
+  // Limpiar historial de rondas anterior
+  const hist = document.getElementById('rsb-history');
+  const totalEl = document.getElementById('rsb-total');
+  const rhWrap = document.getElementById('round-history-wrap');
+  if(hist) hist.innerHTML='';
+  if(totalEl) totalEl.style.display='none';
+  if(rhWrap) rhWrap.style.display='none';
   document.getElementById('game-setup-panel').style.display='block';
   document.getElementById('game-panel').style.display='none';
   document.getElementById('game-end').style.display='none';
@@ -4604,6 +4612,8 @@ let roundTimerRemaining = 0;
 
 function startRoundTimer() {
   stopRoundTimer();
+  const round = gameState ? gameState.round : 1;
+  const cond  = gameState ? gameState.conditions[round-1] : null;
   _showCountdownOverlay(() => {
     roundTimerRemaining = ROUND_TIMER_SECS;
     updateTimerDisplay();
@@ -4618,7 +4628,7 @@ function startRoundTimer() {
         }
       }
     }, 1000);
-  });
+  }, round, cond);
 }
 
 function stopRoundTimer() {
@@ -4970,85 +4980,140 @@ function _fillGameTeamHUD() {
 window._fillGameTeamHUD = _fillGameTeamHUD;
 
 // ── COUNTDOWN OVERLAY ─────────────────────────────────────────────
-function _showCountdownOverlay(onDone) {
-  const a = window.selectedArcher;
-  const c = window.selectedCoach;
+function _showCountdownOverlay(onDone, round, cond) {
+  // Eliminar overlay anterior si existe
+  const old = document.getElementById('countdown-overlay');
+  if(old) old.remove();
+
+  const a   = window.selectedArcher;
+  const c   = window.selectedCoach;
   const bow = (window.activeBow != null) ? (window.BOWS||[])[window.activeBow] : null;
-  const S = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/';
+  const S   = 'https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/arqueros/';
+
+  // Datos de condiciones para mostrar
+  const roundNum = round || (gameState ? gameState.round : 1);
+  const condition = cond || (gameState ? gameState.conditions[roundNum-1] : null);
+
   function avatarHTML(p, size) {
-    if (!p) return '';
+    if (!p) return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.1)"></div>`;
     return p.foto
       ? `<img src="${S}${p.foto}.webp" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;border:2px solid ${p.color}88">`
       : `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${p.color}33;border:2px solid ${p.color}88;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:${size/2.5}px;color:${p.color}">${p.avatar}</div>`;
   }
+
+  // Construir HTML de condiciones
+  let condHTML = '';
+  if(condition) {
+    const isIndoor = condition.comp === 'indoor';
+    const w = WIND_LEVELS[isIndoor ? 0 : condition.wind];
+    const r = RAIN_LEVELS[isIndoor ? 0 : condition.rain];
+    const t = TEMP_LEVELS[condition.temp];
+    const NARRATIVE = {
+      indoor:  { tip:'Ambiente controlado. Precisión absoluta, cada flecha acumula estrés.', icon:'🏛️' },
+      outdoor: { tip:'El entorno no perdona — la fatiga y el viento definen el resultado.', icon:'🌲' },
+      field:   { tip:'Terreno irregular, ángulos y distancias cambiantes — adaptarte es todo.', icon:'⛰️' },
+      '3d':    { tip:'Una sola flecha. Sin segundas oportunidades — ejecución pura.', icon:'🎯' }
+    };
+    const narr = NARRATIVE[condition.comp] || {tip:'',icon:'🎯'};
+    const CNAMES = {indoor:'Indoor',outdoor:'Outdoor',field:'Field','3d':'3D'};
+    condHTML = `
+      <div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 16px;width:100%;max-width:340px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:28px">${narr.icon}</span>
+          <div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Competencia</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--yellow);letter-spacing:.06em">${CNAMES[condition.comp]||condition.comp}</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.7);line-height:1.5;border-left:2px solid rgba(216,209,90,0.5);padding-left:10px;margin-bottom:12px">${narr.tip}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+          ${!isIndoor ? `
+          <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:16px">🌬️</div>
+            <div style="font-size:9px;color:var(--muted);margin-top:2px">Viento</div>
+            <div style="font-size:11px;font-weight:600;color:var(--text);margin-top:2px">${w.label}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:16px">🌧️</div>
+            <div style="font-size:9px;color:var(--muted);margin-top:2px">Lluvia</div>
+            <div style="font-size:11px;font-weight:600;color:var(--text);margin-top:2px">${r.label}</div>
+          </div>` : `
+          <div style="background:rgba(93,202,165,0.06);border:0.5px solid rgba(93,202,165,0.2);border-radius:8px;padding:8px;text-align:center;grid-column:1/3">
+            <div style="font-size:16px">🏠</div>
+            <div style="font-size:10px;color:var(--green);margin-top:2px">Controlado</div>
+          </div>`}
+          <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:16px">🌡️</div>
+            <div style="font-size:9px;color:var(--muted);margin-top:2px">Temp.</div>
+            <div style="font-size:11px;font-weight:600;color:var(--text);margin-top:2px">${t.label}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
   const overlay = document.createElement('div');
   overlay.id = 'countdown-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.92);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;animation:fadeInOverlay .3s ease';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(10,10,10,0.96);backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:24px 16px 40px;animation:fadeInOverlay .3s ease';
   overlay.innerHTML = `
     <style>
-      @keyframes fadeInOverlay{from{opacity:0}to{opacity:1}}
+      @keyframes fadeInOverlay{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
       @keyframes fadeOutOverlay{from{opacity:1}to{opacity:0}}
-      @keyframes popIn{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
-      @keyframes popOut{0%{transform:scale(1);opacity:1}100%{transform:scale(1.5);opacity:0}}
-      #countdown-number{animation:popIn .35s cubic-bezier(.34,1.56,.64,1) forwards}
-      #countdown-number.out{animation:popOut .3s ease forwards}
     </style>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
-      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(90,159,216,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
-        ${avatarHTML(a,44)}
-        <div><div style="font-size:9px;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Arquero</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text)">${a?.name||'—'}</div>
-        <div style="font-size:10px;color:var(--muted)">${a?.role||''}</div></div>
+    <div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;align-items:center">
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:4px">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase">Ronda ${roundNum} de ${TOTAL_ROUNDS}</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--yellow);letter-spacing:.04em;margin-top:2px">Condiciones del Set</div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(216,209,90,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
-        <div style="width:44px;height:44px;border-radius:50%;background:rgba(216,209,90,0.1);border:2px solid rgba(216,209,90,0.4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏹</div>
-        <div><div style="font-size:9px;color:var(--yellow);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Arco</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text)">${bow?.name||'—'}</div>
-        <div style="font-size:10px;color:var(--muted)">${bow?bow.fps+'fps · '+bow.let+'% let':''}</div></div>
+
+      <!-- Condiciones -->
+      ${condHTML}
+
+      <!-- Equipo -->
+      <div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Tu equipo</div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(90,159,216,0.2);border-radius:10px;padding:8px 12px">
+          ${avatarHTML(a,36)}
+          <div>
+            <div style="font-size:9px;color:var(--blue);letter-spacing:.08em;text-transform:uppercase">Arquero</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--text)">${a?.name||'—'}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(216,209,90,0.2);border-radius:10px;padding:8px 12px">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(216,209,90,0.1);border:2px solid rgba(216,209,90,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏹</div>
+          <div>
+            <div style="font-size:9px;color:var(--yellow);letter-spacing:.08em;text-transform:uppercase">Arco</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--text)">${bow?.name||'—'}</div>
+            <div style="font-size:10px;color:var(--muted)">${bow?bow.fps+'fps · '+bow.let+'% let':''}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(216,120,80,0.2);border-radius:10px;padding:8px 12px">
+          ${avatarHTML(c,36)}
+          <div>
+            <div style="font-size:9px;color:var(--coral);letter-spacing:.08em;text-transform:uppercase">Coach</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--text)">${c?.name||'—'}</div>
+          </div>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(216,120,80,0.3);border-radius:12px;padding:10px 18px;min-width:240px">
-        ${avatarHTML(c,44)}
-        <div><div style="font-size:9px;color:var(--coral);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Coach</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text)">${c?.name||'—'}</div>
-        <div style="font-size:10px;color:var(--muted)">${c?.role||''}</div></div>
-      </div>
-    </div>
-    <div id="countdown-number" style="font-family:'Bebas Neue',sans-serif;font-size:120px;line-height:1;color:var(--yellow);text-shadow:0 0 60px rgba(216,209,90,0.4);letter-spacing:.02em">3</div>
-    <div style="font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase">Prepárate</div>`;
+
+      <!-- Botón iniciar -->
+      <button id="btn-iniciar-set" style="
+        width:100%;max-width:340px;padding:16px;margin-top:8px;
+        font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em;
+        background:linear-gradient(135deg,rgba(216,209,90,0.2),rgba(216,209,90,0.1));
+        border:1.5px solid rgba(216,209,90,0.6);border-radius:12px;
+        color:var(--yellow);cursor:pointer;
+        box-shadow:0 0 20px rgba(216,209,90,0.15);
+        transition:all .2s
+      ">🎯 Iniciar Set →</button>
+    </div>`;
+
   document.body.appendChild(overlay);
-  let count = 3;
-  const numEl = () => document.getElementById('countdown-number');
-  const tick = setInterval(() => {
-    count--;
-    const el = numEl();
-    if (!el) { clearInterval(tick); return; }
-    if (count > 0) {
-      el.classList.add('out');
-      setTimeout(() => {
-        if (!numEl()) return;
-        numEl().textContent = count;
-        numEl().className = '';
-        numEl().style.animation = 'none';
-        void numEl().offsetWidth;
-        numEl().style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1) forwards';
-      }, 280);
-    } else {
-      el.classList.add('out');
-      setTimeout(() => {
-        if (!numEl()) return;
-        numEl().textContent = '¡YA!';
-        numEl().style.color = 'var(--green)';
-        numEl().style.textShadow = '0 0 60px rgba(93,202,165,0.5)';
-        numEl().className = '';
-        numEl().style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1) forwards';
-      }, 280);
-      clearInterval(tick);
-      setTimeout(() => {
-        overlay.style.animation = 'fadeOutOverlay .4s ease forwards';
-        setTimeout(() => { overlay.remove(); onDone(); }, 400);
-      }, 700);
-    }
-  }, 1000);
+
+  document.getElementById('btn-iniciar-set').onclick = () => {
+    overlay.style.animation = 'fadeOutOverlay .3s ease forwards';
+    setTimeout(() => { overlay.remove(); onDone(); }, 300);
+  };
 }
 
 // ── selectPersonCard game return ──────────────────────────────────
