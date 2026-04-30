@@ -10482,27 +10482,53 @@ async function coLoad(){
       return;
     }
     coAllArchers = profiles;
-
-    // 2. Scores de liga (league_round_scores)
     const userIds = profiles.map(p=>p.user_id).join(',');
-    const scores = await coFetch(`/rest/v1/league_round_scores?user_id=in.(${userIds})&select=user_id,score&limit=2000`);
 
-    // Agrupar scores por user_id
+    // 2. Cargar las 3 fuentes de scores en paralelo
+    const [dailyScores, leagueScores, tournamentPlayers] = await Promise.all([
+      // scores — día a día libre (tabla scores)
+      coFetch(`/rest/v1/scores?user_id=in.(${userIds})&select=user_id,total,mode,group_name,session_date&limit=2000`),
+      // league_round_scores — ligas
+      coFetch(`/rest/v1/league_round_scores?user_id=in.(${userIds})&select=user_id,score,submitted_at&limit=2000`),
+      // tournament_players — torneos (qualifying_score)
+      coFetch(`/rest/v1/tournament_players?user_id=in.(${userIds})&qualifying_score=not.is.null&select=user_id,qualifying_score,qualifying_at&limit=2000`)
+    ]);
+
+    // 3. Unificar en un mapa user_id → lista de scores
     const scoreMap = {};
-    if(Array.isArray(scores)){
-      scores.forEach(s=>{
-        if(!scoreMap[s.user_id]) scoreMap[s.user_id] = [];
-        scoreMap[s.user_id].push(s.score);
-      });
+    const addScore = (uid, val, source) => {
+      if(!uid || !val) return;
+      if(!scoreMap[uid]) scoreMap[uid] = [];
+      scoreMap[uid].push({val, source});
+    };
+
+    if(Array.isArray(dailyScores)){
+      dailyScores.forEach(s => addScore(s.user_id, s.total, 'daily'));
     }
+    if(Array.isArray(leagueScores)){
+      leagueScores.forEach(s => addScore(s.user_id, s.score, 'liga'));
+    }
+    if(Array.isArray(tournamentPlayers)){
+      tournamentPlayers.forEach(s => addScore(s.user_id, s.qualifying_score, 'torneo'));
+    }
+
+    // 4. Calcular estadísticas por arquero
     coAllScores = {};
     Object.entries(scoreMap).forEach(([uid, arr])=>{
-      const best = Math.max(...arr);
-      const avg  = Math.round(arr.reduce((a,b)=>a+b,0)/arr.length);
-      coAllScores[uid] = {best, avg, sessions: arr.length};
+      const vals = arr.map(a=>a.val).filter(v=>v>0);
+      if(!vals.length) return;
+      const best = Math.max(...vals);
+      const avg  = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+      // Contar sesiones por fuente
+      const sources = {
+        daily:  arr.filter(a=>a.source==='daily').length,
+        liga:   arr.filter(a=>a.source==='liga').length,
+        torneo: arr.filter(a=>a.source==='torneo').length,
+      };
+      coAllScores[uid] = {best, avg, sessions: vals.length, sources};
     });
 
-    // 3. Poblar filtro de clubes
+    // 5. Poblar filtro de clubes
     const clubs = [...new Set(profiles.map(p=>p.club_name).filter(Boolean))].sort();
     const clubSel = document.getElementById('co-filter-club');
     clubSel.innerHTML = '<option value="">Todos los clubes</option>' +
@@ -10661,9 +10687,24 @@ window.coToggleDetail = function(userId){
       <span class="co-mini-val" style="font-family:'Bebas Neue',sans-serif;font-size:22px">${sc?.avg ?? '—'}</span>
     </div>
     <div class="co-mini-stat">
-      <span class="co-mini-label">Sesiones registradas</span>
+      <span class="co-mini-label">Total sesiones</span>
       <span class="co-mini-val">${sc?.sessions ?? 0}</span>
-    </div>`;
+    </div>
+    ${sc?.sources ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px">
+      <div style="text-align:center;padding:8px;border-radius:8px;background:rgba(93,202,165,0.06);border:0.5px solid rgba(93,202,165,0.15)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#5dcaa5">${sc.sources.daily}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">Bitácora</div>
+      </div>
+      <div style="text-align:center;padding:8px;border-radius:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.15)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#d8d15a">${sc.sources.liga}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">Ligas</div>
+      </div>
+      <div style="text-align:center;padding:8px;border-radius:8px;background:rgba(154,136,221,0.06);border:0.5px solid rgba(154,136,221,0.15)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#9a88dd">${sc.sources.torneo}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">Torneos</div>
+      </div>
+    </div>` : ''}`;
 
   detail.classList.add('open');
 
