@@ -10474,10 +10474,22 @@ async function coLoad(){
   document.getElementById('co-table').innerHTML = '<div class="co-loading">Cargando arqueros...</div>';
 
   try{
-    // 1. Perfiles de arqueros
-    const profiles = await coFetch('/rest/v1/archer_profiles?select=*&order=display_name.asc&limit=200');
+    // Leer coach_clubs del JWT para filtrar en la query
+    const user = (await window._supabaseClient.auth.getUser()).data?.user;
+    const coachClubs = user?.user_metadata?.coach_clubs || [];
+    const clubFilter = document.getElementById('co-filter-club').value;
+
+    // Construir query — si tiene clubs asignados, filtrar por ellos
+    let profilesUrl = '/rest/v1/archer_profiles?select=*&order=display_name.asc&limit=200';
+    if(coachClubs.length && !clubFilter){
+      // Filtrar por todos sus clubs
+      const clubsEncoded = coachClubs.map(c=>`"${c}"`).join(',');
+      profilesUrl += `&club_name=in.(${coachClubs.map(c=>encodeURIComponent(c)).join(',')})`;
+    } else if(clubFilter){
+      profilesUrl += `&club_name=eq.${encodeURIComponent(clubFilter)}`;
+    }
+    const profiles = await coFetch(profilesUrl);
     if(!Array.isArray(profiles) || !profiles.length){
-      coAllArchers = [];
       coRender();
       return;
     }
@@ -10544,15 +10556,21 @@ async function coLoad(){
 
 // ── Filtrar y renderizar ──────────────────────────────────
 window.coApplyFilters = function(){
-  const club   = document.getElementById('co-filter-club').value;
+  // Recargar con el nuevo filtro de club
+  coLoad();
+};
+
+// ── Renderizar tabla ──────────────────────────────────────
+function coRender(){
+  const tableEl = document.getElementById('co-table');
   const bow    = document.getElementById('co-filter-bow').value;
   const cat    = document.getElementById('co-filter-cat').value;
   const estado = document.getElementById('co-filter-estado').value;
 
+  // Filtros locales (arco, categoría, estado) sobre los ya cargados
   coFiltered = coAllArchers.filter(p=>{
-    if(club   && p.club_name !== club) return false;
-    if(bow    && p.bow_type  !== bow)  return false;
-    if(estado && p.estado    !== estado) return false;
+    if(bow    && p.bow_type !== bow)   return false;
+    if(estado && p.estado   !== estado) return false;
     if(cat){
       const age = coGetAge(p.birth_date);
       const c   = coGetCategory(age);
@@ -10560,13 +10578,6 @@ window.coApplyFilters = function(){
     }
     return true;
   });
-
-  coRender();
-};
-
-// ── Renderizar tabla ──────────────────────────────────────
-function coRender(){
-  const tableEl = document.getElementById('co-table');
 
   // Stats resumen
   const totSessions = coFiltered.reduce((a,p)=>(coAllScores[p.user_id]?.sessions||0)+a, 0);
@@ -10713,13 +10724,34 @@ window.coToggleDetail = function(userId){
 };
 
 // ── Init ─────────────────────────────────────────────────
-if(window._supabaseUserId){
+async function coInit(){
+  // Leer coach_clubs del JWT
+  const user = (await window._supabaseClient.auth.getUser()).data?.user;
+  const coachClubs = user?.user_metadata?.coach_clubs || [];
+
+  if(coachClubs.length){
+    // Pre-seleccionar el primer club y bloquear el filtro
+    const clubSel = document.getElementById('co-filter-club');
+    // Poblar primero con sus clubs
+    clubSel.innerHTML = coachClubs.map(c=>`<option value="${c}">${c}</option>`).join('');
+    clubSel.value = coachClubs[0];
+
+    // Si solo tiene 1 club, bloquear el select
+    if(coachClubs.length === 1){
+      clubSel.disabled = true;
+      clubSel.title = 'Solo puedes ver tu club asignado';
+    }
+  }
+
   coLoad();
-} else {
-  window.addEventListener('supabase-user-ready', coLoad);
 }
 
-// Recargar al entrar al tab
+if(window._supabaseUserId){
+  coInit();
+} else {
+  window.addEventListener('supabase-user-ready', coInit);
+}
+
 window._coReload = coLoad;
 
 })();
