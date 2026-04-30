@@ -1363,6 +1363,14 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
       <span class="sb-item-icon">🎯</span>
       <span class="sb-item-label">Tablero</span>
     </div>
+    <div class="sb-item" id="sb-competencias" onclick="switchTab('competencias',this)">
+      <span class="sb-item-icon">🏆</span>
+      <span class="sb-item-label">Competencias</span>
+    </div>
+    <div class="sb-item" id="sb-bitacora" onclick="switchTab('bitacora',this)">
+      <span class="sb-item-icon">📊</span>
+      <span class="sb-item-label">Puntuaciones</span>
+    </div>
     <div class="sb-item" id="sb-cards" onclick="switchTab('cards',this)">
       <span class="sb-item-icon">🃏</span>
       <span class="sb-item-label">Cartas</span>
@@ -1370,18 +1378,6 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
     <div class="sb-item" id="sb-mi-arco" onclick="switchTab('mi-arco',this)">
       <span class="sb-item-icon">🏹</span>
       <span class="sb-item-label">Mi Arco</span>
-    </div>
-    <div class="sb-item" id="sb-sobres" onclick="switchTab('sobres',this)">
-      <span class="sb-item-icon">🎁</span>
-      <span class="sb-item-label">Sobres</span>
-    </div>
-    <div class="sb-item" id="sb-bitacora" onclick="switchTab('bitacora',this)">
-      <span class="sb-item-icon">📊</span>
-      <span class="sb-item-label">Puntuaciones</span>
-    </div>
-    <div class="sb-item" id="sb-competencias" onclick="switchTab('competencias',this)">
-      <span class="sb-item-icon">🏆</span>
-      <span class="sb-item-label">Competencias</span>
     </div>
   </nav>
 
@@ -1431,11 +1427,10 @@ function closeSidebar(){
 // ── switchTab: actualiza tabs Y sidebar ──
 const TAB_META = {
   'score':       { icon:'🎯', label:'Tablero',       sub:'Puntuación y partidas' },
+  'competencias':{ icon:'🏆', label:'Competencias',   sub:'Torneos y ligas' },
+  'bitacora':    { icon:'📊', label:'Puntuaciones',   sub:'Bitácora y estadísticas' },
   'cards':       { icon:'🃏', label:'Cartas',         sub:'Arqueros y coaches' },
   'mi-arco':     { icon:'🏹', label:'Mi Arco',        sub:'Equipo y stats' },
-  'sobres':      { icon:'🎁', label:'Sobres',         sub:'Tienda y packs' },
-  'bitacora':    { icon:'📊', label:'Puntuaciones',   sub:'Bitácora y estadísticas' },
-  'competencias':{ icon:'🏆', label:'Competencias',   sub:'Torneos y ligas' },
 };
 
 function updatePageTitle(name){
@@ -2287,69 +2282,11 @@ window._onGameFinished_guide = function(){
   <div class="bow-collection-grid" id="collection-grid"></div>
 </div>
 
-<div id="tab-sobres" class="tab-panel">
-  <div class="sec">Tienda de Sobres</div>
-  <p style="font-size:11px;color:var(--muted);margin-bottom:1rem">Los sobres contienen mejoras de stats, habilidades especiales y nuevos arcos. Sistema de monetización próximamente.</p>
-  <div class="packs-grid">
-
-    <div class="pack-card pack-basic" onclick="openPackPreview('basic')">
-      <div class="pack-icon">📦</div>
-      <div class="pack-name">Sobre Básico</div>
-      <div class="pack-desc">3 tarjetas comunes. Stats menores y accesorios básicos.</div>
-      <div class="pack-price">$49<span class="pack-price-unit"> MXN</span></div>
-      <div class="pack-coming">Próximamente</div>
-    </div>
-
-    <div class="pack-card pack-pro" onclick="openPackPreview('pro')">
-      <div class="pack-icon">🏹</div>
-      <div class="pack-name">Sobre Pro</div>
-      <div class="pack-desc">5 tarjetas. Garantiza al menos 1 rara. Ítems especiales.</div>
-      <div class="pack-price">$120<span class="pack-price-unit"> MXN</span></div>
-      <div class="pack-coming">Próximamente</div>
-    </div>
-
-    <div class="pack-card pack-legend" onclick="openPackPreview('legend')">
-      <div class="pack-icon">⚡</div>
-      <div class="pack-name">Sobre Leyenda</div>
-      <div class="pack-desc">7 tarjetas. 1 épica garantizada. Puede contener arcos únicos.</div>
-      <div class="pack-price">$250<span class="pack-price-unit"> MXN</span></div>
-      <div class="pack-coming">Próximamente</div>
-    </div>
-
-  </div>
-
-  <div class="sec" style="margin-top:1.5rem">Cómo Ganar Tarjetas Gratis</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:12px">
-      <div style="font-size:18px;margin-bottom:5px">🏆</div>
-      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">Torneos Oficiales</div>
-      <div style="font-size:10px;color:var(--muted);line-height:1.5">Participa en torneos registrados. Top 3 gana sobres automáticamente.</div>
-    </div>
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:12px">
-      <div style="font-size:18px;margin-bottom:5px">📷</div>
-      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">Tarjetas Físicas</div>
-      <div style="font-size:10px;color:var(--muted);line-height:1.5">Compra tarjetas físicas en tiendas asociadas y canjea el código único.</div>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════
-     TAB: HABILIDADES
-════════════════════════════════════════ -->
+<!-- tab-sobres eliminado -->
 
 <div id="tab-habilidades" class="tab-panel">
 </div>
 
-
-<!-- ════ PACK PREVIEW OVERLAY ════ -->
-<div class="pack-overlay" id="pack-overlay">
-  <div class="pack-reveal">
-    <div class="pack-reveal-title" id="overlay-title">Sobre Pro</div>
-    <div class="pack-reveal-subtitle" id="overlay-sub">Vista previa del contenido (próximamente disponible)</div>
-    <div class="pack-reveal-cards" id="overlay-cards"></div>
-    <button class="btn-close-overlay" onclick="closeOverlay()">Cerrar Vista Previa</button>
-  </div>
-</div>
 
 <!-- TOAST -->
 <div class="toast" id="toast-msg"></div>
@@ -3866,11 +3803,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   updateSetupChecks();
   renderBowProfile();
   renderSetupBowSelector();
-
-  // ── 4. Pack overlay ──
-  document.getElementById('pack-overlay').addEventListener('click', function(e) {
-    if (e.target === this) closeOverlay();
-  });
 });
 
 // ── Re-render cuando supabase-data-ready se dispara ──────────────
@@ -4312,59 +4244,6 @@ function redeemCode() {
   setTimeout(() => { fb.style.display = 'none'; }, 5000);
 }
 
-// ── PACK PREVIEW ──
-const PACK_PREVIEWS = {
-  basic: {
-    title:'Sobre Básico',sub:'Contenido de muestra (3 cartas comunes)',
-    cards:[
-      {icon:'🔩',name:'Peso de Limpieza',type:'Accesorio · Común'},
-      {icon:'🎯',name:'+2 FPS (Básico)',type:'Mejora Stats · Común',rarity:'common'},
-      {icon:'🧵',name:'Cuerda Estándar',type:'Equipo · Común',rarity:'common'},
-    ]
-  },
-  pro: {
-    title:'Sobre Pro',sub:'Contenido de muestra (5 cartas, 1 rara garantizada)',
-    cards:[
-      {icon:'⚡',name:'Estabilizador V2',type:'Habilidad · Rara',rarity:'rare'},
-      {icon:'🔩',name:'+1" Eje a Eje',type:'Mejora Stats · Rara',rarity:'rare'},
-      {icon:'🎯',name:'+6 FPS Pro',type:'Mejora Stats · Común'},
-      {icon:'🧵',name:'Cuerda Fastflight',type:'Equipo · Común'},
-      {icon:'⭐',name:'+10 Puntos Extra',type:'Bonus · Común'},
-    ]
-  },
-  legend: {
-    title:'Sobre Leyenda',sub:'Contenido de muestra (7 cartas, 1 épica garantizada)',
-    cards:[
-      {icon:'🏹',name:'VORTEX PRO',type:'Arco Nuevo · Épico',rarity:'epic'},
-      {icon:'🔥',name:'Cam System Elite',type:'Habilidad · Épica',rarity:'epic'},
-      {icon:'⚡',name:'+5% Let Off',type:'Mejora Stats · Rara',rarity:'rare'},
-      {icon:'🎯',name:'+12 FPS Nitro',type:'Mejora Stats · Rara',rarity:'rare'},
-      {icon:'🔩',name:'Estabilizador 3er Eje',type:'Habilidad · Rara',rarity:'rare'},
-      {icon:'🧵',name:'Cuerda Élite +8fps',type:'Equipo · Común'},
-      {icon:'⭐',name:'+25 Puntos Torneo',type:'Bonus · Común'},
-    ]
-  }
-};
-
-function openPackPreview(type) {
-  const data = PACK_PREVIEWS[type];
-  document.getElementById('overlay-title').textContent = data.title;
-  document.getElementById('overlay-sub').textContent = data.sub;
-  const rarityMap = {rare:'rarity-rare',epic:'rarity-epic',legend:'rarity-legend'};
-  document.getElementById('overlay-cards').innerHTML = data.cards.map(c => `
-    <div class="pack-reveal-card">
-      <div class="prc-icon">${c.icon}</div>
-      <div class="prc-info"><div class="prc-name">${c.name}</div><div class="prc-type">${c.type}</div></div>
-      ${c.rarity ? `<span class="prc-rarity ${rarityMap[c.rarity]||'rarity-rare'}">${c.rarity||'rara'}</span>` : ''}
-    </div>`).join('');
-  document.getElementById('pack-overlay').style.display = 'flex';
-}
-
-function closeOverlay() {
-  document.getElementById('pack-overlay').style.display = 'none';
-}
-
-// ── TAB SWITCHER ──
 // ── TAB SWITCHER (manejado por 02-nav.html) ──
 
 // ── TOAST ──
