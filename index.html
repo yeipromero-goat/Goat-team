@@ -1359,11 +1359,11 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
 
   <!-- Nav items -->
   <nav class="sb-nav">
-    <div class="sb-item active" id="sb-score" onclick="switchTab('score',this)">
+    <div class="sb-item" id="sb-score" onclick="switchTab('score',this)">
       <span class="sb-item-icon">🎯</span>
       <span class="sb-item-label">Tablero</span>
     </div>
-    <div class="sb-item" id="sb-competencias" onclick="switchTab('competencias',this)">
+    <div class="sb-item active" id="sb-competencias" onclick="switchTab('competencias',this)">
       <span class="sb-item-icon">🏆</span>
       <span class="sb-item-label">Competencias</span>
     </div>
@@ -1402,10 +1402,10 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
 
 <!-- Título de página dinámico -->
 <div class="page-title" id="page-title">
-  <span class="page-title-icon">🎯</span>
+  <span class="page-title-icon">🏆</span>
   <div>
-    <div class="page-title-text">Tablero</div>
-    <div class="page-title-sub">Puntuación y partidas</div>
+    <div class="page-title-text">Competencias</div>
+    <div class="page-title-sub">Torneos y ligas</div>
   </div>
 </div>
 
@@ -1469,7 +1469,7 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('sb-avatar-initials').textContent = initials;
   });
   // Título inicial
-  updatePageTitle('score');
+  updatePageTitle('competencias');
 });
 </script>
 
@@ -2310,13 +2310,13 @@ function switchTab(id, el){
 // ── Interceptar botón regresar ────────────────────────────────────
 // Siempre regresar al tablero principal, nunca salir de la app
 window.addEventListener('popstate', function(e){
-  const tab = e.state?.tab || 'score';
-  const scoreEl = document.getElementById('sb-score');
-  if(tab === 'score' || !document.getElementById('tab-'+tab)){
-    history.pushState({tab:'score'}, '', window.location.pathname+'#score');
-    switchTab('score', scoreEl);
+  const tab = e.state?.tab || 'competencias';
+  const defEl = document.getElementById('sb-competencias');
+  if(tab === 'competencias' || !document.getElementById('tab-'+tab)){
+    history.pushState({tab:'competencias'}, '', window.location.pathname+'#competencias');
+    switchTab('competencias', defEl);
   } else {
-    switchTab(tab, document.getElementById('sb-'+tab) || scoreEl);
+    switchTab(tab, document.getElementById('sb-'+tab) || defEl);
   }
 });
 
