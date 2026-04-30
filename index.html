@@ -10192,7 +10192,7 @@ document.addEventListener('supabase-user-ready', ()=>{
 </script>
 </div>
 
-<div id="tab-coach" class="tab-panel" style="display:none">
+<div id="tab-coach" class="tab-panel">
 <style>
 .co-wrap{ max-width:680px; margin:0 auto; }
 
@@ -10487,10 +10487,10 @@ async function coLoad(){
     // Construir query — si tiene clubs asignados, filtrar por ellos
     let profilesUrl = '/rest/v1/archer_profiles?select=*&order=display_name.asc&limit=200';
     if(coachClubs.length && !clubFilter){
-      const clubsList = coachClubs.join(',');
+      const clubsList = coachClubs.map(c=>`"${c}"`).join(',');
       profilesUrl += `&club_name=in.(${clubsList})`;
     } else if(clubFilter){
-      profilesUrl += `&club_name=eq.${clubFilter}`;
+      profilesUrl += `&club_name=eq."${clubFilter}"`;
     }
     console.log('profilesUrl:', profilesUrl);
     const profiles = await coFetch(profilesUrl);
