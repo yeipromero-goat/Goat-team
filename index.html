@@ -1393,10 +1393,26 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
     </div>
   </nav>
 
-  <!-- User -->
+  <!-- User area — abajo del todo -->
   <div class="sb-user">
+
+    <!-- Tabs de perfil y coach ANTES del usuario -->
+    <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px">
+      <div class="sb-item" id="sb-perfil" onclick="switchTab('perfil',this)" style="padding:7px 12px">
+        <span class="sb-item-icon" style="font-size:14px">👤</span>
+        <span class="sb-item-label" style="font-size:12px">Mi Perfil</span>
+      </div>
+      <div class="sb-item" id="sb-coach" onclick="switchTab('coach',this)" style="padding:7px 12px;display:none">
+        <span class="sb-item-icon" style="font-size:14px">📋</span>
+        <span class="sb-item-label" style="font-size:12px">Coach</span>
+        <span style="margin-left:auto;font-size:8px;padding:1px 5px;border-radius:6px;background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3);font-weight:700;letter-spacing:.06em">PRO</span>
+      </div>
+    </div>
+
+    <div style="height:0.5px;background:rgba(255,255,255,0.06);margin-bottom:10px"></div>
+
     <div class="sb-user-row">
-      <div class="sb-avatar" id="sb-avatar-initials">?</div>
+      <div class="sb-avatar" id="sb-avatar-initials" style="cursor:pointer" onclick="switchTab('perfil',document.getElementById('sb-perfil'))">?</div>
       <div class="sb-user-info">
         <div class="sb-user-name" id="sb-user-name">—</div>
         <div class="sb-user-email" id="sb-user-email">—</div>
@@ -1444,6 +1460,8 @@ const TAB_META = {
   'biomec':      { icon:'🦾', label:'Biomecánica',    sub:'Análisis de postura en vivo' },
   'cards':       { icon:'🃏', label:'Cartas',         sub:'Arqueros y coaches' },
   'mi-arco':     { icon:'🏹', label:'Mi Arco',        sub:'Equipo y stats' },
+  'perfil':      { icon:'👤', label:'Mi Perfil',      sub:'Club, categoría y datos' },
+  'coach':       { icon:'📋', label:'Coach',          sub:'Estadísticas de arqueros' },
 };
 
 function updatePageTitle(name){
@@ -1480,6 +1498,13 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('sb-user-name').textContent = name;
     document.getElementById('sb-user-email').textContent = email;
     document.getElementById('sb-avatar-initials').textContent = initials;
+
+    // Mostrar tab Coach solo si is_coach = true en user_metadata
+    if(u.user_metadata?.is_coach === true){
+      const coachItem = document.getElementById('sb-coach');
+      if(coachItem) coachItem.style.display = 'flex';
+      window._supabaseIsCoach = true;
+    }
   });
   // Título inicial
   updatePageTitle('competencias');
@@ -9727,6 +9752,934 @@ function bmRenderSessions(){
 // Cargar sesiones al inicializar el tab
 const stored = JSON.parse(localStorage.getItem('goat_biomec_sessions')||'[]');
 if(stored.length) bmSessions = stored;
+
+})();
+</script>
+</div>
+
+<div id="tab-perfil" class="tab-panel">
+<style>
+.pf-wrap{ max-width:480px; margin:0 auto; }
+
+.pf-card{
+  background:var(--surface);
+  border:0.5px solid var(--border2);
+  border-radius:14px;
+  padding:18px;
+  margin-bottom:12px;
+  position:relative;
+  overflow:hidden;
+}
+.pf-card-bar{
+  position:absolute;top:0;left:0;right:0;height:2px;
+}
+.pf-section-title{
+  font-size:10px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(255,255,255,0.3);
+  margin-bottom:14px;
+}
+.pf-field{
+  margin-bottom:14px;
+}
+.pf-label{
+  font-size:11px;color:rgba(255,255,255,0.45);
+  margin-bottom:5px;display:block;
+}
+.pf-input{
+  width:100%;padding:10px 12px;
+  border:0.5px solid rgba(255,255,255,0.12);
+  border-radius:9px;
+  background:rgba(255,255,255,0.04);
+  color:var(--text);font-size:13px;
+  font-family:'DM Sans',sans-serif;
+  transition:border-color .15s;
+  box-sizing:border-box;
+}
+.pf-input:focus{
+  outline:none;
+  border-color:rgba(216,209,90,0.4);
+  background:rgba(216,209,90,0.04);
+}
+.pf-input:disabled{
+  opacity:.4;cursor:not-allowed;
+}
+.pf-select{
+  width:100%;padding:10px 12px;
+  border:0.5px solid rgba(255,255,255,0.12);
+  border-radius:9px;
+  background:#1a1a1a;
+  color:var(--text);font-size:13px;
+  font-family:'DM Sans',sans-serif;
+  box-sizing:border-box;
+}
+.pf-select:focus{
+  outline:none;border-color:rgba(216,209,90,0.4);
+}
+
+/* Bow type selector */
+.pf-bow-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+}
+.pf-bow-opt{
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:10px;padding:12px 8px;
+  text-align:center;cursor:pointer;
+  transition:all .15s;
+  background:transparent;
+}
+.pf-bow-opt:hover{ background:rgba(255,255,255,0.04); }
+.pf-bow-opt.sel{
+  border-color:rgba(216,209,90,0.5);
+  background:rgba(216,209,90,0.08);
+}
+.pf-bow-icon{ font-size:22px;margin-bottom:5px; }
+.pf-bow-name{
+  font-size:11px;font-weight:600;
+  color:rgba(255,255,255,0.6);
+}
+.pf-bow-opt.sel .pf-bow-name{ color:#d8d15a; }
+
+/* Age badge */
+.pf-age-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;
+  font-size:11px;font-weight:600;
+  background:rgba(93,202,165,0.12);
+  border:0.5px solid rgba(93,202,165,0.3);
+  color:#5dcaa5;
+  margin-top:6px;
+}
+
+/* Save button */
+.pf-save-btn{
+  width:100%;padding:12px;
+  border-radius:10px;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:17px;letter-spacing:.06em;
+  border:1.5px solid rgba(216,209,90,0.5);
+  background:rgba(216,209,90,0.1);
+  color:#d8d15a;cursor:pointer;
+  transition:all .15s;
+}
+.pf-save-btn:hover{
+  background:rgba(216,209,90,0.18);
+  border-color:rgba(216,209,90,0.7);
+}
+.pf-save-btn:disabled{
+  opacity:.4;cursor:not-allowed;
+}
+
+/* Status msg */
+.pf-msg{
+  text-align:center;font-size:12px;
+  padding:8px;border-radius:8px;
+  margin-top:10px;display:none;
+}
+.pf-msg.ok{
+  background:rgba(93,202,165,0.1);
+  color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3);
+}
+.pf-msg.err{
+  background:rgba(224,85,85,0.1);
+  color:#e05555;border:0.5px solid rgba(224,85,85,0.3);
+}
+
+/* Avatar initials big */
+.pf-avatar-big{
+  width:64px;height:64px;border-radius:50%;
+  background:rgba(216,209,90,0.15);
+  border:2px solid rgba(216,209,90,0.3);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:28px;color:#d8d15a;
+  flex-shrink:0;
+}
+</style>
+
+<div class="pf-wrap">
+
+  <!-- Header -->
+  <div class="pf-card">
+    <div class="pf-card-bar" style="background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="pf-avatar-big" id="pf-avatar-big">?</div>
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text);letter-spacing:.04em" id="pf-header-name">Mi Perfil</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4)" id="pf-header-email">—</div>
+        <div id="pf-age-badge-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Datos personales -->
+  <div class="pf-card">
+    <div class="pf-card-bar" style="background:linear-gradient(90deg,#5ab4d6,#9a88dd)"></div>
+    <div class="pf-section-title">Datos personales</div>
+
+    <div class="pf-field">
+      <label class="pf-label">Nombre completo</label>
+      <input class="pf-input" id="pf-name" type="text" placeholder="Tu nombre completo" maxlength="60">
+    </div>
+
+    <div class="pf-field">
+      <label class="pf-label">Fecha de nacimiento</label>
+      <input class="pf-input" id="pf-birth" type="date">
+      <div id="pf-age-calc" style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:4px"></div>
+    </div>
+
+    <div class="pf-field" style="margin-bottom:0">
+      <label class="pf-label">Estado</label>
+      <select class="pf-select" id="pf-estado">
+        <option value="">— Selecciona tu estado —</option>
+        <option>Aguascalientes</option><option>Baja California</option>
+        <option>Baja California Sur</option><option>Campeche</option>
+        <option>Chiapas</option><option>Chihuahua</option>
+        <option>Ciudad de México</option><option>Coahuila</option>
+        <option>Colima</option><option>Durango</option>
+        <option>Estado de México</option><option>Guanajuato</option>
+        <option>Guerrero</option><option>Hidalgo</option>
+        <option>Jalisco</option><option>Michoacán</option>
+        <option>Morelos</option><option>Nayarit</option>
+        <option>Nuevo León</option><option>Oaxaca</option>
+        <option>Puebla</option><option>Querétaro</option>
+        <option>Quintana Roo</option><option>San Luis Potosí</option>
+        <option>Sinaloa</option><option>Sonora</option>
+        <option>Tabasco</option><option>Tamaulipas</option>
+        <option>Tlaxcala</option><option>Veracruz</option>
+        <option>Yucatán</option><option>Zacatecas</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Club y categoría -->
+  <div class="pf-card">
+    <div class="pf-card-bar" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+    <div class="pf-section-title">Club y competencia</div>
+
+    <div class="pf-field">
+      <label class="pf-label">Club / Arquería</label>
+      <input class="pf-input" id="pf-club" type="text" placeholder="Ej: Club Arco Norte" maxlength="60">
+      <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:4px">
+        Si cambias de club, actualiza aquí. Tu historial siempre es tuyo.
+      </div>
+    </div>
+
+    <div class="pf-field" style="margin-bottom:0">
+      <label class="pf-label">Tipo de arco</label>
+      <div class="pf-bow-grid">
+        <div class="pf-bow-opt" id="pf-bow-recurvo" onclick="pfSelBow('recurvo')">
+          <div class="pf-bow-icon">🏹</div>
+          <div class="pf-bow-name">Recurvo</div>
+        </div>
+        <div class="pf-bow-opt" id="pf-bow-compuesto" onclick="pfSelBow('compuesto')">
+          <div class="pf-bow-icon">🎯</div>
+          <div class="pf-bow-name">Compuesto</div>
+        </div>
+        <div class="pf-bow-opt" id="pf-bow-barebow" onclick="pfSelBow('barebow')">
+          <div class="pf-bow-icon">🪃</div>
+          <div class="pf-bow-name">Bare bow</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guardar -->
+  <button class="pf-save-btn" id="pf-save-btn" onclick="pfSave()">
+    Guardar perfil →
+  </button>
+  <div class="pf-msg" id="pf-msg"></div>
+
+</div><!-- end pf-wrap -->
+
+<script>
+(function(){
+
+const SUPA = 'https://axaiyaflubssaghvhefe.supabase.co';
+const MX_CATEGORIES = [
+  {key:'sub14',  label:'Sub 14',  min:0,  max:13},
+  {key:'sub16',  label:'Sub 16',  min:14, max:15},
+  {key:'sub18',  label:'Sub 18',  min:16, max:17},
+  {key:'sub21',  label:'Sub 21',  min:18, max:20},
+  {key:'sub25',  label:'Sub 25',  min:21, max:24},
+  {key:'mayores',label:'Mayores', min:25, max:999},
+];
+
+let pfBowType = null;
+let pfLoaded  = false;
+
+// ── Calcular categoría por edad ──────────────────────────
+function pfGetAge(birthDate){
+  if(!birthDate) return null;
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if(m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+function pfGetCategory(age){
+  if(age === null) return null;
+  return MX_CATEGORIES.find(c => age >= c.min && age <= c.max) || null;
+}
+
+// ── Actualizar badge de categoría ────────────────────────
+function pfUpdateAgeBadge(birthDate){
+  const age = pfGetAge(birthDate);
+  const cat = pfGetCategory(age);
+  const calcEl = document.getElementById('pf-age-calc');
+  const badgeWrap = document.getElementById('pf-age-badge-wrap');
+
+  if(age !== null){
+    calcEl.textContent = `${age} años`;
+  } else {
+    calcEl.textContent = '';
+  }
+
+  if(cat){
+    badgeWrap.innerHTML = `<div class="pf-age-badge">🏅 ${cat.label}</div>`;
+  } else {
+    badgeWrap.innerHTML = '';
+  }
+}
+
+// ── Selección de arco ────────────────────────────────────
+window.pfSelBow = function(type){
+  pfBowType = type;
+  ['recurvo','compuesto','barebow'].forEach(t=>{
+    document.getElementById('pf-bow-'+t).classList.toggle('sel', t === type);
+  });
+};
+
+// ── Cargar perfil ────────────────────────────────────────
+async function pfLoad(){
+  const userId = window._supabaseUserId;
+  if(!userId) return;
+
+  // Header
+  const user = (await window._supabaseClient.auth.getUser()).data?.user;
+  if(user){
+    const email = user.email || '';
+    const nameHint = user.user_metadata?.nombre || user.user_metadata?.full_name || email.split('@')[0] || '?';
+    document.getElementById('pf-header-email').textContent = email;
+    document.getElementById('pf-avatar-big').textContent = nameHint.charAt(0).toUpperCase();
+  }
+
+  try{
+    const headers = {
+      apikey: window._supabaseAnonKey || '',
+      Authorization: 'Bearer ' + ((await window._supabaseClient.auth.getSession()).data.session?.access_token || '')
+    };
+    const res = await fetch(`${SUPA}/rest/v1/archer_profiles?user_id=eq.${userId}&select=*`, {headers});
+    const data = await res.json();
+    const p = data[0];
+    if(!p) return;
+
+    if(p.display_name){
+      document.getElementById('pf-name').value = p.display_name;
+      document.getElementById('pf-header-name').textContent = p.display_name;
+      document.getElementById('pf-avatar-big').textContent = p.display_name.charAt(0).toUpperCase();
+    }
+    if(p.birth_date){
+      document.getElementById('pf-birth').value = p.birth_date;
+      pfUpdateAgeBadge(p.birth_date);
+    }
+    if(p.estado){
+      document.getElementById('pf-estado').value = p.estado;
+    }
+    if(p.club_name){
+      document.getElementById('pf-club').value = p.club_name;
+    }
+    if(p.bow_type){
+      pfSelBow(p.bow_type);
+    }
+  } catch(e){ console.error('pfLoad error:', e); }
+  pfLoaded = true;
+}
+
+// ── Guardar perfil ───────────────────────────────────────
+window.pfSave = async function(){
+  const btn = document.getElementById('pf-save-btn');
+  const msg = document.getElementById('pf-msg');
+  const userId = window._supabaseUserId;
+  if(!userId){ pfShowMsg('Debes iniciar sesión', false); return; }
+
+  const name      = document.getElementById('pf-name').value.trim();
+  const birthDate = document.getElementById('pf-birth').value;
+  const estado    = document.getElementById('pf-estado').value;
+  const club      = document.getElementById('pf-club').value.trim();
+
+  if(!name){ pfShowMsg('Escribe tu nombre completo', false); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  try{
+    const session = (await window._supabaseClient.auth.getSession()).data.session;
+    const headers = {
+      'apikey': window._supabaseAnonKey || '',
+      'Authorization': 'Bearer ' + (session?.access_token || ''),
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates'
+    };
+
+    const payload = {
+      user_id:      userId,
+      display_name: name,
+      birth_date:   birthDate || null,
+      estado:       estado    || null,
+      club_name:    club      || null,
+      bow_type:     pfBowType || null,
+      updated_at:   new Date().toISOString()
+    };
+
+    const res = await fetch(`${SUPA}/rest/v1/archer_profiles`, {
+      method: 'POST', headers,
+      body: JSON.stringify(payload)
+    });
+
+    if(res.ok || res.status === 201 || res.status === 204){
+      // Actualizar header
+      document.getElementById('pf-header-name').textContent = name;
+      document.getElementById('pf-avatar-big').textContent = name.charAt(0).toUpperCase();
+      // Actualizar sidebar
+      const sbName = document.getElementById('sb-user-name');
+      const sbAvatar = document.getElementById('sb-avatar-initials');
+      if(sbName) sbName.textContent = name;
+      if(sbAvatar) sbAvatar.textContent = name.charAt(0).toUpperCase();
+      // Badge edad
+      pfUpdateAgeBadge(birthDate);
+      pfShowMsg('✓ Perfil guardado', true);
+      if(typeof showToast === 'function') showToast('✓ Perfil actualizado');
+    } else {
+      const err = await res.text();
+      pfShowMsg('Error al guardar: ' + err.slice(0,60), false);
+    }
+  } catch(e){
+    pfShowMsg('Error: ' + e.message, false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar perfil →';
+  }
+};
+
+function pfShowMsg(text, ok){
+  const el = document.getElementById('pf-msg');
+  el.textContent = text;
+  el.className = 'pf-msg ' + (ok ? 'ok' : 'err');
+  el.style.display = 'block';
+  setTimeout(()=>{ el.style.display='none'; }, 3500);
+}
+
+// ── Listener fecha nacimiento ────────────────────────────
+document.getElementById('pf-birth').addEventListener('change', function(){
+  pfUpdateAgeBadge(this.value);
+});
+
+// ── Auto-cargar cuando el usuario está listo ─────────────
+if(window._supabaseUserId){
+  pfLoad();
+} else {
+  window.addEventListener('supabase-user-ready', pfLoad);
+}
+
+// Recargar si se activa el tab
+document.addEventListener('supabase-user-ready', ()=>{
+  if(!pfLoaded) pfLoad();
+});
+
+})();
+</script>
+</div>
+
+<div id="tab-coach" class="tab-panel" style="display:none">
+<style>
+.co-wrap{ max-width:680px; margin:0 auto; }
+
+/* Filters bar */
+.co-filters{
+  background:var(--surface);
+  border:0.5px solid var(--border2);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:12px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+@media(min-width:520px){
+  .co-filters{ grid-template-columns:1fr 1fr 1fr 1fr; }
+}
+.co-filter-label{
+  font-size:9px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:rgba(255,255,255,0.3);
+  margin-bottom:4px;
+}
+.co-select{
+  width:100%;padding:8px 10px;
+  border:0.5px solid rgba(255,255,255,0.1);
+  border-radius:8px;
+  background:#1a1a1a;
+  color:var(--text);font-size:12px;
+  font-family:'DM Sans',sans-serif;
+}
+.co-select:focus{ outline:none;border-color:rgba(216,209,90,0.4); }
+
+/* Stats summary */
+.co-stats-row{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:8px;margin-bottom:12px;
+}
+.co-stat-box{
+  background:var(--surface);
+  border:0.5px solid var(--border2);
+  border-radius:10px;
+  padding:12px 10px;
+  text-align:center;
+}
+.co-stat-val{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:26px;color:#d8d15a;line-height:1;
+}
+.co-stat-lbl{
+  font-size:9px;color:rgba(255,255,255,0.35);
+  text-transform:uppercase;letter-spacing:.06em;
+  margin-top:3px;
+}
+
+/* Archer table */
+.co-table{
+  background:var(--surface);
+  border:0.5px solid var(--border2);
+  border-radius:12px;
+  overflow:hidden;
+  margin-bottom:12px;
+}
+.co-table-head{
+  display:grid;
+  grid-template-columns:1fr 80px 60px 60px 60px;
+  padding:8px 14px;
+  background:rgba(255,255,255,0.03);
+  border-bottom:0.5px solid rgba(255,255,255,0.06);
+  font-size:9px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:rgba(255,255,255,0.3);
+}
+.co-row{
+  display:grid;
+  grid-template-columns:1fr 80px 60px 60px 60px;
+  padding:10px 14px;
+  border-bottom:0.5px solid rgba(255,255,255,0.04);
+  align-items:center;
+  transition:background .1s;
+  cursor:pointer;
+}
+.co-row:last-child{ border-bottom:none; }
+.co-row:hover{ background:rgba(255,255,255,0.03); }
+
+.co-archer-name{
+  font-size:13px;font-weight:600;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.co-archer-meta{
+  font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;
+}
+.co-num{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:18px;text-align:right;
+}
+.co-pill{
+  font-size:9px;padding:2px 7px;border-radius:10px;
+  font-weight:600;display:inline-block;
+}
+
+/* Detail drawer */
+.co-detail{
+  background:var(--surface);
+  border:0.5px solid rgba(216,209,90,0.2);
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:12px;
+  display:none;
+}
+.co-detail.open{ display:block; }
+.co-detail-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:20px;letter-spacing:.04em;
+  color:#d8d15a;margin-bottom:12px;
+}
+.co-mini-stat{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:7px 0;
+  border-bottom:0.5px solid rgba(255,255,255,0.05);
+  font-size:12px;
+}
+.co-mini-stat:last-child{ border-bottom:none; }
+.co-mini-label{ color:rgba(255,255,255,0.45); }
+.co-mini-val{ font-weight:600;color:#fff; }
+
+/* Empty state */
+.co-empty{
+  text-align:center;padding:32px 0;
+  font-size:12px;color:rgba(255,255,255,0.3);
+}
+.co-empty-icon{ font-size:32px;margin-bottom:8px; }
+
+/* Loading */
+.co-loading{
+  text-align:center;padding:24px;
+  font-size:12px;color:rgba(255,255,255,0.35);
+}
+</style>
+
+<div class="co-wrap">
+
+  <!-- Filtros -->
+  <div class="co-filters">
+    <div>
+      <div class="co-filter-label">Club</div>
+      <select class="co-select" id="co-filter-club" onchange="coApplyFilters()">
+        <option value="">Todos los clubes</option>
+      </select>
+    </div>
+    <div>
+      <div class="co-filter-label">Tipo de arco</div>
+      <select class="co-select" id="co-filter-bow" onchange="coApplyFilters()">
+        <option value="">Todos</option>
+        <option value="recurvo">Recurvo</option>
+        <option value="compuesto">Compuesto</option>
+        <option value="barebow">Bare bow</option>
+      </select>
+    </div>
+    <div>
+      <div class="co-filter-label">Categoría</div>
+      <select class="co-select" id="co-filter-cat" onchange="coApplyFilters()">
+        <option value="">Todas</option>
+        <option value="sub14">Sub 14</option>
+        <option value="sub16">Sub 16</option>
+        <option value="sub18">Sub 18</option>
+        <option value="sub21">Sub 21</option>
+        <option value="sub25">Sub 25</option>
+        <option value="mayores">Mayores</option>
+      </select>
+    </div>
+    <div>
+      <div class="co-filter-label">Estado</div>
+      <select class="co-select" id="co-filter-estado" onchange="coApplyFilters()">
+        <option value="">Todos</option>
+        <option>Aguascalientes</option><option>Baja California</option>
+        <option>Baja California Sur</option><option>Campeche</option>
+        <option>Chiapas</option><option>Chihuahua</option>
+        <option>Ciudad de México</option><option>Coahuila</option>
+        <option>Colima</option><option>Durango</option>
+        <option>Estado de México</option><option>Guanajuato</option>
+        <option>Guerrero</option><option>Hidalgo</option>
+        <option>Jalisco</option><option>Michoacán</option>
+        <option>Morelos</option><option>Nayarit</option>
+        <option>Nuevo León</option><option>Oaxaca</option>
+        <option>Puebla</option><option>Querétaro</option>
+        <option>Quintana Roo</option><option>San Luis Potosí</option>
+        <option>Sinaloa</option><option>Sonora</option>
+        <option>Tabasco</option><option>Tamaulipas</option>
+        <option>Tlaxcala</option><option>Veracruz</option>
+        <option>Yucatán</option><option>Zacatecas</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Stats resumen -->
+  <div class="co-stats-row">
+    <div class="co-stat-box">
+      <div class="co-stat-val" id="co-stat-total">—</div>
+      <div class="co-stat-lbl">Arqueros</div>
+    </div>
+    <div class="co-stat-box">
+      <div class="co-stat-val" id="co-stat-avg">—</div>
+      <div class="co-stat-lbl">Prom. score</div>
+    </div>
+    <div class="co-stat-box">
+      <div class="co-stat-val" id="co-stat-best">—</div>
+      <div class="co-stat-lbl">Mejor score</div>
+    </div>
+    <div class="co-stat-box">
+      <div class="co-stat-val" id="co-stat-sessions">—</div>
+      <div class="co-stat-lbl">Sesiones tot.</div>
+    </div>
+  </div>
+
+  <!-- Detail drawer (se abre al tocar arquero) -->
+  <div class="co-detail" id="co-detail"></div>
+
+  <!-- Tabla de arqueros -->
+  <div class="co-table" id="co-table">
+    <div class="co-loading">Cargando arqueros...</div>
+  </div>
+
+</div><!-- end co-wrap -->
+
+<script>
+(function(){
+
+const SUPA = 'https://axaiyaflubssaghvhefe.supabase.co';
+
+const CAT_RANGES = [
+  {key:'sub14',   label:'Sub 14',  min:0,  max:13},
+  {key:'sub16',   label:'Sub 16',  min:14, max:15},
+  {key:'sub18',   label:'Sub 18',  min:16, max:17},
+  {key:'sub21',   label:'Sub 21',  min:18, max:20},
+  {key:'sub25',   label:'Sub 25',  min:21, max:24},
+  {key:'mayores', label:'Mayores', min:25, max:999},
+];
+
+const BOW_COLORS = {
+  recurvo:   '#5dcaa5',
+  compuesto: '#d8d15a',
+  barebow:   '#9a88dd'
+};
+const BOW_LABELS = {
+  recurvo:'Recurvo', compuesto:'Compuesto', barebow:'Bare bow'
+};
+
+let coAllArchers  = [];  // todos los perfiles cargados
+let coAllScores   = {};  // user_id → {best, avg, sessions}
+let coFiltered    = [];
+let coOpenDetail  = null;
+
+// ── Helpers ──────────────────────────────────────────────
+function coGetAge(birthDate){
+  if(!birthDate) return null;
+  const today = new Date(), birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if(m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+function coGetCategory(age){
+  if(age === null) return null;
+  return CAT_RANGES.find(c => age >= c.min && age <= c.max) || null;
+}
+
+async function coFetch(path){
+  const session = (await window._supabaseClient.auth.getSession()).data.session;
+  const res = await fetch(SUPA + path, {
+    headers:{
+      apikey: window._supabaseAnonKey || '',
+      Authorization: 'Bearer ' + (session?.access_token || '')
+    }
+  });
+  return res.json();
+}
+
+// ── Cargar datos ─────────────────────────────────────────
+async function coLoad(){
+  document.getElementById('co-table').innerHTML = '<div class="co-loading">Cargando arqueros...</div>';
+
+  try{
+    // 1. Perfiles de arqueros
+    const profiles = await coFetch('/rest/v1/archer_profiles?select=*&order=display_name.asc&limit=200');
+    if(!Array.isArray(profiles) || !profiles.length){
+      coAllArchers = [];
+      coRender();
+      return;
+    }
+    coAllArchers = profiles;
+
+    // 2. Scores de liga (league_round_scores)
+    const userIds = profiles.map(p=>p.user_id).join(',');
+    const scores = await coFetch(`/rest/v1/league_round_scores?user_id=in.(${userIds})&select=user_id,score&limit=2000`);
+
+    // Agrupar scores por user_id
+    const scoreMap = {};
+    if(Array.isArray(scores)){
+      scores.forEach(s=>{
+        if(!scoreMap[s.user_id]) scoreMap[s.user_id] = [];
+        scoreMap[s.user_id].push(s.score);
+      });
+    }
+    coAllScores = {};
+    Object.entries(scoreMap).forEach(([uid, arr])=>{
+      const best = Math.max(...arr);
+      const avg  = Math.round(arr.reduce((a,b)=>a+b,0)/arr.length);
+      coAllScores[uid] = {best, avg, sessions: arr.length};
+    });
+
+    // 3. Poblar filtro de clubes
+    const clubs = [...new Set(profiles.map(p=>p.club_name).filter(Boolean))].sort();
+    const clubSel = document.getElementById('co-filter-club');
+    clubSel.innerHTML = '<option value="">Todos los clubes</option>' +
+      clubs.map(c=>`<option value="${c}">${c}</option>`).join('');
+
+    coApplyFilters();
+
+  } catch(e){
+    console.error('coLoad error:', e);
+    document.getElementById('co-table').innerHTML = '<div class="co-empty"><div class="co-empty-icon">⚠️</div>Error cargando datos</div>';
+  }
+}
+
+// ── Filtrar y renderizar ──────────────────────────────────
+window.coApplyFilters = function(){
+  const club   = document.getElementById('co-filter-club').value;
+  const bow    = document.getElementById('co-filter-bow').value;
+  const cat    = document.getElementById('co-filter-cat').value;
+  const estado = document.getElementById('co-filter-estado').value;
+
+  coFiltered = coAllArchers.filter(p=>{
+    if(club   && p.club_name !== club) return false;
+    if(bow    && p.bow_type  !== bow)  return false;
+    if(estado && p.estado    !== estado) return false;
+    if(cat){
+      const age = coGetAge(p.birth_date);
+      const c   = coGetCategory(age);
+      if(!c || c.key !== cat) return false;
+    }
+    return true;
+  });
+
+  coRender();
+};
+
+// ── Renderizar tabla ──────────────────────────────────────
+function coRender(){
+  const tableEl = document.getElementById('co-table');
+
+  // Stats resumen
+  const totSessions = coFiltered.reduce((a,p)=>(coAllScores[p.user_id]?.sessions||0)+a, 0);
+  const allBest  = coFiltered.map(p=>coAllScores[p.user_id]?.best).filter(Boolean);
+  const allAvg   = coFiltered.map(p=>coAllScores[p.user_id]?.avg).filter(Boolean);
+  const globalAvg  = allAvg.length  ? Math.round(allAvg.reduce((a,b)=>a+b,0)/allAvg.length) : null;
+  const globalBest = allBest.length ? Math.max(...allBest) : null;
+
+  document.getElementById('co-stat-total').textContent    = coFiltered.length;
+  document.getElementById('co-stat-avg').textContent      = globalAvg  ?? '—';
+  document.getElementById('co-stat-best').textContent     = globalBest ?? '—';
+  document.getElementById('co-stat-sessions').textContent = totSessions || '—';
+
+  if(!coFiltered.length){
+    tableEl.innerHTML = `<div class="co-empty">
+      <div class="co-empty-icon">🏹</div>
+      Sin arqueros con ese filtro
+    </div>`;
+    return;
+  }
+
+  // Ordenar por mejor score desc
+  const sorted = [...coFiltered].sort((a,b)=>{
+    const sa = coAllScores[a.user_id]?.best || 0;
+    const sb = coAllScores[b.user_id]?.best || 0;
+    return sb - sa;
+  });
+
+  const rows = sorted.map((p, i)=>{
+    const age  = coGetAge(p.birth_date);
+    const cat  = coGetCategory(age);
+    const sc   = coAllScores[p.user_id];
+    const bowColor = BOW_COLORS[p.bow_type] || 'rgba(255,255,255,0.3)';
+    const bowLabel = BOW_LABELS[p.bow_type] || '—';
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+
+    return`<div class="co-row" onclick="coToggleDetail('${p.user_id}')">
+      <div>
+        <div class="co-archer-name">${medal} ${p.display_name||'—'}</div>
+        <div class="co-archer-meta">
+          ${p.club_name||'Sin club'}
+          ${cat ? ` · ${cat.label}` : ''}
+          ${age !== null ? ` · ${age} años` : ''}
+        </div>
+      </div>
+      <div>
+        <span class="co-pill" style="background:${bowColor}18;color:${bowColor};border:0.5px solid ${bowColor}44">
+          ${bowLabel}
+        </span>
+      </div>
+      <div class="co-num" style="color:#5dcaa5">${sc?.best ?? '—'}</div>
+      <div class="co-num" style="color:rgba(255,255,255,0.6)">${sc?.avg ?? '—'}</div>
+      <div class="co-num" style="color:rgba(255,255,255,0.4)">${sc?.sessions ?? 0}</div>
+    </div>`;
+  }).join('');
+
+  tableEl.innerHTML = `
+    <div class="co-table-head">
+      <div>Arquero</div>
+      <div>Arco</div>
+      <div style="text-align:right">Mejor</div>
+      <div style="text-align:right">Prom.</div>
+      <div style="text-align:right">Ses.</div>
+    </div>
+    ${rows}`;
+}
+
+// ── Detalle por arquero ───────────────────────────────────
+window.coToggleDetail = function(userId){
+  const detail = document.getElementById('co-detail');
+  if(coOpenDetail === userId){
+    coOpenDetail = null;
+    detail.classList.remove('open');
+    detail.innerHTML = '';
+    return;
+  }
+  coOpenDetail = userId;
+  const p  = coAllArchers.find(a=>a.user_id===userId);
+  const sc = coAllScores[userId];
+  if(!p){ detail.classList.remove('open'); return; }
+
+  const age = coGetAge(p.birth_date);
+  const cat = coGetCategory(age);
+  const bowColor = BOW_COLORS[p.bow_type] || 'rgba(255,255,255,0.3)';
+
+  detail.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="co-detail-title">${p.display_name || '—'}</div>
+      <button onclick="coToggleDetail('${userId}')" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div class="co-mini-stat">
+      <span class="co-mini-label">Club</span>
+      <span class="co-mini-val">${p.club_name||'Sin club'}</span>
+    </div>
+    <div class="co-mini-stat">
+      <span class="co-mini-label">Estado</span>
+      <span class="co-mini-val">${p.estado||'—'}</span>
+    </div>
+    <div class="co-mini-stat">
+      <span class="co-mini-label">Edad</span>
+      <span class="co-mini-val">${age !== null ? age+' años' : '—'}</span>
+    </div>
+    <div class="co-mini-stat">
+      <span class="co-mini-label">Categoría</span>
+      <span class="co-mini-val">${cat?.label || '—'}</span>
+    </div>
+    <div class="co-mini-stat">
+      <span class="co-mini-label">Tipo de arco</span>
+      <span class="co-mini-val" style="color:${bowColor}">${BOW_LABELS[p.bow_type]||'—'}</span>
+    </div>
+    <div style="height:0.5px;background:rgba(255,255,255,0.06);margin:10px 0"></div>
+    <div class="co-mini-stat">
+      <span class="co-mini-label">Mejor score</span>
+      <span class="co-mini-val" style="color:#5dcaa5;font-family:'Bebas Neue',sans-serif;font-size:22px">${sc?.best ?? '—'}</span>
+    </div>
+    <div class="co-mini-stat">
+      <span class="co-mini-label">Promedio</span>
+      <span class="co-mini-val" style="font-family:'Bebas Neue',sans-serif;font-size:22px">${sc?.avg ?? '—'}</span>
+    </div>
+    <div class="co-mini-stat">
+      <span class="co-mini-label">Sesiones registradas</span>
+      <span class="co-mini-val">${sc?.sessions ?? 0}</span>
+    </div>`;
+
+  detail.classList.add('open');
+
+  // Scroll al detalle
+  setTimeout(()=> detail.scrollIntoView({behavior:'smooth', block:'nearest'}), 100);
+};
+
+// ── Init ─────────────────────────────────────────────────
+if(window._supabaseUserId){
+  coLoad();
+} else {
+  window.addEventListener('supabase-user-ready', coLoad);
+}
+
+// Recargar al entrar al tab
+window._coReload = coLoad;
 
 })();
 </script>
