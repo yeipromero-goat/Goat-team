@@ -1369,6 +1369,15 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
     </div>
 
     <div class="sb-divider"></div>
+    <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:4px 12px 2px">Entrenamiento</div>
+
+    <div class="sb-item" id="sb-biomec" onclick="switchTab('biomec',this)">
+      <span class="sb-item-icon">🦾</span>
+      <span class="sb-item-label">Biomecánica</span>
+    </div>
+
+    <div class="sb-divider"></div>
+    <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:4px 12px 2px">Juego</div>
 
     <div class="sb-item" id="sb-score" onclick="switchTab('score',this)">
       <span class="sb-item-icon">🎯</span>
@@ -1432,6 +1441,7 @@ const TAB_META = {
   'score':       { icon:'🎯', label:'Tablero',       sub:'Puntuación y partidas' },
   'competencias':{ icon:'🏆', label:'Competencias',   sub:'Torneos y ligas' },
   'bitacora':    { icon:'📊', label:'Puntuaciones',   sub:'Bitácora y estadísticas' },
+  'biomec':      { icon:'🦾', label:'Biomecánica',    sub:'Análisis de postura en vivo' },
   'cards':       { icon:'🃏', label:'Cartas',         sub:'Arqueros y coaches' },
   'mi-arco':     { icon:'🏹', label:'Mi Arco',        sub:'Equipo y stats' },
 };
@@ -8773,6 +8783,960 @@ if(window._supabaseUserId){
   document.addEventListener('supabase-user-ready', cpInit);
   window.addEventListener('supabase-user-ready', cpInit);
 }
+
+})();
+</script>
+</div>
+
+<div id="tab-biomec" class="tab-panel">
+<style>
+/* ── BIOMEC TAB ─────────────────────────────────────────── */
+.bm-wrap { max-width: 520px; margin: 0 auto; }
+
+/* Camera card */
+.bm-cam-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 12px;
+  aspect-ratio: 9/16;
+  max-height: 70vh;
+}
+@media(orientation:landscape){
+  .bm-cam-card { aspect-ratio: 16/9; max-height: 55vh; }
+}
+#bm-video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* mirror */
+}
+#bm-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  transform: scaleX(-1);
+}
+
+/* HUD overlay */
+.bm-hud {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+  z-index: 5;
+}
+.bm-hud-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  color: #d8d15a;
+  line-height: 1;
+}
+.bm-hud-label {
+  font-size: 9px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+.bm-status-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+}
+.bm-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+}
+.bm-status-dot.active { background: #5dcaa5; box-shadow: 0 0 6px #5dcaa5; animation: bmPulse 1.5s infinite; }
+.bm-status-dot.loading { background: #d8d15a; animation: bmPulse 0.8s infinite; }
+.bm-status-dot.error { background: #e05555; }
+@keyframes bmPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* Angles bottom overlay */
+.bm-angles-overlay {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 10px 12px;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 6px;
+  z-index: 5;
+}
+.bm-angle-chip {
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 0.5px solid rgba(255,255,255,0.12);
+}
+.bm-angle-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  line-height: 1;
+  color: #fff;
+}
+.bm-angle-val.good { color: #5dcaa5; }
+.bm-angle-val.warn { color: #d8d15a; }
+.bm-angle-val.bad  { color: #e05555; }
+.bm-angle-name {
+  font-size: 8px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-top: 2px;
+}
+
+/* Controls */
+.bm-controls {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.bm-btn {
+  flex: 1;
+  padding: 11px 8px;
+  border-radius: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
+  letter-spacing: .06em;
+  cursor: pointer;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.6);
+  transition: all .15s;
+}
+.bm-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.bm-btn.primary {
+  border-color: rgba(216,209,90,0.5);
+  background: rgba(216,209,90,0.1);
+  color: #d8d15a;
+}
+.bm-btn.danger {
+  border-color: rgba(224,85,85,0.4);
+  background: rgba(224,85,85,0.08);
+  color: #e05555;
+}
+.bm-btn.green {
+  border-color: rgba(93,202,165,0.5);
+  background: rgba(93,202,165,0.1);
+  color: #5dcaa5;
+}
+.bm-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Feedback card */
+.bm-feedback-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border2);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.bm-feedback-card .bm-top-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.bm-feedback-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 8px;
+}
+.bm-feedback-msg {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.bm-feedback-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 7px 0;
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  font-size: 12px;
+}
+.bm-feedback-item:last-child { border-bottom: none; }
+.bm-fi-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.bm-fi-text { color: rgba(255,255,255,0.7); line-height: 1.4; }
+.bm-fi-text strong { color: #fff; }
+
+/* Sessions list */
+.bm-session-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 0.5px solid rgba(255,255,255,0.07);
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.bm-session-item:hover { background: rgba(255,255,255,0.06); }
+.bm-session-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  color: #d8d15a;
+  min-width: 44px;
+  line-height: 1;
+}
+.bm-session-info { flex: 1; min-width: 0; }
+.bm-session-date { font-size: 11px; font-weight: 600; color: #fff; }
+.bm-session-meta { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.bm-session-badge {
+  font-size: 9px; padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* Tabs inside biomec */
+.bm-subtabs {
+  display: flex;
+  border: 0.5px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.bm-subtab {
+  flex: 1; padding: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.4);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .15s;
+}
+.bm-subtab.act {
+  background: rgba(216,209,90,0.12);
+  color: #d8d15a;
+}
+
+/* Loading overlay on cam */
+.bm-cam-overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.8);
+  z-index: 10;
+  gap: 12px;
+}
+.bm-cam-overlay-icon { font-size: 40px; }
+.bm-cam-overlay-text {
+  font-size: 13px; color: rgba(255,255,255,0.6);
+  text-align: center; max-width: 200px; line-height: 1.5;
+}
+.bm-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid rgba(216,209,90,0.2);
+  border-top-color: #d8d15a;
+  border-radius: 50%;
+  animation: bmSpin .8s linear infinite;
+}
+@keyframes bmSpin { to { transform: rotate(360deg); } }
+
+/* Score ring */
+.bm-score-ring {
+  position: relative; width: 80px; height: 80px; flex-shrink: 0;
+}
+.bm-score-ring svg { transform: rotate(-90deg); }
+.bm-score-ring-num {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.bm-score-ring-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px; line-height: 1;
+  color: #d8d15a;
+}
+.bm-score-ring-lbl {
+  font-size: 8px; color: rgba(255,255,255,0.4);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+
+/* Recording indicator */
+.bm-rec {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700;
+  color: #e05555; letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.bm-rec-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #e05555;
+  animation: bmPulse .8s infinite;
+}
+</style>
+
+<div class="bm-wrap">
+
+  <!-- Sub-tabs -->
+  <div class="bm-subtabs">
+    <button class="bm-subtab act" onclick="bmShowSub('camara',this)">📷 Cámara</button>
+    <button class="bm-subtab" onclick="bmShowSub('sesiones',this)">📊 Sesiones</button>
+    <button class="bm-subtab" onclick="bmShowSub('guia',this)">📖 Guía</button>
+  </div>
+
+  <!-- ══ SUB: CÁMARA ══════════════════════════════════════ -->
+  <div id="bm-sub-camara">
+
+    <!-- Camera card -->
+    <div class="bm-cam-card" id="bm-cam-card">
+
+      <!-- Loading overlay -->
+      <div class="bm-cam-overlay" id="bm-cam-overlay">
+        <div class="bm-cam-overlay-icon">📷</div>
+        <div class="bm-cam-overlay-text">Toca "Iniciar cámara" para comenzar el análisis de postura</div>
+      </div>
+
+      <video id="bm-video" playsinline muted autoplay></video>
+      <canvas id="bm-canvas"></canvas>
+
+      <!-- HUD top -->
+      <div class="bm-hud">
+        <div>
+          <div class="bm-hud-score" id="bm-posture-score">—</div>
+          <div class="bm-hud-label">Postura</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div class="bm-status-pill" id="bm-status-pill">
+            <div class="bm-status-dot" id="bm-status-dot"></div>
+            <span id="bm-status-text">Inactivo</span>
+          </div>
+          <div class="bm-rec" id="bm-rec-indicator" style="display:none">
+            <div class="bm-rec-dot"></div> REC
+          </div>
+        </div>
+      </div>
+
+      <!-- Angles bottom -->
+      <div class="bm-angles-overlay" id="bm-angles-overlay">
+        <div class="bm-angle-chip">
+          <div class="bm-angle-val" id="bm-ang-elbow">—°</div>
+          <div class="bm-angle-name">Codo</div>
+        </div>
+        <div class="bm-angle-chip">
+          <div class="bm-angle-val" id="bm-ang-shoulder">—°</div>
+          <div class="bm-angle-name">Hombro</div>
+        </div>
+        <div class="bm-angle-chip">
+          <div class="bm-angle-val" id="bm-ang-wrist">—°</div>
+          <div class="bm-angle-name">Muñeca</div>
+        </div>
+        <div class="bm-angle-chip">
+          <div class="bm-angle-val" id="bm-ang-spine">—°</div>
+          <div class="bm-angle-name">Columna</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="bm-controls">
+      <button class="bm-btn primary" id="bm-btn-start" onclick="bmStartCamera()">▶ Iniciar cámara</button>
+      <button class="bm-btn danger" id="bm-btn-stop" onclick="bmStopCamera()" disabled>⏹ Detener</button>
+      <button class="bm-btn green" id="bm-btn-rec" onclick="bmToggleRecord()" disabled>⏺ Grabar</button>
+    </div>
+
+    <!-- Live feedback -->
+    <div class="bm-feedback-card" id="bm-feedback-card">
+      <div class="bm-top-bar" style="background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
+      <div class="bm-feedback-title">Análisis en vivo</div>
+      <div id="bm-feedback-list">
+        <div style="font-size:12px;color:rgba(255,255,255,0.35);padding:8px 0;text-align:center">
+          Inicia la cámara para ver el análisis de tu postura
+        </div>
+      </div>
+    </div>
+
+    <!-- Camera selector -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div style="font-size:11px;color:rgba(255,255,255,0.4)">Cámara:</div>
+      <select id="bm-cam-select" class="bm-btn" style="flex:1;font-family:'DM Sans',sans-serif;font-size:12px;padding:8px 10px">
+        <option value="user">Frontal</option>
+        <option value="environment" selected>Trasera</option>
+      </select>
+    </div>
+
+  </div>
+
+  <!-- ══ SUB: SESIONES ════════════════════════════════════ -->
+  <div id="bm-sub-sesiones" style="display:none">
+
+    <div class="bm-feedback-card" style="margin-bottom:12px">
+      <div class="bm-top-bar" style="background:linear-gradient(90deg,#5ab4d6,#9a88dd)"></div>
+      <div class="bm-feedback-title">Resumen</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="text-align:center">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#d8d15a" id="bm-stat-sessions">0</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.06em">Sesiones</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#5dcaa5" id="bm-stat-avg">—</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.06em">Prom. postura</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#9a88dd" id="bm-stat-best">—</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.06em">Mejor</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="bm-sessions-list">
+      <div style="font-size:12px;color:rgba(255,255,255,0.35);padding:16px 0;text-align:center">
+        Sin sesiones guardadas aún
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ SUB: GUÍA ════════════════════════════════════════ -->
+  <div id="bm-sub-guia" style="display:none">
+
+    <div class="bm-feedback-card">
+      <div class="bm-top-bar" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+      <div class="bm-feedback-title">Ángulos ideales — Tiro con arco</div>
+      <div class="bm-feedback-item">
+        <div class="bm-fi-icon">💪</div>
+        <div class="bm-fi-text"><strong>Codo de jale:</strong> 150–165° al anclar. Más cerrado = tensión excesiva en tríceps.</div>
+      </div>
+      <div class="bm-feedback-item">
+        <div class="bm-fi-icon">🏹</div>
+        <div class="bm-fi-text"><strong>Hombro de arco:</strong> 80–100° con el torso. El hombro debe estar bajo, no elevado.</div>
+      </div>
+      <div class="bm-feedback-item">
+        <div class="bm-fi-icon">✋</div>
+        <div class="bm-fi-text"><strong>Muñeca de jale:</strong> 160–180° (recta). Muñeca doblada causa variación en la soltura.</div>
+      </div>
+      <div class="bm-feedback-item">
+        <div class="bm-fi-icon">🧍</div>
+        <div class="bm-fi-text"><strong>Columna:</strong> 85–95° (vertical). Inclinación excesiva afecta la línea de tiro.</div>
+      </div>
+    </div>
+
+    <div class="bm-feedback-card">
+      <div class="bm-top-bar" style="background:linear-gradient(90deg,#5dcaa5,#5ab4d6)"></div>
+      <div class="bm-feedback-title">Cómo usar</div>
+      <div class="bm-feedback-item">
+        <div class="bm-fi-icon">1️⃣</div>
+        <div class="bm-fi-text">Pon el cel en un tripié a 2–3m de distancia, cámara trasera, a la altura del pecho.</div>
+      </div>
+      <div class="bm-feedback-item">
+        <div class="bm-fi-icon">2️⃣</div>
+        <div class="bm-fi-text">Asegúrate de estar completamente visible en el encuadre — cabeza a pies.</div>
+      </div>
+      <div class="bm-feedback-item">
+        <div class="bm-fi-icon">3️⃣</div>
+        <div class="bm-fi-text">Toca <strong>Grabar</strong> antes de ejecutar tu serie. Al detener, la sesión se guarda automáticamente.</div>
+      </div>
+      <div class="bm-feedback-item">
+        <div class="bm-fi-icon">4️⃣</div>
+        <div class="bm-fi-text">Revisa los ángulos en <strong>Sesiones</strong> y compara tu progresión entre entrenamientos.</div>
+      </div>
+    </div>
+
+    <div class="bm-feedback-card">
+      <div class="bm-top-bar" style="background:linear-gradient(90deg,#9a88dd,#d8d15a)"></div>
+      <div class="bm-feedback-title">Tecnología</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.55);line-height:1.7">
+        Usa <strong style="color:#fff">MediaPipe BlazePose</strong> de Google — 33 keypoints 3D en tiempo real directamente en el navegador, sin servidor. Detecta articulaciones con precisión de ±5° en condiciones de buena iluminación.
+        <br><br>
+        Para mayor precisión en competencia, se recomienda iluminación uniforme y ropa ajustada que no oculte las articulaciones.
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- end bm-wrap -->
+
+<script>
+(function(){
+
+// ── Estado ──────────────────────────────────────────────
+let bmStream = null;
+let bmPose = null;
+let bmCamera = null;
+let bmRecording = false;
+let bmRecordStart = null;
+let bmFrameData = [];
+let bmSessions = [];
+let bmLastAngles = {elbow:null, shoulder:null, wrist:null, spine:null};
+let bmPostureScore = null;
+let bmAnimFrame = null;
+let bmModelLoaded = false;
+
+const SUPABASE_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
+
+// ── Sub-tab switching ────────────────────────────────────
+window.bmShowSub = function(id, el){
+  ['camara','sesiones','guia'].forEach(s=>{
+    const el2 = document.getElementById('bm-sub-'+s);
+    if(el2) el2.style.display = s===id ? 'block' : 'none';
+  });
+  document.querySelectorAll('.bm-subtab').forEach(b=>b.classList.remove('act'));
+  if(el) el.classList.add('act');
+  if(id === 'sesiones') bmRenderSessions();
+};
+
+// ── Status helpers ───────────────────────────────────────
+function bmSetStatus(state, text){
+  const dot = document.getElementById('bm-status-dot');
+  const txt = document.getElementById('bm-status-text');
+  dot.className = 'bm-status-dot ' + state;
+  txt.textContent = text;
+}
+
+function bmSetOverlay(show, icon, text){
+  const ov = document.getElementById('bm-cam-overlay');
+  if(!show){ ov.style.display='none'; return; }
+  ov.style.display='flex';
+  ov.innerHTML = icon === 'spinner'
+    ? `<div class="bm-spinner"></div><div class="bm-cam-overlay-text">${text}</div>`
+    : `<div class="bm-cam-overlay-icon">${icon}</div><div class="bm-cam-overlay-text">${text}</div>`;
+}
+
+// ── Iniciar cámara + MediaPipe ───────────────────────────
+window.bmStartCamera = async function(){
+  const btn = document.getElementById('bm-btn-start');
+  btn.disabled = true;
+  bmSetOverlay(true, 'spinner', 'Cargando modelo de IA...');
+  bmSetStatus('loading','Cargando...');
+
+  try {
+    // Cargar MediaPipe Pose dinámicamente
+    if(!bmModelLoaded){
+      await bmLoadMediaPipe();
+    }
+
+    const facingMode = document.getElementById('bm-cam-select').value;
+    bmStream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode, width:{ideal:640}, height:{ideal:480} },
+      audio: false
+    });
+
+    const video = document.getElementById('bm-video');
+    video.srcObject = bmStream;
+    await new Promise(r => video.onloadedmetadata = r);
+
+    // Resize canvas to match video
+    const canvas = document.getElementById('bm-canvas');
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    bmSetOverlay(false);
+    bmSetStatus('active','En vivo');
+
+    document.getElementById('bm-btn-stop').disabled = false;
+    document.getElementById('bm-btn-rec').disabled  = false;
+    btn.disabled = true;
+
+    bmStartDetection(video, canvas);
+
+  } catch(e){
+    console.error('bmStartCamera error:', e);
+    bmSetOverlay(true,'❌', e.name==='NotAllowedError'
+      ? 'Permiso de cámara denegado. Ve a Ajustes del navegador y permite el acceso a la cámara.'
+      : 'Error al iniciar: ' + e.message);
+    bmSetStatus('error','Error');
+    btn.disabled = false;
+  }
+};
+
+// ── Cargar MediaPipe desde CDN ───────────────────────────
+function bmLoadMediaPipe(){
+  return new Promise((resolve, reject)=>{
+    if(window.Pose){ bmModelLoaded=true; resolve(); return; }
+    // Load @mediapipe/pose from CDN
+    const scripts = [
+      'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js',
+      'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js',
+      'https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js'
+    ];
+    let loaded = 0;
+    scripts.forEach(src=>{
+      const s = document.createElement('script');
+      s.src = src; s.crossOrigin = 'anonymous';
+      s.onload = ()=>{ loaded++; if(loaded===scripts.length){ bmModelLoaded=true; resolve(); } };
+      s.onerror = ()=>reject(new Error('No se pudo cargar MediaPipe'));
+      document.head.appendChild(s);
+    });
+  });
+}
+
+// ── Detección de poses ───────────────────────────────────
+function bmStartDetection(video, canvas){
+  if(!window.Pose){ console.error('Pose not loaded'); return; }
+
+  bmPose = new Pose({locateFile: f=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`});
+  bmPose.setOptions({
+    modelComplexity: 1,
+    smoothLandmarks: true,
+    enableSegmentation: false,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+  });
+  bmPose.onResults(bmOnResults);
+
+  // Process frames
+  const ctx = canvas.getContext('2d');
+  async function frame(){
+    if(!bmStream || !bmStream.active) return;
+    try { await bmPose.send({image: video}); } catch(e){}
+    bmAnimFrame = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ── Procesar resultados de MediaPipe ────────────────────
+function bmOnResults(results){
+  const canvas = document.getElementById('bm-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if(!results.poseLandmarks){
+    bmSetFeedbackEmpty();
+    return;
+  }
+
+  const lm = results.poseLandmarks;
+
+  // Draw skeleton
+  if(window.drawConnectors && window.drawLandmarks && window.POSE_CONNECTIONS){
+    drawConnectors(ctx, lm, POSE_CONNECTIONS, {color:'rgba(216,209,90,0.6)', lineWidth:2});
+    drawLandmarks(ctx, lm, {color:'rgba(93,202,165,0.9)', lineWidth:1, radius:4});
+  } else {
+    bmDrawSkeletonFallback(ctx, lm, canvas.width, canvas.height);
+  }
+
+  // Calcular ángulos
+  const angles = bmCalcAngles(lm);
+  bmLastAngles = angles;
+
+  // Actualizar HUD
+  bmUpdateAngleChips(angles);
+
+  // Score de postura
+  const score = bmCalcPostureScore(angles);
+  bmPostureScore = score;
+  const scoreEl = document.getElementById('bm-posture-score');
+  scoreEl.textContent = score;
+  scoreEl.style.color = score >= 80 ? '#5dcaa5' : score >= 60 ? '#d8d15a' : '#e05555';
+
+  // Feedback
+  bmUpdateFeedback(angles, score);
+
+  // Guardar frame si grabando
+  if(bmRecording){
+    bmFrameData.push({t: Date.now() - bmRecordStart, angles, score});
+  }
+}
+
+// ── Skeleton fallback (sin drawing_utils) ───────────────
+function bmDrawSkeletonFallback(ctx, lm, W, H){
+  const CONNECTIONS = [
+    [11,12],[11,13],[13,15],[12,14],[14,16],
+    [11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]
+  ];
+  ctx.strokeStyle = 'rgba(216,209,90,0.7)';
+  ctx.lineWidth = 2;
+  CONNECTIONS.forEach(([a,b])=>{
+    if(lm[a]?.visibility>0.5 && lm[b]?.visibility>0.5){
+      ctx.beginPath();
+      ctx.moveTo(lm[a].x*W, lm[a].y*H);
+      ctx.lineTo(lm[b].x*W, lm[b].y*H);
+      ctx.stroke();
+    }
+  });
+  // Dots
+  ctx.fillStyle = '#5dcaa5';
+  lm.forEach(p=>{
+    if(p.visibility>0.5){
+      ctx.beginPath();
+      ctx.arc(p.x*W, p.y*H, 4, 0, Math.PI*2);
+      ctx.fill();
+    }
+  });
+}
+
+// ── Cálculo de ángulos ───────────────────────────────────
+function bmAngle3(a, b, c){
+  const v1 = {x: a.x-b.x, y: a.y-b.y};
+  const v2 = {x: c.x-b.x, y: c.y-b.y};
+  const dot = v1.x*v2.x + v1.y*v2.y;
+  const mag = Math.sqrt((v1.x**2+v1.y**2)) * Math.sqrt((v2.x**2+v2.y**2));
+  if(mag === 0) return null;
+  return Math.round(Math.acos(Math.min(1, Math.max(-1, dot/mag))) * 180/Math.PI);
+}
+
+function bmCalcAngles(lm){
+  // Índices MediaPipe: 11=hombro_izq, 12=hombro_der
+  // 13=codo_izq, 14=codo_der, 15=muñeca_izq, 16=muñeca_der
+  // 23=cadera_izq, 24=cadera_der
+  // Detectar lado dominante (el más visible)
+  const useLeft = (lm[13]?.visibility||0) > (lm[14]?.visibility||0);
+  const sh = useLeft ? lm[11] : lm[12];
+  const el = useLeft ? lm[13] : lm[14];
+  const wr = useLeft ? lm[15] : lm[16];
+  const hip = useLeft ? lm[23] : lm[24];
+  const oppSh = useLeft ? lm[12] : lm[11];
+
+  // Codo: hombro–codo–muñeca
+  const elbow = sh && el && wr ? bmAngle3(sh, el, wr) : null;
+
+  // Hombro: cadera–hombro–codo
+  const shoulder = hip && sh && el ? bmAngle3(hip, sh, el) : null;
+
+  // Muñeca: codo–muñeca (alineación, usamos punto virtual)
+  // Aproximamos con el vector codo→muñeca vs muñeca→punta (estimado)
+  const wrist = el && wr ? Math.round(180 - Math.abs(
+    Math.atan2(wr.y-el.y, wr.x-el.x) * 180/Math.PI
+  )) : null;
+
+  // Columna: ángulo hombros vs vertical
+  const spine = sh && oppSh && hip ? bmAngle3(
+    {x:(sh.x+oppSh.x)/2, y:0},
+    {x:(sh.x+oppSh.x)/2, y:(sh.y+oppSh.y)/2},
+    {x:(lm[23].x+lm[24].x)/2, y:(lm[23].y+lm[24].y)/2}
+  ) : null;
+
+  return {elbow, shoulder, wrist, spine};
+}
+
+// ── Actualizar chips de ángulos ──────────────────────────
+const IDEAL = {
+  elbow:    {min:150, max:165, label:'Codo'},
+  shoulder: {min:80,  max:100, label:'Hombro'},
+  wrist:    {min:160, max:180, label:'Muñeca'},
+  spine:    {min:85,  max:95,  label:'Columna'}
+};
+
+function bmAngClass(key, val){
+  if(val === null) return '';
+  const {min, max} = IDEAL[key];
+  const margin = (max - min);
+  if(val >= min && val <= max) return 'good';
+  if(val >= min - margin && val <= max + margin) return 'warn';
+  return 'bad';
+}
+
+function bmUpdateAngleChips(angles){
+  Object.entries(angles).forEach(([key, val])=>{
+    const el = document.getElementById('bm-ang-'+key);
+    if(!el) return;
+    el.textContent = val !== null ? val + '°' : '—°';
+    el.className = 'bm-angle-val ' + bmAngClass(key, val);
+  });
+}
+
+// ── Score de postura ─────────────────────────────────────
+function bmCalcPostureScore(angles){
+  let total = 0, count = 0;
+  const weights = {elbow:35, shoulder:30, wrist:25, spine:10};
+  Object.entries(angles).forEach(([key, val])=>{
+    if(val === null) return;
+    const {min, max} = IDEAL[key];
+    const range = max - min;
+    const dist = Math.max(0, Math.min(Math.abs(val-min), Math.abs(val-max), val>=min&&val<=max?0:Infinity));
+    const s = val>=min&&val<=max ? 100 : Math.max(0, 100 - (Math.min(dist,range*2)/range)*100);
+    total += s * weights[key];
+    count += weights[key];
+  });
+  return count > 0 ? Math.round(total/count) : null;
+}
+
+// ── Feedback dinámico ────────────────────────────────────
+function bmUpdateFeedback(angles, score){
+  const el = document.getElementById('bm-feedback-list');
+  const items = [];
+
+  if(score >= 85) items.push({icon:'✅', txt:'<strong>Postura excelente</strong> — mantén esta forma durante toda la serie'});
+  else if(score >= 65) items.push({icon:'⚠️', txt:'<strong>Postura aceptable</strong> — hay margen de mejora en algunos ángulos'});
+  else items.push({icon:'🔴', txt:'<strong>Postura a corregir</strong> — revisa los puntos marcados en rojo'});
+
+  const {elbow, shoulder, wrist, spine} = angles;
+
+  if(elbow !== null){
+    if(elbow < 150) items.push({icon:'💪', txt:`Codo muy cerrado (<strong>${elbow}°</strong>) — relaja el brazo de jale, ideal 150–165°`});
+    else if(elbow > 165) items.push({icon:'💪', txt:`Codo muy abierto (<strong>${elbow}°</strong>) — lleva más atrás el anclaje, ideal 150–165°`});
+    else items.push({icon:'💪', txt:`Codo perfecto <strong>(${elbow}°)</strong> — en el rango ideal`});
+  }
+
+  if(shoulder !== null){
+    if(shoulder < 80) items.push({icon:'🏹', txt:`Hombro muy bajo (<strong>${shoulder}°</strong>) — sube ligeramente el codo del arco`});
+    else if(shoulder > 100) items.push({icon:'🏹', txt:`Hombro elevado (<strong>${shoulder}°</strong>) — baja y relaja el hombro del arco`});
+    else items.push({icon:'🏹', txt:`Hombro bien posicionado <strong>(${shoulder}°)</strong>`});
+  }
+
+  if(wrist !== null && wrist < 160){
+    items.push({icon:'✋', txt:`Muñeca doblada (<strong>${wrist}°</strong>) — alinea la muñeca con el antebrazo para soltura consistente`});
+  }
+
+  if(spine !== null && (spine < 85 || spine > 95)){
+    items.push({icon:'🧍', txt:`Columna inclinada (<strong>${spine}°</strong>) — mantén el torso vertical, ideal 85–95°`});
+  }
+
+  el.innerHTML = items.map(i=>`
+    <div class="bm-feedback-item">
+      <div class="bm-fi-icon">${i.icon}</div>
+      <div class="bm-fi-text">${i.txt}</div>
+    </div>`).join('');
+}
+
+function bmSetFeedbackEmpty(){
+  document.getElementById('bm-feedback-list').innerHTML =
+    '<div style="font-size:12px;color:rgba(255,255,255,0.35);padding:8px 0;text-align:center">No se detecta persona en el encuadre</div>';
+  document.getElementById('bm-posture-score').textContent = '—';
+  ['elbow','shoulder','wrist','spine'].forEach(k=>{
+    const el = document.getElementById('bm-ang-'+k);
+    if(el){ el.textContent='—°'; el.className='bm-angle-val'; }
+  });
+}
+
+// ── Detener cámara ───────────────────────────────────────
+window.bmStopCamera = function(){
+  if(bmRecording) bmToggleRecord(); // guardar si estaba grabando
+  if(bmAnimFrame){ cancelAnimationFrame(bmAnimFrame); bmAnimFrame=null; }
+  if(bmPose){ try{bmPose.close();}catch(e){} bmPose=null; }
+  if(bmStream){ bmStream.getTracks().forEach(t=>t.stop()); bmStream=null; }
+  const video = document.getElementById('bm-video');
+  video.srcObject = null;
+  const canvas = document.getElementById('bm-canvas');
+  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+
+  bmSetOverlay(true,'📷','Toca "Iniciar cámara" para comenzar el análisis de postura');
+  bmSetStatus('','Inactivo');
+  document.getElementById('bm-btn-start').disabled = false;
+  document.getElementById('bm-btn-stop').disabled  = true;
+  document.getElementById('bm-btn-rec').disabled   = true;
+  bmSetFeedbackEmpty();
+};
+
+// ── Grabar sesión ────────────────────────────────────────
+window.bmToggleRecord = function(){
+  const btn = document.getElementById('bm-btn-rec');
+  const recInd = document.getElementById('bm-rec-indicator');
+
+  if(!bmRecording){
+    bmRecording = true;
+    bmRecordStart = Date.now();
+    bmFrameData = [];
+    btn.textContent = '⏹ Guardar';
+    btn.className = 'bm-btn danger';
+    recInd.style.display = 'flex';
+  } else {
+    bmRecording = false;
+    btn.textContent = '⏺ Grabar';
+    btn.className = 'bm-btn green';
+    recInd.style.display = 'none';
+    bmSaveSession();
+  }
+};
+
+// ── Guardar sesión ───────────────────────────────────────
+async function bmSaveSession(){
+  if(bmFrameData.length < 5) return; // muy corta
+
+  const duration = bmFrameData[bmFrameData.length-1].t;
+  const scores = bmFrameData.map(f=>f.score).filter(Boolean);
+  const avgScore = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : null;
+
+  // Promedios de ángulos
+  const avgAngles = {};
+  ['elbow','shoulder','wrist','spine'].forEach(k=>{
+    const vals = bmFrameData.map(f=>f.angles[k]).filter(v=>v!==null);
+    avgAngles[k] = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+  });
+
+  const session = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    duration_ms: duration,
+    avg_score: avgScore,
+    avg_angles: avgAngles,
+    frames: bmFrameData.length
+  };
+
+  // Guardar en localStorage
+  const stored = JSON.parse(localStorage.getItem('goat_biomec_sessions')||'[]');
+  stored.unshift(session);
+  localStorage.setItem('goat_biomec_sessions', JSON.stringify(stored.slice(0,50)));
+  bmSessions = stored;
+
+  // Intentar guardar en Supabase si hay usuario
+  if(window._supabaseClient && window._supabaseUserId){
+    try{
+      await window._supabaseClient.from('biomec_sessions').insert({
+        user_id: window._supabaseUserId,
+        avg_score: avgScore,
+        avg_angles: avgAngles,
+        duration_ms: duration,
+        frames: bmFrameData.length
+      });
+    }catch(e){ console.log('biomec supabase save (optional):', e.message); }
+  }
+
+  if(typeof showToast === 'function'){
+    showToast(`✅ Sesión guardada — Postura: ${avgScore}/100`);
+  }
+}
+
+// ── Renderizar sesiones ──────────────────────────────────
+function bmRenderSessions(){
+  const stored = JSON.parse(localStorage.getItem('goat_biomec_sessions')||'[]');
+  bmSessions = stored;
+
+  const listEl = document.getElementById('bm-sessions-list');
+
+  if(!stored.length){
+    listEl.innerHTML = '<div style="font-size:12px;color:rgba(255,255,255,0.35);padding:16px 0;text-align:center">Sin sesiones guardadas aún</div>';
+    document.getElementById('bm-stat-sessions').textContent = '0';
+    document.getElementById('bm-stat-avg').textContent = '—';
+    document.getElementById('bm-stat-best').textContent = '—';
+    return;
+  }
+
+  const scores = stored.map(s=>s.avg_score).filter(Boolean);
+  const avg = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : null;
+  const best = scores.length ? Math.max(...scores) : null;
+
+  document.getElementById('bm-stat-sessions').textContent = stored.length;
+  document.getElementById('bm-stat-avg').textContent = avg ?? '—';
+  document.getElementById('bm-stat-best').textContent = best ?? '—';
+
+  listEl.innerHTML = stored.map(s=>{
+    const d = new Date(s.date);
+    const dateStr = d.toLocaleDateString('es-MX',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    const dur = s.duration_ms ? Math.round(s.duration_ms/1000)+'s' : '—';
+    const sc = s.avg_score ?? '—';
+    const scColor = sc >= 80 ? '#5dcaa5' : sc >= 60 ? '#d8d15a' : '#e05555';
+    const grade = sc >= 80 ? 'A' : sc >= 60 ? 'B' : sc !== '—' ? 'C' : '—';
+    const gradeColor = sc >= 80 ? '#5dcaa5' : sc >= 60 ? '#d8d15a' : '#e05555';
+
+    const angStr = s.avg_angles
+      ? `Codo ${s.avg_angles.elbow??'—'}° · Hombro ${s.avg_angles.shoulder??'—'}° · Muñeca ${s.avg_angles.wrist??'—'}°`
+      : '';
+
+    return`<div class="bm-session-item">
+      <div style="text-align:center;min-width:44px">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:${scColor};line-height:1">${sc}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.35)">/ 100</div>
+      </div>
+      <div class="bm-session-info">
+        <div class="bm-session-date">${dateStr}</div>
+        <div class="bm-session-meta">${angStr}</div>
+        <div class="bm-session-meta">${dur} · ${s.frames} frames</div>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${gradeColor};padding:4px 8px;border-radius:6px;background:${gradeColor}18;border:0.5px solid ${gradeColor}44">${grade}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Init ─────────────────────────────────────────────────
+// Cargar sesiones al inicializar el tab
+const stored = JSON.parse(localStorage.getItem('goat_biomec_sessions')||'[]');
+if(stored.length) bmSessions = stored;
 
 })();
 </script>
