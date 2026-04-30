@@ -10317,7 +10317,21 @@ document.addEventListener('supabase-user-ready', ()=>{
 .co-mini-label{ color:rgba(255,255,255,0.45); }
 .co-mini-val{ font-weight:600;color:#fff; }
 
-/* Empty state */
+/* Time filter chips */
+.co-tf-btn{
+  padding:5px 12px;border-radius:20px;
+  font-size:11px;font-weight:600;
+  border:0.5px solid rgba(255,255,255,0.12);
+  background:transparent;color:rgba(255,255,255,0.4);
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  transition:all .15s;
+}
+.co-tf-btn:hover{ color:#fff;border-color:rgba(255,255,255,0.3); }
+.co-tf-btn.co-tf-act{
+  background:rgba(216,209,90,0.12);
+  border-color:rgba(216,209,90,0.4);
+  color:#d8d15a;
+}
 .co-empty{
   text-align:center;padding:32px 0;
   font-size:12px;color:rgba(255,255,255,0.3);
@@ -10406,6 +10420,16 @@ document.addEventListener('supabase-user-ready', ()=>{
     </div>
   </div>
 
+  <!-- Filtro de tiempo -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="co-time-filters">
+    <button class="co-tf-btn" onclick="coSetDays(15,this)">15d</button>
+    <button class="co-tf-btn" onclick="coSetDays(30,this)">30d</button>
+    <button class="co-tf-btn co-tf-act" onclick="coSetDays(90,this)">90d</button>
+    <button class="co-tf-btn" onclick="coSetDays(180,this)">180d</button>
+    <button class="co-tf-btn" onclick="coSetDays(360,this)">360d</button>
+    <button class="co-tf-btn" onclick="coSetDays(0,this)">Max</button>
+  </div>
+
   <!-- Gráfica de tendencia del club -->
   <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:12px" id="co-trend-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -10449,10 +10473,18 @@ const BOW_LABELS = {
   recurvo:'Recurvo', compuesto:'Compuesto', barebow:'Bare bow'
 };
 
-let coAllArchers  = [];  // todos los perfiles cargados
-let coAllScores   = {};  // user_id → {best, avg, sessions}
-let coRawScores   = {};  // user_id → [{val, date, disc, source}]
+let coAllArchers  = [];
+let coAllScores   = {};
+let coRawScores   = {};
 let coFiltered    = [];
+let coDays        = 90; // default 90d
+
+window.coSetDays = function(days, btn){
+  coDays = days;
+  document.querySelectorAll('.co-tf-btn').forEach(b=>b.classList.remove('co-tf-act'));
+  if(btn) btn.classList.add('co-tf-act');
+  coDrawClubTrend();
+};
 let coOpenDetail  = null;
 
 // ── Helpers ──────────────────────────────────────────────
@@ -10837,17 +10869,24 @@ function coDrawSparkMulti(canvasId, legendId, lines){
 
 // ── Preparar líneas de tendencia para un conjunto de scores ─
 function coBuildTrendLines(rawList){
-  // rawList: [{val, date, disc}]
-  // Agrupar por disciplina, ordenar por fecha, promediar por día
+  // Filtrar por rango de días
+  const cutoff = coDays > 0
+    ? new Date(Date.now() - coDays*24*60*60*1000)
+    : null;
+
+  const filtered = rawList.filter(s=>{
+    if(!cutoff || !s.date) return true;
+    return new Date(s.date) >= cutoff;
+  });
+
   const groups = {};
-  rawList.forEach(s=>{
+  filtered.forEach(s=>{
     const disc = coNormDisc(s.disc);
     if(!groups[disc]) groups[disc]=[];
     groups[disc].push({val:s.val, date:s.date||new Date().toISOString()});
   });
 
   return Object.entries(groups).map(([disc, pts])=>{
-    // Agrupar por fecha (día) y promediar
     const byDate = {};
     pts.forEach(p=>{
       const day = p.date.slice(0,10);
