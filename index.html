@@ -5334,11 +5334,13 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 <!-- HISTORIAL -->
 <div id="bt-main-historial">
   <div class="bt-frow" id="bt-fd">
-    <button class="bt-fp" onclick="btSf(7,this,'bt-fd')">7d</button>
     <button class="bt-fp" onclick="btSf(15,this,'bt-fd')">15d</button>
+    <button class="bt-fp" onclick="btSf(30,this,'bt-fd')">30d</button>
+    <button class="bt-fp" onclick="btSf(60,this,'bt-fd')">60d</button>
     <button class="bt-fp act" onclick="btSf(90,this,'bt-fd')">90d</button>
     <button class="bt-fp" onclick="btSf(180,this,'bt-fd')">180d</button>
-    <button class="bt-fp" onclick="btSf(0,this,'bt-fd')">Histórico</button>
+    <button class="bt-fp" onclick="btSf(360,this,'bt-fd')">360d</button>
+    <button class="bt-fp" onclick="btSf(0,this,'bt-fd')">Max</button>
   </div>
   <div class="bt-frow" id="bt-fm" style="margin-bottom:16px">
     <button class="bt-fp act" onclick="btSf('all',this,'bt-fm')">Todas</button>
