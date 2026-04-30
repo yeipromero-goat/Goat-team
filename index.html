@@ -10490,7 +10490,7 @@ async function coLoad(){
       const clubsList = coachClubs.map(c=>`"${c}"`).join(',');
       profilesUrl += `&club_name=in.(${clubsList})`;
     } else if(clubFilter){
-      profilesUrl += `&club_name=eq."${clubFilter}"`;
+      profilesUrl += `&club_name=in.("${clubFilter}")`;
     }
     console.log('profilesUrl:', profilesUrl);
     const profiles = await coFetch(profilesUrl);
