@@ -6723,25 +6723,33 @@ async function cpLoadMisPartidas(){
 
     // Torneos activos
     if(active.length){
-      html+=`<div class="cp-sec">Torneos activos</div>`;
+      html+=`<div class="cp-sec" style="margin-bottom:10px">Torneos activos</div>`;
       html+=active.map(d=>{
         const t=d.tournaments;
-        return`<div class="cp-card" style="margin-bottom:8px">
-          <div class="cp-ca" style="background:linear-gradient(90deg,#5dcaa5,#5ab4d6)"></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:#fff">${t.title}</div>
-              <div class="cp-muted" style="font-size:11px">${DISC_LABELS[t.discipline]||t.discipline}</div>
+        const hasScore = d.qualifying_score != null;
+        const statusColor = {open:'#5dcaa5', playing:'#d8d15a', validating:'#d87850', closed:'rgba(255,255,255,0.35)'}[t.status]||'#fff';
+        const accentColor = hasScore ? '#5dcaa5' : 'rgba(255,255,255,0.2)';
+        return`<div style="position:relative;overflow:hidden;border-radius:12px;padding:14px 16px;margin-bottom:8px;background:rgba(255,255,255,0.03);border:1px solid ${hasScore?'rgba(93,202,165,0.25)':'rgba(255,255,255,0.08)'};transition:all .15s;cursor:pointer" onclick="cpOpenRoom('${t.id}')">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,${accentColor},transparent)"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4)">${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}</div>
             </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              ${cpStatusBadge(t.status)}
-            </div>
+            <span class="cp-pill ${STATUS_CLASS[t.status]||''}" style="flex-shrink:0;margin-left:8px">${STATUS_LABELS[t.status]||t.status}</span>
           </div>
-          ${d.qualifying_score!=null
-            ?`<div style="margin-bottom:6px"><span class="cp-num" style="font-size:18px;color:#5dcaa5">${d.qualifying_score}</span><span class="cp-muted" style="font-size:11px"> pts clasificatorio ✓</span></div>`
-            :'<div class="cp-muted" style="font-size:11px;margin-bottom:6px">Pendiente: sube tu score</div>'}
-          <div style="display:flex;gap:6px">
-            <button class="cp-btn cp-btn-sm" onclick="cpOpenRoom('${t.id}')">Ver sala →</button>
+          ${hasScore
+            ?`<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px">
+                <span style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#5dcaa5;line-height:1">${d.qualifying_score}</span>
+                <span style="font-size:11px;color:rgba(255,255,255,0.4)">pts clasificatorio</span>
+                <span style="font-size:13px;color:#5dcaa5">✓</span>
+              </div>`
+            :`<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 10px;border-radius:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.2)">
+                <span style="font-size:12px">🏹</span>
+                <span style="font-size:11px;color:#d8d15a;font-weight:500">Pendiente: sube tu score</span>
+              </div>`}
+          <div style="display:flex;justify-content:flex-end">
+            <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Ver sala →</span>
           </div>
         </div>`;
       }).join('');
@@ -6749,17 +6757,36 @@ async function cpLoadMisPartidas(){
 
     // Mis fechas de liga
     if(allLeagues.length){
-      html+=`<div class="cp-sec" style="margin-top:${active.length?'8px':'0'}">Mis fechas de liga</div>`;
+      html+=`<div class="cp-sec" style="margin-top:${active.length?'16px':'0'};margin-bottom:10px">Mis ligas</div>`;
       html+=allLeagues.map(d=>{
         const l=d.leagues;
-        return`<div class="cp-row">
-          <div>
-            <div style="font-size:12px;font-weight:600;color:#fff">${l.title}</div>
-            <div class="cp-muted" style="font-size:10px">${d.rounds_played||0} fechas jugadas</div>
+        const pct=Math.round(((l.current_round||0)/l.rounds_total)*100);
+        const isActive=l.status==='active';
+        return`<div style="position:relative;overflow:hidden;border-radius:12px;padding:14px 16px;margin-bottom:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(216,209,90,0.18);cursor:pointer" onclick="cpOpenLeague('${l.id}')">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+            <div>
+              <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:2px">${l.title}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4)">Fecha ${l.current_round||0} / ${l.rounds_total}</div>
+            </div>
+            <span class="cp-pill" style="background:${isActive?'rgba(216,209,90,0.15)':'rgba(255,255,255,0.06)'};color:${isActive?'#d8d15a':'rgba(255,255,255,0.35)'};border:0.5px solid ${isActive?'rgba(216,209,90,0.3)':'rgba(255,255,255,0.1)'};flex-shrink:0;margin-left:8px">${isActive?'Activa':'Finalizada'}</span>
           </div>
-          <div style="text-align:right">
-            <div class="cp-num" style="font-size:18px;color:#d8d15a">${d.total_points} pts</div>
-            <div class="cp-muted" style="font-size:10px">+${d.last_round_points||0} última</div>
+          <div style="display:flex;gap:20px;margin-bottom:10px">
+            <div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#d8d15a;line-height:1">${d.total_points}</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">pts totales</div>
+            </div>
+            <div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#5dcaa5;line-height:1">+${d.last_round_points||0}</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">última fecha</div>
+            </div>
+            <div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:rgba(255,255,255,0.5);line-height:1">${d.rounds_played||0}</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">fechas jugadas</div>
+            </div>
+          </div>
+          <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
+            <div style="height:100%;background:linear-gradient(90deg,#d8d15a,#e05555);border-radius:2px;width:${pct}%;transition:width .4s"></div>
           </div>
         </div>`;
       }).join('');
@@ -6767,21 +6794,22 @@ async function cpLoadMisPartidas(){
 
     // Historial torneos
     if(past.length){
-      html+=`<div class="cp-sec" style="margin-top:8px">Historial torneos</div>`;
+      html+=`<div class="cp-sec" style="margin-top:16px;margin-bottom:10px">Historial</div>`;
       html+=past.map(d=>{
         const t=d.tournaments;
         const pos=d.final_position;
         const medal=pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
-        return`<div class="cp-card" style="margin-bottom:8px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:#fff">${medal} ${t.title}</div>
-              <div class="cp-muted" style="font-size:11px">${DISC_LABELS[t.discipline]||t.discipline}</div>
-            </div>
-            <div style="text-align:right">
-              ${pos?`<div class="cp-num" style="font-size:18px;color:#fff">${pos}° lugar</div>`:''}
-              ${d.points_earned?`<div class="cp-muted" style="font-size:11px">+${d.points_earned} pts arco</div>`:''}
-            </div>
+        const posColor=pos===1?'#FFD700':pos===2?'#C0C0C0':pos===3?'#CD7F32':'rgba(255,255,255,0.4)';
+        const posLabel=pos===1?'Campeón':pos===2?'2° lugar':pos===3?'3° lugar':pos?pos+'° lugar':'—';
+        return`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.07)">
+          <div style="font-size:28px;flex-shrink:0;min-width:36px;text-align:center">${medal||'🏅'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px">${DISC_LABELS[t.discipline]||t.discipline}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${posColor}">${posLabel}</div>
+            ${d.points_earned?`<div style="font-size:10px;color:rgba(255,255,255,0.35)">+${d.points_earned} pts</div>`:''}
           </div>
         </div>`;
       }).join('');
