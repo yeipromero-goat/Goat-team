@@ -10406,6 +10406,16 @@ document.addEventListener('supabase-user-ready', ()=>{
     </div>
   </div>
 
+  <!-- Gráfica de tendencia del club -->
+  <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:12px" id="co-trend-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.3)">Tendencia p/flecha — Club</div>
+      <span style="font-size:12px;font-weight:600" id="co-trend-delta"></span>
+    </div>
+    <canvas id="co-spark" height="90" style="width:100%;display:block"></canvas>
+    <div id="co-spark-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;justify-content:center"></div>
+  </div>
+
   <!-- Detail drawer (se abre al tocar arquero) -->
   <div class="co-detail" id="co-detail"></div>
 
@@ -10441,6 +10451,7 @@ const BOW_LABELS = {
 
 let coAllArchers  = [];  // todos los perfiles cargados
 let coAllScores   = {};  // user_id → {best, avg, sessions}
+let coRawScores   = {};  // user_id → [{val, date, disc, source}]
 let coFiltered    = [];
 let coOpenDetail  = null;
 
@@ -10514,20 +10525,23 @@ async function coLoad(){
 
     // 3. Unificar en un mapa user_id → lista de scores
     const scoreMap = {};
-    const addScore = (uid, val, source) => {
+    coRawScores = {};
+    const addScore = (uid, val, source, date, disc) => {
       if(!uid || !val) return;
       if(!scoreMap[uid]) scoreMap[uid] = [];
+      if(!coRawScores[uid]) coRawScores[uid] = [];
       scoreMap[uid].push({val, source});
+      coRawScores[uid].push({val, source, date: date||null, disc: disc||'indoor'});
     };
 
     if(Array.isArray(dailyScores)){
-      dailyScores.forEach(s => addScore(s.user_id, s.total, 'daily'));
+      dailyScores.forEach(s => addScore(s.user_id, s.total, 'daily', s.session_date, s.group_name||'indoor'));
     }
     if(Array.isArray(leagueScores)){
-      leagueScores.forEach(s => addScore(s.user_id, s.score, 'liga'));
+      leagueScores.forEach(s => addScore(s.user_id, s.score, 'liga', s.submitted_at, 'indoor'));
     }
     if(Array.isArray(tournamentPlayers)){
-      tournamentPlayers.forEach(s => addScore(s.user_id, s.qualifying_score, 'torneo'));
+      tournamentPlayers.forEach(s => addScore(s.user_id, s.qualifying_score, 'torneo', s.qualifying_at, 'outdoor'));
     }
 
     // 4. Calcular estadísticas por arquero
@@ -10652,6 +10666,9 @@ function coRender(){
       <div style="text-align:right">Ses.</div>
     </div>
     ${rows}`;
+
+  // Dibujar gráfica de tendencia del club
+  setTimeout(coDrawClubTrend, 50);
 }
 
 // ── Detalle por arquero ───────────────────────────────────
@@ -10724,15 +10741,154 @@ window.coToggleDetail = function(userId){
         <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#9a88dd">${sc.sources.torneo}</div>
         <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">Torneos</div>
       </div>
-    </div>` : ''}`;
+    </div>` : ''}
+    <div style="height:0.5px;background:rgba(255,255,255,0.06);margin:12px 0"></div>
+    <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:8px">Tendencia p/flecha</div>
+    <canvas id="co-archer-spark-${userId}" height="80" style="width:100%;display:block"></canvas>
+    <div id="co-archer-legend-${userId}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;justify-content:center"></div>`;
 
   detail.classList.add('open');
-
-  // Scroll al detalle
   setTimeout(()=> detail.scrollIntoView({behavior:'smooth', block:'nearest'}), 100);
+  // Dibujar gráfica individual
+  setTimeout(()=> coDrawArcherTrend(userId, `co-archer-spark-${userId}`, `co-archer-legend-${userId}`), 80);
 };
 
-// ── Init ─────────────────────────────────────────────────
+// ── Colores por disciplina ────────────────────────────────
+const CO_COLORS = {
+  '3d':     '#d8a05a',
+  outdoor:  '#5ab4d6',
+  indoor:   '#e05555',
+  field:    '#d8d15a',
+  liga:     '#9a88dd',
+  torneo:   '#5dcaa5',
+  daily:    '#d8d15a'
+};
+const CO_DISC_LABELS = {
+  '3d':'3D', outdoor:'Outdoor', indoor:'Indoor', field:'Field'
+};
+
+// ── Normalizar disciplina ─────────────────────────────────
+function coNormDisc(d){
+  if(!d) return 'indoor';
+  const s = d.toLowerCase();
+  if(s.includes('3d')) return '3d';
+  if(s.includes('outdoor')) return 'outdoor';
+  if(s.includes('field')) return 'field';
+  return 'indoor';
+}
+
+// ── Dibujar gráfica multi-línea por disciplina ────────────
+function coDrawSparkMulti(canvasId, legendId, lines){
+  const c = document.getElementById(canvasId);
+  if(!c) return;
+  const legendEl = document.getElementById(legendId);
+  const ctx = c.getContext('2d');
+  const W = c.offsetWidth || 400, H = 90;
+  c.width = W; c.height = H;
+  ctx.clearRect(0,0,W,H);
+
+  if(!lines || !lines.length){
+    ctx.strokeStyle='rgba(255,255,255,0.08)';
+    ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+    if(legendEl) legendEl.innerHTML='';
+    return;
+  }
+
+  const allVals = lines.flatMap(l=>l.avgs);
+  const mn = Math.min(...allVals)*0.97, mx = Math.max(...allVals)*1.03, r = mx-mn||1;
+
+  lines.forEach(line=>{
+    if(!line.avgs.length) return;
+    const pts = line.avgs.length===1
+      ? [{x:W/2, y:H-8-(line.avgs[0]-mn)/r*(H-20)}]
+      : line.avgs.map((v,i)=>({
+          x:i/(line.avgs.length-1)*(W-16)+8,
+          y:H-8-(v-mn)/r*(H-20)
+        }));
+
+    if(pts.length===1){
+      ctx.beginPath();ctx.arc(pts[0].x,pts[0].y,4,0,Math.PI*2);
+      ctx.fillStyle=line.color;ctx.fill();return;
+    }
+
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++){
+      const mx2=(pts[i-1].x+pts[i].x)/2, my=(pts[i-1].y+pts[i].y)/2;
+      ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,mx2,my);
+    }
+    ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
+    ctx.strokeStyle=line.color;ctx.lineWidth=2;ctx.globalAlpha=0.85;ctx.stroke();ctx.globalAlpha=1;
+    const last=pts[pts.length-1];
+    ctx.beginPath();ctx.arc(last.x,last.y,3.5,0,Math.PI*2);
+    ctx.fillStyle=line.color;ctx.fill();
+  });
+
+  if(legendEl){
+    legendEl.innerHTML = lines.map(l=>{
+      const last = l.avgs[l.avgs.length-1];
+      return`<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:rgba(255,255,255,0.6)">
+        <span style="width:12px;height:3px;border-radius:2px;background:${l.color};display:inline-block"></span>
+        <span style="color:${l.color};font-weight:600">${l.label}</span>
+        <span>${last.toFixed(1)} p/f</span>
+      </span>`;
+    }).join('');
+  }
+}
+
+// ── Preparar líneas de tendencia para un conjunto de scores ─
+function coBuildTrendLines(rawList){
+  // rawList: [{val, date, disc}]
+  // Agrupar por disciplina, ordenar por fecha, promediar por día
+  const groups = {};
+  rawList.forEach(s=>{
+    const disc = coNormDisc(s.disc);
+    if(!groups[disc]) groups[disc]=[];
+    groups[disc].push({val:s.val, date:s.date||new Date().toISOString()});
+  });
+
+  return Object.entries(groups).map(([disc, pts])=>{
+    // Agrupar por fecha (día) y promediar
+    const byDate = {};
+    pts.forEach(p=>{
+      const day = p.date.slice(0,10);
+      if(!byDate[day]) byDate[day]=[];
+      byDate[day].push(p.val);
+    });
+    const sorted = Object.entries(byDate)
+      .sort(([a],[b])=>a.localeCompare(b))
+      .map(([,vals])=>vals.reduce((a,b)=>a+b,0)/vals.length);
+    return {
+      disc, label: CO_DISC_LABELS[disc]||disc,
+      color: CO_COLORS[disc]||'#fff',
+      avgs: sorted
+    };
+  }).filter(l=>l.avgs.length>=1);
+}
+
+// ── Dibujar tendencia del club (todos los arqueros filtrados) ─
+function coDrawClubTrend(){
+  // Unir todos los raw scores de los arqueros filtrados
+  const allRaw = coFiltered.flatMap(p => coRawScores[p.user_id]||[]);
+  const lines = coBuildTrendLines(allRaw);
+
+  coDrawSparkMulti('co-spark', 'co-spark-legend', lines);
+
+  // Delta general
+  const deltaEl = document.getElementById('co-trend-delta');
+  if(deltaEl && lines.length){
+    const allAvgs = lines.flatMap(l=>l.avgs);
+    const diff = allAvgs[allAvgs.length-1] - allAvgs[0];
+    deltaEl.textContent = diff>0 ? `↑ +${diff.toFixed(2)} p/f` : diff<0 ? `↓ ${diff.toFixed(2)} p/f` : '→ estable';
+    deltaEl.style.color = diff>0?'#5dcaa5':diff<0?'#e05555':'rgba(255,255,255,0.4)';
+  }
+}
+
+// ── Dibujar tendencia individual del arquero ──────────────
+function coDrawArcherTrend(userId, canvasId, legendId){
+  const raw = coRawScores[userId]||[];
+  const lines = coBuildTrendLines(raw);
+  coDrawSparkMulti(canvasId, legendId, lines);
+}
 async function coInit(){
   // Leer coach_clubs directo del JWT
   let coachClubs = [];
