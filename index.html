@@ -10546,13 +10546,16 @@ async function coLoad(){
       coAllScores[uid] = {best, avg, sessions: vals.length, sources};
     });
 
-    // 5. Poblar filtro de clubes
+    // 5. Poblar filtro de clubes (solo si está vacío)
     const clubs = [...new Set(profiles.map(p=>p.club_name).filter(Boolean))].sort();
     const clubSel = document.getElementById('co-filter-club');
-    clubSel.innerHTML = '<option value="">Todos los clubes</option>' +
-      clubs.map(c=>`<option value="${c}">${c}</option>`).join('');
+    if(clubSel.options.length <= 1){
+      clubSel.innerHTML = '<option value="">Todos los clubes</option>' +
+        clubs.map(c=>`<option value="${c}">${c}</option>`).join('');
+    }
 
-    coApplyFilters();
+    console.log('profiles cargados:', profiles.length, '| scores:', Object.keys(coAllScores).length);
+    coRender();
 
   } catch(e){
     console.error('coLoad error:', e);
