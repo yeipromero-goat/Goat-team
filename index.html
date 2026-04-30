@@ -6309,7 +6309,12 @@ btLoadSessions();
 
   <!-- Admin: Torneos -->
   <div id="cp-admin-torneos">
-    <button class="cp-btn cp-btn-y" onclick="cpShowAdminCreate()" style="margin-bottom:12px">+ Nuevo torneo de club</button>
+    <button class="cp-btn cp-btn-y" onclick="cpShowAdminCreate()" style="margin-bottom:10px">+ Nuevo torneo de club</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <select class="cp-select" id="cp-adm-filter-estado" style="margin-bottom:0;flex:1" onchange="cpLoadAdminTournaments()">
+        <option value="">🗺 Todos los estados</option>
+      </select>
+    </div>
     <div id="cp-admin-tour-list">
       <div class="cp-muted" style="text-align:center;padding:16px 0">Sin torneos creados</div>
     </div>
@@ -6317,7 +6322,12 @@ btLoadSessions();
 
   <!-- Admin: Ligas -->
   <div id="cp-admin-ligas" style="display:none">
-    <button class="cp-btn cp-btn-y" onclick="cpShowAdminLeague()" style="margin-bottom:12px">+ Nueva liga</button>
+    <button class="cp-btn cp-btn-y" onclick="cpShowAdminLeague()" style="margin-bottom:10px">+ Nueva liga</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <select class="cp-select" id="cp-adm-filter-estado-liga" style="margin-bottom:0;flex:1" onchange="cpLoadAdminLeagues()">
+        <option value="">🗺 Todos los estados</option>
+      </select>
+    </div>
     <div id="cp-admin-league-list">
       <div class="cp-muted" style="text-align:center;padding:16px 0">Sin ligas creadas</div>
     </div>
@@ -6354,6 +6364,8 @@ btLoadSessions();
       <select class="cp-select" id="cp-adm-cupo">
         <option value="8">8 arqueros</option><option value="16" selected>16 arqueros</option><option value="32">32 arqueros</option>
       </select>
+      <label class="cp-label">Estado</label>
+      <select class="cp-select" id="cp-adm-estado"></select>
       <label class="cp-label">Handicap (opcional)</label>
       <select class="cp-select" id="cp-adm-hcap">
         <option value="none">Sin handicap</option>
@@ -6403,6 +6415,8 @@ btLoadSessions();
         <option value="score">15 flechas sumatoria</option>
         <option value="sets">Sets a 6 puntos</option>
       </select>
+      <label class="cp-label">Estado</label>
+      <select class="cp-select" id="cp-lg-estado"></select>
       <div class="cp-sec" style="margin-top:8px">Puntos por posición</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
         <div><label class="cp-label">1er lugar</label><input class="cp-input" id="cp-lg-p1" value="100" type="number" style="margin-bottom:0"></div>
@@ -6423,6 +6437,15 @@ btLoadSessions();
 <script>
 (function(){
 const SUPABASE_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
+const MX_ESTADOS = [
+  'Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas',
+  'Chihuahua','Ciudad de México','Coahuila','Colima','Durango','Estado de México',
+  'Guanajuato','Guerrero','Hidalgo','Jalisco','Michoacán','Morelos','Nayarit',
+  'Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí',
+  'Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas'
+];
+const ESTADO_OPTIONS = `<option value="">— Todos los estados —</option>` +
+  MX_ESTADOS.map(e=>`<option value="${e}">${e}</option>`).join('');
 const DISC_LABELS = {
   'indoor-15':'Indoor 15','indoor-30':'Indoor 30','indoor-60':'Indoor 60',
   'outdoor-15':'Outdoor 15','outdoor-36':'Outdoor 36','outdoor-72':'Outdoor 72',
@@ -6438,11 +6461,9 @@ let cpUserId=null, cpUserName=null;
 // ── INIT ─────────────────────────────────────────────────────────
 function cpInit(){
   cpUserId = window._supabaseUserId || null;
-  // Intentar obtener nombre en orden de prioridad
   cpUserName = window._supabaseUserName
-    || window.username          // del juego (user_selections)
+    || window.username
     || 'Arquero';
-  // Si aún es genérico, intentar leer de user_selections
   if(cpUserName === 'Arquero' && cpUserId){
     cpFetch(`/rest/v1/user_selections?user_id=eq.${cpUserId}&select=username`).then(async r=>{
       const d = await r.json();
@@ -6452,6 +6473,16 @@ function cpInit(){
   if(window._supabaseIsAdmin){
     document.getElementById('cp-admin-tab').style.display='block';
   }
+  // Poblar todos los selects de estados
+  const estadoSelects = ['cp-adm-estado','cp-lg-estado','cp-adm-filter-estado','cp-adm-filter-estado-liga'];
+  estadoSelects.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const isFilter = id.includes('filter');
+    el.innerHTML = isFilter
+      ? `<option value="">🗺 Todos los estados</option>` + MX_ESTADOS.map(e=>`<option value="${e}">${e}</option>`).join('')
+      : `<option value="">— Seleccionar estado —</option>` + MX_ESTADOS.map(e=>`<option value="${e}">${e}</option>`).join('');
+  });
   cpLoadLobby();
   cpLoadMisPartidas();
 }
@@ -8131,6 +8162,7 @@ window.cpAdminCreateTournament = async function(){
   const mfmt=document.getElementById('cp-adm-mfmt').value;
   const cupo=parseInt(document.getElementById('cp-adm-cupo').value);
   const hcap=document.getElementById('cp-adm-hcap').value;
+  const estado=document.getElementById('cp-adm-estado')?.value||'';
   const payload={
     created_by:cpUserId, type:'club', title, discipline:disc,
     disc_group:disc.split('-')[0]==='3d'?'3d':disc.split('-')[0],
@@ -8138,6 +8170,7 @@ window.cpAdminCreateTournament = async function(){
     max_players:cupo, max_players_club:cupo,
     handicap_enabled:hcap!=='none',
     handicap_rules:hcap!=='none'?[{type:hcap}]:[],
+    estado: estado||null,
     status:'open', admin_only:true, visible:true
   };
   try{
@@ -8153,6 +8186,7 @@ window.cpAdminCreateLeague = async function(){
   const title=document.getElementById('cp-lg-title').value.trim();
   if(!title) return cpToast('Escribe un nombre');
   const disc=document.getElementById('cp-lg-disc').value;
+  const estado=document.getElementById('cp-lg-estado')?.value||'';
   const payload={
     created_by:cpUserId, title,
     code: cpGenCode(),
@@ -8161,6 +8195,7 @@ window.cpAdminCreateLeague = async function(){
     rounds_total:parseInt(document.getElementById('cp-lg-rounds').value),
     match_format:document.getElementById('cp-lg-mfmt').value,
     has_bracket:document.getElementById('cp-lg-fmt').value==='bracket',
+    estado: estado||null,
     points_config:{
       '1':parseInt(document.getElementById('cp-lg-p1').value),
       '2':parseInt(document.getElementById('cp-lg-p2').value),
@@ -8212,17 +8247,21 @@ window.cpAdminActivarFecha = async function(leagueId, roundNumber, discipline){
 
 async function cpLoadAdminTournaments(){
   const listEl=document.getElementById('cp-admin-tour-list');
+  const estadoFilter=document.getElementById('cp-adm-filter-estado')?.value||'';
   try{
-    const res=await cpFetch('/rest/v1/tournaments?order=created_at.desc&limit=20');
+    let url='/rest/v1/tournaments?order=created_at.desc&limit=50';
+    if(estadoFilter) url+=`&estado=eq.${encodeURIComponent(estadoFilter)}`;
+    const res=await cpFetch(url);
     const data=await res.json();
-    if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Sin torneos</div>'; return; }
+    if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Sin torneos'+(estadoFilter?' en '+estadoFilter:'')+'</div>'; return; }
     listEl.innerHTML=data.map(t=>`
       <div class="cp-card" style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="font-size:13px;font-weight:600;color:#fff">${t.title}</div>
           ${cpStatusBadge(t.status)}
         </div>
-        <div class="cp-muted" style="font-size:11px;margin-bottom:8px">${DISC_LABELS[t.discipline]} · ${t.type==='club'?'Club':'Amigos'}</div>
+        <div class="cp-muted" style="font-size:11px;margin-bottom:${t.estado?'4px':'8px'}">${DISC_LABELS[t.discipline]} · ${t.type==='club'?'Club':'Amigos'}</div>
+        ${t.estado?`<div style="font-size:10px;color:rgba(216,209,90,0.7);margin-bottom:8px">📍 ${t.estado}</div>`:''}
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${t.status!=='closed'?`<button class="cp-btn cp-btn-sm cp-btn-r" onclick="cpAdminClose('${t.id}')">Cerrar torneo</button>`:''}
           ${t.status==='open'?`<button class="cp-btn cp-btn-sm" onclick="cpAdminToggleVisible('${t.id}',${!t.visible})">${t.visible?'Ocultar':'Mostrar'}</button>`:''}
@@ -8234,8 +8273,11 @@ async function cpLoadAdminTournaments(){
 
 async function cpLoadAdminLeagues(){
   const listEl=document.getElementById('cp-admin-league-list');
+  const estadoFilter=document.getElementById('cp-adm-filter-estado-liga')?.value||'';
   try{
-    const res=await cpFetch('/rest/v1/leagues?order=created_at.desc&limit=10');
+    let url='/rest/v1/leagues?order=created_at.desc&limit=20';
+    if(estadoFilter) url+=`&estado=eq.${encodeURIComponent(estadoFilter)}`;
+    const res=await cpFetch(url);
     const data=await res.json();
     if(!data.length){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Sin ligas</div>'; return; }
     // Cargar rounds activos de cada liga
@@ -8252,6 +8294,7 @@ async function cpLoadAdminLeagues(){
           <span class="cp-pill ${l.status==='active'?'cp-badge-playing':'cp-badge-closed'}">${l.status==='active'?'Activa':'Finalizada'}</span>
         </div>
         <div class="cp-muted" style="font-size:11px;margin-bottom:4px">${l.current_round||0}/${l.rounds_total} fechas · ${DISC_LABELS[l.discipline]||l.discipline||'—'} · ${l.visible?'Visible':'Oculta'}</div>
+        ${l.estado?`<div style="font-size:10px;color:rgba(216,209,90,0.7);margin-bottom:4px">📍 ${l.estado}</div>`:''}
         ${activeRound?`<div style="background:rgba(93,202,165,0.08);border:0.5px solid rgba(93,202,165,0.3);border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#5dcaa5">⏱ Fecha ${activeRound.round_number} activa · ${timerLeft} min restantes</div>`:''}
         ${l.code?`
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.2);border-radius:8px;padding:6px 10px">
