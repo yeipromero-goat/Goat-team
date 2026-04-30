@@ -5230,18 +5230,14 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 <div id="bt-main-nueva" style="display:none">
 
   <div id="bt-s-inicio">
-    <!-- Banner torneo activo -->
+    <!-- Banner torneo activo (activado solo desde Ver sala en Competencias) -->
     <div id="bt-tournament-banner" style="display:none;background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);border-radius:10px;padding:10px 14px;margin-bottom:14px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px">
         <span style="font-size:18px">🏆</span>
         <div style="flex:1">
-          <div style="font-size:12px;font-weight:600;color:#d8d15a">Torneo activo</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tu score se enviará automáticamente al guardar.</div>
+          <div style="font-size:12px;font-weight:600;color:#d8d15a">✓ Esta sesión se enviará al torneo</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tira y guarda — el score se registra automáticamente.</div>
         </div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="bt-btn bt-btn-sm bt-btn-p" style="flex:1" onclick="btUseTournamentScore()">Registrar para torneo</button>
-        <button class="bt-btn bt-btn-sm" onclick="btPauseTournament()" style="font-size:11px;color:rgba(255,255,255,0.5)">Anotar sin torneo</button>
       </div>
     </div>
     <div class="bt-sec">Elige modalidad</div>
@@ -5676,60 +5672,6 @@ window.btSaveSession=function(){
   }
 }
 
-// Confirmar que esta sesión va al torneo
-window.btUseTournamentScore = function(){
-  const banner = document.getElementById('bt-tournament-banner');
-  if(banner){
-    banner.style.background = 'rgba(216,209,90,0.12)';
-    banner.style.borderColor = 'rgba(216,209,90,0.5)';
-    banner.querySelector('div div').textContent = '✓ Esta sesión se enviará al torneo';
-  }
-  if(typeof btShowMain==='function') btShowMain('nueva');
-}
-
-// Pausar torneo — anotar sin vincular
-window.btPauseTournament = function(){
-  const saved = window._cpPendingTournament;
-  window._cpPendingTournamentSaved = saved;
-  window._cpPendingTournament = null;
-  const banner = document.getElementById('bt-tournament-banner');
-  if(banner){
-    banner.style.background = 'rgba(255,255,255,0.04)';
-    banner.style.borderColor = 'rgba(255,255,255,0.1)';
-    banner.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span style="font-size:18px">⏸</span>
-        <div style="flex:1">
-          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Torneo pausado</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:1px">Esta sesión no se enviará al torneo.</div>
-        </div>
-      </div>
-      <button class="bt-btn bt-btn-sm bt-btn-p" onclick="btResumeTournament()">Reactivar torneo</button>`;
-  }
-}
-
-// Reactivar torneo
-window.btResumeTournament = function(){
-  window._cpPendingTournament = window._cpPendingTournamentSaved || null;
-  const banner = document.getElementById('bt-tournament-banner');
-  if(banner){
-    banner.style.background = 'rgba(216,209,90,0.08)';
-    banner.style.borderColor = 'rgba(216,209,90,0.3)';
-    banner.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span style="font-size:18px">🏆</span>
-        <div style="flex:1">
-          <div style="font-size:12px;font-weight:600;color:#d8d15a">Torneo activo</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tu score se enviará automáticamente al guardar.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="bt-btn bt-btn-sm bt-btn-p" style="flex:1" onclick="btUseTournamentScore()">Registrar para torneo</button>
-        <button class="bt-btn bt-btn-sm" onclick="btPauseTournament()" style="font-size:11px;color:rgba(255,255,255,0.5)">Anotar sin torneo</button>
-      </div>`;
-  }
-}
-
 window.btSf=function(v,el,id){
   if(id==='bt-fd')btFDays=v;else btFMod=v;
   document.getElementById(id).querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
@@ -5873,13 +5815,6 @@ function btDrawSpark(data){
 
 // Inicializar
 btLoadSessions();
-// Mostrar banner si hay torneo pendiente al cargar
-setTimeout(()=>{
-  if(window._cpPendingTournament){
-    const banner = document.getElementById('bt-tournament-banner');
-    if(banner) banner.style.display='block';
-  }
-}, 500);
 })();
 </script>
 </div>
@@ -6694,16 +6629,14 @@ async function cpLoadMisPartidas(){
       html+=`<div class="cp-sec">Torneos activos</div>`;
       html+=active.map(d=>{
         const t=d.tournaments;
-        const isActive=window._cpPendingTournament===t.id;
         return`<div class="cp-card" style="margin-bottom:8px">
-          <div class="cp-ca" style="background:linear-gradient(90deg,${isActive?'#d8d15a,#5dcaa5':'#5dcaa5,#5ab4d6'})"></div>
+          <div class="cp-ca" style="background:linear-gradient(90deg,#5dcaa5,#5ab4d6)"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <div>
               <div style="font-size:13px;font-weight:600;color:#fff">${t.title}</div>
               <div class="cp-muted" style="font-size:11px">${DISC_LABELS[t.discipline]||t.discipline}</div>
             </div>
             <div style="display:flex;align-items:center;gap:6px">
-              ${isActive?'<span class="cp-pill" style="background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3);font-size:9px">ACTIVO</span>':''}
               ${cpStatusBadge(t.status)}
             </div>
           </div>
@@ -6711,7 +6644,6 @@ async function cpLoadMisPartidas(){
             ?`<div style="margin-bottom:6px"><span class="cp-num" style="font-size:18px;color:#5dcaa5">${d.qualifying_score}</span><span class="cp-muted" style="font-size:11px"> pts clasificatorio ✓</span></div>`
             :'<div class="cp-muted" style="font-size:11px;margin-bottom:6px">Pendiente: sube tu score</div>'}
           <div style="display:flex;gap:6px">
-            ${!isActive?`<button class="cp-btn cp-btn-sm cp-btn-y" onclick="cpSetActiveTournament('${t.id}','${t.discipline}')">Seleccionar como activo</button>`:'<button class="cp-btn cp-btn-sm" style="color:rgba(255,255,255,0.4)" onclick="cpClearActiveTournament()">Quitar selección</button>'}
             <button class="cp-btn cp-btn-sm" onclick="cpOpenRoom('${t.id}')">Ver sala →</button>
           </div>
         </div>`;
@@ -7260,8 +7192,6 @@ window.cpGoScore = function(tournamentId, discipline){
   setTimeout(()=>{
     const banner = document.getElementById('bt-tournament-banner');
     if(banner) banner.style.display='flex';
-
-    // Mapear disciplina del torneo al grupo correcto
     const discMap = {
       'indoor-15':'indoor','indoor-30':'indoor','indoor-60':'indoor',
       'outdoor-15':'outdoor','outdoor-36':'outdoor','outdoor-72':'outdoor',
@@ -8590,16 +8520,12 @@ window.cpGoLeagueScore = function(leagueId, roundId, discipline){
       banner.style.background='rgba(93,202,165,0.08)';
       banner.style.borderColor='rgba(93,202,165,0.3)';
       banner.innerHTML=`
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:18px">🏆</span>
           <div style="flex:1">
-            <div style="font-size:12px;font-weight:600;color:#5dcaa5">Fecha de liga activa</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tu score se enviará a la liga al guardar.</div>
+            <div style="font-size:12px;font-weight:600;color:#5dcaa5">✓ Fecha de liga activa</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tira y guarda — tu score va a la liga automáticamente.</div>
           </div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="bt-btn bt-btn-sm" style="flex:1;background:rgba(93,202,165,0.15);color:#5dcaa5;border-color:rgba(93,202,165,0.4)" onclick="btUseTournamentScore()">Registrar para liga</button>
-          <button class="bt-btn bt-btn-sm" onclick="btPauseTournament()" style="font-size:11px;color:rgba(255,255,255,0.5)">Anotar sin liga</button>
         </div>`;
     }
     // Pre-seleccionar modalidad
