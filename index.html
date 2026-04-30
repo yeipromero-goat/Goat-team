@@ -1949,16 +1949,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── GUÍA DE ONBOARDING ────────────────────────────────────────────
-// Muestra tooltips contextuales los primeros 3 juegos
+// Muestra tooltips contextuales las primeras 3 veces que el usuario entra al Tablero
 window.initOnboardingGuide = function(){
-  const games = parseInt(localStorage.getItem('goat_games_played')||'0');
-  if(games >= 3) return; // ya pasó la guía
+  const visits = parseInt(localStorage.getItem('goat_tablero_visits')||'0');
+  if(visits >= 3) return; // ya pasó la guía
 
   const steps = [
     { targetId:'game-setup-panel', title:'Arma tu equipo', msg:'Elige tu arquero, coach y arco. Si no tienes uno, toca ↺ Cambiar en cada sección.' },
-    { targetId:'chk-deck', title:'Arma tu deck', msg:'Ve a la pestaña Cartas y elige 36 cartas para tu mazo. Toca "Aleatorio" para inicio rápido.' },
+    { targetId:'chk-deck', title:'Arma tu deck', msg:'Ve a la pestaña Cartas y elige 36 cartas para tu mazo. Toca «Aleatorio» para inicio rápido.' },
     { targetId:'btn-start-game', title:'¡Inicia la partida!', msg:'Cuando el botón esté activo (todos los checks en verde) toca aquí para comenzar.' },
-    { targetId:'game-setup-panel', title:'Durante el juego', msg:'Toca las cartas de tu mano para jugarlas. Cuando hayas jugado 6, cierra la ronda. Al terminar desplázate abajo para el intercambio de cartas.' },
+    { targetId:'game-setup-panel', title:'Durante el juego', msg:'Toca las cartas de tu mano para jugarlas. Cuando hayas jugado 6, cierra la ronda.' },
   ];
 
   let currentStep = 0;
@@ -1980,7 +1980,6 @@ window.initOnboardingGuide = function(){
       box-shadow:0 8px 32px rgba(0,0,0,0.6);
     `;
 
-    // Flecha apuntando al elemento
     const above = rect.top > window.innerHeight/2;
     tip.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -1996,15 +1995,12 @@ window.initOnboardingGuide = function(){
       </div>
     `;
 
-    // Posicionar cerca del target
     const tipLeft = Math.min(Math.max(8, rect.left), window.innerWidth - 296);
     const tipTop = above ? rect.top - 10 - 140 : rect.bottom + 10;
     tip.style.left = tipLeft + 'px';
     tip.style.top = Math.max(8, Math.min(tipTop, window.innerHeight-180)) + 'px';
 
     document.body.appendChild(tip);
-
-    // Highlight sutil del target
     target.style.outline = '2px solid rgba(216,209,90,0.4)';
     target.style.borderRadius = '12px';
   }
@@ -2012,7 +2008,6 @@ window.initOnboardingGuide = function(){
   function removeTooltip(){
     const old = document.getElementById('onboard-tip');
     if(old) old.remove();
-    // Quitar highlights
     ['game-setup-panel','chk-deck','btn-start-game'].forEach(id=>{
       const el = document.getElementById(id);
       if(el){ el.style.outline=''; }
@@ -2030,25 +2025,27 @@ window.initOnboardingGuide = function(){
 
   window.dismissOnboarding = function(){
     removeTooltip();
-    localStorage.setItem('goat_games_played','3'); // marca como completado
+    localStorage.setItem('goat_tablero_visits','3'); // marca como completado
   };
 
-  // Mostrar primer paso tras 1.5s para que cargue la UI
-  setTimeout(()=> showStep(0), 1500);
+  // Mostrar primer paso tras 1.2s para que cargue la UI del tablero
+  setTimeout(()=> showStep(0), 1200);
 };
 
-// Incrementar contador de partidas al iniciar
-window.addEventListener('supabase-user-ready', ()=>{
-  // Solo iniciar guía si es usuario nuevo (pocas partidas)
-  const games = parseInt(localStorage.getItem('goat_games_played')||'0');
-  if(games < 3) setTimeout(window.initOnboardingGuide, 800);
-});
+// ── Llamar la guía cada vez que el usuario entra al Tablero ───────
+// Se engancha a switchTab — solo actúa en 'score' y máx 3 veces
+window._onEnterTablero = function(){
+  const visits = parseInt(localStorage.getItem('goat_tablero_visits')||'0');
+  if(visits >= 3) return;
+  localStorage.setItem('goat_tablero_visits', String(visits + 1));
+  setTimeout(window.initOnboardingGuide, 800);
+};
 
 // Incrementar al terminar una partida
 window._onGameFinished_guide = function(){
-  const games = parseInt(localStorage.getItem('goat_games_played')||'0');
-  localStorage.setItem('goat_games_played', String(games+1));
+  // ya no incrementa goat_games_played — el contador es por visitas al tablero
 };
+
 </script>
 
 </div><!-- end tab-score -->
@@ -2306,17 +2303,30 @@ function switchTab(id, el){
   if(sbItem) sbItem.classList.add('active');
   if(typeof updatePageTitle === 'function') updatePageTitle(id);
   if(typeof closeSidebar === 'function') closeSidebar();
-  // Registrar navegación en el historial para que el botón regresar no salga de la app
-  history.pushState({tab: id}, '', '#'+id);
+  // URL limpia: /tablero para score, #tab para el resto
+  const newUrl = id === 'score'
+    ? window.location.pathname.replace(/\/(tablero|#.*)$/,'') + '/tablero'
+    : window.location.pathname.replace(/\/tablero$/,'') + '#' + id;
+  history.pushState({tab: id}, '', newUrl);
+  // Guía de onboarding — solo al entrar al Tablero
+  if(id === 'score' && typeof window._onEnterTablero === 'function'){
+    window._onEnterTablero();
+  }
 }
 
 // ── Interceptar botón regresar ────────────────────────────────────
 // Siempre regresar al tablero principal, nunca salir de la app
 window.addEventListener('popstate', function(e){
-  const tab = e.state?.tab || 'competencias';
+  // Leer tab del state o de la URL
+  let tab = e.state?.tab;
+  if(!tab){
+    const path = window.location.pathname;
+    const hash = window.location.hash.replace('#','');
+    tab = path.endsWith('/tablero') ? 'score' : (hash || 'competencias');
+  }
   const defEl = document.getElementById('sb-competencias');
   if(tab === 'competencias' || !document.getElementById('tab-'+tab)){
-    history.pushState({tab:'competencias'}, '', window.location.pathname+'#competencias');
+    history.pushState({tab:'competencias'}, '', window.location.pathname.replace(/\/tablero$/,'')+'#competencias');
     switchTab('competencias', defEl);
   } else {
     switchTab(tab, document.getElementById('sb-'+tab) || defEl);
