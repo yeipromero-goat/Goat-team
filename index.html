@@ -10482,14 +10482,15 @@ async function coLoad(){
     // Construir query — si tiene clubs asignados, filtrar por ellos
     let profilesUrl = '/rest/v1/archer_profiles?select=*&order=display_name.asc&limit=200';
     if(coachClubs.length && !clubFilter){
-      // Filtrar por todos sus clubs
-      const clubsEncoded = coachClubs.map(c=>`"${c}"`).join(',');
-      profilesUrl += `&club_name=in.(${coachClubs.map(c=>encodeURIComponent(c)).join(',')})`;
+      // Filtrar por todos sus clubs — Supabase acepta in.(Club1,Club2)
+      const clubsList = coachClubs.join(',');
+      profilesUrl += `&club_name=in.(${clubsList})`;
     } else if(clubFilter){
-      profilesUrl += `&club_name=eq.${encodeURIComponent(clubFilter)}`;
+      profilesUrl += `&club_name=eq.${clubFilter}`;
     }
     const profiles = await coFetch(profilesUrl);
     if(!Array.isArray(profiles) || !profiles.length){
+      coAllArchers = [];
       coRender();
       return;
     }
