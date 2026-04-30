@@ -5362,7 +5362,8 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
       <div class="bt-sec" style="margin-bottom:0">Tendencia p/flecha</div>
       <span id="bt-tr" style="font-size:13px;font-weight:600"></span>
     </div>
-    <canvas id="bt-spark" height="56" style="width:100%;display:block"></canvas>
+    <canvas id="bt-spark" height="90" style="width:100%;display:block"></canvas>
+    <div id="bt-spark-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;justify-content:center"></div>
     <div id="bt-sub-trends" style="margin-top:12px"></div>
   </div>
   <div class="bt-card">
@@ -5723,7 +5724,22 @@ function btRenderH(){
   const tr=document.getElementById('bt-tr');
   tr.textContent=diff>0?`↑ +${diff.toFixed(2)} p/f`:diff<0?`↓ ${diff.toFixed(2)} p/f`:'→ estable';
   tr.className=diff>0?'bt-tup':diff<0?'bt-tdn':'bt-muted';
-  btDrawSpark(avgs);
+
+  if(btFMod==='all'){
+    // Multi-línea: una por disciplina
+    const groups={};
+    fs.forEach(s=>{if(!groups[s.g])groups[s.g]=[];groups[s.g].push(s);});
+    const lines=Object.entries(groups).map(([g,v])=>({
+      g, color:BT_COLORS[g],
+      label:BT_GLABELS[g],
+      avgs:[...v].sort((a,b)=>new Date(a.date)-new Date(b.date)).map(s=>s.avg)
+    })).filter(l=>l.avgs.length>=1);
+    btDrawSparkMulti(lines);
+  } else {
+    const legendEl=document.getElementById('bt-spark-legend');
+    if(legendEl) legendEl.innerHTML='';
+    btDrawSpark(avgs);
+  }
   const subEl=document.getElementById('bt-sub-trends');
   if(btFMod!=='all'){
     const byMode={};fs.forEach(s=>{if(!byMode[s.mode])byMode[s.mode]=[];byMode[s.mode].push(s);});
@@ -5802,18 +5818,74 @@ function btRenderH(){
 
 function btDrawSpark(data){
   const c=document.getElementById('bt-spark');if(!c)return;
-  const ctx=c.getContext('2d'),W=c.offsetWidth||400,H=56;
+  document.getElementById('bt-spark-legend').innerHTML='';
+  const ctx=c.getContext('2d'),W=c.offsetWidth||400,H=90;
   c.width=W;c.height=H;ctx.clearRect(0,0,W,H);
   if(data.length<2){ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();return;}
   const mn=Math.min(...data)*0.97,mx=Math.max(...data)*1.03,r=mx-mn||1;
-  const pts=data.map((v,i)=>({x:i/(data.length-1)*(W-16)+8,y:H-6-(v-mn)/r*(H-16)}));
+  const pts=data.map((v,i)=>({x:i/(data.length-1)*(W-16)+8,y:H-8-(v-mn)/r*(H-20)}));
   ctx.beginPath();ctx.moveTo(pts[0].x,H-2);pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(pts[pts.length-1].x,H-2);ctx.closePath();
   ctx.fillStyle='rgba(216,209,90,0.06)';ctx.fill();
   ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
   for(let i=1;i<pts.length;i++){const mx2=(pts[i-1].x+pts[i].x)/2,my=(pts[i-1].y+pts[i].y)/2;ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,mx2,my);}
   ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
-  ctx.strokeStyle='#d8d15a';ctx.lineWidth=1.5;ctx.stroke();
-  [pts[0],pts[pts.length-1]].forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle='#d8d15a';ctx.fill();});
+  ctx.strokeStyle='#d8d15a';ctx.lineWidth=2;ctx.stroke();
+  [pts[0],pts[pts.length-1]].forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle='#d8d15a';ctx.fill();});
+}
+
+function btDrawSparkMulti(lines){
+  const c=document.getElementById('bt-spark');if(!c)return;
+  const legendEl=document.getElementById('bt-spark-legend');
+  const ctx=c.getContext('2d'),W=c.offsetWidth||400,H=90;
+  c.width=W;c.height=H;ctx.clearRect(0,0,W,H);
+
+  if(!lines.length){
+    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+    if(legendEl) legendEl.innerHTML='';
+    return;
+  }
+
+  // Escala global entre todas las líneas
+  const allVals=lines.flatMap(l=>l.avgs);
+  const mn=Math.min(...allVals)*0.97,mx=Math.max(...allVals)*1.03,r=mx-mn||1;
+
+  lines.forEach(line=>{
+    if(line.avgs.length<1) return;
+    const data=line.avgs;
+    const pts=data.length===1
+      ? [{x:W/2,y:H-8-(data[0]-mn)/r*(H-20)}]
+      : data.map((v,i)=>({x:i/(data.length-1)*(W-16)+8,y:H-8-(v-mn)/r*(H-20)}));
+
+    if(pts.length===1){
+      ctx.beginPath();ctx.arc(pts[0].x,pts[0].y,4,0,Math.PI*2);
+      ctx.fillStyle=line.color;ctx.fill();return;
+    }
+
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++){
+      const mx2=(pts[i-1].x+pts[i].x)/2,my=(pts[i-1].y+pts[i].y)/2;
+      ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,mx2,my);
+    }
+    ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
+    ctx.strokeStyle=line.color;ctx.lineWidth=2;ctx.globalAlpha=0.85;ctx.stroke();ctx.globalAlpha=1;
+
+    // Punto final
+    const last=pts[pts.length-1];
+    ctx.beginPath();ctx.arc(last.x,last.y,3.5,0,Math.PI*2);
+    ctx.fillStyle=line.color;ctx.fill();
+  });
+
+  // Leyenda
+  if(legendEl){
+    legendEl.innerHTML=lines.map(l=>{
+      const last=l.avgs[l.avgs.length-1];
+      return`<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:rgba(255,255,255,0.6)">
+        <span style="width:12px;height:3px;border-radius:2px;background:${l.color};display:inline-block"></span>
+        <span style="color:${l.color};font-weight:600">${l.label}</span>
+        <span>${last.toFixed(1)} p/f</span>
+      </span>`
+    }).join('');
+  }
 }
 
 // Inicializar
