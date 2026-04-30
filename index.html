@@ -1704,6 +1704,35 @@ document.addEventListener('DOMContentLoaded', function(){
     </div>
   </div>
 
+  <!-- 2b. Puntuación en vivo — visible sin scroll -->
+  <div class="scorebox" style="position:relative;overflow:hidden;margin-bottom:.75rem;margin-top:.5rem">
+    <div style="position:absolute;right:-20px;bottom:-20px;width:120px;opacity:0.05;pointer-events:none;z-index:0">
+      <img src='https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp' style="width:100%;height:auto" alt=""/>
+    </div>
+    <div style="position:relative;z-index:1">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div style="display:flex;align-items:baseline;gap:10px">
+          <span class="snum2" id="final-score">0</span>
+          <span class="smax">/ 100</span>
+          <span class="sgrade gC" id="score-grade">C</span>
+          <span style="font-size:10px;color:var(--muted)" id="score-round-label">Setup</span>
+        </div>
+        <div class="rsb-history" id="rsb-history"></div>
+      </div>
+      <div class="bkgrid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="bkitem"><div class="bklabel">Técnica · 32%</div><div class="bkval" id="bk-T">0</div><div class="bkw" id="bkw-T">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Int.Emoc. · 28%</div><div class="bkval" id="bk-I">0</div><div class="bkw" id="bkw-I">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">G.Estrés · 18%</div><div class="bkval" id="bk-E">0</div><div class="bkw" id="bkw-E">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Compet. · 12%</div><div class="bkval" id="bk-C">0</div><div class="bkw" id="bkw-C">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Fuerza · 6%</div><div class="bkval" id="bk-FUE">0</div><div class="bkw" id="bkw-FUE">0 pts</div></div>
+        <div class="bkitem"><div class="bklabel">Resistencia · 4%</div><div class="bkval" id="bk-RES">0</div><div class="bkw" id="bkw-RES">0 pts</div></div>
+      </div>
+      <div class="rsb-total" id="rsb-total" style="display:none;margin-top:10px">
+        Total acumulado: <strong id="rsb-total-num">0</strong>
+      </div>
+    </div>
+  </div>
+
   <!-- 3. Mini equipo — Arquero | Arco | Coach -->
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:1rem;margin-top:.5rem" id="game-team-hud">
 
@@ -1789,35 +1818,6 @@ document.addEventListener('DOMContentLoaded', function(){
       <span class="deck-remain" id="deck-remain-label">Deck: 0</span>
     </div>
     <div class="hand-grid" id="hand-grid"></div>
-  </div>
-
-  <!-- 5. Puntuación -->
-  <div class="scorebox" style="position:relative;overflow:hidden;margin-bottom:1rem;margin-top:1rem">
-    <div style="position:absolute;right:-20px;bottom:-20px;width:120px;opacity:0.05;pointer-events:none;z-index:0">
-      <img src='https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp' style="width:100%;height:auto" alt=""/>
-    </div>
-    <div style="position:relative;z-index:1">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <div style="display:flex;align-items:baseline;gap:10px">
-          <span class="snum2" id="final-score">0</span>
-          <span class="smax">/ 100</span>
-          <span class="sgrade gC" id="score-grade">C</span>
-          <span style="font-size:10px;color:var(--muted)" id="score-round-label">Setup</span>
-        </div>
-        <div class="rsb-history" id="rsb-history"></div>
-      </div>
-      <div class="bkgrid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="bkitem"><div class="bklabel">Técnica · 32%</div><div class="bkval" id="bk-T">0</div><div class="bkw" id="bkw-T">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Int.Emoc. · 28%</div><div class="bkval" id="bk-I">0</div><div class="bkw" id="bkw-I">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">G.Estrés · 18%</div><div class="bkval" id="bk-E">0</div><div class="bkw" id="bkw-E">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Compet. · 12%</div><div class="bkval" id="bk-C">0</div><div class="bkw" id="bkw-C">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Fuerza · 6%</div><div class="bkval" id="bk-FUE">0</div><div class="bkw" id="bkw-FUE">0 pts</div></div>
-        <div class="bkitem"><div class="bklabel">Resistencia · 4%</div><div class="bkval" id="bk-RES">0</div><div class="bkw" id="bkw-RES">0 pts</div></div>
-      </div>
-      <div class="rsb-total" id="rsb-total" style="display:none;margin-top:10px">
-        Total acumulado: <strong id="rsb-total-num">0</strong>
-      </div>
-    </div>
   </div>
 
   <div id="round-history-wrap" style="display:none;margin-top:.75rem">
