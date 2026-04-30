@@ -10474,20 +10474,25 @@ async function coLoad(){
   document.getElementById('co-table').innerHTML = '<div class="co-loading">Cargando arqueros...</div>';
 
   try{
-    // Leer coach_clubs del JWT para filtrar en la query
-    const user = (await window._supabaseClient.auth.getUser()).data?.user;
-    const coachClubs = user?.user_metadata?.coach_clubs || [];
+    // Leer coach_clubs directo del JWT (más confiable que getUser())
+    let coachClubs = [];
+    try{
+      const payload = JSON.parse(atob(window._supabaseToken.split('.')[1]));
+      coachClubs = payload?.user_metadata?.coach_clubs || [];
+    } catch(e){ coachClubs = []; }
+
     const clubFilter = document.getElementById('co-filter-club').value;
+    console.log('coLoad — coachClubs:', coachClubs, '| clubFilter:', clubFilter);
 
     // Construir query — si tiene clubs asignados, filtrar por ellos
     let profilesUrl = '/rest/v1/archer_profiles?select=*&order=display_name.asc&limit=200';
     if(coachClubs.length && !clubFilter){
-      // Filtrar por todos sus clubs — Supabase acepta in.(Club1,Club2)
       const clubsList = coachClubs.join(',');
       profilesUrl += `&club_name=in.(${clubsList})`;
     } else if(clubFilter){
       profilesUrl += `&club_name=eq.${clubFilter}`;
     }
+    console.log('profilesUrl:', profilesUrl);
     const profiles = await coFetch(profilesUrl);
     if(!Array.isArray(profiles) || !profiles.length){
       coAllArchers = [];
@@ -10726,9 +10731,12 @@ window.coToggleDetail = function(userId){
 
 // ── Init ─────────────────────────────────────────────────
 async function coInit(){
-  // Leer coach_clubs del JWT
-  const user = (await window._supabaseClient.auth.getUser()).data?.user;
-  const coachClubs = user?.user_metadata?.coach_clubs || [];
+  // Leer coach_clubs directo del JWT
+  let coachClubs = [];
+  try{
+    const payload = JSON.parse(atob(window._supabaseToken.split('.')[1]));
+    coachClubs = payload?.user_metadata?.coach_clubs || [];
+  } catch(e){ coachClubs = []; }
 
   if(coachClubs.length){
     // Pre-seleccionar el primer club y bloquear el filtro
