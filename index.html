@@ -10062,7 +10062,7 @@ if(stored.length) bmSessions = stored;
 
     <div class="pf-field" style="margin-bottom:0">
       <label class="pf-label">Tipo de arco</label>
-      <div class="pf-bow-grid">
+      <div class="pf-bow-grid" style="grid-template-columns:1fr 1fr 1fr 1fr">
         <div class="pf-bow-opt" id="pf-bow-recurvo" onclick="pfSelBow('recurvo')">
           <div class="pf-bow-icon">🏹</div>
           <div class="pf-bow-name">Recurvo</div>
@@ -10074,6 +10074,10 @@ if(stored.length) bmSessions = stored;
         <div class="pf-bow-opt" id="pf-bow-barebow" onclick="pfSelBow('barebow')">
           <div class="pf-bow-icon">🪃</div>
           <div class="pf-bow-name">Bare bow</div>
+        </div>
+        <div class="pf-bow-opt" id="pf-bow-tradicional" onclick="pfSelBow('tradicional')">
+          <div class="pf-bow-icon">🪵</div>
+          <div class="pf-bow-name">Trad.</div>
         </div>
       </div>
     </div>
@@ -10150,8 +10154,54 @@ if(stored.length) bmSessions = stored;
             <input class="pf-input" id="sf-plunger" placeholder="Ej: Beiter out 2">
           </div>
           <div class="pf-field">
-            <label class="pf-label">Estabilizador</label>
-            <input class="pf-input" id="sf-stabilizer" placeholder="Ej: Fivics 27in">
+            <label class="pf-label">Estabilizador central</label>
+            <input class="pf-input" id="sf-stab-center" placeholder="Ej: Fivics 27in">
+          </div>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Longitud central (in)</label>
+            <input class="pf-input" id="sf-stab-center-len" type="number" min="0" max="36" step="0.5" placeholder="Ej: 27">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Peso central (oz)</label>
+            <input class="pf-input" id="sf-stab-center-oz" type="number" min="0" max="20" step="0.5" placeholder="Ej: 6">
+          </div>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 1</div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Longitud lateral 1 (in)</label>
+            <input class="pf-input" id="sf-stab-lat1-len" type="number" min="0" max="16" step="0.5" placeholder="Ej: 12">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Peso lateral 1 (oz)</label>
+            <input class="pf-input" id="sf-stab-lat1-oz" type="number" min="0" max="10" step="0.5" placeholder="Ej: 2">
+          </div>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 2</div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Longitud lateral 2 (in)</label>
+            <input class="pf-input" id="sf-stab-lat2-len" type="number" min="0" max="16" step="0.5" placeholder="Ej: 12">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Peso lateral 2 (oz)</label>
+            <input class="pf-input" id="sf-stab-lat2-oz" type="number" min="0" max="10" step="0.5" placeholder="Ej: 2">
+          </div>
+        </div>
+      </div>
+
+      <div id="sf-barebow-fields" style="display:none">
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Botón / Plunger</label>
+            <input class="pf-input" id="sf-bb-plunger" placeholder="Ej: Beiter out 2">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Peso en flecha (gr)</label>
+            <input class="pf-input" id="sf-bb-arrow-weight" type="number" min="100" max="600" placeholder="Ej: 320">
           </div>
         </div>
       </div>
@@ -10170,6 +10220,39 @@ if(stored.length) bmSessions = stored;
         <div class="pf-field">
           <label class="pf-label">Let-off (%)</label>
           <input class="pf-input" id="sf-letoff" type="number" min="50" max="99" placeholder="Ej: 80">
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Longitud central (in)</label>
+            <input class="pf-input" id="sf-cp-stab-center-len" type="number" min="0" max="16" step="0.5" placeholder="Ej: 8">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Peso central (oz)</label>
+            <input class="pf-input" id="sf-cp-stab-center-oz" type="number" min="0" max="20" step="0.5" placeholder="Ej: 4">
+          </div>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 1</div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Longitud lateral 1 (in)</label>
+            <input class="pf-input" id="sf-cp-stab-lat1-len" type="number" min="0" max="16" step="0.5" placeholder="Ej: 6">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Peso lateral 1 (oz)</label>
+            <input class="pf-input" id="sf-cp-stab-lat1-oz" type="number" min="0" max="10" step="0.5" placeholder="Ej: 2">
+          </div>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 2</div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Longitud lateral 2 (in)</label>
+            <input class="pf-input" id="sf-cp-stab-lat2-len" type="number" min="0" max="16" step="0.5" placeholder="Ej: 6">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Peso lateral 2 (oz)</label>
+            <input class="pf-input" id="sf-cp-stab-lat2-oz" type="number" min="0" max="10" step="0.5" placeholder="Ej: 2">
+          </div>
         </div>
       </div>
 
@@ -10269,7 +10352,7 @@ function pfUpdateAgeBadge(birthDate){
 // ── Selección de arco ────────────────────────────────────
 window.pfSelBow = function(type){
   pfBowType = type;
-  ['recurvo','compuesto','barebow'].forEach(t=>{
+  ['recurvo','compuesto','barebow','tradicional'].forEach(t=>{
     document.getElementById('pf-bow-'+t).classList.toggle('sel', t === type);
   });
 };
@@ -10408,7 +10491,7 @@ window.pfToggleSetupForm = function(){
 // ── Mostrar campos según tipo de arco ────────────────────
 window.pfUpdateSetupFields = function(){
   const type = document.getElementById('sf-bow-type').value;
-  ['recurvo','compuesto','tradicional'].forEach(t=>{
+  ['recurvo','barebow','compuesto','tradicional'].forEach(t=>{
     const el = document.getElementById('sf-'+t+'-fields');
     if(el) el.style.display = t===type ? 'block' : 'none';
   });
@@ -10438,15 +10521,33 @@ window.pfSaveSetup = async function(){
     active_from:  document.getElementById('sf-from').value || new Date().toISOString().slice(0,10),
     active_until: document.getElementById('sf-until').value || null,
     notes:        document.getElementById('sf-notes').value.trim()||null,
-    // Recurvo / barebow
-    plunger_setting: document.getElementById('sf-plunger')?.value.trim()||null,
-    stabilizer:      document.getElementById('sf-stabilizer')?.value.trim()||null,
+    // Recurvo
+    plunger_setting:   document.getElementById('sf-plunger')?.value.trim()||null,
+    stabilizer:        document.getElementById('sf-stab-center')?.value.trim()||null,
+    // Barebow
+    bb_plunger:        document.getElementById('sf-bb-plunger')?.value.trim()||null,
+    bb_arrow_weight:   parseFloat(document.getElementById('sf-bb-arrow-weight')?.value)||null,
     // Compuesto
-    ata:    parseFloat(document.getElementById('sf-ata')?.value)||null,
-    brace_height: parseFloat(document.getElementById('sf-bh')?.value)||null,
-    letoff: parseFloat(document.getElementById('sf-letoff')?.value)||null,
+    ata:               parseFloat(document.getElementById('sf-ata')?.value)||null,
+    brace_height:      parseFloat(document.getElementById('sf-bh')?.value)||null,
+    letoff:            parseFloat(document.getElementById('sf-letoff')?.value)||null,
     // Tradicional
-    bow_subtype: document.getElementById('sf-bow-subtype')?.value||null,
+    bow_subtype:       document.getElementById('sf-bow-subtype')?.value||null,
+    // Estabilizadores — guardados como JSONB en notes extendido
+    stabilizer_config: JSON.stringify({
+      center: {
+        len: parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-center-len':'sf-stab-center-len')?.value)||null,
+        oz:  parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-center-oz':'sf-stab-center-oz')?.value)||null,
+      },
+      lat1: {
+        len: parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-lat1-len':'sf-stab-lat1-len')?.value)||null,
+        oz:  parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-lat1-oz':'sf-stab-lat1-oz')?.value)||null,
+      },
+      lat2: {
+        len: parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-lat2-len':'sf-stab-lat2-len')?.value)||null,
+        oz:  parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-lat2-oz':'sf-stab-lat2-oz')?.value)||null,
+      }
+    })
   };
 
   // Si no tiene hasta, cerrar el setup activo anterior del mismo tipo
@@ -10465,7 +10566,15 @@ window.pfSaveSetup = async function(){
     pfShowMsg('✓ Setup guardado', true);
     document.getElementById('pf-setup-form').classList.remove('open');
     // Reset form
-    ['sf-name','sf-draw-weight','sf-arrow-length','sf-point-weight','sf-plunger','sf-stabilizer','sf-ata','sf-bh','sf-letoff','sf-until','sf-notes'].forEach(id=>{
+    ['sf-name','sf-draw-weight','sf-arrow-length','sf-point-weight',
+     'sf-plunger','sf-stab-center','sf-stab-center-len','sf-stab-center-oz',
+     'sf-stab-lat1-len','sf-stab-lat1-oz','sf-stab-lat2-len','sf-stab-lat2-oz',
+     'sf-bb-plunger','sf-bb-arrow-weight',
+     'sf-ata','sf-bh','sf-letoff',
+     'sf-cp-stab-center-len','sf-cp-stab-center-oz',
+     'sf-cp-stab-lat1-len','sf-cp-stab-lat1-oz',
+     'sf-cp-stab-lat2-len','sf-cp-stab-lat2-oz',
+     'sf-until','sf-notes'].forEach(id=>{
       const el = document.getElementById(id); if(el) el.value='';
     });
     document.getElementById('sf-bow-type').value='';
@@ -10513,7 +10622,27 @@ async function pfLoadSetups(){
     if(s.brace_height) fields.push({l:'Brace H.',v:s.brace_height+'"'});
     if(s.letoff)       fields.push({l:'Let-off',v:s.letoff+'%'});
     if(s.plunger_setting) fields.push({l:'Botón',v:s.plunger_setting});
-    if(s.stabilizer)   fields.push({l:'Estab.',v:s.stabilizer});
+    if(s.stabilizer)   fields.push({l:'Central',v:s.stabilizer});
+    if(s.bb_plunger)   fields.push({l:'Botón',v:s.bb_plunger});
+    if(s.bb_arrow_weight) fields.push({l:'Peso flecha',v:s.bb_arrow_weight+'gr'});
+
+    // Estabilizadores
+    let stabHtml = '';
+    if(s.stabilizer_config){
+      try{
+        const sc = typeof s.stabilizer_config==='string' ? JSON.parse(s.stabilizer_config) : s.stabilizer_config;
+        const stabRows = [];
+        if(sc.center?.len||sc.center?.oz) stabRows.push(`Central: ${sc.center.len||'—'}" · ${sc.center.oz||'—'}oz`);
+        if(sc.lat1?.len||sc.lat1?.oz)     stabRows.push(`Lat 1: ${sc.lat1.len||'—'}" · ${sc.lat1.oz||'—'}oz`);
+        if(sc.lat2?.len||sc.lat2?.oz)     stabRows.push(`Lat 2: ${sc.lat2.len||'—'}" · ${sc.lat2.oz||'—'}oz`);
+        if(stabRows.length){
+          stabHtml = `<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:6px;padding-top:6px;border-top:0.5px solid rgba(255,255,255,0.06)">
+            <div style="font-size:9px;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Estabilizadores</div>
+            ${stabRows.map(r=>`<div>${r}</div>`).join('')}
+          </div>`;
+        }
+      }catch(e){}
+    }
 
     return`<div class="pf-setup-item ${isActive?'active-setup':''}">
       <div class="pf-setup-header">
@@ -10529,6 +10658,7 @@ async function pfLoadSetups(){
           <div class="pf-setup-field-val">${f.v}</div>
         </div>`).join('')}
       </div>`:''}
+      ${stabHtml}
       ${s.notes?`<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:8px;font-style:italic">${s.notes}</div>`:''}
     </div>`;
   }).join('');
