@@ -9884,7 +9884,89 @@ if(stored.length) bmSessions = stored;
   color:#e05555;border:0.5px solid rgba(224,85,85,0.3);
 }
 
-/* Avatar initials big */
+/* Gender selector */
+.pf-gender-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+}
+.pf-gender-opt{
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:10px;padding:10px 8px;
+  text-align:center;cursor:pointer;
+  transition:all .15s;background:transparent;
+}
+.pf-gender-opt:hover{ background:rgba(255,255,255,0.04); }
+.pf-gender-opt.sel{
+  border-color:rgba(216,209,90,0.5);
+  background:rgba(216,209,90,0.08);
+}
+.pf-gender-icon{ font-size:20px;margin-bottom:4px; }
+.pf-gender-name{ font-size:11px;font-weight:600;color:rgba(255,255,255,0.6); }
+.pf-gender-opt.sel .pf-gender-name{ color:#d8d15a; }
+
+/* Setup history */
+.pf-setup-item{
+  border:0.5px solid rgba(255,255,255,0.08);
+  border-radius:10px;padding:12px;
+  margin-bottom:8px;
+  background:rgba(255,255,255,0.02);
+  position:relative;
+}
+.pf-setup-item.active-setup{
+  border-color:rgba(93,202,165,0.3);
+  background:rgba(93,202,165,0.04);
+}
+.pf-setup-header{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:8px;
+}
+.pf-setup-title{
+  font-size:13px;font-weight:600;color:#fff;
+}
+.pf-setup-dates{
+  font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;
+}
+.pf-setup-badge{
+  font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;
+  background:rgba(93,202,165,0.15);color:#5dcaa5;
+  border:0.5px solid rgba(93,202,165,0.3);
+  white-space:nowrap;
+}
+.pf-setup-fields{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;
+}
+.pf-setup-field{
+  font-size:11px;
+}
+.pf-setup-field-label{ color:rgba(255,255,255,0.35); }
+.pf-setup-field-val{ color:rgba(255,255,255,0.8);font-weight:500; }
+
+/* Setup form */
+.pf-setup-form{
+  border:1px solid rgba(216,209,90,0.2);
+  border-radius:12px;padding:14px;
+  background:rgba(216,209,90,0.03);
+  margin-top:10px;display:none;
+}
+.pf-setup-form.open{ display:block; }
+.pf-fields-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.pf-add-btn{
+  width:100%;padding:10px;border-radius:9px;
+  font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.06em;
+  border:0.5px solid rgba(216,209,90,0.3);
+  background:transparent;color:rgba(255,255,255,0.5);
+  cursor:pointer;transition:all .15s;margin-top:6px;
+}
+.pf-add-btn:hover{ border-color:rgba(216,209,90,0.6);color:#d8d15a; }
+.pf-save-setup-btn{
+  width:100%;padding:10px;border-radius:9px;
+  font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.06em;
+  border:1px solid rgba(93,202,165,0.4);
+  background:rgba(93,202,165,0.1);color:#5dcaa5;
+  cursor:pointer;transition:all .15s;margin-top:10px;
+}
+.pf-save-setup-btn:hover{ background:rgba(93,202,165,0.18); }
 .pf-avatar-big{
   width:64px;height:64px;border-radius:50%;
   background:rgba(216,209,90,0.15);
@@ -9949,6 +10031,20 @@ if(stored.length) bmSessions = stored;
         <option>Yucatán</option><option>Zacatecas</option>
       </select>
     </div>
+
+    <div class="pf-field" style="margin-top:14px;margin-bottom:0">
+      <label class="pf-label">Género</label>
+      <div class="pf-gender-grid">
+        <div class="pf-gender-opt" id="pf-gender-varonil" onclick="pfSelGender('varonil')">
+          <div class="pf-gender-icon">👨</div>
+          <div class="pf-gender-name">Varonil</div>
+        </div>
+        <div class="pf-gender-opt" id="pf-gender-femenil" onclick="pfSelGender('femenil')">
+          <div class="pf-gender-icon">👩</div>
+          <div class="pf-gender-name">Femenil</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Club y categoría -->
@@ -9989,6 +10085,124 @@ if(stored.length) bmSessions = stored;
   </button>
   <div class="pf-msg" id="pf-msg"></div>
 
+  <!-- Historial de setups -->
+  <div class="pf-card" style="margin-top:16px">
+    <div class="pf-card-bar" style="background:linear-gradient(90deg,#9a88dd,#5dcaa5)"></div>
+    <div class="pf-section-title">Historial de equipo</div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:12px;line-height:1.5">
+      Registra el setup que usas en cada etapa. Al analizar tus puntuaciones podrás saber qué equipo traías en ese periodo.
+    </div>
+
+    <!-- Lista de setups -->
+    <div id="pf-setups-list">
+      <div style="text-align:center;padding:16px 0;font-size:12px;color:rgba(255,255,255,0.25)">
+        Sin setups registrados aún
+      </div>
+    </div>
+
+    <!-- Botón agregar -->
+    <button class="pf-add-btn" id="pf-add-setup-btn" onclick="pfToggleSetupForm()">
+      + Agregar setup de equipo
+    </button>
+
+    <!-- Formulario nuevo setup -->
+    <div class="pf-setup-form" id="pf-setup-form">
+      <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">Nuevo setup</div>
+
+      <div class="pf-field">
+        <label class="pf-label">Nombre del setup</label>
+        <input class="pf-input" id="sf-name" placeholder="Ej: Setup nacional 2025" maxlength="60">
+      </div>
+
+      <div class="pf-fields-grid">
+        <div class="pf-field">
+          <label class="pf-label">Tipo de arco</label>
+          <select class="pf-select" id="sf-bow-type" onchange="pfUpdateSetupFields()">
+            <option value="">— Seleccionar —</option>
+            <option value="recurvo">Recurvo</option>
+            <option value="compuesto">Compuesto</option>
+            <option value="barebow">Bare bow</option>
+            <option value="tradicional">Tradicional</option>
+          </select>
+        </div>
+        <div class="pf-field">
+          <label class="pf-label">Libras (draw weight)</label>
+          <input class="pf-input" id="sf-draw-weight" type="number" min="10" max="80" step="0.5" placeholder="Ej: 42">
+        </div>
+      </div>
+
+      <div class="pf-fields-grid">
+        <div class="pf-field">
+          <label class="pf-label">Longitud de flecha (in)</label>
+          <input class="pf-input" id="sf-arrow-length" type="number" min="20" max="35" step="0.25" placeholder="Ej: 27.5">
+        </div>
+        <div class="pf-field">
+          <label class="pf-label">Punta (grains)</label>
+          <input class="pf-input" id="sf-point-weight" type="number" min="50" max="200" placeholder="Ej: 100">
+        </div>
+      </div>
+
+      <!-- Campos específicos por tipo de arco -->
+      <div id="sf-recurvo-fields" style="display:none">
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Botón / Plunger</label>
+            <input class="pf-input" id="sf-plunger" placeholder="Ej: Beiter out 2">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Estabilizador</label>
+            <input class="pf-input" id="sf-stabilizer" placeholder="Ej: Fivics 27in">
+          </div>
+        </div>
+      </div>
+
+      <div id="sf-compuesto-fields" style="display:none">
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">ATA (in)</label>
+            <input class="pf-input" id="sf-ata" type="number" min="28" max="42" step="0.25" placeholder="Ej: 36">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Brace Height (in)</label>
+            <input class="pf-input" id="sf-bh" type="number" min="5" max="9" step="0.25" placeholder="Ej: 6.5">
+          </div>
+        </div>
+        <div class="pf-field">
+          <label class="pf-label">Let-off (%)</label>
+          <input class="pf-input" id="sf-letoff" type="number" min="50" max="99" placeholder="Ej: 80">
+        </div>
+      </div>
+
+      <div id="sf-tradicional-fields" style="display:none">
+        <div class="pf-field">
+          <label class="pf-label">Subtipo</label>
+          <select class="pf-select" id="sf-bow-subtype">
+            <option value="longbow">Longbow</option>
+            <option value="recurvo">Recurvo tradicional</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pf-fields-grid">
+        <div class="pf-field">
+          <label class="pf-label">Desde</label>
+          <input class="pf-input" id="sf-from" type="date">
+        </div>
+        <div class="pf-field">
+          <label class="pf-label">Hasta (vacío = actual)</label>
+          <input class="pf-input" id="sf-until" type="date">
+        </div>
+      </div>
+
+      <div class="pf-field" style="margin-bottom:0">
+        <label class="pf-label">Notas adicionales</label>
+        <input class="pf-input" id="sf-notes" placeholder="Ej: Flecha Easton X10, insertos de aluminio">
+      </div>
+
+      <button class="pf-save-setup-btn" onclick="pfSaveSetup()">✓ Guardar setup</button>
+    </div>
+  </div>
+
 </div><!-- end pf-wrap -->
 
 <script>
@@ -10005,7 +10219,16 @@ const MX_CATEGORIES = [
 ];
 
 let pfBowType = null;
+let pfGender  = null;
 let pfLoaded  = false;
+
+// ── Selección de género ──────────────────────────────────
+window.pfSelGender = function(g){
+  pfGender = g;
+  ['varonil','femenil'].forEach(t=>{
+    document.getElementById('pf-gender-'+t).classList.toggle('sel', t===g);
+  });
+};
 
 // ── Calcular categoría por edad ──────────────────────────
 function pfGetAge(birthDate){
@@ -10090,11 +10313,11 @@ async function pfLoad(){
     if(p.club_name){
       document.getElementById('pf-club').value = p.club_name;
     }
-    if(p.bow_type){
-      pfSelBow(p.bow_type);
-    }
+    if(p.bow_type) pfSelBow(p.bow_type);
+    if(p.gender)   pfSelGender(p.gender);
   } catch(e){ console.error('pfLoad error:', e); }
   pfLoaded = true;
+  pfLoadSetups();
 }
 
 // ── Guardar perfil ───────────────────────────────────────
@@ -10130,6 +10353,7 @@ window.pfSave = async function(){
       estado:       estado    || null,
       club_name:    club      || null,
       bow_type:     pfBowType || null,
+      gender:       pfGender  || null,
       updated_at:   new Date().toISOString()
     };
 
@@ -10171,7 +10395,144 @@ function pfShowMsg(text, ok){
   setTimeout(()=>{ el.style.display='none'; }, 3500);
 }
 
-// ── Listener fecha nacimiento ────────────────────────────
+// ── Setup form toggle ────────────────────────────────────
+window.pfToggleSetupForm = function(){
+  const form = document.getElementById('pf-setup-form');
+  form.classList.toggle('open');
+  // Default fecha desde = hoy
+  if(form.classList.contains('open') && !document.getElementById('sf-from').value){
+    document.getElementById('sf-from').value = new Date().toISOString().slice(0,10);
+  }
+};
+
+// ── Mostrar campos según tipo de arco ────────────────────
+window.pfUpdateSetupFields = function(){
+  const type = document.getElementById('sf-bow-type').value;
+  ['recurvo','compuesto','tradicional'].forEach(t=>{
+    const el = document.getElementById('sf-'+t+'-fields');
+    if(el) el.style.display = t===type ? 'block' : 'none';
+  });
+};
+
+// ── Guardar setup ────────────────────────────────────────
+window.pfSaveSetup = async function(){
+  const userId = window._supabaseUserId;
+  if(!userId) return;
+  const bowType = document.getElementById('sf-bow-type').value;
+  if(!bowType){ pfShowMsg('Selecciona el tipo de arco', false); return; }
+
+  const session = (await window._supabaseClient.auth.getSession()).data.session;
+  const headers = {
+    'apikey': window._supabaseAnonKey||'',
+    'Authorization': 'Bearer '+(session?.access_token||''),
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+
+  const payload = {
+    user_id:      userId,
+    bow_type:     bowType,
+    draw_weight:  parseFloat(document.getElementById('sf-draw-weight').value)||null,
+    arrow_length: parseFloat(document.getElementById('sf-arrow-length').value)||null,
+    point_weight: parseInt(document.getElementById('sf-point-weight').value)||null,
+    active_from:  document.getElementById('sf-from').value || new Date().toISOString().slice(0,10),
+    active_until: document.getElementById('sf-until').value || null,
+    notes:        document.getElementById('sf-notes').value.trim()||null,
+    // Recurvo / barebow
+    plunger_setting: document.getElementById('sf-plunger')?.value.trim()||null,
+    stabilizer:      document.getElementById('sf-stabilizer')?.value.trim()||null,
+    // Compuesto
+    ata:    parseFloat(document.getElementById('sf-ata')?.value)||null,
+    brace_height: parseFloat(document.getElementById('sf-bh')?.value)||null,
+    letoff: parseFloat(document.getElementById('sf-letoff')?.value)||null,
+    // Tradicional
+    bow_subtype: document.getElementById('sf-bow-subtype')?.value||null,
+  };
+
+  // Si no tiene hasta, cerrar el setup activo anterior del mismo tipo
+  if(!payload.active_until){
+    await fetch(`${SUPA}/rest/v1/archer_setups?user_id=eq.${userId}&bow_type=eq.${bowType}&active_until=is.null`, {
+      method:'PATCH', headers,
+      body: JSON.stringify({active_until: payload.active_from})
+    });
+  }
+
+  const res = await fetch(`${SUPA}/rest/v1/archer_setups`, {
+    method:'POST', headers, body: JSON.stringify(payload)
+  });
+
+  if(res.ok || res.status===201){
+    pfShowMsg('✓ Setup guardado', true);
+    document.getElementById('pf-setup-form').classList.remove('open');
+    // Reset form
+    ['sf-name','sf-draw-weight','sf-arrow-length','sf-point-weight','sf-plunger','sf-stabilizer','sf-ata','sf-bh','sf-letoff','sf-until','sf-notes'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.value='';
+    });
+    document.getElementById('sf-bow-type').value='';
+    pfUpdateSetupFields();
+    pfLoadSetups();
+  } else {
+    pfShowMsg('Error guardando setup', false);
+  }
+};
+
+// ── Cargar y renderizar setups ───────────────────────────
+async function pfLoadSetups(){
+  const userId = window._supabaseUserId;
+  if(!userId) return;
+  const listEl = document.getElementById('pf-setups-list');
+  if(!listEl) return;
+
+  const session = (await window._supabaseClient.auth.getSession()).data.session;
+  const headers = {
+    apikey: window._supabaseAnonKey||'',
+    Authorization: 'Bearer '+(session?.access_token||'')
+  };
+
+  const res = await fetch(`${SUPA}/rest/v1/archer_setups?user_id=eq.${userId}&order=active_from.desc&limit=20`, {headers});
+  const setups = await res.json();
+
+  if(!Array.isArray(setups)||!setups.length){
+    listEl.innerHTML='<div style="text-align:center;padding:16px 0;font-size:12px;color:rgba(255,255,255,0.25)">Sin setups registrados aún</div>';
+    return;
+  }
+
+  const BOW_ICONS = {recurvo:'🏹',compuesto:'🎯',barebow:'🪃',tradicional:'🪵'};
+  const BOW_NAMES = {recurvo:'Recurvo',compuesto:'Compuesto',barebow:'Bare bow',tradicional:'Tradicional'};
+
+  listEl.innerHTML = setups.map(s=>{
+    const isActive = !s.active_until;
+    const fromStr  = s.active_from ? new Date(s.active_from).toLocaleDateString('es-MX',{month:'short',year:'numeric'}) : '—';
+    const untilStr = s.active_until ? new Date(s.active_until).toLocaleDateString('es-MX',{month:'short',year:'numeric'}) : 'hoy';
+
+    const fields = [];
+    if(s.draw_weight)  fields.push({l:'Libras',v:s.draw_weight+'#'});
+    if(s.arrow_length) fields.push({l:'Flecha',v:s.arrow_length+'"'});
+    if(s.point_weight) fields.push({l:'Punta',v:s.point_weight+'gr'});
+    if(s.ata)          fields.push({l:'ATA',v:s.ata+'"'});
+    if(s.brace_height) fields.push({l:'Brace H.',v:s.brace_height+'"'});
+    if(s.letoff)       fields.push({l:'Let-off',v:s.letoff+'%'});
+    if(s.plunger_setting) fields.push({l:'Botón',v:s.plunger_setting});
+    if(s.stabilizer)   fields.push({l:'Estab.',v:s.stabilizer});
+
+    return`<div class="pf-setup-item ${isActive?'active-setup':''}">
+      <div class="pf-setup-header">
+        <div>
+          <div class="pf-setup-title">${BOW_ICONS[s.bow_type]||'🏹'} ${BOW_NAMES[s.bow_type]||s.bow_type}</div>
+          <div class="pf-setup-dates">${fromStr} → ${untilStr}</div>
+        </div>
+        ${isActive?'<span class="pf-setup-badge">✓ Activo</span>':''}
+      </div>
+      ${fields.length?`<div class="pf-setup-fields">
+        ${fields.map(f=>`<div class="pf-setup-field">
+          <div class="pf-setup-field-label">${f.l}</div>
+          <div class="pf-setup-field-val">${f.v}</div>
+        </div>`).join('')}
+      </div>`:''}
+      ${s.notes?`<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:8px;font-style:italic">${s.notes}</div>`:''}
+    </div>`;
+  }).join('');
+}
 document.getElementById('pf-birth').addEventListener('change', function(){
   pfUpdateAgeBadge(this.value);
 });
