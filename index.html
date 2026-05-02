@@ -5373,6 +5373,17 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
       <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px">Notas</div>
       <textarea id="bt-notes" style="width:100%;padding:10px;border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:13px;resize:none;height:60px;font-family:'DM Sans',sans-serif"></textarea>
     </div>
+
+    <!-- Setup activo + nota de ajuste -->
+    <div id="bt-setup-banner" style="margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.06em">Equipo activo</div>
+        <div style="font-size:11px;font-weight:600;color:#5dcaa5" id="bt-setup-name">—</div>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-bottom:6px">¿Hiciste algún ajuste hoy? (opcional)</div>
+      <input id="bt-setup-note" class="bt-input" style="width:100%;padding:7px 10px;border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:12px;font-family:'DM Sans',sans-serif;box-sizing:border-box" placeholder="Ej: +1oz en central, cambié punta a 100gr">
+    </div>
+
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="bt-btn bt-btn-sm bt-btn-d" onclick="btCancelSession()">Descartar</button>
       <button class="bt-btn bt-btn-sm bt-btn-p" style="flex:1" onclick="btSaveSession()">Guardar sesión</button>
@@ -5652,9 +5663,25 @@ function btShowResumen(){
 
 window.btSaveSession=function(){
   const m=BT_MODES[btState.mode];
-  const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,ends:btState.ends.map(e=>[...e])};
+  const setupId = window._activeSetupId || null;
+  const setupNote = document.getElementById('bt-setup-note')?.value.trim() || null;
+  const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,setup_id:setupId,setup_note:setupNote,ends:btState.ends.map(e=>[...e])};
   if(btUsingDemo){ btSessions=[]; btUsingDemo=false; }
   btSessions.unshift(s);
+
+  // Guardar nota de ajuste si existe
+  if(setupNote && setupId && userId){
+    fetch(`${SUPA}/rest/v1/setup_adjustments`, {
+      method:'POST',
+      headers,
+      body: JSON.stringify({user_id:userId, setup_id:setupId, note:setupNote, adjusted_at:s.date.slice(0,10)})
+    });
+    // Limpiar campo
+    const adjEl = document.getElementById('bt-setup-note');
+    if(adjEl) adjEl.value='';
+  }
+
+  // Inyectar setup_id en el objeto para que supabaseSaveScore lo reciba
   if(typeof window.supabaseSaveScore==='function') window.supabaseSaveScore(s);
 
   const SUPA='https://axaiyaflubssaghvhefe.supabase.co';
@@ -5786,7 +5813,7 @@ function btRenderH(){
   } else {
     const legendEl=document.getElementById('bt-spark-legend');
     if(legendEl) legendEl.innerHTML='';
-    btDrawSpark(avgs);
+    btDrawSpark(avgs, sorted);
   }
   const subEl=document.getElementById('bt-sub-trends');
   if(btFMod!=='all'){
@@ -5864,7 +5891,7 @@ function btRenderH(){
   }).join('');
 }
 
-function btDrawSpark(data){
+function btDrawSpark(data, sessions){
   const c=document.getElementById('bt-spark');if(!c)return;
   document.getElementById('bt-spark-legend').innerHTML='';
   const ctx=c.getContext('2d'),W=c.offsetWidth||400,H=90;
@@ -5879,6 +5906,24 @@ function btDrawSpark(data){
   ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
   ctx.strokeStyle='#d8d15a';ctx.lineWidth=2;ctx.stroke();
   [pts[0],pts[pts.length-1]].forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle='#d8d15a';ctx.fill();});
+
+  // Markers de ajuste de setup
+  if(sessions && window._btAdjustments?.length){
+    sessions.forEach((s,i)=>{
+      const hasAdj = window._btAdjustments.some(a=> a.adjusted_at && s.date && a.adjusted_at.slice(0,10)===s.date.slice(0,10));
+      if(!hasAdj) return;
+      const pt = pts[i];
+      if(!pt) return;
+      // Línea vertical punteada
+      ctx.setLineDash([2,3]);
+      ctx.strokeStyle='rgba(154,136,221,0.5)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(pt.x,0);ctx.lineTo(pt.x,H);ctx.stroke();
+      ctx.setLineDash([]);
+      // Rombo marcador
+      ctx.fillStyle='#9a88dd';
+      ctx.beginPath();ctx.moveTo(pt.x,2);ctx.lineTo(pt.x+4,6);ctx.lineTo(pt.x,10);ctx.lineTo(pt.x-4,6);ctx.closePath();ctx.fill();
+    });
+  }
 }
 
 function btDrawSparkMulti(lines){
@@ -5936,9 +5981,57 @@ function btDrawSparkMulti(lines){
   }
 }
 
+// ── Cargar setup activo para el banner ───────────────────
+async function btLoadActiveSetup(){
+  const userId = window._supabaseUserId;
+  if(!userId) return;
+  try{
+    const SUPA='https://axaiyaflubssaghvhefe.supabase.co';
+    const headers={'apikey':window._supabaseAnonKey||'','Authorization':'Bearer '+(window._supabaseToken||'')};
+
+    // Leer active_setup_id del perfil
+    const pRes = await fetch(`${SUPA}/rest/v1/archer_profiles?user_id=eq.${userId}&select=active_setup_id`, {headers});
+    const pData = await pRes.json();
+    const setupId = pData[0]?.active_setup_id;
+    if(!setupId){ document.getElementById('bt-setup-name').textContent = 'Sin setup activo'; return; }
+
+    window._activeSetupId = setupId;
+
+    // Leer nombre del setup
+    const sRes = await fetch(`${SUPA}/rest/v1/archer_setups?id=eq.${setupId}&select=name,bow_type`, {headers});
+    const sData = await sRes.json();
+    const setup = sData[0];
+    if(setup){
+      const BOW_ICONS = {recurvo:'🏹',compuesto:'🎯',barebow:'🪃',tradicional:'🪵'};
+      const nameEl = document.getElementById('bt-setup-name');
+      if(nameEl) nameEl.textContent = (BOW_ICONS[setup.bow_type]||'🏹') + ' ' + (setup.name||setup.bow_type);
+    }
+  }catch(e){ console.log('btLoadActiveSetup:', e.message); }
+}
+
+// ── Cargar ajustes de setup ───────────────────────────────
+async function btLoadAdjustments(){
+  const userId = window._supabaseUserId;
+  if(!userId) return;
+  try{
+    const SUPA='https://axaiyaflubssaghvhefe.supabase.co';
+    const headers={'apikey':window._supabaseAnonKey||'','Authorization':'Bearer '+(window._supabaseToken||'')};
+    const res = await fetch(`${SUPA}/rest/v1/setup_adjustments?user_id=eq.${userId}&order=adjusted_at.desc&limit=100`,{headers});
+    window._btAdjustments = await res.json();
+  }catch(e){ window._btAdjustments = []; }
+}
+
 // Inicializar
 btLoadSessions();
-})();
+if(window._supabaseUserId){
+  btLoadActiveSetup();
+  btLoadAdjustments();
+} else {
+  window.addEventListener('supabase-user-ready', ()=>{
+    btLoadActiveSetup();
+    btLoadAdjustments();
+  });
+}
 </script>
 </div>
 
@@ -10501,7 +10594,56 @@ window.pfUpdateSetupFields = function(){
   });
 };
 
-// ── Cancelar edición ─────────────────────────────────────
+// ── Marcar setup como activo ──────────────────────────────
+window.pfSetActiveSetup = async function(setupId){
+  const userId = window._supabaseUserId;
+  if(!userId) return;
+  const session = (await window._supabaseClient.auth.getSession()).data.session;
+  const headers = {
+    'apikey': window._supabaseAnonKey||'',
+    'Authorization': 'Bearer '+(session?.access_token||''),
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal'
+  };
+  // Guardar active_setup_id en archer_profiles
+  const res = await fetch(`${SUPA}/rest/v1/archer_profiles?user_id=eq.${userId}`, {
+    method:'PATCH', headers,
+    body: JSON.stringify({active_setup_id: setupId})
+  });
+  if(res.ok || res.status===204){
+    window._activeSetupId = setupId;
+    pfShowMsg('✓ Setup activado', true);
+    pfLoadSetups();
+  }
+};
+
+// ── Guardar nota de ajuste ────────────────────────────────
+window.pfSaveAdjustment = async function(setupId){
+  const userId = window._supabaseUserId;
+  const noteEl = document.getElementById('pf-adj-note-'+setupId);
+  const note = noteEl?.value.trim();
+  if(!note){ return; }
+  const session = (await window._supabaseClient.auth.getSession()).data.session;
+  const headers = {
+    'apikey': window._supabaseAnonKey||'',
+    'Authorization': 'Bearer '+(session?.access_token||''),
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal'
+  };
+  const res = await fetch(`${SUPA}/rest/v1/setup_adjustments`, {
+    method:'POST', headers,
+    body: JSON.stringify({
+      user_id: userId,
+      setup_id: setupId,
+      note,
+      adjusted_at: new Date().toISOString().slice(0,10)
+    })
+  });
+  if(res.ok || res.status===201){
+    noteEl.value = '';
+    pfShowMsg('✓ Ajuste registrado — aparecerá en tu gráfica', true);
+  }
+};
 window.pfCancelSetupEdit = function(){
   const form = document.getElementById('pf-setup-form');
   form.classList.remove('open');
@@ -10676,6 +10818,12 @@ async function pfLoadSetups(){
     Authorization: 'Bearer '+(session?.access_token||'')
   };
 
+  // Cargar perfil para saber el setup activo
+  const profRes = await fetch(`${SUPA}/rest/v1/archer_profiles?user_id=eq.${userId}&select=active_setup_id`, {headers});
+  const profData = await profRes.json();
+  const activeSetupId = profData[0]?.active_setup_id || null;
+  window._activeSetupId = activeSetupId;
+
   const res = await fetch(`${SUPA}/rest/v1/archer_setups?user_id=eq.${userId}&order=active_from.desc&limit=20`, {headers});
   const setups = await res.json();
 
@@ -10688,7 +10836,7 @@ async function pfLoadSetups(){
   const BOW_NAMES = {recurvo:'Recurvo',compuesto:'Compuesto',barebow:'Bare bow',tradicional:'Tradicional'};
 
   listEl.innerHTML = setups.map(s=>{
-    const isActive = !s.active_until;
+    const isActive = s.id === activeSetupId;
     const fromStr  = s.active_from ? new Date(s.active_from).toLocaleDateString('es-MX',{month:'short',year:'numeric'}) : '—';
     const untilStr = s.active_until ? new Date(s.active_until).toLocaleDateString('es-MX',{month:'short',year:'numeric'}) : 'hoy';
 
@@ -10729,7 +10877,10 @@ async function pfLoadSetups(){
           <div class="pf-setup-dates">${fromStr} → ${untilStr}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
-          ${isActive?'<span class="pf-setup-badge">✓ Activo</span>':''}
+          ${isActive
+            ? '<span class="pf-setup-badge">✓ Activo</span>'
+            : `<button onclick="pfSetActiveSetup('${s.id}')" style="font-size:11px;padding:3px 10px;border-radius:8px;border:0.5px solid rgba(93,202,165,0.3);background:rgba(93,202,165,0.08);color:#5dcaa5;cursor:pointer;font-family:'DM Sans',sans-serif">Activar</button>`
+          }
           <button onclick="pfEditSetup(${JSON.stringify(s).replace(/"/g,'&quot;')})" style="font-size:11px;padding:3px 10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer;font-family:'DM Sans',sans-serif">Editar</button>
         </div>
       </div>
@@ -10741,6 +10892,14 @@ async function pfLoadSetups(){
       </div>`:''}
       ${stabHtml}
       ${s.notes?`<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:8px;font-style:italic">${s.notes}</div>`:''}
+      ${isActive?`
+      <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid rgba(255,255,255,0.06)">
+        <div style="font-size:9px;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Registrar ajuste de hoy</div>
+        <div style="display:flex;gap:6px">
+          <input id="pf-adj-note-${s.id}" class="pf-input" style="flex:1;padding:7px 10px;font-size:12px" placeholder="Ej: Cambié central a 28in, +2oz en lateral">
+          <button onclick="pfSaveAdjustment('${s.id}')" style="padding:7px 14px;border-radius:8px;border:0.5px solid rgba(216,209,90,0.4);background:rgba(216,209,90,0.08);color:#d8d15a;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;white-space:nowrap">+ Nota</button>
+        </div>
+      </div>`:''}
     </div>`;
   }).join('');
 }
