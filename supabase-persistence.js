@@ -342,10 +342,12 @@ window.supabaseSaveScore = async function(session) {
     ends:         session.ends || [],
     notes:        session.notes || '',
     session_date: session.date,
+    setup_id:     session.setup_id || null,
+    setup_note:   session.setup_note || null,
   };
 
   try {
-    const res = await _userFetch(
+    await _userFetch(
       `scores`,
       {
         method: 'POST',
@@ -353,12 +355,7 @@ window.supabaseSaveScore = async function(session) {
         body: JSON.stringify(payload)
       }
     );
-    if (res.ok) {
-      console.log('✅ Puntuación guardada');
-    } else {
-      const err = await res.text();
-      console.error('❌ Error guardando puntuación:', err);
-    }
+    console.log('✅ Puntuación guardada');
   } catch(e) {
     console.error('❌ supabaseSaveScore error:', e);
   }
@@ -369,12 +366,11 @@ window.supabaseLoadScores = async function() {
   if (!token) return [];
 
   try {
-    const res = await _userFetch(
+    const rows = await _userFetch(
       `scores?order=session_date.desc&limit=200`,
       { method: 'GET' }
     );
-    if (!res.ok) return [];
-    const rows = await res.json();
+    if (!Array.isArray(rows)) return [];
     // Mapear columnas de Supabase al formato de la bitácora
     return rows.map(r => ({
       id:       r.id,
@@ -389,6 +385,8 @@ window.supabaseLoadScores = async function() {
       max:      r.max_possible,
       ends:     r.ends || [],
       notes:    r.notes || '',
+      setup_id: r.setup_id || null,
+      setup_note: r.setup_note || null,
     }));
   } catch(e) {
     console.error('❌ supabaseLoadScores error:', e);
