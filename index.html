@@ -10111,7 +10111,11 @@ if(stored.length) bmSessions = stored;
 
     <!-- Formulario nuevo setup -->
     <div class="pf-setup-form" id="pf-setup-form">
-      <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">Nuevo setup</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.08em" id="sf-form-title">Nuevo setup</div>
+        <button onclick="pfCancelSetupEdit()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer">✕</button>
+      </div>
+      <input type="hidden" id="sf-edit-id" value="">
 
       <div class="pf-field">
         <label class="pf-label">Nombre del setup</label>
@@ -10282,7 +10286,7 @@ if(stored.length) bmSessions = stored;
         <input class="pf-input" id="sf-notes" placeholder="Ej: Flecha Easton X10, insertos de aluminio">
       </div>
 
-      <button class="pf-save-setup-btn" onclick="pfSaveSetup()">✓ Guardar setup</button>
+      <button class="pf-save-setup-btn" id="sf-save-btn" onclick="pfSaveSetup()">✓ Guardar setup</button>
     </div>
   </div>
 
@@ -10497,12 +10501,80 @@ window.pfUpdateSetupFields = function(){
   });
 };
 
-// ── Guardar setup ────────────────────────────────────────
+// ── Cancelar edición ─────────────────────────────────────
+window.pfCancelSetupEdit = function(){
+  const form = document.getElementById('pf-setup-form');
+  form.classList.remove('open');
+  document.getElementById('sf-edit-id').value = '';
+  document.getElementById('sf-form-title').textContent = 'Nuevo setup';
+  document.getElementById('sf-save-btn').textContent = '✓ Guardar setup';
+};
+
+// ── Editar setup existente ────────────────────────────────
+window.pfEditSetup = function(s){
+  const form = document.getElementById('pf-setup-form');
+  form.classList.add('open');
+  form.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  document.getElementById('sf-edit-id').value = s.id;
+  document.getElementById('sf-form-title').textContent = 'Editar setup';
+  document.getElementById('sf-save-btn').textContent = '✓ Actualizar setup';
+
+  // Datos base
+  document.getElementById('sf-bow-type').value      = s.bow_type||'';
+  document.getElementById('sf-draw-weight').value   = s.draw_weight||'';
+  document.getElementById('sf-arrow-length').value  = s.arrow_length||'';
+  document.getElementById('sf-point-weight').value  = s.point_weight||'';
+  document.getElementById('sf-from').value          = s.active_from||'';
+  document.getElementById('sf-until').value         = s.active_until||'';
+  document.getElementById('sf-notes').value         = s.notes||'';
+
+  // Mostrar campos del tipo
+  pfUpdateSetupFields();
+
+  // Recurvo
+  if(s.bow_type==='recurvo'){
+    document.getElementById('sf-plunger').value      = s.plunger_setting||'';
+    document.getElementById('sf-stab-center').value  = s.stabilizer||'';
+  }
+  // Barebow
+  if(s.bow_type==='barebow'){
+    document.getElementById('sf-bb-plunger').value      = s.bb_plunger||'';
+    document.getElementById('sf-bb-arrow-weight').value = s.bb_arrow_weight||'';
+  }
+  // Compuesto
+  if(s.bow_type==='compuesto'){
+    document.getElementById('sf-ata').value    = s.ata||'';
+    document.getElementById('sf-bh').value     = s.brace_height||'';
+    document.getElementById('sf-letoff').value = s.letoff||'';
+  }
+  // Tradicional
+  if(s.bow_type==='tradicional' && s.bow_subtype){
+    document.getElementById('sf-bow-subtype').value = s.bow_subtype;
+  }
+  // Estabilizadores
+  if(s.stabilizer_config){
+    try{
+      const sc = typeof s.stabilizer_config==='string' ? JSON.parse(s.stabilizer_config) : s.stabilizer_config;
+      const pfx = s.bow_type==='compuesto' ? 'sf-cp-' : 'sf-';
+      const setVal = (id, v) => { const el=document.getElementById(id); if(el&&v) el.value=v; };
+      setVal(pfx+'stab-center-len', sc.center?.len);
+      setVal(pfx+'stab-center-oz',  sc.center?.oz);
+      setVal(pfx+'stab-lat1-len',   sc.lat1?.len);
+      setVal(pfx+'stab-lat1-oz',    sc.lat1?.oz);
+      setVal(pfx+'stab-lat2-len',   sc.lat2?.len);
+      setVal(pfx+'stab-lat2-oz',    sc.lat2?.oz);
+    }catch(e){}
+  }
+};
+
+// ── Guardar setup (POST nuevo o PATCH edición) ────────────
 window.pfSaveSetup = async function(){
   const userId = window._supabaseUserId;
   if(!userId) return;
   const bowType = document.getElementById('sf-bow-type').value;
   if(!bowType){ pfShowMsg('Selecciona el tipo de arco', false); return; }
+  const editId = document.getElementById('sf-edit-id').value;
 
   const session = (await window._supabaseClient.auth.getSession()).data.session;
   const headers = {
@@ -10550,21 +10622,26 @@ window.pfSaveSetup = async function(){
     })
   };
 
-  // Si no tiene hasta, cerrar el setup activo anterior del mismo tipo
-  if(!payload.active_until){
+  // Si no tiene hasta y es nuevo, cerrar el setup activo anterior
+  if(!payload.active_until && !editId){
     await fetch(`${SUPA}/rest/v1/archer_setups?user_id=eq.${userId}&bow_type=eq.${bowType}&active_until=is.null`, {
       method:'PATCH', headers,
       body: JSON.stringify({active_until: payload.active_from})
     });
   }
 
-  const res = await fetch(`${SUPA}/rest/v1/archer_setups`, {
-    method:'POST', headers, body: JSON.stringify(payload)
-  });
+  const url = editId
+    ? `${SUPA}/rest/v1/archer_setups?id=eq.${editId}&user_id=eq.${userId}`
+    : `${SUPA}/rest/v1/archer_setups`;
+  const method = editId ? 'PATCH' : 'POST';
+  const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
 
-  if(res.ok || res.status===201){
-    pfShowMsg('✓ Setup guardado', true);
+  if(res.ok || res.status===201 || res.status===204){
+    pfShowMsg(editId ? '✓ Setup actualizado' : '✓ Setup guardado', true);
     document.getElementById('pf-setup-form').classList.remove('open');
+    document.getElementById('sf-edit-id').value = '';
+    document.getElementById('sf-form-title').textContent = 'Nuevo setup';
+    document.getElementById('sf-save-btn').textContent = '✓ Guardar setup';
     // Reset form
     ['sf-name','sf-draw-weight','sf-arrow-length','sf-point-weight',
      'sf-plunger','sf-stab-center','sf-stab-center-len','sf-stab-center-oz',
@@ -10650,7 +10727,10 @@ async function pfLoadSetups(){
           <div class="pf-setup-title">${BOW_ICONS[s.bow_type]||'🏹'} ${BOW_NAMES[s.bow_type]||s.bow_type}</div>
           <div class="pf-setup-dates">${fromStr} → ${untilStr}</div>
         </div>
-        ${isActive?'<span class="pf-setup-badge">✓ Activo</span>':''}
+        <div style="display:flex;align-items:center;gap:6px">
+          ${isActive?'<span class="pf-setup-badge">✓ Activo</span>':''}
+          <button onclick="pfEditSetup(${JSON.stringify(s).replace(/"/g,'&quot;')})" style="font-size:11px;padding:3px 10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer;font-family:'DM Sans',sans-serif">Editar</button>
+        </div>
       </div>
       ${fields.length?`<div class="pf-setup-fields">
         ${fields.map(f=>`<div class="pf-setup-field">
