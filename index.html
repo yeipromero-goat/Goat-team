@@ -10521,7 +10521,7 @@ window.pfEditSetup = function(s){
   document.getElementById('sf-save-btn').textContent = '✓ Actualizar setup';
 
   // Datos base
-  document.getElementById('sf-bow-type').value      = s.bow_type||'';
+  document.getElementById('sf-name').value         = s.name||'';
   document.getElementById('sf-draw-weight').value   = s.draw_weight||'';
   document.getElementById('sf-arrow-length').value  = s.arrow_length||'';
   document.getElementById('sf-point-weight').value  = s.point_weight||'';
@@ -10586,6 +10586,7 @@ window.pfSaveSetup = async function(){
 
   const payload = {
     user_id:      userId,
+    name:         document.getElementById('sf-name')?.value.trim()||null,
     bow_type:     bowType,
     draw_weight:  parseFloat(document.getElementById('sf-draw-weight').value)||null,
     arrow_length: parseFloat(document.getElementById('sf-arrow-length').value)||null,
@@ -10724,7 +10725,7 @@ async function pfLoadSetups(){
     return`<div class="pf-setup-item ${isActive?'active-setup':''}">
       <div class="pf-setup-header">
         <div>
-          <div class="pf-setup-title">${BOW_ICONS[s.bow_type]||'🏹'} ${BOW_NAMES[s.bow_type]||s.bow_type}</div>
+          <div class="pf-setup-title">${BOW_ICONS[s.bow_type]||'🏹'} ${s.name || BOW_NAMES[s.bow_type]||s.bow_type}</div>
           <div class="pf-setup-dates">${fromStr} → ${untilStr}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
