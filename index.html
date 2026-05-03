@@ -11083,11 +11083,19 @@ document.addEventListener('supabase-user-ready', ()=>{
 <div class="co-wrap">
 
   <!-- Filtros -->
-  <div class="co-filters">
+  <div class="co-filters" style="grid-template-columns:1fr 1fr;">
     <div>
       <div class="co-filter-label">Club</div>
       <select class="co-select" id="co-filter-club" onchange="coApplyFilters()">
         <option value="">Todos los clubes</option>
+      </select>
+    </div>
+    <div>
+      <div class="co-filter-label">Género</div>
+      <select class="co-select" id="co-filter-gender" onchange="coApplyFilters()">
+        <option value="">Todos</option>
+        <option value="varonil">Varonil</option>
+        <option value="femenil">Femenil</option>
       </select>
     </div>
     <div>
@@ -11097,6 +11105,7 @@ document.addEventListener('supabase-user-ready', ()=>{
         <option value="recurvo">Recurvo</option>
         <option value="compuesto">Compuesto</option>
         <option value="barebow">Bare bow</option>
+        <option value="tradicional">Tradicional</option>
       </select>
     </div>
     <div>
@@ -11356,11 +11365,12 @@ function coRender(){
   const bow    = document.getElementById('co-filter-bow').value;
   const cat    = document.getElementById('co-filter-cat').value;
   const estado = document.getElementById('co-filter-estado').value;
+  const gender = document.getElementById('co-filter-gender').value;
 
-  // Filtros locales (arco, categoría, estado) sobre los ya cargados
   coFiltered = coAllArchers.filter(p=>{
-    if(bow    && p.bow_type !== bow)   return false;
+    if(bow    && p.bow_type !== bow)    return false;
     if(estado && p.estado   !== estado) return false;
+    if(gender && p.gender   !== gender) return false;
     if(cat){
       const age = coGetAge(p.birth_date);
       const c   = coGetCategory(age);
@@ -11438,7 +11448,7 @@ function coRender(){
   setTimeout(coDrawClubTrend, 50);
 }
 
-// ── Detalle por arquero ───────────────────────────────────
+// ── Vista completa del atleta ─────────────────────────────
 window.coToggleDetail = function(userId){
   const detail = document.getElementById('co-detail');
   if(coOpenDetail === userId){
@@ -11454,71 +11464,160 @@ window.coToggleDetail = function(userId){
 
   const age = coGetAge(p.birth_date);
   const cat = coGetCategory(age);
-  const bowColor = BOW_COLORS[p.bow_type] || 'rgba(255,255,255,0.3)';
+  const bowColor = CO_COLORS[p.bow_type] || 'rgba(255,255,255,0.3)';
+  const BOW_NAMES_LOCAL = {recurvo:'Recurvo',compuesto:'Compuesto',barebow:'Bare bow',tradicional:'Tradicional'};
+  const genderLabel = p.gender === 'varonil' ? '\u{1F468} Varonil' : p.gender === 'femenil' ? '\u{1F469} Femenil' : '\u2014';
 
   detail.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="co-detail-title">${p.display_name || '—'}</div>
-      <button onclick="coToggleDetail('${userId}')" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer">✕</button>
+    <div style="position:relative;padding-top:4px">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#d8d15a,#5dcaa5);border-radius:2px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;margin-top:8px">
+      <div class="co-detail-title">${p.display_name || '\u2014'}</div>
+      <button onclick="coToggleDetail('${userId}')" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer">\u2715</button>
     </div>
-    <div class="co-mini-stat">
-      <span class="co-mini-label">Club</span>
-      <span class="co-mini-val">${p.club_name||'Sin club'}</span>
-    </div>
-    <div class="co-mini-stat">
-      <span class="co-mini-label">Estado</span>
-      <span class="co-mini-val">${p.estado||'—'}</span>
-    </div>
-    <div class="co-mini-stat">
-      <span class="co-mini-label">Edad</span>
-      <span class="co-mini-val">${age !== null ? age+' años' : '—'}</span>
-    </div>
-    <div class="co-mini-stat">
-      <span class="co-mini-label">Categoría</span>
-      <span class="co-mini-val">${cat?.label || '—'}</span>
-    </div>
-    <div class="co-mini-stat">
-      <span class="co-mini-label">Tipo de arco</span>
-      <span class="co-mini-val" style="color:${bowColor}">${BOW_LABELS[p.bow_type]||'—'}</span>
-    </div>
-    <div style="height:0.5px;background:rgba(255,255,255,0.06);margin:10px 0"></div>
-    <div class="co-mini-stat">
-      <span class="co-mini-label">Mejor score</span>
-      <span class="co-mini-val" style="color:#5dcaa5;font-family:'Bebas Neue',sans-serif;font-size:22px">${sc?.best ?? '—'}</span>
-    </div>
-    <div class="co-mini-stat">
-      <span class="co-mini-label">Promedio</span>
-      <span class="co-mini-val" style="font-family:'Bebas Neue',sans-serif;font-size:22px">${sc?.avg ?? '—'}</span>
-    </div>
-    <div class="co-mini-stat">
-      <span class="co-mini-label">Total sesiones</span>
-      <span class="co-mini-val">${sc?.sessions ?? 0}</span>
-    </div>
-    ${sc?.sources ? `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px">
-      <div style="text-align:center;padding:8px;border-radius:8px;background:rgba(93,202,165,0.06);border:0.5px solid rgba(93,202,165,0.15)">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#5dcaa5">${sc.sources.daily}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">Bitácora</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div style="padding:10px;border-radius:8px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.07)">
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Categor\u00eda</div>
+        <div style="font-size:13px;font-weight:600;color:#fff">${cat?.label||'\u2014'}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35)">${age!==null?age+' a\u00f1os':'\u2014'}</div>
       </div>
-      <div style="text-align:center;padding:8px;border-radius:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.15)">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#d8d15a">${sc.sources.liga}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">Ligas</div>
+      <div style="padding:10px;border-radius:8px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.07)">
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Arco</div>
+        <div style="font-size:13px;font-weight:600;color:${bowColor}">${BOW_NAMES_LOCAL[p.bow_type]||'\u2014'}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35)">${genderLabel}</div>
       </div>
-      <div style="text-align:center;padding:8px;border-radius:8px;background:rgba(154,136,221,0.06);border:0.5px solid rgba(154,136,221,0.15)">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#9a88dd">${sc.sources.torneo}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">Torneos</div>
+      <div style="padding:10px;border-radius:8px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.07)">
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Club</div>
+        <div style="font-size:13px;font-weight:600;color:#fff">${p.club_name||'\u2014'}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35)">${p.estado||'\u2014'}</div>
       </div>
-    </div>` : ''}
-    <div style="height:0.5px;background:rgba(255,255,255,0.06);margin:12px 0"></div>
-    <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:8px">Tendencia p/flecha</div>
-    <canvas id="co-archer-spark-${userId}" height="80" style="width:100%;display:block"></canvas>
-    <div id="co-archer-legend-${userId}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;justify-content:center"></div>`;
+      <div style="padding:10px;border-radius:8px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.07)">
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Sesiones</div>
+        <div style="font-size:13px;font-weight:600;color:#fff">${sc?.sessions||0}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35)">${sc?.sources?.daily||0} bit\u00e1cora \u00b7 ${sc?.sources?.liga||0} liga \u00b7 ${sc?.sources?.torneo||0} torneo</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px">
+      <div style="text-align:center;padding:10px;border-radius:8px;background:rgba(93,202,165,0.06);border:0.5px solid rgba(93,202,165,0.2)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#5dcaa5;line-height:1">${sc?.best??'\u2014'}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">Mejor</div>
+      </div>
+      <div style="text-align:center;padding:10px;border-radius:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.2)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#d8d15a;line-height:1">${sc?.avg??'\u2014'}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">Promedio</div>
+      </div>
+      <div style="text-align:center;padding:10px;border-radius:8px;background:rgba(154,136,221,0.06);border:0.5px solid rgba(154,136,221,0.2)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#9a88dd;line-height:1">${sc?.sessions??0}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">Sesiones</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:8px">Tendencia p/flecha</div>
+      <canvas id="co-archer-spark-${userId}" height="80" style="width:100%;display:block"></canvas>
+      <div id="co-archer-legend-${userId}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;justify-content:center"></div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:8px">\u00daltimas sesiones</div>
+      <div id="co-archer-sessions-${userId}">Cargando...</div>
+    </div>
+
+    <div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:8px">Equipo y ajustes</div>
+      <div id="co-archer-setups-${userId}">Cargando...</div>
+    </div>
+    </div>`;
 
   detail.classList.add('open');
   setTimeout(()=> detail.scrollIntoView({behavior:'smooth', block:'nearest'}), 100);
-  // Dibujar gráfica individual
   setTimeout(()=> coDrawArcherTrend(userId, `co-archer-spark-${userId}`, `co-archer-legend-${userId}`), 80);
+  coLoadArcherSessions(userId);
+  coLoadArcherSetups(userId);
 };
+
+// ── Cargar sesiones reales del atleta ────────────────────
+function coLoadArcherSessions(userId){
+  const el = document.getElementById('co-archer-sessions-'+userId);
+  if(!el) return;
+  const DISC_COLORS = {indoor:'#e05555',outdoor:'#5ab4d6',field:'#d8d15a','3d':'#d8a05a'};
+  fetch('https://axaiyaflubssaghvhefe.supabase.co/rest/v1/scores?user_id=eq.'+userId+'&order=session_date.desc&limit=10',{
+    headers:{apikey:window._supabaseAnonKey,Authorization:'Bearer '+window._supabaseToken}
+  }).then(r=>r.json()).then(rows=>{
+    if(!Array.isArray(rows)||!rows.length){ el.textContent='Sin sesiones registradas'; return; }
+    el.innerHTML=rows.map(s=>{
+      const d=new Date(s.session_date).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+      const color=DISC_COLORS[s.group_name]||'rgba(255,255,255,0.5)';
+      const pf=s.arrow_count>0?(s.total/s.arrow_count).toFixed(1):'\u2014';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,0.05)">'
+        +'<div>'
+        +'<div style="font-size:12px;color:#fff;font-weight:500">'+(s.label||s.mode||'\u2014')+'</div>'
+        +'<div style="font-size:10px;color:rgba(255,255,255,0.35)">'+d+(s.setup_note?' \u00b7 <span style=\"color:#9a88dd;font-style:italic\">'+s.setup_note+'</span>':'')+'</div>'
+        +'</div>'
+        +'<div style="text-align:right">'
+        +'<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:'+color+'">'+s.total+'</div>'
+        +'<div style="font-size:10px;color:rgba(255,255,255,0.35)">'+pf+' p/f</div>'
+        +'</div></div>';
+    }).join('');
+  }).catch(()=>{ el.textContent='Error'; });
+}
+
+// ── Cargar setups y ajustes del atleta ───────────────────
+function coLoadArcherSetups(userId){
+  const el = document.getElementById('co-archer-setups-'+userId);
+  if(!el) return;
+  const SUPA='https://axaiyaflubssaghvhefe.supabase.co';
+  const h={apikey:window._supabaseAnonKey,Authorization:'Bearer '+window._supabaseToken};
+  const BOW_ICONS={recurvo:'\u{1F3F9}',compuesto:'\u{1F3AF}',barebow:'\u{1FA83}',tradicional:'\u{1FAB5}'};
+  const BOW_NAMES2={recurvo:'Recurvo',compuesto:'Compuesto',barebow:'Bare bow',tradicional:'Tradicional'};
+  Promise.all([
+    fetch(SUPA+'/rest/v1/archer_setups?user_id=eq.'+userId+'&order=active_from.desc&limit=5',{headers:h}).then(r=>r.json()),
+    fetch(SUPA+'/rest/v1/setup_adjustments?user_id=eq.'+userId+'&order=adjusted_at.desc&limit=10',{headers:h}).then(r=>r.json()),
+    fetch(SUPA+'/rest/v1/archer_profiles?user_id=eq.'+userId+'&select=active_setup_id',{headers:h}).then(r=>r.json())
+  ]).then(function(results){
+    const setups=results[0], adjs=results[1], prof=results[2];
+    const activeId=prof[0]?.active_setup_id;
+    if(!setups.length&&!adjs.length){ el.textContent='Sin equipo registrado'; return; }
+    let html='';
+    if(setups.length){
+      html+=setups.map(s=>{
+        const isActive=s.id===activeId;
+        const from=s.active_from?new Date(s.active_from).toLocaleDateString('es-MX',{month:'short',year:'numeric'}):'\u2014';
+        const until=s.active_until?new Date(s.active_until).toLocaleDateString('es-MX',{month:'short',year:'numeric'}):'hoy';
+        const fields=[];
+        if(s.draw_weight) fields.push(s.draw_weight+'#');
+        if(s.arrow_length) fields.push('Flecha '+s.arrow_length+'"');
+        if(s.point_weight) fields.push(s.point_weight+'gr');
+        if(s.ata) fields.push('ATA '+s.ata+'"');
+        if(s.letoff) fields.push('Let-off '+s.letoff+'%');
+        return '<div style="padding:10px;border-radius:8px;margin-bottom:6px;background:'+(isActive?'rgba(93,202,165,0.05)':'rgba(255,255,255,0.02)')+';border:0.5px solid '+(isActive?'rgba(93,202,165,0.25)':'rgba(255,255,255,0.07)')+';">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+          +'<div style="font-size:12px;font-weight:600;color:#fff">'+(s.name||BOW_NAMES2[s.bow_type]||s.bow_type)+'</div>'
+          +'<div style="display:flex;align-items:center;gap:6px">'
+          +(isActive?'<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(93,202,165,0.15);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3);font-weight:700">\u2713 Activo</span>':'')
+          +'<span style="font-size:10px;color:rgba(255,255,255,0.3)">'+from+' \u2192 '+until+'</span>'
+          +'</div></div>'
+          +(fields.length?'<div style="font-size:11px;color:rgba(255,255,255,0.45)">'+fields.join(' \u00b7 ')+'</div>':'')
+          +(s.notes?'<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px;font-style:italic">'+s.notes+'</div>':'')
+          +'</div>';
+      }).join('');
+    }
+    if(adjs.length){
+      html+='<div style="font-size:9px;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.06em;margin-top:8px;margin-bottom:6px">Ajustes recientes</div>';
+      html+=adjs.map(a=>{
+        const d=new Date(a.adjusted_at).toLocaleDateString('es-MX',{day:'numeric',month:'short'});
+        return '<div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid rgba(255,255,255,0.04);align-items:flex-start">'
+          +'<span style="font-size:10px;color:#9a88dd;white-space:nowrap;margin-top:1px">\u25c6 '+d+'</span>'
+          +'<span style="font-size:11px;color:rgba(255,255,255,0.6)">'+a.note+'</span>'
+          +'</div>';
+      }).join('');
+    }
+    el.innerHTML=html;
+  }).catch(()=>{ el.textContent='Error cargando equipo'; });
+}
+
 
 // ── Colores por disciplina ────────────────────────────────
 const CO_COLORS = {
