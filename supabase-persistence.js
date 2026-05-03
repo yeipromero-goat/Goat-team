@@ -321,12 +321,11 @@ window.setCoachInLineup        = setCoachInLineup;
 //  BITÁCORA DE PUNTUACIONES — guardar y cargar sesiones reales
 // ══════════════════════════════════════════════════════════════════
 
-window.supabaseSaveScore = async function(session) {
-  const token = window._supabaseToken;
-  if (!token) { console.warn('supabaseSaveScore: sin token'); return; }
-
+window.supabaseSaveScore = function(session) {
+  const token  = window._supabaseToken;
+  const key    = window._supabaseAnonKey;
   const userId = window._supabaseUserId;
-  if (!userId) { console.warn('supabaseSaveScore: sin userId'); return; }
+  if(!token || !userId) { console.warn('supabaseSaveScore: sin token/userId'); return; }
 
   const payload = {
     id:           session.id,
@@ -346,50 +345,34 @@ window.supabaseSaveScore = async function(session) {
     setup_note:   session.setup_note || null,
   };
 
-  try {
-    await _userFetch(
-      `scores`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify(payload)
-      }
-    );
-    console.log('✅ Puntuación guardada');
-  } catch(e) {
-    console.error('❌ supabaseSaveScore error:', e);
-  }
+  fetch(SUPABASE_URL + '/rest/v1/scores', {
+    method: 'POST',
+    headers: { apikey: key, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify(payload)
+  }).then(function(r){
+    if(r.ok || r.status===201 || r.status===204){ console.log('✅ Puntuación guardada'); }
+    else { r.text().then(function(t){ console.error('❌ Error guardando:', t); }); }
+  }).catch(function(e){ console.error('❌ supabaseSaveScore error:', e); });
 };
 
-window.supabaseLoadScores = async function() {
+window.supabaseLoadScores = function() {
   const token = window._supabaseToken;
-  if (!token) return [];
+  const key   = window._supabaseAnonKey;
+  if(!token || !key) return Promise.resolve([]);
 
-  try {
-    const rows = await _userFetch(
-      `scores?order=session_date.desc&limit=200`,
-      { method: 'GET' }
-    );
-    if (!Array.isArray(rows)) return [];
-    // Mapear columnas de Supabase al formato de la bitácora
-    return rows.map(r => ({
-      id:       r.id,
-      date:     r.session_date,
-      mode:     r.mode,
-      g:        r.group_name,
-      lbl:      r.label,
-      total:    r.total,
-      n:        r.arrow_count,
-      avg:      parseFloat(r.avg_arrow),
-      sp:       r.specials,
-      max:      r.max_possible,
-      ends:     r.ends || [],
-      notes:    r.notes || '',
-      setup_id: r.setup_id || null,
-      setup_note: r.setup_note || null,
-    }));
-  } catch(e) {
-    console.error('❌ supabaseLoadScores error:', e);
-    return [];
-  }
+  return fetch(SUPABASE_URL + '/rest/v1/scores?order=session_date.desc&limit=200', {
+    headers: { apikey: key, Authorization: 'Bearer ' + token }
+  }).then(function(r){ return r.json(); }).then(function(rows){
+    if(!Array.isArray(rows)) return [];
+    return rows.map(function(r){
+      return {
+        id: r.id, date: r.session_date, mode: r.mode, g: r.group_name,
+        lbl: r.label, total: r.total, n: r.arrow_count,
+        avg: parseFloat(r.avg_arrow), sp: r.specials, max: r.max_possible,
+        ends: r.ends || [], notes: r.notes || '',
+        setup_id: r.setup_id || null, setup_note: r.setup_note || null,
+      };
+    });
+  }).catch(function(e){ console.error('❌ supabaseLoadScores error:', e); return []; });
 };
+
