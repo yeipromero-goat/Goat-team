@@ -5512,13 +5512,12 @@ function btMakeDemoSessions(){
 }
 
 function btLoadSessions(){
-  if(typeof window.supabaseLoadScores==='function'){
-    window.supabaseLoadScores().then(data=>{
+  if(typeof window.supabaseLoadScores==='function' && window._supabaseToken){
+    window.supabaseLoadScores().then(function(data){
       if(data && data.length>0){
         btSessions=data;
         btUsingDemo=false;
       } else {
-        // Sin datos reales — mostrar demo
         btSessions=btMakeDemoSessions();
         btUsingDemo=true;
       }
@@ -5528,6 +5527,10 @@ function btLoadSessions(){
     btSessions=btMakeDemoSessions();
     btUsingDemo=true;
     btRenderH();
+    // Reintentar cuando el token esté listo
+    window.addEventListener('supabase-user-ready', function(){
+      if(btUsingDemo) btLoadSessions();
+    }, {once:true});
   }
 }
 
