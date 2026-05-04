@@ -6397,83 +6397,17 @@ if(window._supabaseUserId){
         </div>
       </div>
 
-      <!-- Dinámico en vivo -->
-      <div id="cp-hcap-dinamico" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .15s" onclick="cpHcapToggle('dinamico')">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-              <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.8)">Dinámico en vivo</span>
-              <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(224,85,85,0.15);color:#e05555;border:0.5px solid rgba(224,85,85,0.3)">Emocionante</span>
-            </div>
-            <div style="font-size:10px;color:rgba(255,255,255,0.35)">Si vas perdiendo por N pts, tus flechas valen más.</div>
-          </div>
-          <div id="tog-dinamico" style="width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,0.12);border:none;cursor:pointer;position:relative;flex-shrink:0;margin-left:8px;transition:background .2s">
-            <div id="tog-dinamico-dot" style="position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s"></div>
-          </div>
-        </div>
-        <div id="cp-hcap-dinamico-detail" style="display:none;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.08)">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" onclick="event.stopPropagation()">
-            <div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:6px">Activar si van −</div>
-              <div style="display:flex;align-items:center;gap:6px">
-                <button class="cp-abtn" onclick="cpStepHcap('dg',-5)">−</button>
-                <span id="cp-dg-v" style="font-family:'Bebas Neue',sans-serif;font-size:18px;min-width:36px;text-align:center;color:#fff">10</span>
-                <button class="cp-abtn" onclick="cpStepHcap('dg',5)">+</button>
-              </div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px">puntos abajo</div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:6px">Factor de boost</div>
-              <div style="display:flex;align-items:center;gap:6px">
-                <button class="cp-abtn" onclick="cpStepHcap('db',-0.1)">−</button>
-                <span id="cp-db-v" style="font-family:'Bebas Neue',sans-serif;font-size:18px;min-width:44px;text-align:center;color:#fff">×1.2</span>
-                <button class="cp-abtn" onclick="cpStepHcap('db',0.1)">+</button>
-              </div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px">por flecha</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Multiplicador global -->
-      <div id="cp-hcap-multi" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;transition:all .15s" onclick="cpHcapToggle('multi')">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-              <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.8)">Multiplicador global</span>
-              <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3)">Manual</span>
-            </div>
-            <div style="font-size:10px;color:rgba(255,255,255,0.35)">Multiplica el score final de jugadores específicos. ×1.1 a ×2.0</div>
-          </div>
-          <div id="tog-multi" style="width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,0.12);border:none;cursor:pointer;position:relative;flex-shrink:0;margin-left:8px;transition:background .2s">
-            <div id="tog-multi-dot" style="position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s"></div>
-          </div>
-        </div>
-        <div id="cp-hcap-multi-detail" style="display:none;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.08)">
-          <div onclick="event.stopPropagation()">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-              <span style="font-size:11px;color:rgba(255,255,255,0.4)">×1.1</span>
-              <input type="range" min="1.1" max="2.0" step="0.1" value="1.3" id="cp-multi-range" oninput="cpUpdMulti()" style="flex:1">
-              <span style="font-size:11px;color:rgba(255,255,255,0.4)">×2.0</span>
-            </div>
-            <div style="text-align:center">
-              <span id="cp-multi-val" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#d8d15a">×1.3</span>
-              <span style="font-size:11px;color:rgba(255,255,255,0.4)"> máximo asignable por jugador</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <div class="cp-sec" style="margin-top:4px">Jugadores</div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
       <span class="cp-muted">Mín.</span>
       <select class="cp-select" id="cp-new-min" style="margin-bottom:0;flex:1">
-        <option value="2">2</option><option value="3">3</option><option value="4">4</option>
+        <option value="2" selected>2</option><option value="3">3</option><option value="4">4</option>
       </select>
       <span class="cp-muted">Máx.</span>
       <select class="cp-select" id="cp-new-max" style="margin-bottom:0;flex:1">
-        <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
+        <option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6" selected>6</option>
       </select>
     </div>
 
@@ -6591,7 +6525,9 @@ if(window._supabaseUserId){
       <select class="cp-select" id="cp-adm-cupo">
         <option value="2">2 arqueros</option>
         <option value="3">3 arqueros</option>
-        <option value="4" selected>4 arqueros</option>
+        <option value="4">4 arqueros</option>
+        <option value="5">5 arqueros</option>
+        <option value="6" selected>6 arqueros</option>
       </select>
       <label class="cp-label">Handicap</label>
       <select class="cp-select" id="cp-adm-hcap" onchange="document.getElementById('cp-adm-hcap-custom').style.display=this.value==='serie'?'block':'none'">
@@ -6756,8 +6692,8 @@ window.cpSetMatchFmt = function(fmt){
 }
 
 // ── NUEVO SISTEMA HANDICAP ────────────────────────────────────────
-const cpHcapState={auto:false,serie:false,dinamico:false,multi:false};
-const cpHcapVals={comp:-2,bare:3,dg:10,db:1.2,multi:1.3,sens:2};
+const cpHcapState={auto:false,serie:false};
+const cpHcapVals={comp:-2,bare:3,sens:2};
 
 window.cpHcapToggle = function(key){
   if(key==='auto'){
@@ -6804,14 +6740,10 @@ function cpBuildHcapPayload(){
   return {
     handicap_enabled: Object.values(cpHcapState).some(v=>v),
     handicap_config: {
-      auto: cpHcapState.auto,
+      auto:  cpHcapState.auto,
       serie: cpHcapState.serie,
-      dinamico: cpHcapState.dinamico,
-      multi: cpHcapState.multi,
       serie_config: {compound: cpHcapVals.comp, barebow: cpHcapVals.bare},
-      dinamico_config: {gap: cpHcapVals.dg, boost: cpHcapVals.db},
-      multi_config: {max: cpHcapVals.multi},
-      auto_config: {sensitivity: parseInt(document.getElementById('cp-auto-sens')?.value||2)}
+      auto_config:  {sensitivity: parseInt(document.getElementById('cp-auto-sens')?.value||2)}
     }
   };
 }
