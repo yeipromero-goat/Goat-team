@@ -9215,11 +9215,27 @@ if(window._supabaseUserId){
       </div>
     </div>
 
+    <!-- Tipo de arco -->
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <button id="bm-bow-recurvo" class="bm-btn primary" onclick="bmSetBowType('recurvo',this)" style="flex:1;font-size:12px;padding:9px 0">🏹 Recurvo</button>
+      <button id="bm-bow-compuesto" class="bm-btn" onclick="bmSetBowType('compuesto',this)" style="flex:1;font-size:12px;padding:9px 0;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);border:0.5px solid rgba(255,255,255,0.1)">🎯 Compuesto</button>
+    </div>
+
     <!-- Controls -->
     <div class="bm-controls">
       <button class="bm-btn primary" id="bm-btn-start" onclick="bmStartCamera()">▶ Iniciar cámara</button>
       <button class="bm-btn danger" id="bm-btn-stop" onclick="bmStopCamera()" disabled>⏹ Detener</button>
       <button class="bm-btn green" id="bm-btn-rec" onclick="bmToggleRecord()" disabled>⏺ Grabar</button>
+      <button class="bm-btn" id="bm-btn-video" onclick="bmToggleVideoRec()" disabled style="background:rgba(154,136,221,0.1);color:#9a88dd;border:0.5px solid rgba(154,136,221,0.3);font-size:11px">📹 Video</button>
+    </div>
+    <!-- Video download banner -->
+    <div id="bm-video-banner" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:10px;background:rgba(154,136,221,0.08);border:0.5px solid rgba(154,136,221,0.3);display:none;align-items:center;gap:10px">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600;color:#9a88dd">Video listo</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35)">Solo en caché — se borra al salir. Descárgalo ahora.</div>
+      </div>
+      <button onclick="bmDownloadVideo()" style="padding:7px 14px;border-radius:8px;border:0.5px solid rgba(154,136,221,0.5);background:rgba(154,136,221,0.15);color:#9a88dd;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;white-space:nowrap">⬇ Descargar</button>
+      <button onclick="bmDiscardVideo()" style="padding:7px 10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.3);cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif">✕</button>
     </div>
 
     <!-- Live feedback -->
@@ -9277,45 +9293,118 @@ if(window._supabaseUserId){
   <!-- ══ SUB: GUÍA ════════════════════════════════════════ -->
   <div id="bm-sub-guia" style="display:none">
 
-    <div class="bm-feedback-card">
-      <div class="bm-top-bar" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
-      <div class="bm-feedback-title">Ángulos ideales — Tiro con arco</div>
-      <div class="bm-feedback-item">
-        <div class="bm-fi-icon">💪</div>
-        <div class="bm-fi-text"><strong>Codo de jale:</strong> 150–165° al anclar. Más cerrado = tensión excesiva en tríceps.</div>
+    <!-- Selector tipo en guía -->
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button id="bm-guide-recurvo" class="bm-btn primary" onclick="bmShowGuide('recurvo',this)" style="flex:1;font-size:12px;padding:8px 0">🏹 Recurvo</button>
+      <button id="bm-guide-compuesto" class="bm-btn" onclick="bmShowGuide('compuesto',this)" style="flex:1;font-size:12px;padding:8px 0;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);border:0.5px solid rgba(255,255,255,0.1)">🎯 Compuesto</button>
+    </div>
+
+    <!-- Guía Recurvo -->
+    <div id="bm-guide-content-recurvo">
+      <div class="bm-feedback-card" style="margin-bottom:10px">
+        <div class="bm-top-bar" style="background:linear-gradient(90deg,#5dcaa5,#5ab4d6)"></div>
+        <div class="bm-feedback-title">Ángulos ideales — Recurvo</div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">💪</div>
+          <div class="bm-fi-text"><strong>Codo de jale:</strong> 150–165°. El codo debe ir hacia atrás, no hacia arriba. Tensión de espalda.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">🏹</div>
+          <div class="bm-fi-text"><strong>Hombro de arco:</strong> 80–100°. Hombro bajo y hundido — nunca elevado. Empuja sin levantar.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">✋</div>
+          <div class="bm-fi-text"><strong>Muñeca de jale:</strong> 160–180° (recta). Muñeca doblada causa variación en la soltura.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">🧍</div>
+          <div class="bm-fi-text"><strong>Columna:</strong> 85–95°. Posición perpendicular al blanco, torso vertical. No inclinarse.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">🎯</div>
+          <div class="bm-fi-text"><strong>T-form:</strong> Los hombros forman una T perfecta con los brazos. La cuerda debe tocar nariz, labio y mentón.</div>
+        </div>
       </div>
-      <div class="bm-feedback-item">
-        <div class="bm-fi-icon">🏹</div>
-        <div class="bm-fi-text"><strong>Hombro de arco:</strong> 80–100° con el torso. El hombro debe estar bajo, no elevado.</div>
-      </div>
-      <div class="bm-feedback-item">
-        <div class="bm-fi-icon">✋</div>
-        <div class="bm-fi-text"><strong>Muñeca de jale:</strong> 160–180° (recta). Muñeca doblada causa variación en la soltura.</div>
-      </div>
-      <div class="bm-feedback-item">
-        <div class="bm-fi-icon">🧍</div>
-        <div class="bm-fi-text"><strong>Columna:</strong> 85–95° (vertical). Inclinación excesiva afecta la línea de tiro.</div>
+      <div class="bm-feedback-card">
+        <div class="bm-top-bar" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+        <div class="bm-feedback-title">Errores comunes — Recurvo</div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">❌</div>
+          <div class="bm-fi-text"><strong>Hombro elevado:</strong> El hombro del arco sube al tensar — esto pone tensión en el cuello y desvía el tiro.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">❌</div>
+          <div class="bm-fi-text"><strong>Codo del arco girado:</strong> El codo del brazo del arco debe apuntar hacia afuera o abajo, nunca hacia la cuerda.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">❌</div>
+          <div class="bm-fi-text"><strong>Tensión en mano del arco:</strong> Agarre relajado — el arco debe caer después de la soltura. No agarres fuerte.</div>
+        </div>
       </div>
     </div>
 
-    <div class="bm-feedback-card">
+    <!-- Guía Compuesto -->
+    <div id="bm-guide-content-compuesto" style="display:none">
+      <div class="bm-feedback-card" style="margin-bottom:10px">
+        <div class="bm-top-bar" style="background:linear-gradient(90deg,#9a88dd,#5ab4d6)"></div>
+        <div class="bm-feedback-title">Ángulos ideales — Compuesto</div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">💪</div>
+          <div class="bm-fi-text"><strong>Codo de jale:</strong> 145–160°. El let-off permite anclar con menos tensión — el codo puede ir un poco más cerrado.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">🏹</div>
+          <div class="bm-fi-text"><strong>Hombro de arco:</strong> 75–95°. Similar al recurvo pero la mira permite ajustar más — hombro bajo es crítico.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">✋</div>
+          <div class="bm-fi-text"><strong>Muñeca del release:</strong> 155–175°. Con D-loop y release, la muñeca puede estar ligeramente más cerrada.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">🧍</div>
+          <div class="bm-fi-text"><strong>Columna:</strong> 85–95°. Igual que recurvo — torso vertical, perpendicular al blanco.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">🎯</div>
+          <div class="bm-fi-text"><strong>Back tension:</strong> La soltura debe ser un resultado de la expansión de espalda, no de jalar el dedo. El release se activa solo.</div>
+        </div>
+      </div>
+      <div class="bm-feedback-card">
+        <div class="bm-top-bar" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+        <div class="bm-feedback-title">Errores comunes — Compuesto</div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">❌</div>
+          <div class="bm-fi-text"><strong>Jalar el release:</strong> Activar el release con el dedo en lugar de con back tension causa anticipación y bajos.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">❌</div>
+          <div class="bm-fi-text"><strong>Hombro del arco colapsado:</strong> El peso del compuesto hace que el hombro caiga — mantener la presión activa.</div>
+        </div>
+        <div class="bm-feedback-item">
+          <div class="bm-fi-icon">❌</div>
+          <div class="bm-fi-text"><strong>Peep sight desalineado:</strong> Si el peep no está centrado en la mira al anclar, el hombro o la cabeza está en posición incorrecta.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bm-feedback-card" style="margin-top:10px">
       <div class="bm-top-bar" style="background:linear-gradient(90deg,#5dcaa5,#5ab4d6)"></div>
-      <div class="bm-feedback-title">Cómo usar</div>
+      <div class="bm-feedback-title">Cómo usar la biomecánica</div>
       <div class="bm-feedback-item">
         <div class="bm-fi-icon">1️⃣</div>
-        <div class="bm-fi-text">Pon el cel en un tripié a 2–3m de distancia, cámara trasera, a la altura del pecho.</div>
+        <div class="bm-fi-text">Selecciona tu tipo de arco (Recurvo o Compuesto) antes de iniciar.</div>
       </div>
       <div class="bm-feedback-item">
         <div class="bm-fi-icon">2️⃣</div>
-        <div class="bm-fi-text">Asegúrate de estar completamente visible en el encuadre — cabeza a pies.</div>
+        <div class="bm-fi-text">Pon el cel en un tripié a 2–3m de distancia, cámara trasera, a la altura del pecho.</div>
       </div>
       <div class="bm-feedback-item">
         <div class="bm-fi-icon">3️⃣</div>
-        <div class="bm-fi-text">Toca <strong>Grabar</strong> antes de ejecutar tu serie. Al detener, la sesión se guarda automáticamente.</div>
+        <div class="bm-fi-text">Toca <strong>Grabar</strong> para guardar ángulos por sesión. Toca <strong>Video</strong> para grabar el clip — se guarda solo en caché.</div>
       </div>
       <div class="bm-feedback-item">
         <div class="bm-fi-icon">4️⃣</div>
-        <div class="bm-fi-text">Revisa los ángulos en <strong>Sesiones</strong> y compara tu progresión entre entrenamientos.</div>
+        <div class="bm-fi-text">Descarga el video antes de cerrar la app — no se sube a servidores y se borra al salir.</div>
       </div>
     </div>
 
@@ -9338,8 +9427,71 @@ let bmLastAngles = {elbow:null, shoulder:null, wrist:null, spine:null};
 let bmPostureScore = null;
 let bmAnimFrame = null;
 let bmModelLoaded = false;
+let bmBowType = 'recurvo'; // 'recurvo' | 'compuesto'
+
+// Video recording
+let bmMediaRecorder = null;
+let bmVideoChunks = [];
+let bmVideoBlob = null;
+let bmVideoRecording = false;
 
 const SUPABASE_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
+
+// ── Rangos por tipo de arco ───────────────────────────────
+const IDEAL_BY_BOW = {
+  recurvo: {
+    elbow:    {min:150, max:165, label:'Codo'},
+    shoulder: {min:80,  max:100, label:'Hombro'},
+    wrist:    {min:160, max:180, label:'Muñeca'},
+    spine:    {min:85,  max:95,  label:'Columna'}
+  },
+  compuesto: {
+    elbow:    {min:145, max:160, label:'Codo'},
+    shoulder: {min:75,  max:95,  label:'Hombro'},
+    wrist:    {min:155, max:175, label:'Muñeca'},
+    spine:    {min:85,  max:95,  label:'Columna'}
+  }
+};
+
+let IDEAL = IDEAL_BY_BOW.recurvo;
+
+// ── Cambiar tipo de arco ──────────────────────────────────
+window.bmSetBowType = function(type, btn){
+  bmBowType = type;
+  IDEAL = IDEAL_BY_BOW[type];
+  // Visual
+  ['recurvo','compuesto'].forEach(t=>{
+    const b = document.getElementById('bm-bow-'+t);
+    if(!b) return;
+    if(t === type){
+      b.className = 'bm-btn primary';
+      b.style.cssText = '';
+    } else {
+      b.className = 'bm-btn';
+      b.style.cssText = 'flex:1;font-size:12px;padding:9px 0;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);border:0.5px solid rgba(255,255,255,0.1)';
+    }
+  });
+  // Actualizar feedback si hay ángulos activos
+  if(bmLastAngles.elbow !== null) bmUpdateFeedback(bmLastAngles, bmPostureScore);
+};
+
+// ── Guía por tipo de arco ─────────────────────────────────
+window.bmShowGuide = function(type, btn){
+  ['recurvo','compuesto'].forEach(t=>{
+    const c = document.getElementById('bm-guide-content-'+t);
+    const b = document.getElementById('bm-guide-'+t);
+    if(c) c.style.display = t===type ? 'block' : 'none';
+    if(b){
+      if(t === type){
+        b.className = 'bm-btn primary';
+        b.style.cssText = '';
+      } else {
+        b.className = 'bm-btn';
+        b.style.cssText = 'flex:1;font-size:12px;padding:8px 0;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);border:0.5px solid rgba(255,255,255,0.1)';
+      }
+    }
+  });
+};
 
 // ── Sub-tab switching ────────────────────────────────────
 window.bmShowSub = function(id, el){
@@ -9400,8 +9552,9 @@ window.bmStartCamera = async function(){
     bmSetOverlay(false);
     bmSetStatus('active','En vivo');
 
-    document.getElementById('bm-btn-stop').disabled = false;
-    document.getElementById('bm-btn-rec').disabled  = false;
+    document.getElementById('bm-btn-stop').disabled  = false;
+    document.getElementById('bm-btn-rec').disabled   = false;
+    document.getElementById('bm-btn-video').disabled = false;
     btn.disabled = true;
 
     bmStartDetection(video, canvas);
@@ -9577,12 +9730,6 @@ function bmCalcAngles(lm){
 }
 
 // ── Actualizar chips de ángulos ──────────────────────────
-const IDEAL = {
-  elbow:    {min:150, max:165, label:'Codo'},
-  shoulder: {min:80,  max:100, label:'Hombro'},
-  wrist:    {min:160, max:180, label:'Muñeca'},
-  spine:    {min:85,  max:95,  label:'Columna'}
-};
 
 function bmAngClass(key, val){
   if(val === null) return '';
@@ -9682,6 +9829,9 @@ window.bmStopCamera = function(){
   document.getElementById('bm-btn-start').disabled = false;
   document.getElementById('bm-btn-stop').disabled  = true;
   document.getElementById('bm-btn-rec').disabled   = true;
+  document.getElementById('bm-btn-video').disabled = true;
+  // Parar video si estaba grabando
+  if(bmVideoRecording){ bmMediaRecorder?.stop(); bmVideoRecording = false; }
   bmSetFeedbackEmpty();
 };
 
@@ -9724,6 +9874,7 @@ async function bmSaveSession(){
   const session = {
     id: Date.now(),
     date: new Date().toISOString(),
+    bow_type: bmBowType,
     duration_ms: duration,
     avg_score: avgScore,
     avg_angles: avgAngles,
@@ -9796,7 +9947,7 @@ function bmRenderSessions(){
         <div style="font-size:9px;color:rgba(255,255,255,0.35)">/ 100</div>
       </div>
       <div class="bm-session-info">
-        <div class="bm-session-date">${dateStr}</div>
+        <div class="bm-session-date">${s.bow_type==='compuesto'?'🎯':'🏹'} ${dateStr}</div>
         <div class="bm-session-meta">${angStr}</div>
         <div class="bm-session-meta">${dur} · ${s.frames} frames</div>
       </div>
@@ -9809,6 +9960,56 @@ function bmRenderSessions(){
 // Cargar sesiones al inicializar el tab
 const stored = JSON.parse(localStorage.getItem('goat_biomec_sessions')||'[]');
 if(stored.length) bmSessions = stored;
+
+// ── Video Recorder (caché local, no Supabase) ─────────────
+window.bmToggleVideoRec = function(){
+  if(!bmStream){ return; }
+  if(!bmVideoRecording){
+    bmVideoChunks = [];
+    bmVideoBlob = null;
+    document.getElementById('bm-video-banner').style.display = 'none';
+    try {
+      bmMediaRecorder = new MediaRecorder(bmStream, {mimeType:'video/webm;codecs=vp8'});
+    } catch(e){
+      bmMediaRecorder = new MediaRecorder(bmStream);
+    }
+    bmMediaRecorder.ondataavailable = function(e){
+      if(e.data.size > 0) bmVideoChunks.push(e.data);
+    };
+    bmMediaRecorder.onstop = function(){
+      bmVideoBlob = new Blob(bmVideoChunks, {type:'video/webm'});
+      bmVideoChunks = [];
+      const banner = document.getElementById('bm-video-banner');
+      if(banner){ banner.style.display = 'flex'; }
+    };
+    bmMediaRecorder.start(1000);
+    bmVideoRecording = true;
+    const btn = document.getElementById('bm-btn-video');
+    if(btn){ btn.textContent = '⏹ Stop video'; btn.style.background='rgba(224,85,85,0.15)'; btn.style.color='#e05555'; btn.style.borderColor='rgba(224,85,85,0.4)'; }
+  } else {
+    bmMediaRecorder?.stop();
+    bmVideoRecording = false;
+    const btn = document.getElementById('bm-btn-video');
+    if(btn){ btn.textContent = '📹 Video'; btn.style.background='rgba(154,136,221,0.1)'; btn.style.color='#9a88dd'; btn.style.borderColor='rgba(154,136,221,0.3)'; }
+  }
+};
+
+window.bmDownloadVideo = function(){
+  if(!bmVideoBlob) return;
+  const url = URL.createObjectURL(bmVideoBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'biomec_' + new Date().toISOString().slice(0,19).replace(/:/g,'-') + '.webm';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+};
+
+window.bmDiscardVideo = function(){
+  bmVideoBlob = null;
+  bmVideoChunks = [];
+  const banner = document.getElementById('bm-video-banner');
+  if(banner) banner.style.display = 'none';
+};
 
 })();
 </script>
