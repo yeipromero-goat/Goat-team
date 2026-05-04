@@ -11061,8 +11061,9 @@ document.addEventListener('supabase-user-ready', ()=>{
 .co-chip{
   padding:5px 12px;border-radius:20px;
   font-size:11px;font-weight:600;
-  border:0.5px solid rgba(255,255,255,0.12);
-  background:transparent;color:rgba(255,255,255,0.4);
+  border:0.5px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.04);
+  color:rgba(255,255,255,0.3);
   cursor:pointer;font-family:'DM Sans',sans-serif;
   transition:all .15s;
   -webkit-tap-highlight-color:transparent;
@@ -11071,28 +11072,8 @@ document.addEventListener('supabase-user-ready', ()=>{
 .co-chip:active{ transform:scale(0.95); }
 .co-chip.sel{
   background:rgba(216,209,90,0.12);
-  border-color:rgba(216,209,90,0.4);
+  border-color:rgba(216,209,90,0.45);
   color:#d8d15a;
-}
-.co-chip.sel-blue{
-  background:rgba(90,180,214,0.12);
-  border-color:rgba(90,180,214,0.4);
-  color:#5ab4d6;
-}
-.co-chip.sel-green{
-  background:rgba(93,202,165,0.12);
-  border-color:rgba(93,202,165,0.4);
-  color:#5dcaa5;
-}
-.co-chip.sel-purple{
-  background:rgba(154,136,221,0.12);
-  border-color:rgba(154,136,221,0.4);
-  color:#9a88dd;
-}
-.co-chip.sel-orange{
-  background:rgba(216,160,90,0.12);
-  border-color:rgba(216,160,90,0.4);
-  color:#d8a05a;
 }
 .co-chip-label{
   font-size:9px;font-weight:600;letter-spacing:.08em;
@@ -11233,8 +11214,8 @@ document.addEventListener('supabase-user-ready', ()=>{
   <div class="co-chip-label">Fuente</div>
   <div class="co-chip-group" id="co-source-chips" style="margin-bottom:12px">
     <button class="co-chip sel" data-src="daily" onclick="coToggleSrc('daily',this)">📊 Práctica</button>
-    <button class="co-chip sel sel-blue" data-src="liga" onclick="coToggleSrc('liga',this)">🏆 Liga</button>
-    <button class="co-chip sel sel-green" data-src="torneo" onclick="coToggleSrc('torneo',this)">⚔️ Torneo</button>
+    <button class="co-chip sel" data-src="liga" onclick="coToggleSrc('liga',this)">🏆 Liga</button>
+    <button class="co-chip sel" data-src="torneo" onclick="coToggleSrc('torneo',this)">⚔️ Torneo</button>
   </div>
 
   <!-- Gráfica de tendencia del club -->
@@ -11311,8 +11292,8 @@ window.coToggleSrc = function(src, btn){
     coActiveSrcs.add(src);
   }
   // Color según fuente
-  const colorMap = {daily:'sel', liga:'sel-blue', torneo:'sel-green'};
-  btn.classList.toggle(colorMap[src]||'sel', coActiveSrcs.has(src));
+  
+  btn.classList.toggle('sel', coActiveSrcs.has(src));
   coDrawClubTrend();
   coRender();
 }; // default 90d
@@ -11638,8 +11619,8 @@ window.coToggleDetail = function(userId){
     <div class="co-chip-label">Fuente</div>
     <div class="co-chip-group" style="margin-bottom:14px">
       <button class="co-chip sel" onclick="coToggleArcherSrc('${userId}','daily',this)">📊 Práctica</button>
-      <button class="co-chip sel sel-blue" onclick="coToggleArcherSrc('${userId}','liga',this)">🏆 Liga</button>
-      <button class="co-chip sel sel-green" onclick="coToggleArcherSrc('${userId}','torneo',this)">⚔️ Torneo</button>
+      <button class="co-chip sel" onclick="coToggleArcherSrc('${userId}','liga',this)">🏆 Liga</button>
+      <button class="co-chip sel" onclick="coToggleArcherSrc('${userId}','torneo',this)">⚔️ Torneo</button>
     </div>
 
     <div style="margin-bottom:14px">
@@ -11689,8 +11670,8 @@ window.coToggleArcherSrc = function(userId, src, btn){
   } else {
     f.srcs.add(src);
   }
-  const colorMap = {daily:'sel', liga:'sel-blue', torneo:'sel-green'};
-  btn.classList.toggle(colorMap[src]||'sel', f.srcs.has(src));
+  
+  btn.classList.toggle('sel', f.srcs.has(src));
   coLoadArcherSessions(userId);
   coDrawArcherTrend(userId, 'co-archer-spark-'+userId, 'co-archer-legend-'+userId);
 };// ── Cargar sesiones reales del atleta (con filtros) ───────
