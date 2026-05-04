@@ -1430,6 +1430,10 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
       <span class="sb-item-icon">🦾</span>
       <span class="sb-item-label">Biomecánica</span>
     </div>
+    <div class="sb-item" id="sb-rutina" onclick="switchTab('rutina',this)">
+      <span class="sb-item-icon">📅</span>
+      <span class="sb-item-label">Plan semanal</span>
+    </div>
 
     <div class="sb-divider"></div>
     <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:4px 12px 2px">Juego</div>
@@ -1513,6 +1517,7 @@ const TAB_META = {
   'competencias':{ icon:'🏆', label:'Competencias',   sub:'Torneos y ligas' },
   'bitacora':    { icon:'📊', label:'Puntuaciones',   sub:'Bitácora y estadísticas' },
   'biomec':      { icon:'🦾', label:'Biomecánica',    sub:'Análisis de postura en vivo' },
+  'rutina':      { icon:'📅', label:'Plan semanal',   sub:'Entrenamiento y seguimiento' },
   'cards':       { icon:'🃏', label:'Cartas',         sub:'Arqueros y coaches' },
   'mi-arco':     { icon:'🏹', label:'Mi Arco',        sub:'Equipo y stats' },
   'perfil':      { icon:'👤', label:'Mi Perfil',      sub:'Club, categoría y datos' },
@@ -2404,6 +2409,7 @@ const TAB_TO_ROUTE = {
   'perfil':       '/perfil',
   'coach':        '/coach',
   'biomec':       '/entrenamiento/biomecanica',
+  'rutina':       '/entrenamiento/rutina',
   'score':        '/tablero',
   'cards':        '/tablero/cards',
   'mi-arco':      '/tablero/mi-arco',
@@ -12291,3 +12297,1242 @@ window._coReload = coLoad;
 
 })();
 </script>
+
+<div id="tab-rutina" class="tab-panel">
+<style>
+/* ── RUTINA VARS ── */
+.rt-wrap{ max-width:680px; margin:0 auto; }
+
+/* Cards */
+.rt-card{
+  background:var(--surface);
+  border:0.5px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:12px;
+  position:relative;
+  overflow:hidden;
+}
+.rt-card-bar{
+  position:absolute;top:0;left:0;right:0;height:2px;
+}
+
+/* Plan list item */
+.rt-plan-item{
+  padding:12px 14px;
+  border-radius:10px;
+  border:0.5px solid var(--border);
+  background:var(--surface);
+  margin-bottom:8px;
+  cursor:pointer;
+  transition:all .15s;
+}
+.rt-plan-item:hover{ border-color:var(--border2); background:var(--surface2); }
+.rt-plan-item.active-plan{
+  border-color:rgba(216,209,90,0.35);
+  background:rgba(216,209,90,0.05);
+}
+
+/* Day pills */
+.rt-day-pill{
+  width:32px;height:32px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;
+  cursor:pointer;
+  transition:all .15s;
+  border:0.5px solid var(--border);
+  color:var(--muted);
+  background:var(--surface2);
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.rt-day-pill.on{
+  background:rgba(216,209,90,0.15);
+  border-color:rgba(216,209,90,0.4);
+  color:var(--yellow);
+}
+
+/* Activity types */
+.rt-act-type{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  border-radius:10px;
+  border:0.5px solid var(--border);
+  background:var(--surface2);
+  cursor:pointer;
+  transition:all .15s;
+  margin-bottom:6px;
+  user-select:none;
+}
+.rt-act-type.sel{
+  border-color:rgba(216,209,90,0.4);
+  background:rgba(216,209,90,0.06);
+}
+.rt-act-icon{ font-size:18px;width:24px;text-align:center;flex-shrink:0; }
+.rt-act-info{ flex:1 }
+.rt-act-label{ font-size:13px;font-weight:600;color:var(--text); }
+.rt-act-sub{ font-size:10px;color:var(--muted);margin-top:1px; }
+
+/* Activity card in day view */
+.rt-act-card{
+  border:0.5px solid var(--border);
+  border-radius:10px;
+  padding:12px 14px;
+  margin-bottom:8px;
+  background:var(--surface2);
+  position:relative;
+}
+.rt-act-card-bar{
+  position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:10px 0 0 10px;
+}
+
+/* Report row */
+.rt-report-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;
+  border-bottom:0.5px solid var(--border);
+}
+.rt-report-row:last-child{ border-bottom:none; }
+
+/* Progress ring */
+.rt-ring-wrap{ position:relative;width:52px;height:52px;flex-shrink:0; }
+.rt-ring-wrap svg{ transform:rotate(-90deg); }
+.rt-ring-pct{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:13px;color:var(--text);
+}
+
+/* Section label */
+.rt-sec{
+  font-size:9px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);
+  margin:14px 0 8px;
+}
+
+/* Buttons */
+.rt-btn{
+  padding:10px 16px;border-radius:10px;
+  border:0.5px solid var(--border2);
+  background:var(--surface2);
+  color:var(--text);
+  font-size:13px;font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:all .15s;
+}
+.rt-btn.y{
+  background:rgba(216,209,90,0.12);
+  border-color:rgba(216,209,90,0.4);
+  color:var(--yellow);font-weight:600;
+}
+.rt-btn.y:hover{ background:rgba(216,209,90,0.2); }
+.rt-btn.sm{ padding:6px 12px;font-size:11px; }
+.rt-btn.ghost{
+  background:transparent;border-color:var(--border);
+  color:var(--muted);
+}
+
+/* Input */
+.rt-input{
+  width:100%;padding:9px 12px;
+  border:0.5px solid var(--border2);
+  border-radius:8px;
+  background:var(--surface2);
+  color:var(--text);
+  font-size:13px;font-family:'DM Sans',sans-serif;
+  outline:none;box-sizing:border-box;
+}
+.rt-input:focus{ border-color:var(--yellow); }
+.rt-label{
+  font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:5px;
+}
+.rt-textarea{
+  width:100%;padding:9px 12px;
+  border:0.5px solid var(--border2);
+  border-radius:8px;
+  background:var(--surface2);
+  color:var(--text);
+  font-size:12px;font-family:'DM Sans',sans-serif;
+  outline:none;resize:none;
+  box-sizing:border-box;
+  min-height:60px;
+}
+.rt-textarea:focus{ border-color:var(--yellow); }
+
+/* Week tabs */
+.rt-week-tabs{
+  display:flex;gap:4px;overflow-x:auto;
+  padding-bottom:2px;margin-bottom:12px;
+  scrollbar-width:none;
+}
+.rt-week-tabs::-webkit-scrollbar{ display:none; }
+.rt-week-tab{
+  flex-shrink:0;padding:5px 12px;
+  border-radius:8px;border:0.5px solid var(--border);
+  background:var(--surface2);color:var(--muted);
+  font-size:11px;font-weight:600;cursor:pointer;
+  transition:all .15s;white-space:nowrap;
+}
+.rt-week-tab.act{
+  background:rgba(216,209,90,0.12);
+  border-color:rgba(216,209,90,0.3);
+  color:var(--yellow);
+}
+
+/* Toggle switch */
+.rt-toggle{
+  width:36px;height:20px;border-radius:10px;
+  background:rgba(255,255,255,0.1);
+  border:none;cursor:pointer;position:relative;
+  flex-shrink:0;transition:background .2s;
+}
+.rt-toggle.on{ background:rgba(93,202,165,0.5); }
+.rt-toggle-dot{
+  position:absolute;top:3px;left:3px;
+  width:14px;height:14px;border-radius:50%;
+  background:#fff;transition:transform .2s;
+}
+.rt-toggle.on .rt-toggle-dot{ transform:translateX(16px); }
+
+/* Stats mini */
+.rt-stat-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+}
+.rt-stat-box{
+  text-align:center;padding:10px 8px;
+  border-radius:10px;
+  background:var(--surface2);
+  border:0.5px solid var(--border);
+}
+.rt-stat-val{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:26px;line-height:1;color:var(--yellow);
+}
+.rt-stat-lbl{
+  font-size:9px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em;
+  margin-top:3px;
+}
+
+/* Toast mini */
+.rt-toast{
+  position:fixed;bottom:80px;left:50%;
+  transform:translateX(-50%) translateY(60px);
+  background:var(--surface);border:0.5px solid var(--border2);
+  border-radius:10px;padding:8px 18px;
+  font-size:12px;color:var(--text);
+  z-index:5000;transition:transform .25s ease;
+  white-space:nowrap;pointer-events:none;
+}
+.rt-toast.show{ transform:translateX(-50%) translateY(0); }
+.rt-toast.ok{ border-color:var(--green);color:var(--green); }
+</style>
+
+<!-- Toast -->
+<div class="rt-toast" id="rt-toast"></div>
+
+<div class="rt-wrap">
+
+  <!-- ══ VIEWS ══ -->
+
+  <!-- VIEW: Lista de planes -->
+  <div id="rt-view-list">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Esta semana</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)" id="rt-week-label">—</div>
+      </div>
+      <button class="rt-btn y" onclick="rtShowView('create')">+ Nuevo plan</button>
+    </div>
+
+    <!-- Plan activo -->
+    <div id="rt-active-plan-section" style="display:none">
+      <div class="rt-sec">Plan activo</div>
+      <div id="rt-active-plan-card"></div>
+    </div>
+
+    <!-- Mis planes -->
+    <div class="rt-sec">Mis planes</div>
+    <div id="rt-plans-list">
+      <div style="text-align:center;padding:24px 0;font-size:12px;color:var(--muted)">
+        Sin planes aún — crea el primero
+      </div>
+    </div>
+
+    <!-- Stats semanales -->
+    <div class="rt-sec">Esta semana</div>
+    <div class="rt-stat-grid" style="margin-bottom:12px">
+      <div class="rt-stat-box">
+        <div class="rt-stat-val" id="rt-stat-asistencia">—</div>
+        <div class="rt-stat-lbl">Asistencia</div>
+      </div>
+      <div class="rt-stat-box">
+        <div class="rt-stat-val" id="rt-stat-calenta">—</div>
+        <div class="rt-stat-lbl">Calenta.</div>
+      </div>
+      <div class="rt-stat-box">
+        <div class="rt-stat-val" id="rt-stat-tiros">—</div>
+        <div class="rt-stat-lbl">% Tiros</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: Crear plan -->
+  <div id="rt-view-create" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <button class="rt-btn ghost sm" onclick="rtShowView('list')">← Volver</button>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text)">Nuevo plan</div>
+    </div>
+
+    <div class="rt-card">
+      <div class="rt-card-bar" style="background:linear-gradient(90deg,var(--yellow),var(--green))"></div>
+
+      <!-- Para quién -->
+      <div id="rt-for-who-section" style="display:none;margin-bottom:14px">
+        <div class="rt-label">Para quién</div>
+        <select class="rt-input" id="rt-for-user" style="margin-bottom:0">
+          <option value="">Para mí mismo</option>
+        </select>
+      </div>
+
+      <!-- Título -->
+      <div class="rt-label">Nombre del plan</div>
+      <input class="rt-input" id="rt-plan-title" placeholder="Ej: Preparación torneo mayo" style="margin-bottom:12px">
+
+      <!-- Semanas -->
+      <div class="rt-label">Duración</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <select class="rt-input" id="rt-plan-weeks" style="flex:1">
+          <option value="1">1 semana</option>
+          <option value="2">2 semanas</option>
+          <option value="3">3 semanas</option>
+          <option value="4">4 semanas</option>
+          <option value="8">8 semanas</option>
+          <option value="12">12 semanas</option>
+        </select>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <div style="font-size:11px;color:var(--muted)">Desde</div>
+          <input type="date" class="rt-input" id="rt-plan-start" style="width:auto">
+        </div>
+      </div>
+
+      <!-- Días -->
+      <div class="rt-label">Días de entrenamiento</div>
+      <div style="display:flex;gap:6px;margin-bottom:14px" id="rt-day-picker">
+        <div class="rt-day-pill" data-day="0" onclick="rtToggleDay(this)">L</div>
+        <div class="rt-day-pill" data-day="1" onclick="rtToggleDay(this)">M</div>
+        <div class="rt-day-pill" data-day="2" onclick="rtToggleDay(this)">X</div>
+        <div class="rt-day-pill" data-day="3" onclick="rtToggleDay(this)">J</div>
+        <div class="rt-day-pill" data-day="4" onclick="rtToggleDay(this)">V</div>
+        <div class="rt-day-pill" data-day="5" onclick="rtToggleDay(this)">S</div>
+        <div class="rt-day-pill" data-day="6" onclick="rtToggleDay(this)">D</div>
+      </div>
+
+      <!-- Mismo cada día -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div>
+          <div style="font-size:13px;color:var(--text);font-weight:500">Mismo programa cada día</div>
+          <div style="font-size:10px;color:var(--muted)">Desactiva para personalizar por día</div>
+        </div>
+        <div class="rt-toggle on" id="rt-same-day-toggle" onclick="rtToggleSameDay(this)">
+          <div class="rt-toggle-dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actividades del plan -->
+    <div id="rt-activities-builder">
+      <div class="rt-sec">Actividades</div>
+      <div id="rt-acts-container">
+        <!-- Se llena dinámicamente -->
+      </div>
+      <button class="rt-btn" style="width:100%;margin-bottom:12px" onclick="rtShowAddActivity()">+ Agregar actividad</button>
+    </div>
+
+    <button class="rt-btn y" style="width:100%" onclick="rtSavePlan()">Guardar plan →</button>
+  </div>
+
+  <!-- VIEW: Plan detail / día actual -->
+  <div id="rt-view-plan" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <button class="rt-btn ghost sm" onclick="rtShowView('list')">← Planes</button>
+      <div style="flex:1">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text)" id="rt-plan-detail-title">—</div>
+        <div style="font-size:10px;color:var(--muted)" id="rt-plan-detail-sub">—</div>
+      </div>
+      <button class="rt-btn sm" onclick="rtEditPlan()">✏️</button>
+    </div>
+
+    <!-- Week tabs -->
+    <div class="rt-week-tabs" id="rt-plan-week-tabs"></div>
+
+    <!-- Day tabs -->
+    <div style="display:flex;gap:4px;margin-bottom:12px;overflow-x:auto" id="rt-plan-day-tabs"></div>
+
+    <!-- Activities for selected day -->
+    <div id="rt-day-activities"></div>
+
+    <!-- Semana resumen -->
+    <div class="rt-sec" style="margin-top:16px">Resumen de la semana</div>
+    <div class="rt-stat-grid" id="rt-plan-week-stats"></div>
+  </div>
+
+</div><!-- rt-wrap -->
+
+<!-- ══ OVERLAY: Agregar actividad ══ -->
+<div id="rt-act-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(14,14,14,0.92);overflow-y:auto;padding:20px">
+  <div style="max-width:420px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text)">Agregar actividad</div>
+      <button onclick="rtCloseActOverlay()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+
+    <!-- Type selector -->
+    <div id="rt-act-type-selector">
+      <div class="rt-act-type" data-type="asistencia" onclick="rtSelectActType('asistencia',this)">
+        <div class="rt-act-icon">✅</div>
+        <div class="rt-act-info">
+          <div class="rt-act-label">Asistencia</div>
+          <div class="rt-act-sub">Registra si el arquero fue al entrenamiento</div>
+        </div>
+      </div>
+      <div class="rt-act-type" data-type="calentamiento" onclick="rtSelectActType('calentamiento',this)">
+        <div class="rt-act-icon">🔥</div>
+        <div class="rt-act-info">
+          <div class="rt-act-label">Calentamiento</div>
+          <div class="rt-act-sub">Sí o no — con nota de qué incluye</div>
+        </div>
+      </div>
+      <div class="rt-act-type" data-type="tiros_sin" onclick="rtSelectActType('tiros_sin',this)">
+        <div class="rt-act-icon">🏹</div>
+        <div class="rt-act-info">
+          <div class="rt-act-label">Tiros sin caratula</div>
+          <div class="rt-act-sub">X tiros a X metros — técnica pura</div>
+        </div>
+      </div>
+      <div class="rt-act-type" data-type="tiros_con" onclick="rtSelectActType('tiros_con',this)">
+        <div class="rt-act-icon">🎯</div>
+        <div class="rt-act-info">
+          <div class="rt-act-label">Tiros con caratula</div>
+          <div class="rt-act-sub">X tiros a X metros — con puntaje</div>
+        </div>
+      </div>
+      <div class="rt-act-type" data-type="conteo" onclick="rtSelectActType('conteo',this)">
+        <div class="rt-act-icon">📊</div>
+        <div class="rt-act-info">
+          <div class="rt-act-label">Conteo</div>
+          <div class="rt-act-sub">Ronda oficial — se guarda en bitácora</div>
+        </div>
+      </div>
+      <div class="rt-act-type" data-type="torneo" onclick="rtSelectActType('torneo',this)">
+        <div class="rt-act-icon">🏆</div>
+        <div class="rt-act-info">
+          <div class="rt-act-label">Torneo entre amigos</div>
+          <div class="rt-act-sub">Crea o une una sala de competencia</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config por tipo -->
+    <div id="rt-act-config" style="display:none;margin-top:14px">
+      <div style="height:0.5px;background:var(--border);margin-bottom:14px"></div>
+
+      <!-- Config: tiros_sin / tiros_con -->
+      <div id="rt-cfg-tiros" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <div class="rt-label">Tiros</div>
+            <input type="number" class="rt-input" id="rt-cfg-num-tiros" placeholder="60" min="1" max="500">
+          </div>
+          <div>
+            <div class="rt-label">Metros</div>
+            <input type="number" class="rt-input" id="rt-cfg-metros" placeholder="18" min="1" max="90">
+          </div>
+        </div>
+      </div>
+
+      <!-- Config: conteo -->
+      <div id="rt-cfg-conteo" style="display:none">
+        <div class="rt-label">Modalidad</div>
+        <select class="rt-input" id="rt-cfg-conteo-mode" style="margin-bottom:10px">
+          <optgroup label="Indoor">
+            <option value="indoor-15">Indoor 15 tiros</option>
+            <option value="indoor-30">Indoor 30 tiros</option>
+            <option value="indoor-60">Indoor 60 tiros</option>
+          </optgroup>
+          <optgroup label="Outdoor">
+            <option value="outdoor-36">Outdoor 36 flechas</option>
+            <option value="outdoor-72">Outdoor 72 flechas</option>
+          </optgroup>
+          <optgroup label="Field / 3D">
+            <option value="field-c">Field Conocidas</option>
+            <option value="field-d">Field Desconocidas</option>
+            <option value="3d">3D</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <!-- Nota del coach (siempre visible) -->
+      <div class="rt-label">Nota para el atleta <span style="color:var(--hint)">(opcional)</span></div>
+      <textarea class="rt-textarea" id="rt-act-note" placeholder="Ej: Para el calentamiento: 5 min estiramiento, 10 min tiro suave, revisar forma antes de comenzar serie..."></textarea>
+
+      <button class="rt-btn y" style="width:100%;margin-top:12px" onclick="rtAddActivity()">Agregar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ OVERLAY: Reportar actividad ══ -->
+<div id="rt-report-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(14,14,14,0.92);overflow-y:auto;padding:20px">
+  <div style="max-width:420px;margin:0 auto" id="rt-report-content"></div>
+</div>
+
+<script>
+(function(){
+
+const SUPA = 'https://axaiyaflubssaghvhefe.supabase.co';
+const DAYS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const ACT_ICONS = {asistencia:'✅',calentamiento:'🔥',tiros_sin:'🏹',tiros_con:'🎯',conteo:'📊',torneo:'🏆'};
+const ACT_COLORS = {asistencia:'#5dcaa5',calentamiento:'#d8a05a',tiros_sin:'#5ab4d6',tiros_con:'#d8d15a',conteo:'#9a88dd',torneo:'#e05555'};
+const ACT_LABELS = {asistencia:'Asistencia',calentamiento:'Calentamiento',tiros_sin:'Tiros sin caratula',tiros_con:'Tiros con caratula',conteo:'Conteo',torneo:'Torneo'};
+
+let rtUserId = null;
+let rtToken = null;
+let rtAnonKey = null;
+let rtIsCoach = false;
+let rtPlans = [];
+let rtCurrentPlan = null;
+let rtCurrentWeek = 1;
+let rtCurrentDay = null;
+let rtActivities = []; // activities being built
+let rtSelectedActType = null;
+let rtEditingActIdx = null;
+let rtReportingAct = null;
+
+// ── Init ─────────────────────────────────────────────────
+function rtInit(){
+  rtUserId  = window._supabaseUserId;
+  rtToken   = window._supabaseToken;
+  rtAnonKey = window._supabaseAnonKey;
+  rtIsCoach = window._supabaseIsCoach || false;
+
+  // Mostrar selector "para quién" si es coach
+  if(rtIsCoach){
+    document.getElementById('rt-for-who-section').style.display = 'block';
+    rtLoadCoachArchers();
+  }
+
+  // Fecha de inicio default = hoy
+  document.getElementById('rt-plan-start').value = new Date().toISOString().slice(0,10);
+
+  // Label de semana actual
+  const now = new Date();
+  const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7));
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  document.getElementById('rt-week-label').textContent =
+    mon.toLocaleDateString('es-MX',{day:'numeric',month:'short'}) + ' – ' +
+    sun.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
+
+  rtLoadPlans();
+}
+
+// ── HTTP helper ───────────────────────────────────────────
+function rtFetch(endpoint, opts={}){
+  return fetch(SUPA + '/rest/v1/' + endpoint, {
+    ...opts,
+    headers: {
+      apikey: rtAnonKey,
+      Authorization: 'Bearer ' + rtToken,
+      'Content-Type': 'application/json',
+      ...(opts.headers||{})
+    }
+  });
+}
+
+// ── Toast ─────────────────────────────────────────────────
+function rtToast(msg, ok=false){
+  const el = document.getElementById('rt-toast');
+  el.textContent = msg;
+  el.className = 'rt-toast show' + (ok?' ok':'');
+  setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ── Views ─────────────────────────────────────────────────
+window.rtShowView = function(view){
+  ['list','create','plan'].forEach(v=>{
+    document.getElementById('rt-view-'+v).style.display = v===view ? 'block' : 'none';
+  });
+  if(view === 'list') rtLoadPlans();
+  if(view === 'create'){ rtActivities = []; rtRenderActivitiesBuilder(); }
+};
+
+// ── Toggle day pill ───────────────────────────────────────
+window.rtToggleDay = function(el){
+  el.classList.toggle('on');
+};
+
+// ── Toggle same day ───────────────────────────────────────
+window.rtToggleSameDay = function(el){
+  el.classList.toggle('on');
+};
+
+// ── Load coach archers ────────────────────────────────────
+async function rtLoadCoachArchers(){
+  const sel = document.getElementById('rt-for-user');
+  try{
+    const r = await rtFetch('archer_profiles?select=user_id,display_name&order=display_name.asc&limit=100');
+    const data = await r.json();
+    data.forEach(p=>{
+      if(p.user_id === rtUserId) return;
+      const o = document.createElement('option');
+      o.value = p.user_id;
+      o.textContent = p.display_name || p.user_id.slice(0,8);
+      sel.appendChild(o);
+    });
+  } catch(e){}
+}
+
+// ── Load plans ────────────────────────────────────────────
+async function rtLoadPlans(){
+  if(!rtUserId) return;
+  try{
+    const r = await rtFetch(`training_plans?or=(created_by.eq.${rtUserId},assigned_to.eq.${rtUserId})&order=created_at.desc&limit=20`);
+    rtPlans = await r.json();
+    rtRenderPlansList();
+    rtLoadWeekStats();
+  } catch(e){ console.error('rtLoadPlans:', e); }
+}
+
+// ── Render plans list ─────────────────────────────────────
+function rtRenderPlansList(){
+  const el = document.getElementById('rt-plans-list');
+  const activeSec = document.getElementById('rt-active-plan-section');
+  const activeCard = document.getElementById('rt-active-plan-card');
+
+  const active = rtPlans.filter(p=>p.status==='active');
+  const rest   = rtPlans.filter(p=>p.status!=='active');
+
+  if(active.length){
+    activeSec.style.display = 'block';
+    activeCard.innerHTML = active.map(rtRenderPlanItem).join('');
+  } else {
+    activeSec.style.display = 'none';
+  }
+
+  if(!rtPlans.length){
+    el.innerHTML = '<div style="text-align:center;padding:24px 0;font-size:12px;color:var(--muted)">Sin planes aún — crea el primero</div>';
+    return;
+  }
+  el.innerHTML = rest.map(rtRenderPlanItem).join('') ||
+    '<div style="font-size:11px;color:var(--muted);padding:8px 0">Sin planes archivados</div>';
+}
+
+function rtRenderPlanItem(p){
+  const start = new Date(p.week_start);
+  const weeks = p.weeks||1;
+  const end = new Date(start); end.setDate(start.getDate() + weeks*7 - 1);
+  const dateRange = start.toLocaleDateString('es-MX',{day:'numeric',month:'short'}) + ' – ' +
+    end.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
+  const statusBadge = p.status==='active'
+    ? '<span style="font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(93,202,165,0.15);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3)">Activo</span>'
+    : p.status==='done'
+    ? '<span style="font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--muted)">Completado</span>'
+    : '';
+
+  return `<div class="rt-plan-item ${p.status==='active'?'active-plan':''}" onclick="rtOpenPlan('${p.id}')">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px">${p.title||'Plan sin nombre'}</div>
+        <div style="font-size:10px;color:var(--muted)">${dateRange} · ${weeks} sem.</div>
+      </div>
+      ${statusBadge}
+    </div>
+  </div>`;
+}
+
+// ── Activity builder ──────────────────────────────────────
+window.rtShowAddActivity = function(){
+  rtSelectedActType = null;
+  rtEditingActIdx = null;
+  document.getElementById('rt-act-config').style.display = 'none';
+  document.querySelectorAll('.rt-act-type').forEach(el=>el.classList.remove('sel'));
+  document.getElementById('rt-act-note').value = '';
+  document.getElementById('rt-act-overlay').style.display = 'block';
+};
+
+window.rtCloseActOverlay = function(){
+  document.getElementById('rt-act-overlay').style.display = 'none';
+};
+
+window.rtSelectActType = function(type, el){
+  rtSelectedActType = type;
+  document.querySelectorAll('.rt-act-type').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('rt-act-config').style.display = 'block';
+  // Show/hide config panels
+  ['tiros','conteo'].forEach(c=>document.getElementById('rt-cfg-'+c).style.display='none');
+  if(type==='tiros_sin'||type==='tiros_con') document.getElementById('rt-cfg-tiros').style.display='block';
+  if(type==='conteo') document.getElementById('rt-cfg-conteo').style.display='block';
+};
+
+window.rtAddActivity = function(){
+  if(!rtSelectedActType) return rtToast('Elige un tipo de actividad');
+
+  const config = {};
+  if(rtSelectedActType==='tiros_sin'||rtSelectedActType==='tiros_con'){
+    config.num_tiros = parseInt(document.getElementById('rt-cfg-num-tiros').value)||0;
+    config.metros    = parseInt(document.getElementById('rt-cfg-metros').value)||0;
+    if(!config.num_tiros) return rtToast('Ingresa el número de tiros');
+  }
+  if(rtSelectedActType==='conteo'){
+    config.mode = document.getElementById('rt-cfg-conteo-mode').value;
+  }
+  config.nota = document.getElementById('rt-act-note').value.trim();
+
+  if(rtEditingActIdx !== null){
+    rtActivities[rtEditingActIdx] = {type: rtSelectedActType, config};
+  } else {
+    rtActivities.push({type: rtSelectedActType, config});
+  }
+
+  document.getElementById('rt-act-overlay').style.display = 'none';
+  rtRenderActivitiesBuilder();
+};
+
+function rtRenderActivitiesBuilder(){
+  const el = document.getElementById('rt-acts-container');
+  if(!rtActivities.length){
+    el.innerHTML = '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--muted)">Sin actividades — agrega al menos una</div>';
+    return;
+  }
+  el.innerHTML = rtActivities.map((a,i)=>{
+    const color = ACT_COLORS[a.type]||'var(--muted)';
+    const label = ACT_LABELS[a.type]||a.type;
+    let sub = '';
+    if(a.config.num_tiros) sub = `${a.config.num_tiros} tiros · ${a.config.metros}m`;
+    if(a.config.mode) sub = a.config.mode;
+    return `<div class="rt-act-card">
+      <div class="rt-act-card-bar" style="background:${color}"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">${ACT_ICONS[a.type]||'•'}</span>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--text)">${label}</div>
+            ${sub?`<div style="font-size:10px;color:var(--muted)">${sub}</div>`:''}
+            ${a.config.nota?`<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;font-style:italic">${a.config.nota.slice(0,60)}${a.config.nota.length>60?'…':''}</div>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="rt-btn sm ghost" onclick="rtEditActivity(${i})">✏️</button>
+          <button class="rt-btn sm ghost" onclick="rtRemoveActivity(${i})" style="color:var(--coral)">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.rtEditActivity = function(i){
+  rtEditingActIdx = i;
+  const a = rtActivities[i];
+  rtSelectedActType = a.type;
+  // Set form values
+  document.querySelectorAll('.rt-act-type').forEach(el=>{
+    el.classList.toggle('sel', el.dataset.type===a.type);
+  });
+  document.getElementById('rt-act-config').style.display = 'block';
+  ['tiros','conteo'].forEach(c=>document.getElementById('rt-cfg-'+c).style.display='none');
+  if(a.type==='tiros_sin'||a.type==='tiros_con'){
+    document.getElementById('rt-cfg-tiros').style.display='block';
+    document.getElementById('rt-cfg-num-tiros').value = a.config.num_tiros||'';
+    document.getElementById('rt-cfg-metros').value = a.config.metros||'';
+  }
+  if(a.type==='conteo'){
+    document.getElementById('rt-cfg-conteo').style.display='block';
+    document.getElementById('rt-cfg-conteo-mode').value = a.config.mode||'indoor-30';
+  }
+  document.getElementById('rt-act-note').value = a.config.nota||'';
+  document.getElementById('rt-act-overlay').style.display = 'block';
+};
+
+window.rtRemoveActivity = function(i){
+  rtActivities.splice(i,1);
+  rtRenderActivitiesBuilder();
+};
+
+// ── Save plan ─────────────────────────────────────────────
+window.rtSavePlan = async function(){
+  const title = document.getElementById('rt-plan-title').value.trim();
+  if(!title) return rtToast('Escribe un nombre para el plan');
+
+  const days = {};
+  document.querySelectorAll('#rt-day-picker .rt-day-pill').forEach(el=>{
+    days[el.dataset.day] = el.classList.contains('on');
+  });
+  const activeDays = Object.values(days).filter(Boolean).length;
+  if(!activeDays) return rtToast('Selecciona al menos un día');
+  if(!rtActivities.length) return rtToast('Agrega al menos una actividad');
+
+  const weeks  = parseInt(document.getElementById('rt-plan-weeks').value)||1;
+  const start  = document.getElementById('rt-plan-start').value;
+  const forUser = document.getElementById('rt-for-user')?.value || null;
+  const sameDay = document.getElementById('rt-same-day-toggle').classList.contains('on');
+
+  try{
+    // Create plan
+    const pRes = await rtFetch('training_plans', {
+      method:'POST',
+      headers:{'Prefer':'return=representation'},
+      body: JSON.stringify({
+        created_by: rtUserId,
+        assigned_to: forUser || rtUserId,
+        title, weeks,
+        week_start: start,
+        days, same_every_day: sameDay,
+        status: 'active'
+      })
+    });
+    const pData = await pRes.json();
+    const plan = Array.isArray(pData)?pData[0]:pData;
+
+    // Create activities
+    const acts = rtActivities.map((a,i)=>({
+      plan_id: plan.id,
+      day_of_week: sameDay ? null : null, // null = todos los días activos
+      week_number: 1,
+      type: a.type,
+      config: a.config,
+      sort_order: i
+    }));
+
+    await rtFetch('training_activities', {
+      method:'POST',
+      headers:{'Prefer':'return=minimal'},
+      body: JSON.stringify(acts)
+    });
+
+    rtToast('✓ Plan guardado', true);
+    rtShowView('list');
+  } catch(e){ console.error(e); rtToast('Error guardando plan'); }
+};
+
+// ── Open plan ─────────────────────────────────────────────
+window.rtOpenPlan = async function(planId){
+  const plan = rtPlans.find(p=>p.id===planId);
+  if(!plan) return;
+  rtCurrentPlan = plan;
+  rtCurrentWeek = 1;
+
+  document.getElementById('rt-plan-detail-title').textContent = plan.title||'Plan';
+  document.getElementById('rt-plan-detail-sub').textContent =
+    `${plan.weeks||1} semana${(plan.weeks||1)>1?'s':''} · desde ${new Date(plan.week_start).toLocaleDateString('es-MX',{day:'numeric',month:'short'})}`;
+
+  // Week tabs
+  const weekTabs = document.getElementById('rt-plan-week-tabs');
+  weekTabs.innerHTML = Array.from({length:plan.weeks||1},(_,i)=>`
+    <div class="rt-week-tab ${i===0?'act':''}" onclick="rtSelectWeek(${i+1},this)">Sem ${i+1}</div>
+  `).join('');
+
+  rtShowView('plan');
+  await rtLoadPlanDay(plan);
+};
+
+window.rtSelectWeek = function(week, el){
+  rtCurrentWeek = week;
+  document.querySelectorAll('.rt-week-tab').forEach(t=>t.classList.remove('act'));
+  el.classList.add('act');
+  rtLoadPlanDay(rtCurrentPlan);
+};
+
+async function rtLoadPlanDay(plan){
+  // Build day tabs from plan.days
+  const days = plan.days||{};
+  const activeDays = Object.entries(days).filter(([,v])=>v).map(([k])=>parseInt(k));
+  if(!activeDays.length) return;
+
+  // Default to today's day of week if in plan, else first active day
+  const todayDow = (new Date().getDay()+6)%7; // 0=lun
+  rtCurrentDay = activeDays.includes(todayDow) ? todayDow : activeDays[0];
+
+  // Render day tabs
+  const dayTabsEl = document.getElementById('rt-plan-day-tabs');
+  dayTabsEl.innerHTML = activeDays.map(d=>`
+    <div class="rt-week-tab ${d===rtCurrentDay?'act':''}" onclick="rtSelectDay(${d},this)">${DAYS[d]}</div>
+  `).join('');
+
+  await rtRenderDayActivities(plan);
+  await rtRenderWeekStats(plan);
+}
+
+window.rtSelectDay = function(day, el){
+  rtCurrentDay = day;
+  document.querySelectorAll('#rt-plan-day-tabs .rt-week-tab').forEach(t=>t.classList.remove('act'));
+  el.classList.add('act');
+  rtRenderDayActivities(rtCurrentPlan);
+};
+
+async function rtRenderDayActivities(plan){
+  const el = document.getElementById('rt-day-activities');
+  el.innerHTML = '<div style="text-align:center;padding:16px;font-size:12px;color:var(--muted)">Cargando...</div>';
+
+  try{
+    // Load activities
+    const aRes = await rtFetch(`training_activities?plan_id=eq.${plan.id}&order=sort_order.asc`);
+    const acts = await aRes.json();
+
+    // Load reports for this day/week
+    const reportDate = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, rtCurrentDay);
+    const rRes = await rtFetch(`training_reports?plan_id=eq.${plan.id}&report_date=eq.${reportDate}&user_id=eq.${rtUserId}`);
+    const reports = await rRes.json();
+    const reportMap = {};
+    reports.forEach(r=>{ reportMap[r.activity_id] = r; });
+
+    const today = new Date().toISOString().slice(0,10);
+    const isToday = reportDate === today;
+    const isPast = reportDate < today;
+
+    if(!acts.length){
+      el.innerHTML = '<div style="text-align:center;padding:16px;font-size:12px;color:var(--muted)">Sin actividades en este día</div>';
+      return;
+    }
+
+    el.innerHTML = acts.map(a=>{
+      const rep = reportMap[a.id];
+      const color = ACT_COLORS[a.type]||'var(--muted)';
+      const done = rep?.completed;
+      const pct = rtGetCompletionPct(a, rep);
+
+      let valueStr = '';
+      if(a.type==='asistencia'||a.type==='calentamiento'){
+        valueStr = done ? '✓ Sí' : (rep?'✗ No':'—');
+      } else if(a.type==='tiros_sin'||a.type==='tiros_con'){
+        const target = a.config?.num_tiros||0;
+        const done_v = rep?.value_done||0;
+        valueStr = rep ? `${done_v}/${target} tiros (${pct}%)` : `0/${target} tiros`;
+      } else if(a.type==='conteo'){
+        valueStr = rep?.value_done ? `Score: ${rep.value_done}` : 'Pendiente';
+      } else if(a.type==='torneo'){
+        valueStr = rep?.value_done ? `Lugar: ${rep.value_done}°` : 'Pendiente';
+      }
+
+      const canReport = isToday || isPast;
+
+      return `<div class="rt-act-card" style="opacity:${!canReport&&!rep?'0.5':'1'}">
+        <div class="rt-act-card-bar" style="background:${done?color:'rgba(255,255,255,0.1)'}"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:20px">${done?'✅':ACT_ICONS[a.type]||'•'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+              <span style="font-size:12px;font-weight:600;color:var(--text)">${ACT_LABELS[a.type]||a.type}</span>
+              ${a.config?.num_tiros?`<span style="font-size:9px;color:var(--muted)">${a.config.num_tiros} tiros · ${a.config.metros}m</span>`:''}
+              ${a.config?.mode?`<span style="font-size:9px;color:var(--muted)">${a.config.mode}</span>`:''}
+            </div>
+            <div style="font-size:11px;color:${done?'#5dcaa5':'var(--muted)'}">${valueStr}</div>
+            ${a.config?.nota?`<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px;font-style:italic">📌 ${a.config.nota}</div>`:''}
+            ${rep?.notes?`<div style="font-size:10px;color:rgba(154,136,221,0.8);margin-top:2px;font-style:italic">💬 ${rep.notes}</div>`:''}
+          </div>
+          ${canReport?`<button class="rt-btn sm ${done?'ghost':'y'}" onclick="rtOpenReport('${a.id}','${plan.id}','${reportDate}')" style="${done?'':''}">
+            ${done?'Editar':'Reportar'}
+          </button>`:''}
+        </div>
+        ${pct>0&&pct<100?`<div style="margin-top:8px;height:3px;border-radius:2px;background:rgba(255,255,255,0.08)">
+          <div style="width:${pct}%;height:100%;border-radius:2px;background:${color};transition:width .4s"></div>
+        </div>`:''}
+      </div>`;
+    }).join('');
+
+  } catch(e){ console.error(e); el.innerHTML='<div style="color:var(--coral);font-size:12px;padding:8px">Error cargando actividades</div>'; }
+}
+
+function rtGetCompletionPct(act, rep){
+  if(!rep) return 0;
+  if(act.type==='asistencia'||act.type==='calentamiento') return rep.completed?100:0;
+  if(act.type==='tiros_sin'||act.type==='tiros_con'){
+    const target = act.config?.num_tiros||1;
+    return Math.min(100, Math.round(((rep.value_done||0)/target)*100));
+  }
+  return rep.completed?100:0;
+}
+
+function rtGetDateForDayWeek(weekStart, week, dayOfWeek){
+  const start = new Date(weekStart);
+  // weekStart should be a Monday (day 0 in our system = lun)
+  const date = new Date(start);
+  date.setDate(start.getDate() + (week-1)*7 + dayOfWeek);
+  return date.toISOString().slice(0,10);
+}
+
+// ── Report overlay ────────────────────────────────────────
+window.rtOpenReport = async function(actId, planId, reportDate){
+  const overlay = document.getElementById('rt-report-overlay');
+  const content = document.getElementById('rt-report-content');
+
+  // Load activity and existing report
+  let act, rep;
+  try{
+    const [aRes, rRes] = await Promise.all([
+      rtFetch(`training_activities?id=eq.${actId}`),
+      rtFetch(`training_reports?activity_id=eq.${actId}&plan_id=eq.${planId}&report_date=eq.${reportDate}&user_id=eq.${rtUserId}`)
+    ]);
+    [act] = await aRes.json();
+    [rep] = await rRes.json();
+  } catch(e){ return rtToast('Error cargando datos'); }
+
+  rtReportingAct = {act, planId, reportDate, repId: rep?.id};
+
+  const color = ACT_COLORS[act.type]||'var(--muted)';
+  const label = ACT_LABELS[act.type]||act.type;
+
+  let formHtml = '';
+
+  if(act.type==='asistencia'){
+    formHtml = `
+      <div class="rt-label">¿Asististe hoy?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <button class="rt-btn ${rep?.completed===true?'y':''}" id="rt-rep-yes" onclick="rtRepSetBool(true)" style="padding:14px">✓ Sí asistí</button>
+        <button class="rt-btn ${rep?.completed===false&&rep?.id?'':'ghost'}" id="rt-rep-no" onclick="rtRepSetBool(false)" style="padding:14px;color:var(--coral)">✗ No asistí</button>
+      </div>`;
+  } else if(act.type==='calentamiento'){
+    formHtml = `
+      <div class="rt-label">¿Completaste el calentamiento?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <button class="rt-btn ${rep?.completed===true?'y':''}" id="rt-rep-yes" onclick="rtRepSetBool(true)" style="padding:14px">✓ Sí</button>
+        <button class="rt-btn ${rep?.completed===false&&rep?.id?'':'ghost'}" id="rt-rep-no" onclick="rtRepSetBool(false)" style="padding:14px;color:var(--coral)">✗ No</button>
+      </div>`;
+  } else if(act.type==='tiros_sin'||act.type==='tiros_con'){
+    const target = act.config?.num_tiros||0;
+    formHtml = `
+      <div class="rt-label">¿Cuántos tiros completaste? (meta: ${target})</div>
+      <input type="number" class="rt-input" id="rt-rep-value" value="${rep?.value_done||''}" placeholder="${target}" min="0" max="${target*2}" style="margin-bottom:12px">
+      <div id="rt-rep-pct-bar" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.08);margin-bottom:12px">
+        <div id="rt-rep-pct-fill" style="height:100%;border-radius:2px;background:${color};transition:width .3s;width:${rep?.value_done?Math.min(100,Math.round(rep.value_done/target*100)):0}%"></div>
+      </div>`;
+  } else if(act.type==='conteo'){
+    formHtml = `
+      <div style="padding:10px 14px;border-radius:10px;background:rgba(154,136,221,0.08);border:0.5px solid rgba(154,136,221,0.3);margin-bottom:14px">
+        <div style="font-size:12px;color:#9a88dd;font-weight:600">📊 Conteo — ${act.config?.mode||''}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px">Se irá a registrar tu score en Puntuaciones. El resultado se guardará aquí automáticamente.</div>
+      </div>
+      ${rep?.value_done?`<div style="text-align:center;margin-bottom:12px"><div style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:#9a88dd">${rep.value_done}</div><div style="font-size:11px;color:var(--muted)">Score registrado</div></div>`:''}
+      <button class="rt-btn y" style="width:100%;margin-bottom:10px" onclick="rtGoToConteo('${act.id}','${planId}','${reportDate}','${act.config?.mode||''}')">
+        ${rep?.value_done?'Actualizar score →':'Ir a anotar →'}
+      </button>`;
+  } else if(act.type==='torneo'){
+    formHtml = `
+      <div style="padding:10px 14px;border-radius:10px;background:rgba(224,85,85,0.08);border:0.5px solid rgba(224,85,85,0.3);margin-bottom:14px">
+        <div style="font-size:12px;color:#e05555;font-weight:600">🏆 Torneo entre amigos</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px">Ve a Competencias para unirte o crear el torneo del día.</div>
+      </div>
+      <div class="rt-label">Lugar obtenido (si ya tienes el resultado)</div>
+      <input type="number" class="rt-input" id="rt-rep-value" value="${rep?.value_done||''}" placeholder="Ej: 1" min="1" max="99" style="margin-bottom:12px">
+      <button class="rt-btn ghost" style="width:100%;margin-bottom:10px" onclick="rtGoToTorneo()">Ir a Competencias →</button>`;
+  }
+
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${reportDate}</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text)">${label}</div>
+      </div>
+      <button onclick="rtCloseReport()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+
+    ${act.config?.nota?`<div style="padding:10px 12px;border-radius:8px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);margin-bottom:14px">
+      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Nota del coach</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.5">${act.config.nota}</div>
+    </div>`:''}
+
+    ${formHtml}
+
+    <div class="rt-label">Tu nota <span style="color:var(--hint)">(opcional)</span></div>
+    <textarea class="rt-textarea" id="rt-rep-note" placeholder="Ej: Me costó los últimos 10 tiros, brazo cansado">${rep?.notes||''}</textarea>
+
+    ${act.type!=='conteo'?`<button class="rt-btn y" style="width:100%;margin-top:14px" onclick="rtSaveReport('${act.id}','${planId}','${reportDate}')">Guardar reporte ✓</button>`:''}
+  `;
+
+  // Live pct bar for tiros
+  if(act.type==='tiros_sin'||act.type==='tiros_con'){
+    const target = act.config?.num_tiros||1;
+    document.getElementById('rt-rep-value')?.addEventListener('input', function(){
+      const pct = Math.min(100, Math.round((parseInt(this.value)||0)/target*100));
+      const fill = document.getElementById('rt-rep-pct-fill');
+      if(fill) fill.style.width = pct+'%';
+    });
+  }
+
+  overlay.style.display = 'block';
+  window._rtRepBool = rep?.completed ?? null;
+};
+
+window.rtRepSetBool = function(val){
+  window._rtRepBool = val;
+  const yes = document.getElementById('rt-rep-yes');
+  const no  = document.getElementById('rt-rep-no');
+  if(yes) yes.className = 'rt-btn'+(val?' y':'');
+  if(no)  no.className  = 'rt-btn'+(val?'':' y');
+  if(no && !val) no.style.color = '#5dcaa5';
+  if(yes && val) yes.style.color = '';
+};
+
+window.rtCloseReport = function(){
+  document.getElementById('rt-report-overlay').style.display = 'none';
+};
+
+window.rtSaveReport = async function(actId, planId, reportDate){
+  const act = rtReportingAct?.act;
+  if(!act) return;
+
+  let completed = false;
+  let value_done = null;
+
+  if(act.type==='asistencia'||act.type==='calentamiento'){
+    if(window._rtRepBool === null) return rtToast('Indica si completaste esta actividad');
+    completed = window._rtRepBool;
+    value_done = completed ? 1 : 0;
+  } else if(act.type==='tiros_sin'||act.type==='tiros_con'){
+    value_done = parseInt(document.getElementById('rt-rep-value')?.value)||0;
+    const target = act.config?.num_tiros||1;
+    completed = value_done >= target;
+  } else if(act.type==='torneo'){
+    value_done = parseInt(document.getElementById('rt-rep-value')?.value)||null;
+    completed = !!value_done;
+  }
+
+  const notes = document.getElementById('rt-rep-note')?.value.trim()||null;
+  const repId = rtReportingAct?.repId;
+
+  const payload = {
+    plan_id: planId,
+    activity_id: actId,
+    user_id: rtUserId,
+    report_date: reportDate,
+    week_number: rtCurrentWeek,
+    completed, value_done, notes
+  };
+
+  try{
+    if(repId){
+      await rtFetch(`training_reports?id=eq.${repId}`, {
+        method:'PATCH', headers:{'Prefer':'return=minimal'},
+        body: JSON.stringify({completed, value_done, notes})
+      });
+    } else {
+      await rtFetch('training_reports', {
+        method:'POST', headers:{'Prefer':'return=minimal'},
+        body: JSON.stringify(payload)
+      });
+    }
+    rtToast('✓ Reporte guardado', true);
+    document.getElementById('rt-report-overlay').style.display = 'none';
+    await rtRenderDayActivities(rtCurrentPlan);
+    await rtRenderWeekStats(rtCurrentPlan);
+  } catch(e){ console.error(e); rtToast('Error guardando reporte'); }
+};
+
+// ── Ir a conteo ───────────────────────────────────────────
+window.rtGoToConteo = function(actId, planId, reportDate, mode){
+  // Guardar contexto para que bitácora sepa que viene de un plan
+  window._rtPendingPlanActivity = {actId, planId, reportDate, type:'conteo'};
+  // Preconfigurar modalidad si es posible
+  if(mode && typeof window.btShowMain === 'function'){
+    window._cpPendingMode = mode;
+  }
+  document.getElementById('rt-report-overlay').style.display = 'none';
+  if(typeof window.switchTab==='function')
+    window.switchTab('bitacora', document.getElementById('sb-bitacora'));
+  if(typeof window.btShowMain==='function') window.btShowMain('nueva');
+};
+
+// ── Ir a torneo ───────────────────────────────────────────
+window.rtGoToTorneo = function(){
+  document.getElementById('rt-report-overlay').style.display = 'none';
+  if(typeof window.switchTab==='function')
+    window.switchTab('competencias', document.getElementById('sb-competencias'));
+};
+
+// ── Week stats ────────────────────────────────────────────
+async function rtRenderWeekStats(plan){
+  const el = document.getElementById('rt-plan-week-stats');
+  try{
+    const weekStart = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, 0);
+    const weekEnd   = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, 6);
+    const r = await rtFetch(`training_reports?plan_id=eq.${plan.id}&user_id=eq.${rtUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`);
+    const reports = await r.json();
+
+    const asist = reports.filter(r=>r.completed).length;
+    const total = reports.length;
+    const calenta = reports.filter(r=>{
+      // need activity type - simplify: check if any calentamiento completed
+      return r.completed;
+    }).length;
+
+    const tiros = reports.filter(r=>r.value_done&&r.value_done>0);
+    const tiroPct = tiros.length ? Math.round(tiros.reduce((a,r)=>a+(r.value_done||0),0)/tiros.length) : 0;
+
+    el.innerHTML = `
+      <div class="rt-stat-box">
+        <div class="rt-stat-val" style="color:#5dcaa5">${asist}</div>
+        <div class="rt-stat-lbl">Reportes</div>
+      </div>
+      <div class="rt-stat-box">
+        <div class="rt-stat-val" style="color:#d8a05a">${total}</div>
+        <div class="rt-stat-lbl">Actividades</div>
+      </div>
+      <div class="rt-stat-box">
+        <div class="rt-stat-val" style="color:#9a88dd">${total?Math.round(asist/total*100):0}%</div>
+        <div class="rt-stat-lbl">Completado</div>
+      </div>`;
+  } catch(e){ el.innerHTML=''; }
+}
+
+async function rtLoadWeekStats(){
+  // Stats generales de esta semana en la lista
+  const now = new Date();
+  const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7));
+  const weekStart = mon.toISOString().slice(0,10);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  const weekEnd = sun.toISOString().slice(0,10);
+
+  try{
+    const r = await rtFetch(`training_reports?user_id=eq.${rtUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`);
+    const reps = await r.json();
+    const done = reps.filter(r=>r.completed).length;
+    const total = reps.length;
+    document.getElementById('rt-stat-asistencia').textContent = done;
+    document.getElementById('rt-stat-calenta').textContent = total;
+    document.getElementById('rt-stat-tiros').textContent = total ? Math.round(done/total*100)+'%' : '—';
+  } catch(e){}
+}
+
+window.rtEditPlan = function(){ rtToast('Edición de plan próximamente'); };
+
+// ── Auto-init ─────────────────────────────────────────────
+if(window._supabaseUserId){
+  rtInit();
+} else {
+  window.addEventListener('supabase-user-ready', rtInit);
+}
+
+// ── Hook: bitácora guarda un score de plan ─────────────────
+// Cuando btSaveSession termina y hay un plan pendiente, guardamos el score
+const _origBtSave = window.btSaveSession;
+window.addEventListener('rt-plan-score-saved', function(e){
+  const {actId, planId, reportDate, score} = e.detail;
+  if(!actId||!planId||!reportDate) return;
+  rtFetch('training_reports', {
+    method:'POST', headers:{'Prefer':'return=minimal'},
+    body: JSON.stringify({
+      plan_id: planId, activity_id: actId,
+      user_id: rtUserId, report_date: reportDate,
+      week_number: rtCurrentWeek,
+      completed: true, value_done: score
+    })
+  }).then(()=>{ rtToast('✓ Score guardado en plan', true); });
+});
+
+})();
+</script>
+
+</div><!-- end tab-rutina -->
