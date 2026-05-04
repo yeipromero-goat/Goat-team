@@ -5615,13 +5615,12 @@ function btMakeDemoSessions(){
 }
 
 function btLoadSessions(){
-  if(typeof window.supabaseLoadScores==='function'){
-    window.supabaseLoadScores().then(data=>{
+  if(typeof window.supabaseLoadScores==='function' && window._supabaseToken){
+    window.supabaseLoadScores().then(function(data){
       if(data && data.length>0){
         btSessions=data;
         btUsingDemo=false;
       } else {
-        // Sin datos reales — mostrar demo
         btSessions=btMakeDemoSessions();
         btUsingDemo=true;
       }
@@ -6119,15 +6118,19 @@ async function btLoadAdjustments(){
 }
 
 // Inicializar
-btLoadSessions();
-if(window._supabaseUserId){
+if(window._supabaseUserId && window._supabaseToken){
+  btLoadSessions();
   btLoadActiveSetup();
   btLoadAdjustments();
 } else {
-  window.addEventListener('supabase-user-ready', ()=>{
+  btSessions=btMakeDemoSessions();
+  btUsingDemo=true;
+  btRenderH();
+  window.addEventListener('supabase-user-ready', function(){
+    btLoadSessions();
     btLoadActiveSetup();
     btLoadAdjustments();
-  });
+  }, {once:true});
 }
 })();
 </script>
