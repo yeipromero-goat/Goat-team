@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /competencias
+Allow: /puntuaciones
+Allow: /entrenamiento
+Allow: /entrenamiento/biomecanica
+Allow: /tablero
+Disallow: /perfil
+Disallow: /coach
+Disallow: /tablero/cards
+Disallow: /tablero/mi-arco
+
+Sitemap: https://goatarchers.com/sitemap.xml
