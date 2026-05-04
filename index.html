@@ -2328,7 +2328,44 @@ window._onGameFinished_guide = function(){
 
 
 <script>
-// ── TAB SWITCHING ─────────────────────────────────────────────────────────
+// ── ROUTE MAP ──────────────────────────────────────────────────────────────
+const ROUTE_TO_TAB = {
+  '/':                        'competencias',
+  '/competencias':            'competencias',
+  '/puntuaciones':            'bitacora',
+  '/perfil':                  'perfil',
+  '/coach':                   'coach',
+  '/entrenamiento':           'biomec',
+  '/entrenamiento/biomecanica':'biomec',
+  '/entrenamiento/rutina':    'rutina',
+  '/tablero':                 'score',
+  '/tablero/cards':           'cards',
+  '/tablero/mi-arco':         'mi-arco',
+};
+
+const TAB_TO_ROUTE = {
+  'competencias': '/competencias',
+  'bitacora':     '/puntuaciones',
+  'perfil':       '/perfil',
+  'coach':        '/coach',
+  'biomec':       '/entrenamiento/biomecanica',
+  'score':        '/tablero',
+  'cards':        '/tablero/cards',
+  'mi-arco':      '/tablero/mi-arco',
+};
+
+function getTabFromPath(pathname){
+  // Exact match first
+  if(ROUTE_TO_TAB[pathname]) return ROUTE_TO_TAB[pathname];
+  // Prefix match (e.g. /tablero/anything → score)
+  const keys = Object.keys(ROUTE_TO_TAB).sort((a,b)=>b.length-a.length);
+  for(const k of keys){
+    if(pathname.startsWith(k+'/') || pathname === k) return ROUTE_TO_TAB[k];
+  }
+  return 'competencias';
+}
+
+// ── TAB SWITCHING ──────────────────────────────────────────────────────────
 function switchTab(id, el){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   const panel = document.getElementById('tab-'+id);
@@ -2338,36 +2375,34 @@ function switchTab(id, el){
   if(sbItem) sbItem.classList.add('active');
   if(typeof updatePageTitle === 'function') updatePageTitle(id);
   if(typeof closeSidebar === 'function') closeSidebar();
-  // URL limpia: /tablero para score, #tab para el resto
-  const basePath = window.location.pathname.replace(/\/(tablero\/?)?$/, '') || '/';
-  const newUrl = id === 'score'
-    ? basePath.replace(/\/?$/, '/tablero')
-    : basePath.replace(/\/?$/, '') + '#' + id;
-  try { history.pushState({tab: id}, '', newUrl); } catch(e) {}
+
+  // URL limpia
+  const route = TAB_TO_ROUTE[id] || '/'+id;
+  try { history.pushState({tab: id}, '', route); } catch(e) {}
+
   // Guía de onboarding — solo al entrar al Tablero
   if(id === 'score' && typeof window._onEnterTablero === 'function'){
     window._onEnterTablero();
   }
 }
 
-// ── Interceptar botón regresar ────────────────────────────────────
-// Siempre regresar al tablero principal, nunca salir de la app
+// ── POPSTATE — botón regresar ──────────────────────────────────────────────
 window.addEventListener('popstate', function(e){
-  // Leer tab del state o de la URL
   let tab = e.state?.tab;
-  if(!tab){
-    const path = window.location.pathname;
-    const hash = window.location.hash.replace('#','');
-    tab = path.endsWith('/tablero') ? 'score' : (hash || 'competencias');
-  }
-  const defEl = document.getElementById('sb-competencias');
-  if(tab === 'competencias' || !document.getElementById('tab-'+tab)){
-    history.pushState({tab:'competencias'}, '', window.location.pathname.replace(/\/(tablero\/?)?$/,'').replace(/\/?$/,'')||'/' +'#competencias');
-    switchTab('competencias', defEl);
-  } else {
-    switchTab(tab, document.getElementById('sb-'+tab) || defEl);
-  }
+  if(!tab) tab = getTabFromPath(window.location.pathname);
+  if(!document.getElementById('tab-'+tab)) tab = 'competencias';
+  switchTab(tab, document.getElementById('sb-'+tab));
 });
+
+// ── CARGA INICIAL — leer URL y activar tab correcto ────────────────────────
+window._initTabFromUrl = function(){
+  const tab = getTabFromPath(window.location.pathname);
+  const el  = document.getElementById('sb-'+tab);
+  // Reemplazar URL por la forma canónica
+  const route = TAB_TO_ROUTE[tab] || '/'+tab;
+  try { history.replaceState({tab}, '', route); } catch(e) {}
+  switchTab(tab, el);
+};
 
 // ── SCORING SYSTEM ────────────────────────────────────────────────────────
 
@@ -3872,6 +3907,8 @@ window.addEventListener('supabase-data-ready', function() {
   if (typeof renderItemGrid         === 'function') renderItemGrid();
   if (typeof updateDeckUI           === 'function') updateDeckUI();
   if (typeof updateSetupChecks      === 'function') updateSetupChecks();
+  // Activar tab según URL al cargar
+  if (typeof window._initTabFromUrl === 'function') window._initTabFromUrl();
   console.log('🔄 UI re-renderizada con datos de Supabase | CARDS:', window.CARDS?.length, '| item-grid:', !!document.getElementById('item-grid'));
 });
 
