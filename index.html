@@ -5955,9 +5955,18 @@ window.btSaveSession=function(){
         window.dispatchEvent(new CustomEvent('rt-plan-score-saved', {
           detail:{actId:pendingPlan.actId, planId:pendingPlan.planId, reportDate:pendingPlan.reportDate, score:s.total}
         }));
-        // Volver al plan
+        // Volver al plan y forzar re-render después de que el tab sea visible
         setTimeout(()=>{
           if(typeof switchTab==='function') switchTab('rutina', document.getElementById('sb-rutina'));
+          // Segundo re-render tras la navegación (el primero fue en el evento)
+          setTimeout(async()=>{
+            const plan = window.rtCurrentPlan;
+            console.log('🔄 re-render post-nav, rtCurrentPlan:', plan?.id);
+            if(plan && typeof rtRenderDayActivities === 'function'){
+              await rtRenderDayActivities(plan);
+              if(typeof rtRenderWeekStats === 'function') await rtRenderWeekStats(plan);
+            }
+          }, 200);
         }, 350);
       } catch(e){ console.error('❌ rt plan save error:', e, e?.message); }
     })();
@@ -13883,6 +13892,10 @@ async function rtLoadWeekStats(){
 
 window.rtEditPlan = function(){ rtToast('Edición de plan próximamente'); };
 
+// ── Exponer funciones de render globalmente ───────────────
+window.rtRenderDayActivities = rtRenderDayActivities;
+window.rtRenderWeekStats     = rtRenderWeekStats;
+
 // ── Auto-init ─────────────────────────────────────────────
 if(window._supabaseUserId){
   rtInit();
@@ -13890,15 +13903,30 @@ if(window._supabaseUserId){
   window.addEventListener('supabase-user-ready', rtInit);
 }
 
-// ── Hook: bitácora ya guardó el score — solo refrescar UI ──
-// btSaveSession hace el upsert; aquí solo actualizamos vistas
+// ── Hook: bitácora guardó el score — refrescar plan ──
 window.addEventListener('rt-plan-score-saved', async function(e){
-  const {score} = e.detail;
+  const {score, reportDate} = e.detail;
   rtToast('✓ Score ' + score + ' guardado en plan', true);
-  if(window.rtCurrentPlan){
-    await rtRenderDayActivities(window.rtCurrentPlan);
-    await rtRenderWeekStats(window.rtCurrentPlan);
+
+  const plan = window.rtCurrentPlan || rtCurrentPlan;
+  if(!plan) return;
+
+  // Si la reportDate del evento no coincide con el día actual renderizado,
+  // ajustar rtCurrentDay para que el query encuentre el reporte correcto
+  if(reportDate){
+    const start = new Date(plan.week_start);
+    const rep   = new Date(reportDate);
+    const diffDays = Math.round((rep - start) / 86400000);
+    const weekNum  = Math.floor(diffDays / 7) + 1;
+    const dayNum   = diffDays % 7;
+    if(dayNum >= 0 && dayNum < 7){
+      rtCurrentWeek = weekNum;
+      rtCurrentDay  = dayNum;
+    }
   }
+
+  await rtRenderDayActivities(plan);
+  await rtRenderWeekStats(plan);
 });
 
 })();
