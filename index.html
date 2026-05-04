@@ -5663,7 +5663,7 @@ window.btShowMain=function(tab){
 }
 
 // ── Activar conteo de plan — salta directo a la modalidad ─
-window.btActivatePlanConteo = function(){
+function btActivatePlanConteo(){
   const pending = window._rtPendingPlanActivity;
   if(!pending || pending.type!=='conteo') return;
   const mode = pending.mode;
@@ -5689,7 +5689,7 @@ window.btActivatePlanConteo = function(){
     if(subCard) btSetCM(mode, subCard);
     else btSetCM(mode, null);
   }, 80);
-};
+}
 
 window.btCancelPlanConteo = function(){
   window._rtPendingPlanActivity = null;
@@ -5904,28 +5904,47 @@ window.btSaveSession=function(){
   const pendingPlan = window._rtPendingPlanActivity;
   if(pendingPlan && pendingPlan.type === 'conteo' && userId){
     window._rtPendingPlanActivity = null;
-    fetch(`${SUPA}/rest/v1/training_reports`, {
-      method: 'POST',
-      headers: {...headers, 'Prefer':'resolution=merge-duplicates,return=minimal'},
-      body: JSON.stringify({
-        plan_id:     pendingPlan.planId,
-        activity_id: pendingPlan.actId,
-        user_id:     userId,
-        report_date: pendingPlan.reportDate,
-        completed:   true,
-        value_done:  s.total,
-        notes:       `Score: ${s.total} · ${s.lbl||s.mode}`
-      })
-    }).then(r=>{
-      if(r.ok||r.status===201){
-        // Volver al plan si está disponible
-        if(typeof window.rtCurrentPlan !== 'undefined' && window.rtCurrentPlan){
-          setTimeout(()=>{
-            if(typeof switchTab==='function') switchTab('rutina', document.getElementById('sb-rutina'));
-          }, 400);
+    const weekNum = (typeof window.rtCurrentWeek !== 'undefined') ? window.rtCurrentWeek : 1;
+    const reportPayload = {
+      plan_id:     pendingPlan.planId,
+      activity_id: pendingPlan.actId,
+      user_id:     userId,
+      report_date: pendingPlan.reportDate,
+      week_number: weekNum,
+      completed:   true,
+      value_done:  s.total,
+      notes:       `Score: ${s.total} · ${s.lbl||s.mode}`
+    };
+    // Upsert real: buscar si ya existe y hacer PATCH, sino POST
+    (async()=>{
+      try{
+        const checkRes = await fetch(
+          `${SUPA}/rest/v1/training_reports?plan_id=eq.${pendingPlan.planId}&activity_id=eq.${pendingPlan.actId}&user_id=eq.${userId}&report_date=eq.${pendingPlan.reportDate}&select=id`,
+          {headers}
+        );
+        const existing = await checkRes.json();
+        if(existing && existing.length > 0){
+          await fetch(
+            `${SUPA}/rest/v1/training_reports?id=eq.${existing[0].id}`,
+            {method:'PATCH', headers:{...headers,'Prefer':'return=minimal'},
+             body: JSON.stringify({completed:true, value_done:s.total, notes:reportPayload.notes})}
+          );
+        } else {
+          await fetch(`${SUPA}/rest/v1/training_reports`,
+            {method:'POST', headers:{...headers,'Prefer':'return=minimal'},
+             body: JSON.stringify(reportPayload)}
+          );
         }
-      }
-    });
+        // Notificar al tab rutina para que refresque
+        window.dispatchEvent(new CustomEvent('rt-plan-score-saved', {
+          detail:{actId:pendingPlan.actId, planId:pendingPlan.planId, reportDate:pendingPlan.reportDate, score:s.total}
+        }));
+        // Volver al plan
+        setTimeout(()=>{
+          if(typeof switchTab==='function') switchTab('rutina', document.getElementById('sb-rutina'));
+        }, 350);
+      } catch(e){ console.error('rt plan save:', e); }
+    })();
   }
 
   if(!pendingTournament && !pendingLeague){
@@ -13847,21 +13866,15 @@ if(window._supabaseUserId){
   window.addEventListener('supabase-user-ready', rtInit);
 }
 
-// ── Hook: bitácora guarda un score de plan ─────────────────
-// Cuando btSaveSession termina y hay un plan pendiente, guardamos el score
-const _origBtSave = window.btSaveSession;
-window.addEventListener('rt-plan-score-saved', function(e){
-  const {actId, planId, reportDate, score} = e.detail;
-  if(!actId||!planId||!reportDate) return;
-  rtFetch('training_reports', {
-    method:'POST', headers:{'Prefer':'return=minimal'},
-    body: JSON.stringify({
-      plan_id: planId, activity_id: actId,
-      user_id: rtUserId, report_date: reportDate,
-      week_number: rtCurrentWeek,
-      completed: true, value_done: score
-    })
-  }).then(()=>{ rtToast('✓ Score guardado en plan', true); });
+// ── Hook: bitácora ya guardó el score — solo refrescar UI ──
+// btSaveSession hace el upsert; aquí solo actualizamos vistas
+window.addEventListener('rt-plan-score-saved', async function(e){
+  const {score} = e.detail;
+  rtToast('✓ Score ' + score + ' guardado en plan', true);
+  if(window.rtCurrentPlan){
+    await rtRenderDayActivities(window.rtCurrentPlan);
+    await rtRenderWeekStats(window.rtCurrentPlan);
+  }
 });
 
 })();
