@@ -5663,7 +5663,7 @@ window.btShowMain=function(tab){
 }
 
 // ── Activar conteo de plan — salta directo a la modalidad ─
-function btActivatePlanConteo(){
+window.btActivatePlanConteo = function(){
   const pending = window._rtPendingPlanActivity;
   if(!pending || pending.type!=='conteo') return;
   const mode = pending.mode;
@@ -5689,7 +5689,7 @@ function btActivatePlanConteo(){
     if(subCard) btSetCM(mode, subCard);
     else btSetCM(mode, null);
   }, 80);
-}
+};
 
 window.btCancelPlanConteo = function(){
   window._rtPendingPlanActivity = null;
