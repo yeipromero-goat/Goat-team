@@ -9226,7 +9226,6 @@ if(window._supabaseUserId){
       <button class="bm-btn primary" id="bm-btn-start" onclick="bmStartCamera()">▶ Iniciar cámara</button>
       <button class="bm-btn danger" id="bm-btn-stop" onclick="bmStopCamera()" disabled>⏹ Detener</button>
       <button class="bm-btn green" id="bm-btn-rec" onclick="bmToggleRecord()" disabled>⏺ Grabar</button>
-      <button class="bm-btn" id="bm-btn-video" onclick="bmToggleVideoRec()" disabled style="background:rgba(154,136,221,0.1);color:#9a88dd;border:0.5px solid rgba(154,136,221,0.3);font-size:11px">📹 Video</button>
     </div>
     <!-- Video download banner -->
     <div id="bm-video-banner" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:10px;background:rgba(154,136,221,0.08);border:0.5px solid rgba(154,136,221,0.3);display:none;align-items:center;gap:10px">
@@ -9554,7 +9553,7 @@ window.bmStartCamera = async function(){
 
     document.getElementById('bm-btn-stop').disabled  = false;
     document.getElementById('bm-btn-rec').disabled   = false;
-    document.getElementById('bm-btn-video').disabled = false;
+    
     btn.disabled = true;
 
     bmStartDetection(video, canvas);
@@ -9829,13 +9828,13 @@ window.bmStopCamera = function(){
   document.getElementById('bm-btn-start').disabled = false;
   document.getElementById('bm-btn-stop').disabled  = true;
   document.getElementById('bm-btn-rec').disabled   = true;
-  document.getElementById('bm-btn-video').disabled = true;
+  
   // Parar video si estaba grabando
   if(bmVideoRecording){ bmMediaRecorder?.stop(); bmVideoRecording = false; }
   bmSetFeedbackEmpty();
 };
 
-// ── Grabar sesión ────────────────────────────────────────
+// ── Grabar sesión + video ─────────────────────────────────
 window.bmToggleRecord = function(){
   const btn = document.getElementById('bm-btn-rec');
   const recInd = document.getElementById('bm-rec-indicator');
@@ -9844,6 +9843,33 @@ window.bmToggleRecord = function(){
     bmRecording = true;
     bmRecordStart = Date.now();
     bmFrameData = [];
+
+    // Iniciar grabación de video (cache local, compatible iOS)
+    bmVideoChunks = [];
+    bmVideoBlob = null;
+    const banner = document.getElementById('bm-video-banner');
+    if(banner) banner.style.display = 'none';
+    if(bmStream && typeof MediaRecorder !== 'undefined'){
+      const types = [
+        'video/mp4;codecs=h264,aac','video/mp4',
+        'video/webm;codecs=h264','video/webm;codecs=vp9',
+        'video/webm;codecs=vp8','video/webm',''
+      ];
+      const mime = types.find(m=>{ try{ return m===''||MediaRecorder.isTypeSupported(m); }catch(e){return false;} });
+      try{
+        bmMediaRecorder = mime ? new MediaRecorder(bmStream,{mimeType:mime}) : new MediaRecorder(bmStream);
+        bmMediaRecorder.ondataavailable = e=>{ if(e.data.size>0) bmVideoChunks.push(e.data); };
+        bmMediaRecorder.onstop = ()=>{
+          const t = bmMediaRecorder.mimeType||'video/webm';
+          bmVideoBlob = new Blob(bmVideoChunks,{type:t});
+          const b = document.getElementById('bm-video-banner');
+          if(b) b.style.display='flex';
+        };
+        bmMediaRecorder.start(500);
+        bmVideoRecording = true;
+      } catch(e){ console.warn('MediaRecorder:', e); }
+    }
+
     btn.textContent = '⏹ Guardar';
     btn.className = 'bm-btn danger';
     recInd.style.display = 'flex';
@@ -9852,6 +9878,7 @@ window.bmToggleRecord = function(){
     btn.textContent = '⏺ Grabar';
     btn.className = 'bm-btn green';
     recInd.style.display = 'none';
+    if(bmVideoRecording && bmMediaRecorder){ bmMediaRecorder.stop(); bmVideoRecording = false; }
     bmSaveSession();
   }
 };
@@ -9962,44 +9989,13 @@ const stored = JSON.parse(localStorage.getItem('goat_biomec_sessions')||'[]');
 if(stored.length) bmSessions = stored;
 
 // ── Video Recorder (caché local, no Supabase) ─────────────
-window.bmToggleVideoRec = function(){
-  if(!bmStream){ return; }
-  if(!bmVideoRecording){
-    bmVideoChunks = [];
-    bmVideoBlob = null;
-    document.getElementById('bm-video-banner').style.display = 'none';
-    try {
-      bmMediaRecorder = new MediaRecorder(bmStream, {mimeType:'video/webm;codecs=vp8'});
-    } catch(e){
-      bmMediaRecorder = new MediaRecorder(bmStream);
-    }
-    bmMediaRecorder.ondataavailable = function(e){
-      if(e.data.size > 0) bmVideoChunks.push(e.data);
-    };
-    bmMediaRecorder.onstop = function(){
-      bmVideoBlob = new Blob(bmVideoChunks, {type:'video/webm'});
-      bmVideoChunks = [];
-      const banner = document.getElementById('bm-video-banner');
-      if(banner){ banner.style.display = 'flex'; }
-    };
-    bmMediaRecorder.start(1000);
-    bmVideoRecording = true;
-    const btn = document.getElementById('bm-btn-video');
-    if(btn){ btn.textContent = '⏹ Stop video'; btn.style.background='rgba(224,85,85,0.15)'; btn.style.color='#e05555'; btn.style.borderColor='rgba(224,85,85,0.4)'; }
-  } else {
-    bmMediaRecorder?.stop();
-    bmVideoRecording = false;
-    const btn = document.getElementById('bm-btn-video');
-    if(btn){ btn.textContent = '📹 Video'; btn.style.background='rgba(154,136,221,0.1)'; btn.style.color='#9a88dd'; btn.style.borderColor='rgba(154,136,221,0.3)'; }
-  }
-};
-
 window.bmDownloadVideo = function(){
   if(!bmVideoBlob) return;
   const url = URL.createObjectURL(bmVideoBlob);
+  const ext = bmVideoBlob.type.includes('mp4') ? 'mp4' : 'webm';
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'biomec_' + new Date().toISOString().slice(0,19).replace(/:/g,'-') + '.webm';
+  a.download = 'biomec_' + new Date().toISOString().slice(0,19).replace(/:/g,'-') + '.' + ext;
   a.click();
   setTimeout(()=>URL.revokeObjectURL(url), 5000);
 };
