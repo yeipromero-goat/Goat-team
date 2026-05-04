@@ -13793,21 +13793,31 @@ window.rtGoToConteo = function(actId, planId, reportDate, mode){
   // Cerrar overlays
   document.getElementById('rt-report-overlay').style.display = 'none';
 
-  // Ir a bitácora y activar conteo en cadena
+  // Ir a bitácora — switchTab solo muestra el panel, luego forzamos nueva+conteo
   if(typeof switchTab==='function')
     switchTab('bitacora', document.getElementById('sb-bitacora'));
 
-  // Esperar a que el tab de bitácora esté visible, luego ir a "nueva" y activar plan
+  // Un solo setTimeout: mostrar "nueva sesión" y activar el conteo
   setTimeout(function(){
-    if(typeof window.btShowMain==='function') window.btShowMain('nueva');
-    // btShowMain ya detecta _rtPendingPlanActivity y llama btActivatePlanConteo
-    // pero si no lo hace (race condition), lo forzamos aquí
-    setTimeout(function(){
-      if(window._rtPendingPlanActivity?.type==='conteo' && typeof window.btActivatePlanConteo==='function'){
-        window.btActivatePlanConteo();
-      }
-    }, 200);
-  }, 200);
+    // Cambiar tab bar a "Nueva sesión"
+    const btnNueva = document.querySelector('#bt-tab-bar button:first-child');
+    const btnHist  = document.querySelector('#bt-tab-bar button:last-child');
+    const panelNueva = document.getElementById('bt-main-nueva');
+    const panelHist  = document.getElementById('bt-main-historial');
+    if(btnNueva)  { btnNueva.classList.add('act'); }
+    if(btnHist)   { btnHist.classList.remove('act'); }
+    if(panelNueva){ panelNueva.style.display = 'block'; }
+    if(panelHist) { panelHist.style.display  = 'none';  }
+    // Mostrar paso inicio
+    ['bt-s-inicio','bt-s-config','bt-s-sesion','bt-s-resumen'].forEach(function(id){
+      const el = document.getElementById(id);
+      if(el) el.style.display = id === 'bt-s-inicio' ? 'block' : 'none';
+    });
+    // Activar selección automática
+    if(typeof window.btActivatePlanConteo === 'function'){
+      window.btActivatePlanConteo();
+    }
+  }, 300);
 };
 
 // ── Ir a torneo ───────────────────────────────────────────
