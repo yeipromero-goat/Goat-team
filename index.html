@@ -12706,9 +12706,13 @@ window._coReload = coLoad;
     <!-- Actividades del plan -->
     <div id="rt-activities-builder">
       <div class="rt-sec">Actividades</div>
-      <div id="rt-acts-container">
-        <!-- Se llena dinámicamente -->
+
+      <!-- Tabs por día (solo cuando "mismo día" está off) -->
+      <div id="rt-day-builder-tabs" style="display:none;gap:4px;flex-wrap:wrap;margin-bottom:10px">
+        <div class="rt-week-tab act" id="rt-builder-day-all" onclick="rtSetBuilderDay(null,this)">Todos</div>
       </div>
+
+      <div id="rt-acts-container"></div>
       <button class="rt-btn" style="width:100%;margin-bottom:12px" onclick="rtShowAddActivity()">+ Agregar actividad</button>
     </div>
 
@@ -12871,6 +12875,36 @@ let rtSelectedActType = null;
 let rtEditingActIdx = null;
 let rtReportingAct = null;
 let rtArcherNames = {};
+let rtBuilderDay = null; // null=todos, 0-6=día específico
+let rtActivitiesByDay = {}; // {null:[...], 0:[...], ...}
+
+// ── Toggle day pill ───────────────────────────────────────
+window.rtToggleDay = function(el){
+  el.classList.toggle('on');
+  rtUpdateDayBuilderTabs();
+};
+
+window.rtSetBuilderDay = function(day, el){
+  rtBuilderDay = day === 'null' ? null : (day===null ? null : parseInt(day));
+  document.querySelectorAll('#rt-day-builder-tabs .rt-week-tab').forEach(t=>t.classList.remove('act'));
+  el.classList.add('act');
+  rtRenderActivitiesBuilder();
+};
+
+function rtUpdateDayBuilderTabs(){
+  const tabsEl = document.getElementById('rt-day-builder-tabs');
+  if(!tabsEl) return;
+  const sameDay = document.getElementById('rt-same-day-toggle').classList.contains('on');
+  if(sameDay){ tabsEl.style.display='none'; return; }
+  const activeDays = [...document.querySelectorAll('#rt-day-picker .rt-day-pill.on')]
+    .map(el=>parseInt(el.dataset.day));
+  let html = `<div class="rt-week-tab ${rtBuilderDay===null?'act':''}" onclick="rtSetBuilderDay(null,this)">Todos</div>`;
+  html += activeDays.map(d=>
+    `<div class="rt-week-tab ${rtBuilderDay===d?'act':''}" onclick="rtSetBuilderDay(${d},this)">${DAYS[d]}</div>`
+  ).join('');
+  tabsEl.innerHTML = html;
+  tabsEl.style.display = 'flex';
+}
 
 // ── Init ─────────────────────────────────────────────────
 let rtWeekOffset = 0; // 0 = esta semana, -1 = semana pasada, etc.
@@ -12940,7 +12974,7 @@ window.rtShowView = function(view){
     document.getElementById('rt-view-'+v).style.display = v===view ? 'block' : 'none';
   });
   if(view === 'list') rtLoadPlans();
-  if(view === 'create'){ rtActivities = []; rtRenderActivitiesBuilder(); }
+  if(view === 'create'){ rtActivitiesByDay = {}; rtBuilderDay = null; rtRenderActivitiesBuilder(); }
 };
 
 // ── Toggle assign mode ────────────────────────────────────
@@ -12949,14 +12983,22 @@ window.rtToggleAssignMode = function(mode){
   document.getElementById('rt-assign-mass').style.display = mode==='mass' ? 'block' : 'none';
 };
 
-// ── Toggle day pill ───────────────────────────────────────
-window.rtToggleDay = function(el){
-  el.classList.toggle('on');
-};
+
 
 // ── Toggle same day ───────────────────────────────────────
 window.rtToggleSameDay = function(el){
   el.classList.toggle('on');
+  const sameDay = el.classList.contains('on');
+  if(sameDay){
+    // Colapsar todo a "todos"
+    const all = rtAllActivities();
+    rtActivitiesByDay = {all};
+    rtBuilderDay = null;
+    document.getElementById('rt-day-builder-tabs').style.display = 'none';
+  } else {
+    rtUpdateDayBuilderTabs();
+  }
+  rtRenderActivitiesBuilder();
 };
 
 // ── Load coach archers ────────────────────────────────────
@@ -13068,6 +13110,17 @@ function rtRenderPlanItem(p, isActive){
   </div>`;
 }
 
+
+function rtGetCurrentActs(){ return rtActivitiesByDay[rtBuilderDay === null ? 'all' : rtBuilderDay] || []; }
+function rtSetCurrentActs(acts){ rtActivitiesByDay[rtBuilderDay === null ? 'all' : rtBuilderDay] = acts; }
+function rtAllActivities(){
+  const seen = new Set(); const all = [];
+  Object.entries(rtActivitiesByDay).forEach(([day, acts])=>{
+    acts.forEach((a,i)=>{ all.push({...a, day_of_week: day==='all'?null:parseInt(day), sort_order:i}); });
+  });
+  return all;
+}
+
 // ── Activity builder ──────────────────────────────────────
 window.rtShowAddActivity = function(){
   rtSelectedActType = null;
@@ -13107,11 +13160,13 @@ window.rtAddActivity = function(){
   }
   config.nota = document.getElementById('rt-act-note').value.trim();
 
+  const _acts = rtGetCurrentActs();
   if(rtEditingActIdx !== null){
-    rtActivities[rtEditingActIdx] = {type: rtSelectedActType, config};
+    _acts[rtEditingActIdx] = {type: rtSelectedActType, config};
   } else {
-    rtActivities.push({type: rtSelectedActType, config});
+    _acts.push({type: rtSelectedActType, config});
   }
+  rtSetCurrentActs(_acts);
 
   document.getElementById('rt-act-overlay').style.display = 'none';
   rtRenderActivitiesBuilder();
@@ -13119,6 +13174,7 @@ window.rtAddActivity = function(){
 
 function rtRenderActivitiesBuilder(){
   const el = document.getElementById('rt-acts-container');
+  const rtActivities = rtGetCurrentActs();
   if(!rtActivities.length){
     el.innerHTML = '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--muted)">Sin actividades — agrega al menos una</div>';
     return;
@@ -13151,7 +13207,7 @@ function rtRenderActivitiesBuilder(){
 
 window.rtEditActivity = function(i){
   rtEditingActIdx = i;
-  const a = rtActivities[i];
+  const a = rtGetCurrentActs()[i];
   rtSelectedActType = a.type;
   // Set form values
   document.querySelectorAll('.rt-act-type').forEach(el=>{
@@ -13173,7 +13229,7 @@ window.rtEditActivity = function(i){
 };
 
 window.rtRemoveActivity = function(i){
-  rtActivities.splice(i,1);
+  const _a = rtGetCurrentActs(); _a.splice(i,1); rtSetCurrentActs(_a);
   rtRenderActivitiesBuilder();
 };
 
@@ -13188,7 +13244,7 @@ window.rtSavePlan = async function(){
   });
   const activeDays = Object.values(days).filter(Boolean).length;
   if(!activeDays) return rtToast('Selecciona al menos un día');
-  if(!rtActivities.length) return rtToast('Agrega al menos una actividad');
+  if(!rtAllActivities().length) return rtToast('Agrega al menos una actividad');
 
   const weeks   = parseInt(document.getElementById('rt-plan-weeks').value)||1;
   const start   = document.getElementById('rt-plan-start').value;
@@ -13252,9 +13308,9 @@ window.rtSavePlan = async function(){
       if(plan?.id) planIds.push(plan.id);
 
       // Guardar actividades para este plan
-      const acts = rtActivities.map((a,i)=>({
+      const acts = rtAllActivities().map((a,i)=>({
         plan_id: plan.id,
-        day_of_week: null,
+        day_of_week: a.day_of_week ?? null,
         type: a.type,
         config: a.config,
         sort_order: i,
@@ -13285,9 +13341,19 @@ window.rtSavePlan = async function(){
 
 // ── Open plan ─────────────────────────────────────────────
 window.rtOpenPlan = async function(planId){
-  const plan = rtPlans.find(p=>p.id===planId);
-  if(!plan) return;
+  let plan = rtPlans.find(p=>p.id===planId);
+  if(!plan){
+    try{
+      const r = await rtFetch(`training_plans?id=eq.${planId}`);
+      const d = await r.json();
+      plan = d[0];
+      if(plan) rtPlans.push(plan);
+    } catch(e){}
+  }
+  if(!plan){ rtToast('Error cargando plan'); return; }
+
   rtCurrentPlan = plan;
+  window.rtCurrentPlan = plan; // expose globally for debugging
   rtCurrentWeek = 1;
 
   document.getElementById('rt-plan-detail-title').textContent = plan.title||'Plan';
@@ -13343,9 +13409,11 @@ async function rtRenderDayActivities(plan){
   el.innerHTML = '<div style="text-align:center;padding:16px;font-size:12px;color:var(--muted)">Cargando...</div>';
 
   try{
-    // Load activities
+    // Load activities — null day_of_week = aplica a todos los días activos
     const aRes = await rtFetch(`training_activities?plan_id=eq.${plan.id}&order=sort_order.asc`);
-    const acts = await aRes.json();
+    const allActs = await aRes.json();
+    // Filtrar: incluir actividades sin día asignado (null) y las del día actual
+    const acts = allActs.filter(a => a.day_of_week === null || a.day_of_week === rtCurrentDay);
 
     // Load reports for this day/week
     const reportDate = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, rtCurrentDay);
