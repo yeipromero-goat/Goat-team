@@ -5656,7 +5656,7 @@ window.btShowMain=function(tab){
     btShowS('bt-s-inicio');
     // Si viene de plan conteo, auto-configurar modalidad
     if(window._rtPendingPlanActivity?.type==='conteo'){
-      setTimeout(btActivatePlanConteo, 100);
+      setTimeout(window.btActivatePlanConteo, 100);
     }
   }
   if(tab==='historial')btRenderH();
@@ -5827,6 +5827,11 @@ window.btSaveSession=function(){
   if(btUsingDemo){ btSessions=[]; btUsingDemo=false; }
   btSessions.unshift(s);
 
+  // Declarar SUPA/headers/userId aquí, antes de cualquier fetch
+  const SUPA='https://axaiyaflubssaghvhefe.supabase.co';
+  const headers={'apikey':window._supabaseAnonKey||'','Authorization':'Bearer '+(window._supabaseToken||''),'Content-Type':'application/json','Prefer':'return=minimal'};
+  const userId=window._supabaseUserId;
+
   // Guardar nota de ajuste si existe
   if(setupNote && setupId && userId){
     fetch(`${SUPA}/rest/v1/setup_adjustments`, {
@@ -5841,10 +5846,6 @@ window.btSaveSession=function(){
 
   // Inyectar setup_id en el objeto para que supabaseSaveScore lo reciba
   if(typeof window.supabaseSaveScore==='function') window.supabaseSaveScore(s);
-
-  const SUPA='https://axaiyaflubssaghvhefe.supabase.co';
-  const headers={'apikey':window._supabaseAnonKey||'','Authorization':'Bearer '+(window._supabaseToken||''),'Content-Type':'application/json','Prefer':'return=minimal'};
-  const userId=window._supabaseUserId;
 
   // Si hay LIGA pendiente — guardar score en league_rounds y actualizar standings
   const pendingLeague = window._cpPendingLeague;
@@ -5916,6 +5917,8 @@ window.btSaveSession=function(){
       notes:       `Score: ${s.total} · ${s.lbl||s.mode}`
     };
     // Upsert real: buscar si ya existe y hacer PATCH, sino POST
+    console.log('🟡 rt plan conteo save - pendingPlan:', JSON.stringify(pendingPlan));
+    console.log('🟡 userId:', userId, '| weekNum:', weekNum, '| score:', s.total);
     (async()=>{
       try{
         const checkRes = await fetch(
@@ -5923,6 +5926,7 @@ window.btSaveSession=function(){
           {headers}
         );
         const existing = await checkRes.json();
+        console.log('🟡 existing reports found:', existing?.length, existing);
         if(existing && existing.length > 0){
           await fetch(
             `${SUPA}/rest/v1/training_reports?id=eq.${existing[0].id}`,
@@ -5935,6 +5939,7 @@ window.btSaveSession=function(){
              body: JSON.stringify(reportPayload)}
           );
         }
+        console.log('✅ rt plan report saved OK');
         // Notificar al tab rutina para que refresque
         window.dispatchEvent(new CustomEvent('rt-plan-score-saved', {
           detail:{actId:pendingPlan.actId, planId:pendingPlan.planId, reportDate:pendingPlan.reportDate, score:s.total}
@@ -5943,7 +5948,7 @@ window.btSaveSession=function(){
         setTimeout(()=>{
           if(typeof switchTab==='function') switchTab('rutina', document.getElementById('sb-rutina'));
         }, 350);
-      } catch(e){ console.error('rt plan save:', e); }
+      } catch(e){ console.error('❌ rt plan save error:', e, e?.message); }
     })();
   }
 
