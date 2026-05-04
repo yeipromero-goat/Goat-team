@@ -5925,7 +5925,7 @@ window.btSaveSession=function(){
       week_number: weekNum,
       completed:   true,
       value_done:  s.total,
-      notes:       `Score: ${s.total} · ${s.lbl||s.mode}`
+      note:        `Score: ${s.total} · ${s.lbl||s.mode}`
     };
     // Upsert real: buscar si ya existe y hacer PATCH, sino POST
     console.log('🟡 rt plan conteo save - pendingPlan:', JSON.stringify(pendingPlan));
@@ -5942,7 +5942,7 @@ window.btSaveSession=function(){
           await fetch(
             `${SUPA}/rest/v1/training_reports?id=eq.${existing[0].id}`,
             {method:'PATCH', headers:{...headers,'Prefer':'return=minimal'},
-             body: JSON.stringify({completed:true, value_done:s.total, notes:reportPayload.notes})}
+             body: JSON.stringify({completed:true, value_done:s.total, note:reportPayload.note})}
           );
         } else {
           await fetch(`${SUPA}/rest/v1/training_reports`,
@@ -13594,7 +13594,7 @@ async function rtRenderDayActivities(plan){
             </div>
             <div style="font-size:11px;color:${done?'#5dcaa5':'var(--muted)'}">${valueStr}</div>
             ${a.config?.nota?`<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px;font-style:italic">📌 ${a.config.nota}</div>`:''}
-            ${rep?.notes?`<div style="font-size:10px;color:rgba(154,136,221,0.8);margin-top:2px;font-style:italic">💬 ${rep.notes}</div>`:''}
+            ${rep?.note?`<div style="font-size:10px;color:rgba(154,136,221,0.8);margin-top:2px;font-style:italic">💬 ${rep.note}</div>`:''}
           </div>
           ${canReport?`<button class="rt-btn sm ${done?'ghost':'y'}" onclick="rtOpenReport('${a.id}','${plan.id}','${reportDate}')" style="${done?'':''}">
             ${done?'Editar':'Reportar'}
@@ -13710,7 +13710,7 @@ window.rtOpenReport = async function(actId, planId, reportDate){
     ${formHtml}
 
     <div class="rt-label">Tu nota <span style="color:var(--hint)">(opcional)</span></div>
-    <textarea class="rt-textarea" id="rt-rep-note" placeholder="Ej: Me costó los últimos 10 tiros, brazo cansado">${rep?.notes||''}</textarea>
+    <textarea class="rt-textarea" id="rt-rep-note" placeholder="Ej: Me costó los últimos 10 tiros, brazo cansado">${rep?.note||''}</textarea>
 
     ${act.type!=='conteo'?`<button class="rt-btn y" style="width:100%;margin-top:14px" onclick="rtSaveReport('${act.id}','${planId}','${reportDate}')">Guardar reporte ✓</button>`:''}
   `;
@@ -13772,14 +13772,14 @@ window.rtSaveReport = async function(actId, planId, reportDate){
     user_id: rtUserId,
     report_date: reportDate,
     week_number: rtCurrentWeek,
-    completed, value_done, notes
+    completed, value_done, note: notes
   };
 
   try{
     if(repId){
       await rtFetch(`training_reports?id=eq.${repId}`, {
         method:'PATCH', headers:{'Prefer':'return=minimal'},
-        body: JSON.stringify({completed, value_done, notes})
+        body: JSON.stringify({completed, value_done, note: notes})
       });
     } else {
       await rtFetch('training_reports', {
