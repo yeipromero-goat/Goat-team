@@ -6473,7 +6473,7 @@ if(window._supabaseUserId){
       </select>
       <span class="cp-muted">Máx.</span>
       <select class="cp-select" id="cp-new-max" style="margin-bottom:0;flex:1">
-        <option value="4">4</option><option value="6">6</option><option value="8">8</option><option value="10" selected>10</option>
+        <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
       </select>
     </div>
 
@@ -6589,21 +6589,21 @@ if(window._supabaseUserId){
       </select>
       <label class="cp-label">Cupo máximo</label>
       <select class="cp-select" id="cp-adm-cupo">
-        <option value="8">8 arqueros</option><option value="16" selected>16 arqueros</option><option value="32">32 arqueros</option>
+        <option value="2">2 arqueros</option>
+        <option value="3">3 arqueros</option>
+        <option value="4" selected>4 arqueros</option>
       </select>
-      <label class="cp-label">Handicap (opcional)</label>
-      <select class="cp-select" id="cp-adm-hcap">
+      <label class="cp-label">Handicap</label>
+      <select class="cp-select" id="cp-adm-hcap" onchange="document.getElementById('cp-adm-hcap-custom').style.display=this.value==='serie'?'block':'none'">
         <option value="none">Sin handicap</option>
-        <option value="recurvo">Recurvo +2 pts/end</option>
-        <option value="age_young">Menores de 18 +2 pts/end</option>
-        <option value="age_senior">Mayores de 50 +2 pts/end</option>
-        <option value="custom">Personalizado</option>
+        <option value="auto">Automático (por tipo de arco)</option>
+        <option value="serie">Puntos por serie</option>
       </select>
       <div id="cp-adm-hcap-custom" style="display:none">
-        <label class="cp-label">Valor personalizado (pts/end)</label>
-        <input class="cp-input" id="cp-adm-hcap-val" type="number" min="0" max="10" step="0.5" placeholder="Ej: 1.5">
-        <label class="cp-label">Condición</label>
-        <input class="cp-input" id="cp-adm-hcap-cond" placeholder="Ej: Arqueros nuevos">
+        <label class="cp-label">Puntos bonus por serie</label>
+        <input class="cp-input" id="cp-adm-hcap-val" type="number" min="0" max="20" step="1" placeholder="Ej: 2">
+        <label class="cp-label">Aplica a</label>
+        <input class="cp-input" id="cp-adm-hcap-cond" placeholder="Ej: Recurvo, menores de 18">
       </div>
       <button class="cp-btn cp-btn-y" onclick="cpAdminCreateTournament()">Publicar torneo</button>
     </div>
@@ -7097,56 +7097,77 @@ window.cpCreateTournament = async function(){
 // tournamentType: 'friends' | 'club' | 'league'
 window.cpShowBowDeclaration = async function(tournamentId, onDone, tournamentType){
   const isFriends = !tournamentType || tournamentType === 'friends';
+
+  // Leer perfil del arquero desde Supabase
+  let profileName = cpUserName || 'Arquero';
+  let profileClub = '';
+  let profileBow  = null;
+  try {
+    const pRes = await cpFetch(`/rest/v1/archer_profiles?user_id=eq.${cpUserId}&select=display_name,club_name,bow_type`);
+    const pData = await pRes.json();
+    if(pData[0]){
+      if(pData[0].display_name) profileName = pData[0].display_name;
+      if(pData[0].club_name)    profileClub = pData[0].club_name;
+      if(pData[0].bow_type)     profileBow  = pData[0].bow_type;
+    }
+  } catch(e){}
+
   const overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.92);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
-  const defaultName = cpUserName && cpUserName !== 'Arquero' ? cpUserName : '';
+
+  const bowIcons = {recurvo:'🏹',compuesto:'🎯',barebow:'🪃',tradicional:'🪵'};
+  const bowLabel = {recurvo:'Recurvo',compuesto:'Compuesto',barebow:'Bare bow',tradicional:'Tradicional'};
+
   overlay.innerHTML=`
     <div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:340px;margin-top:20px">
       <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:4px">Inscribirse</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">Tu nombre aparecerá en la tabla y el bracket</div>
 
-      <div style="margin-bottom:10px">
-        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Tu nombre</div>
-        <input id="cp-reg-name" type="text" placeholder="Nombre completo" value="${defaultName}"
-          style="width:100%;padding:9px 12px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:13px;font-family:'DM Sans',sans-serif">
-      </div>
-      <div style="margin-bottom:${isFriends?'14px':'10px'}">
-        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Club / Arqueria <span style="color:rgba(255,255,255,0.25)">(opcional)</span></div>
-        <input id="cp-reg-club" type="text" placeholder="Ej: Club Arco Norte"
-          style="width:100%;padding:9px 12px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:13px;font-family:'DM Sans',sans-serif">
+      <!-- Perfil ya cargado -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);margin-bottom:14px">
+        <div style="width:40px;height:40px;border-radius:50%;background:rgba(216,209,90,0.15);border:1.5px solid rgba(216,209,90,0.3);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#d8d15a;flex-shrink:0">
+          ${profileName.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#fff">${profileName}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4)">${profileClub||'Sin club'}${profileBow?' · '+(bowLabel[profileBow]||profileBow):''}</div>
+        </div>
       </div>
 
-      ${isFriends ? `
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:8px;margin-top:4px">Tipo de arco</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:14px;text-align:center">
+        Datos de tu perfil. <span onclick="window.switchTab&&switchTab('perfil')" style="color:#d8d15a;cursor:pointer;text-decoration:underline">Editar perfil</span>
+      </div>
+
+      ${isFriends && !profileBow ? `
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:8px">Tipo de arco</div>
       <div style="display:flex;flex-direction:column;gap:6px" id="bow-opts">
         <div class="bow-opt" data-bow="recurvo" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px">
-          <span style="font-size:20px">&#127987;</span>
-          <div><div style="font-size:13px;font-weight:500;color:#fff">Recurvo</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">Arco base</div></div>
+          <span style="font-size:20px">🏹</span>
+          <div><div style="font-size:13px;font-weight:500;color:#fff">Recurvo</div></div>
         </div>
         <div class="bow-opt" data-bow="compuesto" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px">
-          <span style="font-size:20px">&#127919;</span>
-          <div><div style="font-size:13px;font-weight:500;color:#fff">Compuesto</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">Ventaja mecanica</div></div>
+          <span style="font-size:20px">🎯</span>
+          <div><div style="font-size:13px;font-weight:500;color:#fff">Compuesto</div></div>
         </div>
         <div class="bow-opt" data-bow="barebow" onclick="cpSelBow(this)" style="border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px">
-          <span style="font-size:20px">&#129411;</span>
-          <div><div style="font-size:13px;font-weight:500;color:#fff">Bare bow</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">Sin mira</div></div>
+          <span style="font-size:20px">🪃</span>
+          <div><div style="font-size:13px;font-weight:500;color:#fff">Bare bow</div></div>
         </div>
-      </div>
-      <div id="bow-bonus-preview" style="margin-top:10px;display:none;padding:8px 12px;border-radius:8px;background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);text-align:center">
-        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:2px">Tu bonus/penalizacion</div>
-        <div id="bow-bonus-val" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#d8d15a"></div>
       </div>` : ''}
 
       <button id="bow-confirm-btn"
         onclick="cpConfirmBow('${tournamentId}','${isFriends}')"
-        ${isFriends ? 'disabled' : ''}
-        style="width:100%;margin-top:14px;padding:11px;border-radius:8px;border:0.5px solid ${isFriends?'rgba(255,255,255,0.2)':'rgba(216,209,90,0.4)'};background:${isFriends?'rgba(255,255,255,0.05)':'rgba(216,209,90,0.15)'};color:${isFriends?'rgba(255,255,255,0.4)':'#d8d15a'};font-size:14px;font-family:'DM Sans',sans-serif;cursor:${isFriends?'not-allowed':'pointer'}">
-        Confirmar inscripcion
+        ${isFriends && !profileBow ? 'disabled' : ''}
+        style="width:100%;margin-top:14px;padding:11px;border-radius:8px;border:${isFriends&&!profileBow?'0.5px solid rgba(255,255,255,0.2)':'0.5px solid rgba(216,209,90,0.4)'};background:${isFriends&&!profileBow?'rgba(255,255,255,0.05)':'rgba(216,209,90,0.15)'};color:${isFriends&&!profileBow?'rgba(255,255,255,0.4)':'#d8d15a'};font-size:14px;font-family:'DM Sans',sans-serif;cursor:${isFriends&&!profileBow?'not-allowed':'pointer'}">
+        Confirmar inscripción
       </button>
     </div>`;
+
   overlay.id='cp-bow-overlay';
   window._cpBowCallback=onDone;
   window._cpBowTournamentId=tournamentId;
+  window._cpProfileName=profileName;
+  window._cpProfileClub=profileClub;
+  window._cpProfileBow=profileBow;
   document.body.appendChild(overlay);
 }
 
@@ -7172,12 +7193,11 @@ window.cpSelBow=function(el){
 }
 
 window.cpConfirmBow=async function(tournamentId, isFriends){
-  const nameEl=document.getElementById('cp-reg-name');
-  const clubEl=document.getElementById('cp-reg-club');
-  const name=(nameEl?.value.trim())||cpUserName||'Arquero';
-  const club=(clubEl?.value.trim())||'';
-  if(isFriends==='true'&&!_cpSelectedBow) return cpToast('Elige tu tipo de arco');
-  if(!name) return cpToast('Escribe tu nombre');
+  const name = window._cpProfileName || cpUserName || 'Arquero';
+  const club = window._cpProfileClub || '';
+  // Arco: del perfil o el seleccionado manualmente si no tenía
+  const bow  = window._cpProfileBow || _cpSelectedBow;
+  if(isFriends==='true' && !bow) return cpToast('Elige tu tipo de arco');
   await cpJoinTournament(tournamentId);
   const patch={
     display_name: name,
@@ -7185,13 +7205,11 @@ window.cpConfirmBow=async function(tournamentId, isFriends){
     club_name: club||null,
     bow_declared_at: new Date().toISOString()
   };
-  if(isFriends==='true') patch.bow_type=_cpSelectedBow;
+  if(bow) patch.bow_type = bow;
   await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${cpUserId}`,{
     method:'PATCH',headers:{'Prefer':'return=minimal'},
     body:JSON.stringify(patch)
   });
-  // Actualizar cpUserName local para esta sesion
-  if(name && name !== 'Arquero') cpUserName = name;
   const overlay=document.getElementById('cp-bow-overlay');
   if(overlay) overlay.remove();
   _cpSelectedBow=null;
