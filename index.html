@@ -2409,7 +2409,6 @@ const TAB_TO_ROUTE = {
   'perfil':       '/perfil',
   'coach':        '/coach',
   'biomec':       '/entrenamiento/biomecanica',
-  'rutina':       '/entrenamiento/rutina',
   'score':        '/tablero',
   'cards':        '/tablero/cards',
   'mi-arco':      '/tablero/mi-arco',
@@ -2457,9 +2456,14 @@ window.addEventListener('popstate', function(e){
 
 // ── CARGA INICIAL — leer URL y activar tab correcto ────────────────────────
 window._initTabFromUrl = function(){
+  // GitHub Pages SPA: recuperar ruta guardada por 404.html
+  const redirected = sessionStorage.getItem('spa_redirect');
+  if(redirected){
+    sessionStorage.removeItem('spa_redirect');
+    try { history.replaceState(null, '', redirected); } catch(e){}
+  }
   const tab = getTabFromPath(window.location.pathname);
   const el  = document.getElementById('sb-'+tab);
-  // Reemplazar URL por la forma canónica
   const route = TAB_TO_ROUTE[tab] || '/'+tab;
   try { history.replaceState({tab}, '', route); } catch(e) {}
   switchTab(tab, el);
