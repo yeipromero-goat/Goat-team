@@ -11288,6 +11288,8 @@ let coFiltered    = [];
 let coDays        = 90;
 let coActiveDiscs = new Set(['indoor','outdoor','field','3d']);
 let coActiveSrcs  = new Set(['daily','liga','torneo']);
+// Filtros por atleta: userId → {discs: Set, srcs: Set}
+const coArcherFilters = {};
 
 window.coToggleDisc = function(disc, btn){
   if(coActiveDiscs.has(disc)){
@@ -11568,6 +11570,14 @@ window.coToggleDetail = function(userId){
   const BOW_NAMES_LOCAL = {recurvo:'Recurvo',compuesto:'Compuesto',barebow:'Bare bow',tradicional:'Tradicional'};
   const genderLabel = p.gender === 'varonil' ? '\u{1F468} Varonil' : p.gender === 'femenil' ? '\u{1F469} Femenil' : '\u2014';
 
+  // Inicializar filtros del atleta
+  if(!coArcherFilters[userId]){
+    coArcherFilters[userId] = {
+      discs: new Set(['indoor','outdoor','field','3d']),
+      srcs:  new Set(['daily','liga','torneo'])
+    };
+  }
+
   detail.innerHTML = `
     <div style="position:relative;padding-top:4px">
     <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#d8d15a,#5dcaa5);border-radius:2px"></div>
@@ -11614,6 +11624,23 @@ window.coToggleDetail = function(userId){
       </div>
     </div>
 
+    <!-- Chips modalidad del atleta -->
+    <div class="co-chip-label">Modalidad</div>
+    <div class="co-chip-group" style="margin-bottom:8px">
+      <button class="co-chip sel" onclick="coToggleArcherDisc('${userId}','indoor',this)">🎯 Indoor</button>
+      <button class="co-chip sel" onclick="coToggleArcherDisc('${userId}','outdoor',this)">🏞 Outdoor</button>
+      <button class="co-chip sel" onclick="coToggleArcherDisc('${userId}','field',this)">🌲 Field</button>
+      <button class="co-chip sel" onclick="coToggleArcherDisc('${userId}','3d',this)">🐗 3D</button>
+    </div>
+
+    <!-- Chips fuente del atleta -->
+    <div class="co-chip-label">Fuente</div>
+    <div class="co-chip-group" style="margin-bottom:14px">
+      <button class="co-chip sel" onclick="coToggleArcherSrc('${userId}','daily',this)">📊 Práctica</button>
+      <button class="co-chip sel sel-blue" onclick="coToggleArcherSrc('${userId}','liga',this)">🏆 Liga</button>
+      <button class="co-chip sel sel-green" onclick="coToggleArcherSrc('${userId}','torneo',this)">⚔️ Torneo</button>
+    </div>
+
     <div style="margin-bottom:14px">
       <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:8px">Tendencia p/flecha</div>
       <canvas id="co-archer-spark-${userId}" height="80" style="width:100%;display:block"></canvas>
@@ -11630,7 +11657,6 @@ window.coToggleDetail = function(userId){
       <div id="co-archer-setups-${userId}">Cargando...</div>
     </div>
     </div>`;
-
   detail.classList.add('open');
   setTimeout(()=> detail.scrollIntoView({behavior:'smooth', block:'nearest'}), 100);
   setTimeout(()=> coDrawArcherTrend(userId, `co-archer-spark-${userId}`, `co-archer-legend-${userId}`), 80);
@@ -11638,33 +11664,82 @@ window.coToggleDetail = function(userId){
   coLoadArcherSetups(userId);
 };
 
-// ── Cargar sesiones reales del atleta ────────────────────
+// ── Toggle chips del atleta ───────────────────────────────
+window.coToggleArcherDisc = function(userId, disc, btn){
+  const f = coArcherFilters[userId];
+  if(!f) return;
+  if(f.discs.has(disc)){
+    if(f.discs.size > 1) f.discs.delete(disc);
+    else return;
+  } else {
+    f.discs.add(disc);
+  }
+  btn.classList.toggle('sel', f.discs.has(disc));
+  coLoadArcherSessions(userId);
+  coDrawArcherTrend(userId, 'co-archer-spark-'+userId, 'co-archer-legend-'+userId);
+};
+
+window.coToggleArcherSrc = function(userId, src, btn){
+  const f = coArcherFilters[userId];
+  if(!f) return;
+  if(f.srcs.has(src)){
+    if(f.srcs.size > 1) f.srcs.delete(src);
+    else return;
+  } else {
+    f.srcs.add(src);
+  }
+  const colorMap = {daily:'sel', liga:'sel-blue', torneo:'sel-green'};
+  btn.classList.toggle(colorMap[src]||'sel', f.srcs.has(src));
+  coLoadArcherSessions(userId);
+  coDrawArcherTrend(userId, 'co-archer-spark-'+userId, 'co-archer-legend-'+userId);
+};// ── Cargar sesiones reales del atleta (con filtros) ───────
 function coLoadArcherSessions(userId){
   const el = document.getElementById('co-archer-sessions-'+userId);
   if(!el) return;
+  const f = coArcherFilters[userId] || {discs:new Set(['indoor','outdoor','field','3d']),srcs:new Set(['daily','liga','torneo'])};
   const DISC_COLORS = {indoor:'#e05555',outdoor:'#5ab4d6',field:'#d8d15a','3d':'#d8a05a'};
-  fetch('https://axaiyaflubssaghvhefe.supabase.co/rest/v1/scores?user_id=eq.'+userId+'&order=session_date.desc&limit=10',{
-    headers:{apikey:window._supabaseAnonKey,Authorization:'Bearer '+window._supabaseToken}
-  }).then(r=>r.json()).then(rows=>{
-    if(!Array.isArray(rows)||!rows.length){ el.textContent='Sin sesiones registradas'; return; }
-    el.innerHTML=rows.map(s=>{
-      const d=new Date(s.session_date).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
-      const color=DISC_COLORS[s.group_name]||'rgba(255,255,255,0.5)';
-      const pf=s.arrow_count>0?(s.total/s.arrow_count).toFixed(1):'\u2014';
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,0.05)">'
-        +'<div>'
-        +'<div style="font-size:12px;color:#fff;font-weight:500">'+(s.label||s.mode||'\u2014')+'</div>'
-        +'<div style="font-size:10px;color:rgba(255,255,255,0.35)">'+d+(s.setup_note?' \u00b7 <span style=\"color:#9a88dd;font-style:italic\">'+s.setup_note+'</span>':'')+'</div>'
+  const SRC_COLORS  = {daily:'rgba(255,255,255,0.3)',liga:'#9a88dd',torneo:'#5dcaa5'};
+  const SUPA = 'https://axaiyaflubssaghvhefe.supabase.co';
+  const h = {apikey:window._supabaseAnonKey,Authorization:'Bearer '+window._supabaseToken};
+
+  const fetchDaily  = f.srcs.has('daily')  ? fetch(`${SUPA}/rest/v1/scores?user_id=eq.${userId}&order=session_date.desc&limit=50`,{headers:h}).then(r=>r.json()) : Promise.resolve([]);
+  const fetchLiga   = f.srcs.has('liga')   ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&order=submitted_at.desc&limit=20`,{headers:h}).then(r=>r.json()) : Promise.resolve([]);
+  const fetchTorneo = f.srcs.has('torneo') ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_score,qualifying_at&limit=20`,{headers:h}).then(r=>r.json()) : Promise.resolve([]);
+
+  Promise.all([fetchDaily,fetchLiga,fetchTorneo]).then(function([daily,liga,torneo]){
+    let rows = [];
+    if(Array.isArray(daily)) daily.forEach(s=>{
+      if(!f.discs.has(s.group_name||'indoor')) return;
+      rows.push({label:s.label||s.mode||'—',date:s.session_date,total:s.total,arrows:s.arrow_count,disc:s.group_name||'indoor',note:s.setup_note,src:'daily',srcLabel:'Práctica'});
+    });
+    if(Array.isArray(liga)) liga.forEach(s=>{
+      rows.push({label:'Liga',date:s.submitted_at,total:s.score,arrows:null,disc:'indoor',note:null,src:'liga',srcLabel:'Liga'});
+    });
+    if(Array.isArray(torneo)) torneo.forEach(s=>{
+      rows.push({label:'Torneo',date:s.qualifying_at,total:s.qualifying_score,arrows:null,disc:'outdoor',note:null,src:'torneo',srcLabel:'Torneo'});
+    });
+    rows.sort((a,b)=>new Date(b.date)-new Date(a.date));
+    rows = rows.slice(0,15);
+    if(!rows.length){ el.innerHTML='<div style="text-align:center;padding:12px;font-size:12px;color:rgba(255,255,255,0.3)">Sin sesiones con estos filtros</div>'; return; }
+    el.innerHTML = rows.map(s=>{
+      const d = new Date(s.date).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+      const color = DISC_COLORS[s.disc]||'rgba(255,255,255,0.5)';
+      const srcColor = SRC_COLORS[s.src]||'rgba(255,255,255,0.25)';
+      const pf = s.arrows>0 ? (s.total/s.arrows).toFixed(1) : null;
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid rgba(255,255,255,0.05)">'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:12px;color:#fff;font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+s.label
+        +'<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:'+srcColor+'22;color:'+srcColor+';border:0.5px solid '+srcColor+'44">'+s.srcLabel+'</span>'
         +'</div>'
-        +'<div style="text-align:right">'
+        +'<div style="font-size:10px;color:rgba(255,255,255,0.35)">'+d+(s.note?'<span style="color:#9a88dd;font-style:italic"> · '+s.note+'</span>':'')+'</div>'
+        +'</div>'
+        +'<div style="text-align:right;flex-shrink:0;margin-left:10px">'
         +'<div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:'+color+'">'+s.total+'</div>'
-        +'<div style="font-size:10px;color:rgba(255,255,255,0.35)">'+pf+' p/f</div>'
+        +(pf?'<div style="font-size:10px;color:rgba(255,255,255,0.35)">'+pf+' p/f</div>':'')
         +'</div></div>';
     }).join('');
-  }).catch(()=>{ el.textContent='Error'; });
+  }).catch(()=>{ el.innerHTML='<div style="color:#e05555;font-size:12px;padding:8px">Error cargando sesiones</div>'; });
 }
-
-// ── Cargar setups y ajustes del atleta ───────────────────
 function coLoadArcherSetups(userId){
   const el = document.getElementById('co-archer-setups-'+userId);
   if(!el) return;
@@ -11861,7 +11936,11 @@ function coDrawClubTrend(){
 // ── Dibujar tendencia individual del arquero ──────────────
 function coDrawArcherTrend(userId, canvasId, legendId){
   const raw = coRawScores[userId]||[];
-  const lines = coBuildTrendLines(raw);
+  const f = coArcherFilters[userId];
+  const filtered = f
+    ? raw.filter(s=> f.discs.has(coNormDisc(s.disc)) && f.srcs.has(s.source))
+    : raw;
+  const lines = coBuildTrendLines(filtered);
   coDrawSparkMulti(canvasId, legendId, lines);
 }
 async function coInit(){
