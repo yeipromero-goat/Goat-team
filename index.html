@@ -11052,7 +11052,52 @@ document.addEventListener('supabase-user-ready', ()=>{
 .co-mini-label{ color:rgba(255,255,255,0.45); }
 .co-mini-val{ font-weight:600;color:#fff; }
 
-/* Time filter chips */
+/* Multi-select chips */
+.co-chip-group{
+  display:flex;flex-wrap:wrap;gap:6px;
+  margin-bottom:10px;
+}
+.co-chip{
+  padding:5px 12px;border-radius:20px;
+  font-size:11px;font-weight:600;
+  border:0.5px solid rgba(255,255,255,0.12);
+  background:transparent;color:rgba(255,255,255,0.4);
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  transition:all .15s;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.co-chip:active{ transform:scale(0.95); }
+.co-chip.sel{
+  background:rgba(216,209,90,0.12);
+  border-color:rgba(216,209,90,0.4);
+  color:#d8d15a;
+}
+.co-chip.sel-blue{
+  background:rgba(90,180,214,0.12);
+  border-color:rgba(90,180,214,0.4);
+  color:#5ab4d6;
+}
+.co-chip.sel-green{
+  background:rgba(93,202,165,0.12);
+  border-color:rgba(93,202,165,0.4);
+  color:#5dcaa5;
+}
+.co-chip.sel-purple{
+  background:rgba(154,136,221,0.12);
+  border-color:rgba(154,136,221,0.4);
+  color:#9a88dd;
+}
+.co-chip.sel-orange{
+  background:rgba(216,160,90,0.12);
+  border-color:rgba(216,160,90,0.4);
+  color:#d8a05a;
+}
+.co-chip-label{
+  font-size:9px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:rgba(255,255,255,0.25);
+  margin-bottom:4px;
+}
 .co-tf-btn{
   padding:5px 12px;border-radius:20px;
   font-size:11px;font-weight:600;
@@ -11174,6 +11219,23 @@ document.addEventListener('supabase-user-ready', ()=>{
     <button class="co-tf-btn" onclick="coSetDays(0,this)">Max</button>
   </div>
 
+  <!-- Chips de modalidad -->
+  <div class="co-chip-label">Modalidad</div>
+  <div class="co-chip-group" id="co-disc-chips">
+    <button class="co-chip sel" data-disc="indoor" onclick="coToggleDisc('indoor',this)">🎯 Indoor</button>
+    <button class="co-chip sel" data-disc="outdoor" onclick="coToggleDisc('outdoor',this)">🏞 Outdoor</button>
+    <button class="co-chip sel" data-disc="field" onclick="coToggleDisc('field',this)">🌲 Field</button>
+    <button class="co-chip sel" data-disc="3d" onclick="coToggleDisc('3d',this)">🐗 3D</button>
+  </div>
+
+  <!-- Chips de fuente -->
+  <div class="co-chip-label">Fuente</div>
+  <div class="co-chip-group" id="co-source-chips" style="margin-bottom:12px">
+    <button class="co-chip sel" data-src="daily" onclick="coToggleSrc('daily',this)">📊 Práctica</button>
+    <button class="co-chip sel sel-blue" data-src="liga" onclick="coToggleSrc('liga',this)">🏆 Liga</button>
+    <button class="co-chip sel sel-green" data-src="torneo" onclick="coToggleSrc('torneo',this)">⚔️ Torneo</button>
+  </div>
+
   <!-- Gráfica de tendencia del club -->
   <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:12px" id="co-trend-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -11223,7 +11285,34 @@ let coAllArchers  = [];
 let coAllScores   = {};
 let coRawScores   = {};
 let coFiltered    = [];
-let coDays        = 90; // default 90d
+let coDays        = 90;
+let coActiveDiscs = new Set(['indoor','outdoor','field','3d']);
+let coActiveSrcs  = new Set(['daily','liga','torneo']);
+
+window.coToggleDisc = function(disc, btn){
+  if(coActiveDiscs.has(disc)){
+    if(coActiveDiscs.size > 1) coActiveDiscs.delete(disc);
+    else return; // mínimo 1
+  } else {
+    coActiveDiscs.add(disc);
+  }
+  btn.classList.toggle('sel', coActiveDiscs.has(disc));
+  coDrawClubTrend();
+};
+
+window.coToggleSrc = function(src, btn){
+  if(coActiveSrcs.has(src)){
+    if(coActiveSrcs.size > 1) coActiveSrcs.delete(src);
+    else return;
+  } else {
+    coActiveSrcs.add(src);
+  }
+  // Color según fuente
+  const colorMap = {daily:'sel', liga:'sel-blue', torneo:'sel-green'};
+  btn.classList.toggle(colorMap[src]||'sel', coActiveSrcs.has(src));
+  coDrawClubTrend();
+  coRender();
+}; // default 90d
 
 window.coSetDays = function(days, btn){
   coDays = days;
@@ -11381,10 +11470,19 @@ function coRender(){
     return true;
   });
 
-  // Stats resumen
-  const totSessions = coFiltered.reduce((a,p)=>(coAllScores[p.user_id]?.sessions||0)+a, 0);
-  const allBest  = coFiltered.map(p=>coAllScores[p.user_id]?.best).filter(Boolean);
-  const allAvg   = coFiltered.map(p=>coAllScores[p.user_id]?.avg).filter(Boolean);
+  // Stats resumen — filtrados por fuente activa
+  const totSessions = coFiltered.reduce((a,p)=>{
+    const raw = coRawScores[p.user_id]||[];
+    return a + raw.filter(s=>coActiveSrcs.has(s.source)).length;
+  }, 0);
+  const allBest  = coFiltered.map(p=>{
+    const vals = (coRawScores[p.user_id]||[]).filter(s=>coActiveSrcs.has(s.source)).map(s=>s.val);
+    return vals.length ? Math.max(...vals) : null;
+  }).filter(Boolean);
+  const allAvg = coFiltered.map(p=>{
+    const vals = (coRawScores[p.user_id]||[]).filter(s=>coActiveSrcs.has(s.source)).map(s=>s.val);
+    return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+  }).filter(Boolean);
   const globalAvg  = allAvg.length  ? Math.round(allAvg.reduce((a,b)=>a+b,0)/allAvg.length) : null;
   const globalBest = allBest.length ? Math.max(...allBest) : null;
 
@@ -11705,14 +11803,16 @@ function coDrawSparkMulti(canvasId, legendId, lines){
 
 // ── Preparar líneas de tendencia para un conjunto de scores ─
 function coBuildTrendLines(rawList){
-  // Filtrar por rango de días
   const cutoff = coDays > 0
     ? new Date(Date.now() - coDays*24*60*60*1000)
     : null;
 
   const filtered = rawList.filter(s=>{
-    if(!cutoff || !s.date) return true;
-    return new Date(s.date) >= cutoff;
+    if(cutoff && s.date && new Date(s.date) < cutoff) return false;
+    if(!coActiveSrcs.has(s.source)) return false;
+    const disc = coNormDisc(s.disc);
+    if(!coActiveDiscs.has(disc)) return false;
+    return true;
   });
 
   const groups = {};
