@@ -9426,7 +9426,18 @@ let bmLastAngles = {elbow:null, shoulder:null, wrist:null, spine:null};
 let bmPostureScore = null;
 let bmAnimFrame = null;
 let bmModelLoaded = false;
-let bmBowType = 'recurvo'; // 'recurvo' | 'compuesto'
+let bmBowType = 'recurvo';
+
+// ── Detección de anclaje y soltura ───────────────────────
+let bmAnchorFrames = [];      // buffer circular últimos 0.6s de ángulos
+let bmAnchorStart = null;     // timestamp cuando se detectó anclaje
+let bmAnchorScore = null;     // score calculado en anclaje
+let bmPrevAngles = null;      // frame anterior para detectar soltura
+let bmAnchorState = 'free';   // 'free' | 'anchored' | 'released'
+const BM_ANCHOR_STABLE_MS = 400;   // ms estable para considerar anclado
+const BM_ANCHOR_DELTA = 3;         // grados de variación para "estable"
+const BM_RELEASE_DELTA = 15;       // cambio brusco = soltura
+const BM_ANCHOR_BUFFER_MS = 600;   // buffer de frames antes de soltura // 'recurvo' | 'compuesto'
 
 // Video recording
 let bmMediaRecorder = null;
@@ -9636,24 +9647,87 @@ function bmOnResults(results){
 
   // Calcular ángulos
   const angles = bmCalcAngles(lm);
+  const now = Date.now();
   bmLastAngles = angles;
 
-  // Actualizar HUD
+  // Actualizar HUD de chips
   bmUpdateAngleChips(angles);
 
-  // Score de postura
-  const score = bmCalcPostureScore(angles);
-  bmPostureScore = score;
-  const scoreEl = document.getElementById('bm-posture-score');
-  scoreEl.textContent = score;
-  scoreEl.style.color = score >= 80 ? '#5dcaa5' : score >= 60 ? '#d8d15a' : '#e05555';
+  // ── Buffer circular de frames (últimos 600ms) ──────────
+  bmAnchorFrames.push({t: now, angles});
+  bmAnchorFrames = bmAnchorFrames.filter(f => now - f.t < BM_ANCHOR_BUFFER_MS);
 
-  // Feedback
-  bmUpdateFeedback(angles, score);
+  // ── Detección de anclaje y soltura ────────────────────
+  let releaseDetected = false;
+
+  if(bmPrevAngles && angles.elbow !== null && bmPrevAngles.elbow !== null){
+    const delta = Math.abs(angles.elbow - bmPrevAngles.elbow)
+                + (angles.shoulder !== null && bmPrevAngles.shoulder !== null
+                   ? Math.abs(angles.shoulder - bmPrevAngles.shoulder) : 0);
+
+    if(bmAnchorState === 'anchored' && delta > BM_RELEASE_DELTA){
+      // ── SOLTURA DETECTADA ──
+      releaseDetected = true;
+      bmAnchorState = 'released';
+
+      // Score basado en los frames de los 0.5s antes de la soltura
+      const preRelease = bmAnchorFrames.filter(f => now - f.t <= 500);
+      if(preRelease.length >= 3){
+        const scores = preRelease.map(f => bmCalcPostureScore(f.angles)).filter(Boolean);
+        const releaseScore = scores.length
+          ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length)
+          : null;
+
+        if(releaseScore !== null){
+          bmPostureScore = releaseScore;
+          bmAnchorScore = releaseScore;
+          bmShowReleaseScore(releaseScore);
+        }
+      }
+
+      // Reset después de 1.5s para siguiente flecha
+      setTimeout(()=>{ bmAnchorState = 'free'; bmAnchorStart = null; }, 1500);
+
+    } else if(bmAnchorState !== 'released'){
+      if(delta < BM_ANCHOR_DELTA){
+        // Estable — posible anclaje
+        if(!bmAnchorStart) bmAnchorStart = now;
+        if(now - bmAnchorStart >= BM_ANCHOR_STABLE_MS && bmAnchorState === 'free'){
+          bmAnchorState = 'anchored';
+          bmShowAnchorIndicator(true);
+        }
+      } else {
+        // Movimiento — resetear
+        if(bmAnchorState === 'free'){
+          bmAnchorStart = null;
+        }
+      }
+    }
+  }
+  bmPrevAngles = angles;
+
+  // ── Score en HUD ───────────────────────────────────────
+  // Solo actualizar score en HUD si NO hay un release score activo
+  if(bmAnchorState !== 'released'){
+    const score = bmCalcPostureScore(angles);
+    bmPostureScore = score;
+    const scoreEl = document.getElementById('bm-posture-score');
+    if(scoreEl){
+      scoreEl.textContent = score ?? '—';
+      scoreEl.style.color = score >= 80 ? '#5dcaa5' : score >= 60 ? '#d8d15a' : '#e05555';
+    }
+    // Indicador de anclaje
+    if(bmAnchorState !== 'anchored') bmShowAnchorIndicator(false);
+  }
+
+  // Feedback solo si anclado o libre (no en release flash)
+  if(bmAnchorState !== 'released'){
+    bmUpdateFeedback(angles, bmPostureScore);
+  }
 
   // Guardar frame si grabando
   if(bmRecording){
-    bmFrameData.push({t: Date.now() - bmRecordStart, angles, score});
+    bmFrameData.push({t: now - bmRecordStart, angles, score: bmPostureScore});
   }
 }
 
@@ -9692,6 +9766,63 @@ function bmAngle3(a, b, c){
   const mag = Math.sqrt((v1.x**2+v1.y**2)) * Math.sqrt((v2.x**2+v2.y**2));
   if(mag === 0) return null;
   return Math.round(Math.acos(Math.min(1, Math.max(-1, dot/mag))) * 180/Math.PI);
+}
+
+// ── Indicador de anclaje ─────────────────────────────────
+function bmShowAnchorIndicator(on){
+  const pill = document.getElementById('bm-status-pill');
+  const scoreEl = document.getElementById('bm-posture-score');
+  if(!pill) return;
+  if(on){
+    pill.style.background = 'rgba(93,202,165,0.15)';
+    pill.style.borderColor = 'rgba(93,202,165,0.4)';
+    document.getElementById('bm-status-text').textContent = '⚓ Anclado';
+    document.getElementById('bm-status-dot').style.background = '#5dcaa5';
+    if(scoreEl) scoreEl.style.textShadow = '0 0 12px rgba(93,202,165,0.6)';
+  } else {
+    pill.style.background = '';
+    pill.style.borderColor = '';
+    document.getElementById('bm-status-text').textContent = 'En vivo';
+    document.getElementById('bm-status-dot').style.background = '';
+    if(scoreEl) scoreEl.style.textShadow = '';
+  }
+}
+
+// ── Flash de score al soltar ──────────────────────────────
+function bmShowReleaseScore(score){
+  const scoreEl = document.getElementById('bm-posture-score');
+  const pill = document.getElementById('bm-status-pill');
+  if(!scoreEl) return;
+
+  const color = score >= 80 ? '#5dcaa5' : score >= 60 ? '#d8d15a' : '#e05555';
+  const label = score >= 80 ? '🎯 Soltura' : score >= 60 ? '⚠️ Soltura' : '❌ Soltura';
+
+  scoreEl.textContent = score;
+  scoreEl.style.color = color;
+  scoreEl.style.transform = 'scale(1.4)';
+  scoreEl.style.transition = 'transform 0.2s ease, color 0.2s';
+  scoreEl.style.textShadow = `0 0 20px ${color}`;
+
+  if(pill){
+    document.getElementById('bm-status-text').textContent = label;
+    document.getElementById('bm-status-dot').style.background = color;
+  }
+
+  // Feedback específico de soltura
+  const feedbackEl = document.getElementById('bm-feedback-list');
+  if(feedbackEl){
+    const msg = score >= 80
+      ? `<div class="bm-feedback-item"><div class="bm-fi-icon">🎯</div><div class="bm-fi-text"><strong>Soltura limpia (${score})</strong> — postura excelente al momento de disparar</div></div>`
+      : score >= 60
+      ? `<div class="bm-feedback-item"><div class="bm-fi-icon">⚠️</div><div class="bm-fi-text"><strong>Soltura aceptable (${score})</strong> — revisa la estabilidad en el anclaje</div></div>`
+      : `<div class="bm-feedback-item"><div class="bm-fi-icon">❌</div><div class="bm-fi-text"><strong>Postura a corregir (${score})</strong> — inestabilidad detectada antes de soltar</div></div>`;
+    feedbackEl.innerHTML = msg;
+  }
+
+  setTimeout(()=>{
+    if(scoreEl){ scoreEl.style.transform = 'scale(1)'; scoreEl.style.textShadow = ''; }
+    bmShowAnchorIndicator(false);
+  }, 1400);
 }
 
 function bmCalcAngles(lm){
@@ -9817,6 +9948,10 @@ window.bmStopCamera = function(){
   if(bmRecording) bmToggleRecord(); // guardar si estaba grabando
   if(bmAnimFrame){ cancelAnimationFrame(bmAnimFrame); bmAnimFrame=null; }
   if(bmPose){ try{bmPose.close();}catch(e){} bmPose=null; }
+  bmAnchorState = 'free';
+  bmAnchorStart = null;
+  bmAnchorFrames = [];
+  bmPrevAngles = null;
   if(bmStream){ bmStream.getTracks().forEach(t=>t.stop()); bmStream=null; }
   const video = document.getElementById('bm-video');
   video.srcObject = null;
@@ -9849,15 +9984,22 @@ window.bmToggleRecord = function(){
     bmVideoBlob = null;
     const banner = document.getElementById('bm-video-banner');
     if(banner) banner.style.display = 'none';
-    if(bmStream && typeof MediaRecorder !== 'undefined'){
-      const types = [
-        'video/mp4;codecs=h264,aac','video/mp4',
-        'video/webm;codecs=h264','video/webm;codecs=vp9',
-        'video/webm;codecs=vp8','video/webm',''
-      ];
-      const mime = types.find(m=>{ try{ return m===''||MediaRecorder.isTypeSupported(m); }catch(e){return false;} });
+    if(typeof MediaRecorder !== 'undefined'){
       try{
-        bmMediaRecorder = mime ? new MediaRecorder(bmStream,{mimeType:mime}) : new MediaRecorder(bmStream);
+        // Grabar desde canvas (incluye ángulos y skeleton dibujados)
+        const canvas = document.getElementById('bm-canvas');
+        const canvasStream = canvas.captureStream(30);
+        // Agregar audio del micrófono si está disponible
+        const audioTracks = bmStream ? bmStream.getAudioTracks() : [];
+        audioTracks.forEach(t => canvasStream.addTrack(t));
+
+        const types = [
+          'video/mp4;codecs=h264,aac','video/mp4',
+          'video/webm;codecs=h264','video/webm;codecs=vp9',
+          'video/webm;codecs=vp8','video/webm',''
+        ];
+        const mime = types.find(m=>{ try{ return m===''||MediaRecorder.isTypeSupported(m); }catch(e){return false;} });
+        bmMediaRecorder = mime ? new MediaRecorder(canvasStream,{mimeType:mime}) : new MediaRecorder(canvasStream);
         bmMediaRecorder.ondataavailable = e=>{ if(e.data.size>0) bmVideoChunks.push(e.data); };
         bmMediaRecorder.onstop = ()=>{
           const t = bmMediaRecorder.mimeType||'video/webm';
@@ -9867,7 +10009,7 @@ window.bmToggleRecord = function(){
         };
         bmMediaRecorder.start(500);
         bmVideoRecording = true;
-      } catch(e){ console.warn('MediaRecorder:', e); }
+      } catch(e){ console.warn('MediaRecorder canvas:', e); }
     }
 
     btn.textContent = '⏹ Guardar';
