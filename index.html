@@ -12550,8 +12550,12 @@ window._coReload = coLoad;
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div>
-        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Esta semana</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)" id="rt-week-label">—</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Semana</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="rtNavWeek(-1)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px">‹</button>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text)" id="rt-week-label">—</div>
+          <button onclick="rtNavWeek(1)" id="rt-week-next-btn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px">›</button>
+        </div>
       </div>
       <button class="rt-btn y" onclick="rtShowView('create')">+ Nuevo plan</button>
     </div>
@@ -12600,10 +12604,58 @@ window._coReload = coLoad;
 
       <!-- Para quién -->
       <div id="rt-for-who-section" style="display:none;margin-bottom:14px">
-        <div class="rt-label">Para quién</div>
-        <select class="rt-input" id="rt-for-user" style="margin-bottom:0">
-          <option value="">Para mí mismo</option>
+        <div class="rt-label">Asignar a</div>
+        <select class="rt-input" id="rt-assign-mode" onchange="rtToggleAssignMode(this.value)" style="margin-bottom:8px">
+          <option value="self">Para mí mismo</option>
+          <option value="specific">Arquero específico</option>
+          <option value="mass">Grupo de arqueros</option>
         </select>
+
+        <!-- Específico -->
+        <div id="rt-assign-specific" style="display:none">
+          <select class="rt-input" id="rt-for-user">
+            <option value="">Selecciona un arquero</option>
+          </select>
+        </div>
+
+        <!-- Masivo -->
+        <div id="rt-assign-mass" style="display:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div>
+              <div class="rt-label" style="margin-bottom:3px">Género</div>
+              <select class="rt-input" id="rt-mass-gender">
+                <option value="">Todos</option>
+                <option value="varonil">Varonil</option>
+                <option value="femenil">Femenil</option>
+              </select>
+            </div>
+            <div>
+              <div class="rt-label" style="margin-bottom:3px">Arco</div>
+              <select class="rt-input" id="rt-mass-bow">
+                <option value="">Todos</option>
+                <option value="recurvo">Recurvo</option>
+                <option value="compuesto">Compuesto</option>
+                <option value="barebow">Bare bow</option>
+                <option value="tradicional">Tradicional</option>
+              </select>
+            </div>
+            <div>
+              <div class="rt-label" style="margin-bottom:3px">Categoría</div>
+              <select class="rt-input" id="rt-mass-cat">
+                <option value="">Todas</option>
+                <option value="sub14">Sub 14</option>
+                <option value="sub16">Sub 16</option>
+                <option value="sub18">Sub 18</option>
+                <option value="sub21">Sub 21</option>
+                <option value="sub25">Sub 25</option>
+                <option value="mayores">Mayores</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:6px;padding:7px 10px;border-radius:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.2)">
+            <div style="font-size:10px;color:var(--muted)">El plan se creará una copia para cada arquero que cumpla el filtro.</div>
+          </div>
+        </div>
       </div>
 
       <!-- Título -->
@@ -12814,35 +12866,50 @@ let rtPlans = [];
 let rtCurrentPlan = null;
 let rtCurrentWeek = 1;
 let rtCurrentDay = null;
-let rtActivities = []; // activities being built
+let rtActivities = [];
 let rtSelectedActType = null;
 let rtEditingActIdx = null;
 let rtReportingAct = null;
+let rtArcherNames = {};
 
 // ── Init ─────────────────────────────────────────────────
+let rtWeekOffset = 0; // 0 = esta semana, -1 = semana pasada, etc.
+
+function rtUpdateWeekLabel(){
+  const now = new Date();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay()+6)%7) + rtWeekOffset*7);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  const label = rtWeekOffset === 0 ? 'Esta semana' :
+    rtWeekOffset === -1 ? 'Semana pasada' :
+    mon.toLocaleDateString('es-MX',{day:'numeric',month:'short'}) + ' – ' + sun.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
+  document.getElementById('rt-week-label').textContent = label;
+  // Deshabilitar "siguiente" si ya estamos en semana actual
+  const nextBtn = document.getElementById('rt-week-next-btn');
+  if(nextBtn) nextBtn.style.opacity = rtWeekOffset >= 0 ? '0.2' : '1';
+  return {mon, sun};
+}
+
+window.rtNavWeek = function(delta){
+  if(rtWeekOffset + delta > 0) return; // no ir al futuro
+  rtWeekOffset += delta;
+  rtUpdateWeekLabel();
+  rtLoadWeekStats();
+};
+
 function rtInit(){
   rtUserId  = window._supabaseUserId;
   rtToken   = window._supabaseToken;
   rtAnonKey = window._supabaseAnonKey;
   rtIsCoach = window._supabaseIsCoach || false;
 
-  // Mostrar selector "para quién" si es coach
   if(rtIsCoach){
     document.getElementById('rt-for-who-section').style.display = 'block';
     rtLoadCoachArchers();
   }
 
-  // Fecha de inicio default = hoy
   document.getElementById('rt-plan-start').value = new Date().toISOString().slice(0,10);
-
-  // Label de semana actual
-  const now = new Date();
-  const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7));
-  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
-  document.getElementById('rt-week-label').textContent =
-    mon.toLocaleDateString('es-MX',{day:'numeric',month:'short'}) + ' – ' +
-    sun.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
-
+  rtUpdateWeekLabel();
   rtLoadPlans();
 }
 
@@ -12876,6 +12943,12 @@ window.rtShowView = function(view){
   if(view === 'create'){ rtActivities = []; rtRenderActivitiesBuilder(); }
 };
 
+// ── Toggle assign mode ────────────────────────────────────
+window.rtToggleAssignMode = function(mode){
+  document.getElementById('rt-assign-specific').style.display = mode==='specific' ? 'block' : 'none';
+  document.getElementById('rt-assign-mass').style.display = mode==='mass' ? 'block' : 'none';
+};
+
 // ── Toggle day pill ───────────────────────────────────────
 window.rtToggleDay = function(el){
   el.classList.toggle('on');
@@ -12893,6 +12966,7 @@ async function rtLoadCoachArchers(){
     const r = await rtFetch('archer_profiles?select=user_id,display_name&order=display_name.asc&limit=100');
     const data = await r.json();
     data.forEach(p=>{
+      rtArcherNames[p.user_id] = p.display_name || p.user_id.slice(0,8);
       if(p.user_id === rtUserId) return;
       const o = document.createElement('option');
       o.value = p.user_id;
@@ -12906,8 +12980,22 @@ async function rtLoadCoachArchers(){
 async function rtLoadPlans(){
   if(!rtUserId) return;
   try{
-    const r = await rtFetch(`training_plans?or=(created_by.eq.${rtUserId},assigned_to.eq.${rtUserId})&order=created_at.desc&limit=20`);
-    rtPlans = await r.json();
+    // Planes donde soy el destinatario (mis planes)
+    const r1 = await rtFetch(`training_plans?assigned_to=eq.${rtUserId}&order=created_at.desc&limit=30`);
+    const myPlans = await r1.json();
+
+    // Planes que creé para otros (solo coach)
+    let createdPlans = [];
+    if(rtIsCoach){
+      const r2 = await rtFetch(`training_plans?created_by=eq.${rtUserId}&assigned_to=neq.${rtUserId}&order=created_at.desc&limit=30`);
+      createdPlans = await r2.json();
+    }
+
+    rtPlans = [...myPlans, ...createdPlans];
+    // Deduplicar por id
+    const seen = new Set();
+    rtPlans = rtPlans.filter(p=>{ if(seen.has(p.id)) return false; seen.add(p.id); return true; });
+
     rtRenderPlansList();
     rtLoadWeekStats();
   } catch(e){ console.error('rtLoadPlans:', e); }
@@ -12919,25 +13007,39 @@ function rtRenderPlansList(){
   const activeSec = document.getElementById('rt-active-plan-section');
   const activeCard = document.getElementById('rt-active-plan-card');
 
-  const active = rtPlans.filter(p=>p.status==='active');
-  const rest   = rtPlans.filter(p=>p.status!=='active');
+  // Mis planes activos (assigned_to = yo)
+  const myActive  = rtPlans.filter(p=>p.assigned_to===rtUserId && p.status==='active');
+  const myDone    = rtPlans.filter(p=>p.assigned_to===rtUserId && p.status!=='active');
+  // Planes que creé para otros
+  const forOthers = rtPlans.filter(p=>p.assigned_to!==rtUserId);
 
-  if(active.length){
+  if(myActive.length){
     activeSec.style.display = 'block';
-    activeCard.innerHTML = active.map(rtRenderPlanItem).join('');
+    activeCard.innerHTML = myActive.map(p=>rtRenderPlanItem(p, true)).join('');
   } else {
     activeSec.style.display = 'none';
   }
 
-  if(!rtPlans.length){
-    el.innerHTML = '<div style="text-align:center;padding:24px 0;font-size:12px;color:var(--muted)">Sin planes aún — crea el primero</div>';
-    return;
+  let html = '';
+
+  if(myDone.length){
+    html += `<div class="rt-sec" style="margin-top:0">Completados / pausados</div>`;
+    html += myDone.map(p=>rtRenderPlanItem(p,false)).join('');
   }
-  el.innerHTML = rest.map(rtRenderPlanItem).join('') ||
-    '<div style="font-size:11px;color:var(--muted);padding:8px 0">Sin planes archivados</div>';
+
+  if(forOthers.length && rtIsCoach){
+    html += `<div class="rt-sec">Planes asignados a arqueros</div>`;
+    html += forOthers.map(p=>rtRenderPlanItem(p,false)).join('');
+  }
+
+  if(!html && !myActive.length){
+    html = '<div style="text-align:center;padding:24px 0;font-size:12px;color:var(--muted)">Sin planes aún — crea el primero</div>';
+  }
+
+  el.innerHTML = html;
 }
 
-function rtRenderPlanItem(p){
+function rtRenderPlanItem(p, isActive){
   const start = new Date(p.week_start);
   const weeks = p.weeks||1;
   const end = new Date(start); end.setDate(start.getDate() + weeks*7 - 1);
@@ -12945,15 +13047,21 @@ function rtRenderPlanItem(p){
     end.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
   const statusBadge = p.status==='active'
     ? '<span style="font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(93,202,165,0.15);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3)">Activo</span>'
-    : p.status==='done'
-    ? '<span style="font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--muted)">Completado</span>'
+    : '<span style="font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--muted)">Inactivo</span>';
+
+  // Mostrar a quién está asignado si es para otro
+  const isForOther = p.assigned_to !== rtUserId;
+  const assigneeName = rtArcherNames[p.assigned_to] || p.assigned_to?.slice(0,8);
+  const assigneeTag = isForOther
+    ? `<div style="font-size:10px;color:#9a88dd;margin-top:2px">👤 Para: ${assigneeName}</div>`
     : '';
 
-  return `<div class="rt-plan-item ${p.status==='active'?'active-plan':''}" onclick="rtOpenPlan('${p.id}')">
+  return `<div class="rt-plan-item ${isActive?'active-plan':''}" onclick="rtOpenPlan('${p.id}')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div>
-        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px">${p.title||'Plan sin nombre'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${p.title||'Plan sin nombre'}</div>
         <div style="font-size:10px;color:var(--muted)">${dateRange} · ${weeks} sem.</div>
+        ${assigneeTag}
       </div>
       ${statusBadge}
     </div>
@@ -13082,45 +13190,95 @@ window.rtSavePlan = async function(){
   if(!activeDays) return rtToast('Selecciona al menos un día');
   if(!rtActivities.length) return rtToast('Agrega al menos una actividad');
 
-  const weeks  = parseInt(document.getElementById('rt-plan-weeks').value)||1;
-  const start  = document.getElementById('rt-plan-start').value;
-  const forUser = document.getElementById('rt-for-user')?.value || null;
+  const weeks   = parseInt(document.getElementById('rt-plan-weeks').value)||1;
+  const start   = document.getElementById('rt-plan-start').value;
   const sameDay = document.getElementById('rt-same-day-toggle').classList.contains('on');
 
+  // Determinar destinatarios
+  const assignMode = document.getElementById('rt-assign-mode')?.value || 'self';
+  let targetUsers = [];
+
+  if(assignMode === 'self' || !rtIsCoach){
+    targetUsers = [rtUserId];
+  } else if(assignMode === 'specific'){
+    const sel = document.getElementById('rt-for-user')?.value;
+    targetUsers = sel ? [sel] : [rtUserId];
+  } else {
+    // Masivo — filtrar arqueros
+    const gender = document.getElementById('rt-mass-gender')?.value || '';
+    const bow    = document.getElementById('rt-mass-bow')?.value || '';
+    const cat    = document.getElementById('rt-mass-cat')?.value || '';
+    try{
+      let q = 'archer_profiles?select=user_id';
+      const filters = [];
+      if(gender) filters.push(`gender=eq.${gender}`);
+      if(bow)    filters.push(`bow_type=eq.${bow}`);
+      if(filters.length) q += '&' + filters.join('&');
+      const r = await rtFetch(q + '&limit=200');
+      const profiles = await r.json();
+      let users = profiles.map(p=>p.user_id);
+      // Filtrar por categoría si aplica
+      if(cat && window.coGetAge && window.coGetCategory){
+        // load birth dates
+        const br = await rtFetch(`archer_profiles?user_id=in.(${users.join(',')})&select=user_id,birth_date`);
+        const bdata = await br.json();
+        users = bdata.filter(p=>{
+          const age = window.coGetAge?.(p.birth_date);
+          const c = window.coGetCategory?.(age);
+          return c?.key === cat;
+        }).map(p=>p.user_id);
+      }
+      targetUsers = users.length ? users : [rtUserId];
+    } catch(e){ targetUsers = [rtUserId]; }
+  }
+
   try{
-    // Create plan
-    const pRes = await rtFetch('training_plans', {
-      method:'POST',
-      headers:{'Prefer':'return=representation'},
-      body: JSON.stringify({
-        created_by: rtUserId,
-        assigned_to: forUser || rtUserId,
-        title, weeks,
-        week_start: start,
-        days, same_every_day: sameDay,
-        status: 'active'
-      })
-    });
-    const pData = await pRes.json();
-    const plan = Array.isArray(pData)?pData[0]:pData;
+    const planIds = [];
+    for(const uid of targetUsers){
+      const pRes = await rtFetch('training_plans', {
+        method:'POST',
+        headers:{'Prefer':'return=representation'},
+        body: JSON.stringify({
+          created_by: rtUserId,
+          assigned_to: uid,
+          title, weeks,
+          week_start: start,
+          days, same_every_day: sameDay,
+          status: 'active'
+        })
+      });
+      const pData = await pRes.json();
+      const plan = Array.isArray(pData)?pData[0]:pData;
+      if(plan?.id) planIds.push(plan.id);
 
-    // Create activities
-    const acts = rtActivities.map((a,i)=>({
-      plan_id: plan.id,
-      day_of_week: sameDay ? null : null, // null = todos los días activos
-      week_number: 1,
-      type: a.type,
-      config: a.config,
-      sort_order: i
-    }));
+      // Guardar actividades para este plan
+      const acts = rtActivities.map((a,i)=>({
+        plan_id: plan.id,
+        day_of_week: null,
+        type: a.type,
+        config: a.config,
+        sort_order: i,
+        title: a.config?.nota?.slice(0,50) || a.type,
+        description: a.config?.nota || ''
+      }));
 
-    await rtFetch('training_activities', {
-      method:'POST',
-      headers:{'Prefer':'return=minimal'},
-      body: JSON.stringify(acts)
-    });
+      if(acts.length){
+        const aRes = await rtFetch('training_activities', {
+          method:'POST',
+          headers:{'Prefer':'return=minimal'},
+          body: JSON.stringify(acts)
+        });
+        if(!aRes.ok && aRes.status !== 201){
+          const err = await aRes.text();
+          console.error('Activities error:', err);
+        }
+      }
+    }
 
-    rtToast('✓ Plan guardado', true);
+    const msg = targetUsers.length > 1
+      ? `✓ Plan asignado a ${targetUsers.length} arqueros`
+      : '✓ Plan guardado';
+    rtToast(msg, true);
     rtShowView('list');
   } catch(e){ console.error(e); rtToast('Error guardando plan'); }
 };
