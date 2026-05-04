@@ -5655,18 +5655,20 @@ window.btShowMain=function(tab){
   if(tab==='nueva'){
     btShowS('bt-s-inicio');
     // Si viene de plan conteo, auto-configurar modalidad
+    console.log('🔵 btShowMain nueva - _rtPendingPlanActivity:', JSON.stringify(window._rtPendingPlanActivity));
     if(window._rtPendingPlanActivity?.type==='conteo'){
-      setTimeout(window.btActivatePlanConteo, 100);
+      setTimeout(window.btActivatePlanConteo, 150);
     }
   }
   if(tab==='historial')btRenderH();
 }
 
 // ── Activar conteo de plan — salta directo a la modalidad ─
-function btActivatePlanConteo(){
+window.btActivatePlanConteo = function(){
   const pending = window._rtPendingPlanActivity;
   if(!pending || pending.type!=='conteo') return;
   const mode = pending.mode;
+  console.log('🟢 btActivatePlanConteo - mode:', mode, '| known:', !!BT_MODES[mode]);
   if(!mode || !BT_MODES[mode]) return;
 
   // Mostrar banner morado
@@ -5677,19 +5679,28 @@ function btActivatePlanConteo(){
     if(bannerMode) bannerMode.textContent = BT_MODES[mode]?.lbl || mode;
   }
 
-  // Auto-seleccionar grupo y modalidad
-  const group = BT_MODES[mode]?.g || mode.split('-')[0];
-  const groupCard = document.querySelector(`#bt-s-inicio .bt-disc-card[data-group="${group}"]`);
-  if(groupCard) btSelGroup(group, groupCard);
+  // Asegurar que estamos en bt-s-inicio
+  btShowS('bt-s-inicio');
 
-  // Auto-seleccionar la modalidad exacta
-  setTimeout(()=>{
-    const subCard = document.querySelector(`#bt-s-config .bt-sub-card[onclick*="${mode}"]`) ||
-      document.querySelector(`[onclick*="btSetCM('${mode}'"]`);
-    if(subCard) btSetCM(mode, subCard);
-    else btSetCM(mode, null);
-  }, 80);
-}
+  // Auto-seleccionar grupo con reintento si el DOM aún no está listo
+  const group = BT_MODES[mode]?.g || mode.split('-')[0];
+  function _doSelect(){
+    const groupCard = document.querySelector(`#bt-s-inicio .bt-disc-card[data-group="${group}"]`);
+    console.log('🟢 groupCard:', !!groupCard, 'group:', group);
+    if(groupCard){
+      btSelGroup(group, groupCard);
+      setTimeout(()=>{
+        const subCard = document.querySelector(`[onclick*="btSetCM('${mode}'"]`);
+        console.log('🟢 subCard:', !!subCard, 'mode:', mode);
+        if(subCard) btSetCM(mode, subCard);
+        else btSetCM(mode, null);
+      }, 100);
+    } else {
+      setTimeout(_doSelect, 100);
+    }
+  }
+  _doSelect();
+};
 
 window.btCancelPlanConteo = function(){
   window._rtPendingPlanActivity = null;
@@ -13782,23 +13793,21 @@ window.rtGoToConteo = function(actId, planId, reportDate, mode){
   // Cerrar overlays
   document.getElementById('rt-report-overlay').style.display = 'none';
 
-  // Ir a bitácora con modalidad preconfigurada
+  // Ir a bitácora y activar conteo en cadena
   if(typeof switchTab==='function')
     switchTab('bitacora', document.getElementById('sb-bitacora'));
 
+  // Esperar a que el tab de bitácora esté visible, luego ir a "nueva" y activar plan
   setTimeout(function(){
     if(typeof window.btShowMain==='function') window.btShowMain('nueva');
-    // Pre-seleccionar modalidad si coincide
-    if(mode){
-      const modeMap = {
-        'indoor-15':'indoor','indoor-30':'indoor','indoor-60':'indoor',
-        'outdoor-36':'outdoor','outdoor-72':'outdoor',
-        'field-c':'field','field-d':'field','3d':'3d'
-      };
-      // Intentar preseleccionar el grupo correcto en btState
-      if(window.btState) window.btState.pendingMode = mode;
-    }
-  }, 150);
+    // btShowMain ya detecta _rtPendingPlanActivity y llama btActivatePlanConteo
+    // pero si no lo hace (race condition), lo forzamos aquí
+    setTimeout(function(){
+      if(window._rtPendingPlanActivity?.type==='conteo' && typeof window.btActivatePlanConteo==='function'){
+        window.btActivatePlanConteo();
+      }
+    }, 200);
+  }, 200);
 };
 
 // ── Ir a torneo ───────────────────────────────────────────
