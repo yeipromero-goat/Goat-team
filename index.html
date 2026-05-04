@@ -5392,6 +5392,17 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
         </div>
       </div>
     </div>
+    <!-- Banner plan conteo (activado desde Plan Semanal) -->
+    <div id="bt-plan-banner" style="display:none;background:rgba(154,136,221,0.08);border:0.5px solid rgba(154,136,221,0.35);border-radius:10px;padding:10px 14px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">📅</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:#9a88dd">Conteo del plan semanal</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px" id="bt-plan-banner-mode">Modalidad preconfigurada</div>
+        </div>
+        <button onclick="btCancelPlanConteo()" style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:16px">✕</button>
+      </div>
+    </div>
     <div class="bt-sec">Elige modalidad</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
     <!-- Outdoor -->
@@ -5641,9 +5652,52 @@ window.btShowMain=function(tab){
   document.getElementById('bt-main-nueva').style.display=tab==='nueva'?'block':'none';
   document.getElementById('bt-main-historial').style.display=tab==='historial'?'block':'none';
   document.querySelectorAll('#bt-tab-bar button').forEach((b,i)=>b.classList.toggle('act',(tab==='nueva'&&i===0)||(tab==='historial'&&i===1)));
-  if(tab==='nueva')btShowS('bt-s-inicio');
+  if(tab==='nueva'){
+    btShowS('bt-s-inicio');
+    // Si viene de plan conteo, auto-configurar modalidad
+    if(window._rtPendingPlanActivity?.type==='conteo'){
+      setTimeout(btActivatePlanConteo, 100);
+    }
+  }
   if(tab==='historial')btRenderH();
 }
+
+// ── Activar conteo de plan — salta directo a la modalidad ─
+function btActivatePlanConteo(){
+  const pending = window._rtPendingPlanActivity;
+  if(!pending || pending.type!=='conteo') return;
+  const mode = pending.mode;
+  if(!mode || !BT_MODES[mode]) return;
+
+  // Mostrar banner morado
+  const banner = document.getElementById('bt-plan-banner');
+  const bannerMode = document.getElementById('bt-plan-banner-mode');
+  if(banner){
+    banner.style.display = 'block';
+    if(bannerMode) bannerMode.textContent = BT_MODES[mode]?.lbl || mode;
+  }
+
+  // Auto-seleccionar grupo y modalidad
+  const group = BT_MODES[mode]?.g || mode.split('-')[0];
+  const groupCard = document.querySelector(`#bt-s-inicio .bt-disc-card[data-group="${group}"]`);
+  if(groupCard) btSelGroup(group, groupCard);
+
+  // Auto-seleccionar la modalidad exacta
+  setTimeout(()=>{
+    const subCard = document.querySelector(`#bt-s-config .bt-sub-card[onclick*="${mode}"]`) ||
+      document.querySelector(`[onclick*="btSetCM('${mode}'"]`);
+    if(subCard) btSetCM(mode, subCard);
+    else btSetCM(mode, null);
+  }, 80);
+}
+
+window.btCancelPlanConteo = function(){
+  window._rtPendingPlanActivity = null;
+  const banner = document.getElementById('bt-plan-banner');
+  if(banner) banner.style.display = 'none';
+  btResetState();
+  btShowS('bt-s-inicio');
+};
 
 window.btShowS=function(id){
   ['bt-s-inicio','bt-s-config','bt-s-sesion','bt-s-resumen'].forEach(s=>{
@@ -5654,6 +5708,8 @@ window.btShowS=function(id){
 function btResetState(){
   btCurMode=null;btState={active:false};
   document.querySelectorAll('#bt-s-inicio .bt-disc-card').forEach(c=>c.classList.remove('sel'));
+  const pb = document.getElementById('bt-plan-banner');
+  if(pb) pb.style.display='none';
 }
 
 window.btConfirmCancel=function(){
@@ -13697,7 +13753,7 @@ window.rtSaveReport = async function(actId, planId, reportDate){
 // ── Ir a conteo ───────────────────────────────────────────
 window.rtGoToConteo = function(actId, planId, reportDate, mode){
   // Guardar contexto
-  window._rtPendingPlanActivity = {actId, planId, reportDate, type:'conteo'};
+  window._rtPendingPlanActivity = {actId, planId, reportDate, type:'conteo', mode};
 
   // Cerrar overlays
   document.getElementById('rt-report-overlay').style.display = 'none';
