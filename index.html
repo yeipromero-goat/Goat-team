@@ -5927,24 +5927,31 @@ window.btSaveSession=function(){
       value_done:  s.total,
       note:        `Score: ${s.total} · ${s.lbl||s.mode}`
     };
-    // Upsert real: buscar si ya existe y hacer PATCH, sino POST
+    // Upsert via constraint activity_id+user_id
     console.log('🟡 rt plan conteo save - pendingPlan:', JSON.stringify(pendingPlan));
     console.log('🟡 userId:', userId, '| weekNum:', weekNum, '| score:', s.total);
     (async()=>{
       try{
+        // Buscar por constraint real: activity_id + user_id
         const checkRes = await fetch(
-          `${SUPA}/rest/v1/training_reports?plan_id=eq.${pendingPlan.planId}&activity_id=eq.${pendingPlan.actId}&user_id=eq.${userId}&report_date=eq.${pendingPlan.reportDate}&select=id`,
+          `${SUPA}/rest/v1/training_reports?activity_id=eq.${pendingPlan.actId}&user_id=eq.${userId}&select=id`,
           {headers}
         );
         const existing = await checkRes.json();
         console.log('🟡 existing reports found:', existing?.length, existing);
         if(existing && existing.length > 0){
+          // PATCH al registro existente
           await fetch(
             `${SUPA}/rest/v1/training_reports?id=eq.${existing[0].id}`,
             {method:'PATCH', headers:{...headers,'Prefer':'return=minimal'},
-             body: JSON.stringify({completed:true, value_done:s.total, note:reportPayload.note})}
+             body: JSON.stringify({
+               completed: true, value_done: s.total, note: reportPayload.note,
+               plan_id: pendingPlan.planId, report_date: pendingPlan.reportDate,
+               week_number: weekNum
+             })}
           );
         } else {
+          // POST nuevo
           await fetch(`${SUPA}/rest/v1/training_reports`,
             {method:'POST', headers:{...headers,'Prefer':'return=minimal'},
              body: JSON.stringify(reportPayload)}
