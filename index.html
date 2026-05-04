@@ -2339,10 +2339,11 @@ function switchTab(id, el){
   if(typeof updatePageTitle === 'function') updatePageTitle(id);
   if(typeof closeSidebar === 'function') closeSidebar();
   // URL limpia: /tablero para score, #tab para el resto
+  const basePath = window.location.pathname.replace(/\/(tablero\/?)?$/, '') || '/';
   const newUrl = id === 'score'
-    ? window.location.pathname.replace(/\/(tablero|#.*)$/,'') + '/tablero'
-    : window.location.pathname.replace(/\/tablero$/,'') + '#' + id;
-  history.pushState({tab: id}, '', newUrl);
+    ? basePath.replace(/\/?$/, '/tablero')
+    : basePath.replace(/\/?$/, '') + '#' + id;
+  try { history.pushState({tab: id}, '', newUrl); } catch(e) {}
   // Guía de onboarding — solo al entrar al Tablero
   if(id === 'score' && typeof window._onEnterTablero === 'function'){
     window._onEnterTablero();
@@ -2361,7 +2362,7 @@ window.addEventListener('popstate', function(e){
   }
   const defEl = document.getElementById('sb-competencias');
   if(tab === 'competencias' || !document.getElementById('tab-'+tab)){
-    history.pushState({tab:'competencias'}, '', window.location.pathname.replace(/\/tablero$/,'')+'#competencias');
+    history.pushState({tab:'competencias'}, '', window.location.pathname.replace(/\/(tablero\/?)?$/,'').replace(/\/?$/,'')||'/' +'#competencias');
     switchTab('competencias', defEl);
   } else {
     switchTab(tab, document.getElementById('sb-'+tab) || defEl);
