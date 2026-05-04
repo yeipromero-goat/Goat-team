@@ -11556,7 +11556,8 @@ window.coToggleDetail = function(userId){
   if(!coArcherFilters[userId]){
     coArcherFilters[userId] = {
       discs: new Set(['indoor','outdoor','field','3d']),
-      srcs:  new Set(['daily','liga','torneo'])
+      srcs:  new Set(['daily','liga','torneo']),
+      days:  0
     };
   }
 
@@ -11606,6 +11607,16 @@ window.coToggleDetail = function(userId){
       </div>
     </div>
 
+    <!-- Chips de tiempo del atleta -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="co-tf-btn" onclick="coSetArcherDays('${userId}',15,this)">15d</button>
+      <button class="co-tf-btn" onclick="coSetArcherDays('${userId}',30,this)">30d</button>
+      <button class="co-tf-btn" onclick="coSetArcherDays('${userId}',90,this)">90d</button>
+      <button class="co-tf-btn" onclick="coSetArcherDays('${userId}',180,this)">180d</button>
+      <button class="co-tf-btn" onclick="coSetArcherDays('${userId}',360,this)">360d</button>
+      <button class="co-tf-btn co-tf-act" onclick="coSetArcherDays('${userId}',0,this)">Max</button>
+    </div>
+
     <!-- Chips modalidad del atleta -->
     <div class="co-chip-label">Modalidad</div>
     <div class="co-chip-group" style="margin-bottom:8px">
@@ -11646,6 +11657,19 @@ window.coToggleDetail = function(userId){
   coLoadArcherSetups(userId);
 };
 
+// ── Toggle días del atleta ────────────────────────────────
+window.coSetArcherDays = function(userId, days, btn){
+  const f = coArcherFilters[userId];
+  if(!f) return;
+  f.days = days;
+  // Actualizar estado visual de chips de tiempo del atleta
+  const detail = document.getElementById('co-detail');
+  if(detail) detail.querySelectorAll('.co-tf-btn').forEach(b=>b.classList.remove('co-tf-act'));
+  if(btn) btn.classList.add('co-tf-act');
+  coLoadArcherSessions(userId);
+  coDrawArcherTrend(userId, 'co-archer-spark-'+userId, 'co-archer-legend-'+userId);
+};
+
 // ── Toggle chips del atleta ───────────────────────────────
 window.coToggleArcherDisc = function(userId, disc, btn){
   const f = coArcherFilters[userId];
@@ -11678,30 +11702,34 @@ window.coToggleArcherSrc = function(userId, src, btn){
 function coLoadArcherSessions(userId){
   const el = document.getElementById('co-archer-sessions-'+userId);
   if(!el) return;
-  const f = coArcherFilters[userId] || {discs:new Set(['indoor','outdoor','field','3d']),srcs:new Set(['daily','liga','torneo'])};
+  const f = coArcherFilters[userId] || {discs:new Set(['indoor','outdoor','field','3d']),srcs:new Set(['daily','liga','torneo']),days:0};
+  const cutoff = f.days > 0 ? new Date(Date.now() - f.days*24*60*60*1000) : null;
   const DISC_COLORS = {indoor:'#e05555',outdoor:'#5ab4d6',field:'#d8d15a','3d':'#d8a05a'};
   const SRC_COLORS  = {daily:'rgba(255,255,255,0.3)',liga:'#9a88dd',torneo:'#5dcaa5'};
   const SUPA = 'https://axaiyaflubssaghvhefe.supabase.co';
   const h = {apikey:window._supabaseAnonKey,Authorization:'Bearer '+window._supabaseToken};
 
-  const fetchDaily  = f.srcs.has('daily')  ? fetch(`${SUPA}/rest/v1/scores?user_id=eq.${userId}&order=session_date.desc&limit=50`,{headers:h}).then(r=>r.json()) : Promise.resolve([]);
-  const fetchLiga   = f.srcs.has('liga')   ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&order=submitted_at.desc&limit=20`,{headers:h}).then(r=>r.json()) : Promise.resolve([]);
-  const fetchTorneo = f.srcs.has('torneo') ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_score,qualifying_at&limit=20`,{headers:h}).then(r=>r.json()) : Promise.resolve([]);
+  const fetchDaily  = f.srcs.has('daily')  ? fetch(`${SUPA}/rest/v1/scores?user_id=eq.${userId}&order=session_date.desc&limit=200`,{headers:h}).then(r=>r.json()) : Promise.resolve([]);
+  const fetchLiga   = f.srcs.has('liga')   ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&order=submitted_at.desc&limit=50`,{headers:h}).then(r=>r.json()) : Promise.resolve([]);
+  const fetchTorneo = f.srcs.has('torneo') ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_score,qualifying_at&limit=50`,{headers:h}).then(r=>r.json()) : Promise.resolve([]);
 
   Promise.all([fetchDaily,fetchLiga,fetchTorneo]).then(function([daily,liga,torneo]){
     let rows = [];
     if(Array.isArray(daily)) daily.forEach(s=>{
       if(!f.discs.has(s.group_name||'indoor')) return;
+      if(cutoff && new Date(s.session_date) < cutoff) return;
       rows.push({label:s.label||s.mode||'—',date:s.session_date,total:s.total,arrows:s.arrow_count,disc:s.group_name||'indoor',note:s.setup_note,src:'daily',srcLabel:'Práctica'});
     });
     if(Array.isArray(liga)) liga.forEach(s=>{
+      if(cutoff && new Date(s.submitted_at) < cutoff) return;
       rows.push({label:'Liga',date:s.submitted_at,total:s.score,arrows:null,disc:'indoor',note:null,src:'liga',srcLabel:'Liga'});
     });
     if(Array.isArray(torneo)) torneo.forEach(s=>{
+      if(cutoff && new Date(s.qualifying_at) < cutoff) return;
       rows.push({label:'Torneo',date:s.qualifying_at,total:s.qualifying_score,arrows:null,disc:'outdoor',note:null,src:'torneo',srcLabel:'Torneo'});
     });
     rows.sort((a,b)=>new Date(b.date)-new Date(a.date));
-    rows = rows.slice(0,15);
+    rows = rows.slice(0,20);
     if(!rows.length){ el.innerHTML='<div style="text-align:center;padding:12px;font-size:12px;color:rgba(255,255,255,0.3)">Sin sesiones con estos filtros</div>'; return; }
     el.innerHTML = rows.map(s=>{
       const d = new Date(s.date).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
@@ -11919,8 +11947,13 @@ function coDrawClubTrend(){
 function coDrawArcherTrend(userId, canvasId, legendId){
   const raw = coRawScores[userId]||[];
   const f = coArcherFilters[userId];
+  const cutoff = f?.days > 0 ? new Date(Date.now() - f.days*24*60*60*1000) : null;
   const filtered = f
-    ? raw.filter(s=> f.discs.has(coNormDisc(s.disc)) && f.srcs.has(s.source))
+    ? raw.filter(s=>
+        f.discs.has(coNormDisc(s.disc)) &&
+        f.srcs.has(s.source) &&
+        (!cutoff || !s.date || new Date(s.date) >= cutoff)
+      )
     : raw;
   const lines = coBuildTrendLines(filtered);
   coDrawSparkMulti(canvasId, legendId, lines);
