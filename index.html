@@ -13313,8 +13313,8 @@ function rtRenderPlansList(){
     html += `<div id="rt-coach-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
       <select id="rt-filter-gender" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
         <option value="">👤 Género</option>
-        <option value="M">Masculino</option>
-        <option value="F">Femenino</option>
+        <option value="varonil">Varonil</option>
+        <option value="femenil">Femenil</option>
       </select>
       <select id="rt-filter-bow" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
         <option value="">🏹 Modalidad</option>
@@ -14024,22 +14024,24 @@ async function rtRenderWeekStats(plan){
       'Content-Type':'application/json'
     };
     const scoresRes = await fetch(
-      `${SUPA2}/rest/v1/archer_scores?user_id=eq.${rtUserId}&select=total,mode,label,arrow_count&order=session_date.desc&limit=100`,
+      `${SUPA2}/rest/v1/scores?user_id=eq.${rtUserId}&select=total,mode,label,arrow_count,avg_arrow&order=session_date.desc&limit=100`,
       {headers:h2}
     );
-    const scores = await scoresRes.json() || [];
+    const scoresRaw = scoresRes.ok ? await scoresRes.json() : [];
+    const scores = Array.isArray(scoresRaw) ? scoresRaw : [];
 
-    // Agrupar por disciplina
+    // Agrupar por disciplina — usar avg_arrow si está disponible
     const byDisc = {};
     scores.forEach(s=>{
       const mode = (s.mode||s.label||'').toLowerCase();
-      const arrows = RT_MODE_ARROWS[mode] || s.arrow_count || null;
-      if(!s.total || !arrows) return;
+      const pfa = s.avg_arrow || (s.arrow_count ? s.total/s.arrow_count : null)
+               || (RT_MODE_ARROWS[mode] ? s.total/RT_MODE_ARROWS[mode] : null);
+      if(!s.total || !pfa) return;
       const disc = mode.startsWith('3d') ? '3d'
         : mode.startsWith('outdoor') ? 'outdoor'
         : mode.startsWith('field') ? 'field' : 'indoor';
       if(!byDisc[disc]) byDisc[disc] = [];
-      byDisc[disc].push(s.total / arrows);
+      byDisc[disc].push(pfa);
     });
 
     const pfaWrap = document.getElementById('rt-pfa-wrap');
@@ -14132,11 +14134,6 @@ window.rtApplyCoachFilter = async function(){
 
   const profiles = window._rtArcherProfiles;
   const hasFilter = gender||bow||cat;
-
-  // Debug: log a sample profile to see field values
-  const sampleProfile = Object.values(profiles)[0];
-  console.log('🟠 sample profile:', sampleProfile);
-  console.log('🟠 filter values:', {gender, bow, cat});
 
   const filtered = !hasFilter ? plans : plans.filter(p=>{
     const prof = profiles[p.assigned_to] || {};
