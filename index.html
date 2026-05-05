@@ -12274,21 +12274,66 @@ function coLoadArcherSetups(userId){
         const isActive=s.id===activeId;
         const from=s.active_from?new Date(s.active_from).toLocaleDateString('es-MX',{month:'short',year:'numeric'}):'\u2014';
         const until=s.active_until?new Date(s.active_until).toLocaleDateString('es-MX',{month:'short',year:'numeric'}):'hoy';
-        const fields=[];
-        if(s.draw_weight) fields.push(s.draw_weight+'#');
-        if(s.arrow_length) fields.push('Flecha '+s.arrow_length+'"');
-        if(s.point_weight) fields.push(s.point_weight+'gr');
-        if(s.ata) fields.push('ATA '+s.ata+'"');
-        if(s.letoff) fields.push('Let-off '+s.letoff+'%');
+
+        // Campos base — todos los tipos
+        const base=[];
+        if(s.draw_weight)  base.push({l:'Libras',   v:s.draw_weight+'#'});
+        if(s.arrow_length) base.push({l:'Flecha',   v:s.arrow_length+'"'});
+        if(s.point_weight) base.push({l:'Punta',    v:s.point_weight+'gr'});
+
+        // Campos por tipo de arco
+        const specific=[];
+        if(s.bow_type==='compuesto'){
+          if(s.ata)           specific.push({l:'ATA',        v:s.ata+'"'});
+          if(s.brace_height)  specific.push({l:'Brace H.',   v:s.brace_height+'"'});
+          if(s.letoff)        specific.push({l:'Let-off',    v:s.letoff+'%'});
+          if(s.loop_length)   specific.push({l:'Loop',       v:s.loop_length+'"'});
+          if(s.peep_height)   specific.push({l:'Peep',       v:s.peep_height+'"'});
+          if(s.nocking_point) specific.push({l:'Nocking pt.',v:s.nocking_point+'mm'});
+        }
+        if(s.bow_type==='recurvo'||s.bow_type==='tradicional'){
+          if(s.plunger_setting) specific.push({l:'Botón',       v:s.plunger_setting});
+          if(s.stabilizer)      specific.push({l:'Central',     v:s.stabilizer});
+          if(s.nocking_point)   specific.push({l:'Nocking pt.', v:s.nocking_point+'mm'});
+        }
+        if(s.bow_type==='barebow'){
+          if(s.bb_plunger)      specific.push({l:'Botón',        v:s.bb_plunger});
+          if(s.bb_arrow_weight) specific.push({l:'Peso flecha',  v:s.bb_arrow_weight+'gr'});
+          if(s.bb_total_weight) specific.push({l:'Peso total',   v:s.bb_total_weight+'kg'});
+          if(s.nocking_point)   specific.push({l:'Nocking pt.',  v:s.nocking_point+'mm'});
+        }
+
+        // Estabilizadores
+        let stabHtml='';
+        if(s.stabilizer_config){
+          try{
+            const sc=typeof s.stabilizer_config==='string'?JSON.parse(s.stabilizer_config):s.stabilizer_config;
+            const rows=[];
+            if(sc.center?.len||sc.center?.oz) rows.push('Central: '+( sc.center.len||'—')+'" · '+(sc.center.oz||'—')+'oz');
+            if(sc.lat1?.len||sc.lat1?.oz)     rows.push('Lat 1: '  +(sc.lat1.len  ||'—')+'" · '+(sc.lat1.oz  ||'—')+'oz');
+            if(sc.lat2?.len||sc.lat2?.oz)     rows.push('Lat 2: '  +(sc.lat2.len  ||'—')+'" · '+(sc.lat2.oz  ||'—')+'oz');
+            if(rows.length) stabHtml='<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:5px;padding-top:5px;border-top:0.5px solid rgba(255,255,255,0.06)">'
+              +'<span style="color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:.05em;font-size:9px">Estab. </span>'
+              +rows.join(' · ')+'</div>';
+          }catch(e){}
+        }
+
+        const renderFields = (arr) => arr.length
+          ? '<div style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:5px">'
+            + arr.map(f=>'<span style="font-size:11px"><span style="color:rgba(255,255,255,0.3)">'+f.l+'</span> <span style="color:rgba(255,255,255,0.7);font-weight:500">'+f.v+'</span></span>').join('')
+            +'</div>' : '';
+
         return '<div style="padding:10px;border-radius:8px;margin-bottom:6px;background:'+(isActive?'rgba(93,202,165,0.05)':'rgba(255,255,255,0.02)')+';border:0.5px solid '+(isActive?'rgba(93,202,165,0.25)':'rgba(255,255,255,0.07)')+';">'
-          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">'
           +'<div style="font-size:12px;font-weight:600;color:#fff">'+(s.name||BOW_NAMES2[s.bow_type]||s.bow_type)+'</div>'
           +'<div style="display:flex;align-items:center;gap:6px">'
           +(isActive?'<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(93,202,165,0.15);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3);font-weight:700">\u2713 Activo</span>':'')
           +'<span style="font-size:10px;color:rgba(255,255,255,0.3)">'+from+' \u2192 '+until+'</span>'
           +'</div></div>'
-          +(fields.length?'<div style="font-size:11px;color:rgba(255,255,255,0.45)">'+fields.join(' \u00b7 ')+'</div>':'')
-          +(s.notes?'<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px;font-style:italic">'+s.notes+'</div>':'')
+          + renderFields(base)
+          + renderFields(specific)
+          + stabHtml
+          +(s.notes?'<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;font-style:italic">'+s.notes+'</div>':'')
           +'</div>';
       }).join('');
     }
