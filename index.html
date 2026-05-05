@@ -13535,26 +13535,25 @@ window.rtSavePlan = async function(){
     const bow    = document.getElementById('rt-mass-bow')?.value || '';
     const cat    = document.getElementById('rt-mass-cat')?.value || '';
     try{
-      let q = 'archer_profiles?select=user_id';
+      let q = 'archer_profiles?select=user_id,birth_date';
       const filters = [];
       if(gender) filters.push(`gender=eq.${gender}`);
       if(bow)    filters.push(`bow_type=eq.${bow}`);
       if(filters.length) q += '&' + filters.join('&');
       const r = await rtFetch(q + '&limit=200');
       const profiles = await r.json();
-      let users = profiles.map(p=>p.user_id);
-      // Filtrar por categoría si aplica
-      if(cat && window.coGetAge && window.coGetCategory){
-        // load birth dates
-        const br = await rtFetch(`archer_profiles?user_id=in.(${users.join(',')})&select=user_id,birth_date`);
-        const bdata = await br.json();
-        users = bdata.filter(p=>{
-          const age = window.coGetAge?.(p.birth_date);
-          const c = window.coGetCategory?.(age);
+      let users = profiles.map(p=>({uid:p.user_id, birth:p.birth_date}));
+      // Filtrar por categoría usando RT_CAT_RANGES local
+      if(cat){
+        users = users.filter(p=>{
+          const age = rtGetAge(p.birth);
+          const c   = rtGetCategory(age);
           return c?.key === cat;
-        }).map(p=>p.user_id);
+        });
       }
-      targetUsers = users.length ? users : [rtUserId];
+      // Excluir al propio coach
+      let uids = users.map(p=>p.uid).filter(uid=>uid!==rtUserId);
+      targetUsers = uids.length ? uids : [rtUserId];
     } catch(e){ targetUsers = [rtUserId]; }
   }
 
@@ -14088,55 +14087,63 @@ async function rtLoadWeekStats(){
 
 window.rtEditPlan = function(){ rtToast('Edición de plan próximamente'); };
 
-// ── Filtro de planes del coach ───────────────────────────
-// Carga perfiles frescos cada vez que se llama (invalida cache al cambiar filtro)
-async function rtLoadArcherProfiles(){
-  const session = (await window._supabaseClient.auth.getSession()).data.session;
-  const h = {
-    apikey: window._supabaseAnonKey||'',
-    Authorization: 'Bearer '+(session?.access_token||''),
-    'Content-Type':'application/json'
-  };
-  // Traer todos los campos relevantes del perfil
-  const res = await fetch(
-    window._supabaseSUPA + '/rest/v1/archer_profiles?select=user_id,gender,bow_type,category&limit=500',
-    {headers:h}
-  );
-  const data = await res.json();
-  console.log('🔵 archer_profiles sample:', data?.slice(0,2));
-  window._rtArcherProfiles = {};
-  (data||[]).forEach(p=>{ window._rtArcherProfiles[p.user_id] = p; });
-  return window._rtArcherProfiles;
+// ── Helpers de categoría (igual que coach tab) ────────────
+const RT_CAT_RANGES = [
+  {key:'sub14',   label:'Sub 14',  min:0,  max:13},
+  {key:'sub16',   label:'Sub 16',  min:14, max:15},
+  {key:'sub18',   label:'Sub 18',  min:16, max:17},
+  {key:'sub21',   label:'Sub 21',  min:18, max:20},
+  {key:'sub25',   label:'Sub 25',  min:21, max:24},
+  {key:'mayores', label:'Mayores', min:25, max:999},
+];
+function rtGetAge(birthDate){
+  if(!birthDate) return null;
+  const today = new Date(), birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if(m < 0 || (m===0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+function rtGetCategory(age){
+  if(age===null) return null;
+  return RT_CAT_RANGES.find(c => age >= c.min && age <= c.max) || null;
 }
 
+// ── Filtro de planes del coach ────────────────────────────
 window.rtApplyCoachFilter = async function(){
   const gender = document.getElementById('rt-filter-gender')?.value || '';
   const bow    = document.getElementById('rt-filter-bow')?.value    || '';
   const cat    = document.getElementById('rt-filter-cat')?.value    || '';
-
-  const plans = window._rtForOthers || [];
+  const plans  = window._rtForOthers || [];
   if(!plans.length) return;
 
-  // Siempre recargar perfiles para tener datos frescos
-  const profiles = await rtLoadArcherProfiles();
-  console.log('🔵 profiles loaded:', Object.keys(profiles).length, '| filter:', {gender,bow,cat});
+  // Cargar perfiles con select=* igual que coach tab
+  if(!window._rtArcherProfiles){
+    const session = (await window._supabaseClient.auth.getSession()).data.session;
+    const res = await fetch(
+      window._supabaseSUPA + '/rest/v1/archer_profiles?select=*&limit=500',
+      { headers:{ apikey:window._supabaseAnonKey||'', Authorization:'Bearer '+(session?.access_token||'') } }
+    );
+    const data = await res.json();
+    window._rtArcherProfiles = {};
+    (data||[]).forEach(p=>{ window._rtArcherProfiles[p.user_id] = p; });
+  }
 
-  // Si no hay filtro activo, mostrar todo
+  const profiles = window._rtArcherProfiles;
   const hasFilter = gender||bow||cat;
+
   const filtered = !hasFilter ? plans : plans.filter(p=>{
     const prof = profiles[p.assigned_to] || {};
-    console.log('🔵 plan assigned_to:', p.assigned_to, '| prof:', prof);
-    // Comparar gender ignorando mayúsculas y variantes (M/male/Male)
-    if(gender){
-      const pg = (prof.gender||'').toLowerCase();
-      const fg = gender.toLowerCase();
-      // Acepta: M/m/male o F/f/female
-      const gOk = fg==='m' ? (pg==='m'||pg==='male'||pg==='masculino') 
-                            : (pg==='f'||pg==='female'||pg==='femenino');
-      if(!gOk) return false;
-    }
+    // Género — comparación directa igual que coach tab
+    if(gender && prof.gender !== gender) return false;
+    // Modalidad — bow_type directo
     if(bow && prof.bow_type !== bow) return false;
-    if(cat && prof.category !== cat) return false;
+    // Categoría — calculada desde birth_date igual que coach tab
+    if(cat){
+      const age = rtGetAge(prof.birth_date);
+      const c   = rtGetCategory(age);
+      if(!c || c.key !== cat) return false;
+    }
     return true;
   });
 
@@ -14150,9 +14157,10 @@ window.rtApplyCoachFilter = async function(){
   if(countEl){
     countEl.textContent = hasFilter ? filtered.length+' / '+plans.length+' planes' : plans.length+' planes';
   }
-
-  // Actualizar stats con los planes filtrados
   await rtRenderCoachStats(filtered);
+
+  // Invalidar cache para próxima llamada (perfil puede actualizarse)
+  window._rtArcherProfiles = null;
 };
 
 // Stats agregadas del coach (planes filtrados)
