@@ -12811,22 +12811,6 @@ window._coReload = coLoad;
       </div>
     </div>
 
-    <!-- Stats semanales -->
-    <div class="rt-sec">Esta semana</div>
-    <div class="rt-stat-grid" style="margin-bottom:12px">
-      <div class="rt-stat-box">
-        <div class="rt-stat-val" id="rt-stat-asistencia">—</div>
-        <div class="rt-stat-lbl">Asistencia</div>
-      </div>
-      <div class="rt-stat-box">
-        <div class="rt-stat-val" id="rt-stat-calenta">—</div>
-        <div class="rt-stat-lbl">Calenta.</div>
-      </div>
-      <div class="rt-stat-box">
-        <div class="rt-stat-val" id="rt-stat-tiros">—</div>
-        <div class="rt-stat-lbl">% Tiros</div>
-      </div>
-    </div>
   </div>
 
   <!-- VIEW: Crear plan -->
@@ -13322,6 +13306,13 @@ function rtRenderPlansList(){
       <span>Planes asignados a arqueros</span>
       <span style="font-size:10px;color:var(--muted)" id="rt-coach-plans-count"></span>
     </div>`;
+    // ── Stats primero ──
+    html += `<div class="rt-stat-grid" style="margin-bottom:12px">
+      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-asistencia">—</div><div class="rt-stat-lbl">Asistencia</div></div>
+      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-calenta">—</div><div class="rt-stat-lbl">Calenta.</div></div>
+      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-tiros">—</div><div class="rt-stat-lbl">% Tiros</div></div>
+    </div>`;
+    // ── Filtros segundo ──
     html += `<div id="rt-coach-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
       <select id="rt-filter-gender" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
         <option value="">👤 Género</option>
