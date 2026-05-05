@@ -13719,7 +13719,8 @@ async function rtRenderDayActivities(plan){
         valueStr = rep?.value_done ? `Lugar: ${rep.value_done}°` : 'Pendiente';
       }
 
-      const canReport = isToday || isPast;
+      // Permitir reportar en cualquier día activo del plan (propio o del coach)
+      const canReport = true;
 
       return `<div class="rt-act-card" style="opacity:${!canReport&&!rep?'0.5':'1'}">
         <div class="rt-act-card-bar" style="background:${done?color:'rgba(255,255,255,0.1)'}"></div>
@@ -14131,6 +14132,11 @@ window.rtApplyCoachFilter = async function(){
 
   const profiles = window._rtArcherProfiles;
   const hasFilter = gender||bow||cat;
+
+  // Debug: log a sample profile to see field values
+  const sampleProfile = Object.values(profiles)[0];
+  console.log('🟠 sample profile:', sampleProfile);
+  console.log('🟠 filter values:', {gender, bow, cat});
 
   const filtered = !hasFilter ? plans : plans.filter(p=>{
     const prof = profiles[p.assigned_to] || {};
