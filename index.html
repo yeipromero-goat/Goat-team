@@ -6546,7 +6546,7 @@ if(window._supabaseUserId && window._supabaseToken){
     <div class="cp-ca" style="background:linear-gradient(90deg,#5ab4d6,#9a88dd)"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="cp-sec" style="margin-bottom:0">Arqueros</div>
-      <span class="cp-muted" style="font-size:11px" id="cp-room-player-count">0/10</span>
+      <span class="cp-muted" style="font-size:11px" id="cp-room-player-count">0/—</span>
     </div>
     <div id="cp-room-players"></div>
   </div>
@@ -6630,11 +6630,14 @@ if(window._supabaseUserId && window._supabaseToken){
       </select>
       <label class="cp-label">Cupo máximo</label>
       <select class="cp-select" id="cp-adm-cupo">
-        <option value="2">2 arqueros</option>
-        <option value="3">3 arqueros</option>
-        <option value="4">4 arqueros</option>
-        <option value="5">5 arqueros</option>
-        <option value="6" selected>6 arqueros</option>
+        <option value="8">8 arqueros</option>
+        <option value="16" selected>16 arqueros</option>
+        <option value="24">24 arqueros</option>
+        <option value="32">32 arqueros</option>
+        <option value="48">48 arqueros</option>
+        <option value="64">64 arqueros</option>
+        <option value="100">100 arqueros</option>
+        <option value="200">200 arqueros</option>
       </select>
       <label class="cp-label">Handicap</label>
       <select class="cp-select" id="cp-adm-hcap" onchange="document.getElementById('cp-adm-hcap-custom').style.display=this.value==='serie'?'block':'none'">
@@ -7389,9 +7392,58 @@ window.cpCerrarTorneo = async function(tournamentId){
 }
 
 // ── GENERAR BRACKET ───────────────────────────────────────────────
+// ── HELPERS DE BRACKET ───────────────────────────────────────────
+
+// Calcula el tamaño mínimo de bracket (potencia de 2) para n jugadores
+function cpBracketSize(n){ let s=2; while(s<n) s*=2; return s; }
+
+// Genera los rounds necesarios para un bracket de tamaño sz con prefijo opcional
+function cpBracketRounds(sz, prefix=''){
+  const rounds=[];
+  if(sz>=128) rounds.push(prefix+'r128');
+  if(sz>=64)  rounds.push(prefix+'r64');
+  if(sz>=32)  rounds.push(prefix+'r32');
+  if(sz>=16)  rounds.push(prefix+'r16');
+  if(sz>=8)   rounds.push(prefix+'qf');
+  if(sz>=4)   rounds.push(prefix+'sf');
+  rounds.push(prefix+'final');
+  if(sz>=4)   rounds.push(prefix+'bronze');
+  return rounds;
+}
+
+// Inserta matches de primera ronda para un grupo de jugadores (seeded) en Supabase
+async function cpInsertFirstRound(tournamentId, seeded, firstRound){
+  const matches=[];
+  for(let i=0;i<seeded.length/2;i++){
+    const p1=seeded[i];
+    const p2=seeded[seeded.length-1-i];
+    const isBye=!p1||!p2;
+    matches.push({
+      tournament_id:tournamentId,
+      round:firstRound,
+      match_number:i+1,
+      player1_id:p1?.user_id||null,
+      player2_id:p2?.user_id||null,
+      is_bye:isBye,
+      status:isBye?'done':'pending',
+      winner_id:isBye?(p1?.user_id||null):null
+    });
+  }
+  const res=await cpFetch('/rest/v1/brackets',{
+    method:'POST',
+    headers:{'Prefer':'return=representation'},
+    body:JSON.stringify(matches)
+  });
+  if(!res.ok && res.status!==201 && res.status!==204){
+    const err=await res.text(); throw new Error('bracket insert: '+err.slice(0,80));
+  }
+  return matches;
+}
+
+// ── INICIAR LLAVES — soporta bracket simple (≤64) y dual Elite+Amateur (>64) ──
 window.cpIniciarLlaves = async function(tournamentId, pendingCount){
   if(pendingCount > 0){
-    if(!confirm(`${pendingCount} arquero${pendingCount>1?'s':''} sin score serán excluidos de las llaves. ¿Iniciar de todas formas?`)) return;
+    if(!confirm(`${pendingCount} arquero${pendingCount>1?'s':''} sin score serán excluidos. ¿Iniciar de todas formas?`)) return;
   }
   try{
     // Leer jugadores con score, ordenados de mayor a menor
@@ -7399,77 +7451,67 @@ window.cpIniciarLlaves = async function(tournamentId, pendingCount){
     const players = await pRes.json();
     if(players.length < 2){ return cpToast('Se necesitan al menos 2 arqueros con score'); }
 
-    // Determinar rondas según número de jugadores
     const n = players.length;
-    const roundOrder = ['r32','r16','qf','sf','final'];
-    const roundNames = {r32:'32vos',r16:'16vos',qf:'Cuartos',sf:'Semis',final:'Final'};
-    let bracketSize = 2;
-    while(bracketSize < n) bracketSize *= 2;
+    const ELITE_MAX = 64; // Top 64 van al bracket Elite; el resto al Amateur
 
-    // Generar seeds — rellenar con byes si no es potencia de 2
-    const seeded = [...players];
-    while(seeded.length < bracketSize) seeded.push(null); // null = bye
+    if(n <= ELITE_MAX){
+      // ── BRACKET SIMPLE (comportamiento original) ──────────────
+      const sz = cpBracketSize(n);
+      const seeded = [...players];
+      while(seeded.length < sz) seeded.push(null);
+      const rounds = cpBracketRounds(sz);
+      const firstRound = rounds[0];
 
-    // Determinar rondas necesarias
-    const rounds = [];
-    if(bracketSize >= 32) rounds.push('r32');
-    if(bracketSize >= 16) rounds.push('r16');
-    if(bracketSize >= 8)  rounds.push('qf');
-    if(bracketSize >= 4)  rounds.push('sf');
-    rounds.push('final');
-    if(bracketSize >= 4)  rounds.push('bronze'); // bronce solo si hay 4+
+      await cpInsertFirstRound(tournamentId, seeded, firstRound);
 
-    // Generar matches de la primera ronda
-    const firstRound = rounds[0];
-    const matches = [];
-    for(let i=0; i<seeded.length/2; i++){
-      const p1 = seeded[i];                          // 1°, 2°, 3°... (top)
-      const p2 = seeded[seeded.length-1-i];          // último, penúltimo... (bottom)
-      const isBye = !p1 || !p2;
-      matches.push({
-        tournament_id: tournamentId,
-        round: firstRound,
-        match_number: i+1,
-        player1_id: p1?.user_id || null,
-        player2_id: p2?.user_id || null,
-        is_bye: isBye,
-        status: isBye ? 'done' : 'pending',
-        winner_id: isBye ? (p1?.user_id || null) : null
+      // Auto-resolver byes
+      const byeRes = await cpFetch(`/rest/v1/brackets?tournament_id=eq.${tournamentId}&is_bye=eq.true&winner_id=not.is.null`);
+      const byes = await byeRes.json();
+      for(const bye of byes) await cpResolveMatch(bye, tournamentId, true);
+
+      // Guardar metadata en handicap_config
+      await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{
+        method:'PATCH', headers:{'Prefer':'return=minimal'},
+        body:JSON.stringify({status:'playing', handicap_config: JSON.stringify({dual_bracket:false})})
       });
+
+      cpToast('🏆 ¡Llaves iniciadas! ('+n+' arqueros)');
+
+    } else {
+      // ── BRACKET DUAL: Elite (top 64) + Amateur (resto) ────────
+      const elite   = players.slice(0, ELITE_MAX);
+      const amateur = players.slice(ELITE_MAX);
+
+      // Bracket Elite — siempre 64 (rellena con byes si <64)
+      const eliteSz     = 64;
+      const eliteSeeded = [...elite];
+      while(eliteSeeded.length < eliteSz) eliteSeeded.push(null);
+      await cpInsertFirstRound(tournamentId, eliteSeeded, 'elite_r64');
+
+      // Bracket Amateur — tamaño dinámico según cuántos quedaron
+      const amateurSz     = cpBracketSize(amateur.length);
+      const amateurSeeded = [...amateur];
+      while(amateurSeeded.length < amateurSz) amateurSeeded.push(null);
+      const amateurRounds  = cpBracketRounds(amateurSz, 'amateur_');
+      await cpInsertFirstRound(tournamentId, amateurSeeded, amateurRounds[0]);
+
+      // Auto-resolver byes de ambos brackets
+      const byeRes = await cpFetch(`/rest/v1/brackets?tournament_id=eq.${tournamentId}&is_bye=eq.true&winner_id=not.is.null`);
+      const byes = await byeRes.json();
+      for(const bye of byes) await cpResolveMatch(bye, tournamentId, true);
+
+      // Guardar metadata dual bracket
+      await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{
+        method:'PATCH', headers:{'Prefer':'return=minimal'},
+        body:JSON.stringify({
+          status:'playing',
+          handicap_config: JSON.stringify({dual_bracket:true, elite_size:ELITE_MAX, amateur_count:amateur.length})
+        })
+      });
+
+      cpToast(`🏆 Bracket Dual iniciado — ${ELITE_MAX} Elite + ${amateur.length} Amateur`);
     }
 
-    // Insertar matches en Supabase
-    const bRes = await cpFetch('/rest/v1/brackets',{
-      method:'POST',
-      headers:{'Prefer':'return=representation'},
-      body:JSON.stringify(matches)
-    });
-    if(!bRes.ok && bRes.status!==201 && bRes.status!==204){
-      const err=await bRes.text(); return cpToast('Error: '+err.slice(0,60));
-    }
-    let createdMatches = [];
-    try{ createdMatches = await bRes.json(); if(!Array.isArray(createdMatches)) createdMatches=[]; }
-    catch(e){ createdMatches=[]; }
-    console.log('Matches creados:', createdMatches.length, createdMatches);
-
-    // Auto-resolver byes leyendo de Supabase (más robusto que confiar en el response)
-    if(bracketSize >= 4){
-      const freshRes = await cpFetch(`/rest/v1/brackets?tournament_id=eq.${tournamentId}&is_bye=eq.true&winner_id=not.is.null`);
-      const byeMatches = await freshRes.json();
-      console.log('Byes a resolver:', byeMatches.length, byeMatches);
-      for(const byeMatch of byeMatches){
-        await cpResolveMatch(byeMatch, tournamentId, true);
-      }
-    }
-
-    // Cambiar status del torneo a playing
-    await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{
-      method:'PATCH',
-      headers:{'Prefer':'return=minimal'},
-      body:JSON.stringify({status:'playing'})
-    });
-
-    cpToast('🏆 ¡Llaves iniciadas!');
     cpOpenRoom(tournamentId);
   } catch(e){ console.error(e); cpToast('Error generando llaves: '+e.message); }
 }
@@ -7626,16 +7668,43 @@ async function cpLoadBracket(tournamentId){
 
 function cpRenderBracket(matches, nameMap, matchFmt, tournamentId){
   const rounds=[...new Set(matches.map(m=>m.round))];
-  const roundOrder=['r32','r16','qf','sf','bronze','final'];
-  rounds.sort((a,b)=>roundOrder.indexOf(a)-roundOrder.indexOf(b));
+
+  // Orden canonico — soporta bracket simple, elite_ y amateur_
+  const ROUND_ORDER=[
+    'r128','r64','r32','r16','qf','sf','bronze','final',
+    'elite_r64','elite_r32','elite_r16','elite_qf','elite_sf','elite_bronze','elite_final',
+    'amateur_r128','amateur_r64','amateur_r32','amateur_r16','amateur_qf','amateur_sf','amateur_bronze','amateur_final'
+  ];
+  rounds.sort((a,b)=>{
+    const ai=ROUND_ORDER.indexOf(a), bi=ROUND_ORDER.indexOf(b);
+    if(ai<0&&bi<0) return 0; if(ai<0) return 1; if(bi<0) return -1;
+    return ai-bi;
+  });
 
   const roundConfig={
-    r32:   {label:'32avos',  accent:'rgba(255,255,255,0.4)', icon:'',   w:150},
-    r16:   {label:'16avos',  accent:'rgba(255,255,255,0.4)', icon:'',   w:150},
-    qf:    {label:'Cuartos', accent:'#5ab4d6',               icon:'',   w:155},
-    sf:    {label:'Semis',   accent:'#afa9ec',               icon:'',   w:160},
-    bronze:{label:'3er Lugar',accent:'#CD7F32',              icon:'\u{1F949}', w:175},
-    final: {label:'FINAL',   accent:'#FFD700',               icon:'\u{1F3C6}', w:200},
+    r128:  {label:'128avos', accent:'rgba(255,255,255,0.3)', icon:'', w:145},
+    r64:   {label:'64avos',  accent:'rgba(255,255,255,0.3)', icon:'', w:145},
+    r32:   {label:'32avos',  accent:'rgba(255,255,255,0.4)', icon:'', w:150},
+    r16:   {label:'16avos',  accent:'rgba(255,255,255,0.4)', icon:'', w:150},
+    qf:    {label:'Cuartos', accent:'#5ab4d6',               icon:'', w:155},
+    sf:    {label:'Semis',   accent:'#afa9ec',               icon:'', w:160},
+    bronze:{label:'3er Lugar',accent:'#CD7F32',              icon:'🥉', w:175},
+    final: {label:'FINAL',   accent:'#FFD700',               icon:'🏆', w:200},
+    elite_r64:    {label:'64avos',       accent:'#d8d15a', icon:'⭐', w:145},
+    elite_r32:    {label:'32avos',       accent:'#d8d15a', icon:'⭐', w:150},
+    elite_r16:    {label:'16avos',       accent:'#d8d15a', icon:'⭐', w:150},
+    elite_qf:     {label:'Cuartos',      accent:'#d8d15a', icon:'⭐', w:155},
+    elite_sf:     {label:'Semis',        accent:'#FFD700', icon:'⭐', w:160},
+    elite_bronze: {label:'3er Lugar',    accent:'#CD7F32', icon:'🥉', w:175},
+    elite_final:  {label:'FINAL ELITE',  accent:'#FFD700', icon:'🏆', w:200},
+    amateur_r128: {label:'128avos',      accent:'#5dcaa5', icon:'🌱', w:145},
+    amateur_r64:  {label:'64avos',       accent:'#5dcaa5', icon:'🌱', w:145},
+    amateur_r32:  {label:'32avos',       accent:'#5dcaa5', icon:'🌱', w:150},
+    amateur_r16:  {label:'16avos',       accent:'#5dcaa5', icon:'🌱', w:150},
+    amateur_qf:   {label:'Cuartos',      accent:'#5dcaa5', icon:'🌱', w:155},
+    amateur_sf:   {label:'Semis',        accent:'#5ab4d6', icon:'🌱', w:160},
+    amateur_bronze:{label:'3er Lugar',   accent:'#CD7F32', icon:'🥉', w:175},
+    amateur_final: {label:'FINAL AMATEUR',accent:'#5dcaa5',icon:'🏆', w:200},
   };
 
   const renderMatch=(m,round)=>{
@@ -7693,18 +7762,38 @@ function cpRenderBracket(matches, nameMap, matchFmt, tournamentId){
     </div>`;
   };
 
-  const mainRounds=rounds.filter(r=>r!=='bronze'&&r!=='final');
-  const endRounds=rounds.filter(r=>r==='final'||r==='bronze');
+  // Detectar si es bracket dual
+  const isDual = rounds.some(r=>r.startsWith('elite_')||r.startsWith('amateur_'));
 
-  document.getElementById('cp-bracket-cols').innerHTML=`
-    <div style="display:flex;gap:10px;align-items:flex-end">
-      ${mainRounds.map(r=>renderCol(r)).join('')}
-    </div>
-    ${endRounds.length?`<div style="display:flex;flex-direction:column;gap:8px;margin-left:${mainRounds.length?'10px':'0'}">
-      ${endRounds.includes('final')?renderCol('final'):''}
-      ${endRounds.includes('bronze')?renderCol('bronze'):''}
-    </div>`:''}
-  `;
+  function renderBracketSection(sectionRounds, title, titleColor){
+    const main = sectionRounds.filter(r=>!r.endsWith('bronze')&&!r.endsWith('final'));
+    const end  = sectionRounds.filter(r=>r.endsWith('final')||r.endsWith('bronze'));
+    const html = `
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        ${main.map(r=>renderCol(r)).join('')}
+      </div>
+      ${end.length?`<div style="display:flex;flex-direction:column;gap:8px;margin-left:${main.length?'10px':'0'}">
+        ${end.find(r=>r.endsWith('final'))?renderCol(end.find(r=>r.endsWith('final'))):''}
+        ${end.find(r=>r.endsWith('bronze'))?renderCol(end.find(r=>r.endsWith('bronze'))):''}
+      </div>`:''}`;
+    return title ? `<div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${titleColor};margin-bottom:10px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08)">${title}</div>
+      <div style="display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto">${html}</div>
+    </div>` : `<div style="display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto">${html}</div>`;
+  }
+
+  if(isDual){
+    const eliteRounds   = rounds.filter(r=>r.startsWith('elite_'));
+    const amateurRounds = rounds.filter(r=>r.startsWith('amateur_'));
+    document.getElementById('cp-bracket-cols').innerHTML =
+      renderBracketSection(eliteRounds,   '⭐ Bracket Elite — Top 64',     '#d8d15a') +
+      renderBracketSection(amateurRounds, '🌱 Bracket Amateur',             '#5dcaa5');
+  } else {
+    const mainRounds = rounds.filter(r=>!r.endsWith('bronze')&&r!=='final');
+    const endRounds  = rounds.filter(r=>r==='final'||r==='bronze');
+    document.getElementById('cp-bracket-cols').innerHTML =
+      renderBracketSection([...mainRounds,...endRounds], null, null);
+  }
 }
 // ── ABRIR MATCH ──────────────────────────────────────────────────
 window.cpOpenMatch = async function(matchId, tournamentId, matchFmt){
@@ -8168,13 +8257,24 @@ async function cpResolveMatch(m, tournamentId, silent=false){
     }
   };
 
-  const nextRoundMap = {r32:'r16', r16:'qf', qf:'sf', sf:'final'};
+  // Mapa de avance — soporta bracket simple, elite_ y amateur_
+  const nextRoundMap = {
+    // Simple
+    r128:'r64', r64:'r32', r32:'r16', r16:'qf', qf:'sf', sf:'final',
+    // Elite
+    elite_r64:'elite_r32', elite_r32:'elite_r16', elite_r16:'elite_qf',
+    elite_qf:'elite_sf',   elite_sf:'elite_final',
+    // Amateur
+    amateur_r128:'amateur_r64', amateur_r64:'amateur_r32', amateur_r32:'amateur_r16',
+    amateur_r16:'amateur_qf',   amateur_qf:'amateur_sf',   amateur_sf:'amateur_final',
+  };
   const currentRound = m.round;
   const nextRound = nextRoundMap[currentRound];
 
-  // ── SEMIS ────────────────────────────────────────────────────────
-  if(currentRound === 'sf'){
-    const sfMatches = allMatches.filter(x=>x.round==='sf');
+  // ── SEMIS (simple, elite_ y amateur_) ──────────────────────────
+  const isSfRound = currentRound==='sf' || currentRound==='elite_sf' || currentRound==='amateur_sf';
+  if(isSfRound){
+    const sfMatches = allMatches.filter(x=>x.round===currentRound);
     const updatedSfs = sfMatches.map(x=>x.id===m.id?{...x,winner_id:winnerId}:x);
     const allSfDone = updatedSfs.every(x=>x.winner_id);
 
@@ -8185,6 +8285,12 @@ async function cpResolveMatch(m, tournamentId, silent=false){
         userId: x.winner_id===x.player1_id ? x.player2_id : x.player1_id,
         matchScore: x.winner_id===x.player1_id ? (x.sets2??x.score2??0) : (x.sets1??x.score1??0)
       })).filter(l=>l.userId);
+
+      // Derivar los rounds de final y bronce según el prefijo del bracket
+      const bracketPrefix = currentRound.startsWith('elite_') ? 'elite_'
+        : currentRound.startsWith('amateur_') ? 'amateur_' : '';
+      const finalRound  = bracketPrefix + 'final';
+      const bronzeRound = bracketPrefix + 'bronze';
 
       if(realSfs.length === 1){
         // Solo 1 semi real (3 jugadores) — perdedor es 3ro automatico, sin bronce
@@ -8197,7 +8303,7 @@ async function cpResolveMatch(m, tournamentId, silent=false){
         await cpFetch('/rest/v1/brackets',{
           method:'POST', headers:{'Prefer':'return=minimal'},
           body:JSON.stringify([{
-            tournament_id:tournamentId, round:'final', match_number:1,
+            tournament_id:tournamentId, round:finalRound, match_number:1,
             player1_id:winners[0], player2_id:winners[1], status:'pending'
           }])
         });
@@ -8207,8 +8313,8 @@ async function cpResolveMatch(m, tournamentId, silent=false){
         await cpFetch('/rest/v1/brackets',{
           method:'POST', headers:{'Prefer':'return=minimal'},
           body:JSON.stringify([
-            {tournament_id:tournamentId, round:'final',  match_number:1, player1_id:winners[0], player2_id:winners[1], status:'pending'},
-            {tournament_id:tournamentId, round:'bronze', match_number:1, player1_id:losers[0]?.userId, player2_id:losers[1]?.userId, status:'pending'},
+            {tournament_id:tournamentId, round:finalRound,  match_number:1, player1_id:winners[0], player2_id:winners[1], status:'pending'},
+            {tournament_id:tournamentId, round:bronzeRound, match_number:1, player1_id:losers[0]?.userId, player2_id:losers[1]?.userId, status:'pending'},
           ])
         });
         if(!silent) cpToast('Semis listas - Final y 3er lugar generados');
@@ -8217,8 +8323,8 @@ async function cpResolveMatch(m, tournamentId, silent=false){
       if(!silent) cpToast('Semi terminada - Esperando la otra semi');
     }
 
-  // ── FINAL ────────────────────────────────────────────────────────
-  } else if(currentRound === 'final'){
+  // ── FINAL (simple, elite_, amateur_) ─────────────────────────────
+  } else if(currentRound==='final'||currentRound==='elite_final'||currentRound==='amateur_final'){
     await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${winnerId}`,{
       method:'PATCH', headers:{'Prefer':'return=minimal'},
       body:JSON.stringify({final_position:1})
@@ -8227,9 +8333,10 @@ async function cpResolveMatch(m, tournamentId, silent=false){
       method:'PATCH', headers:{'Prefer':'return=minimal'},
       body:JSON.stringify({final_position:2})
     });
-    // Cerrar torneo si no hay bronce o el bronce ya terminó
-    const bronzeMatch = allMatches.find(x=>x.round==='bronze');
-    if(!bronzeMatch || bronzeMatch.winner_id){
+    // Cerrar torneo solo si TODOS los brackets han terminado
+    const pendingFinals = allMatches.filter(x=>(x.round==='final'||x.round==='elite_final'||x.round==='amateur_final')&&!x.winner_id&&x.id!==m.id);
+    const pendingBronze = allMatches.filter(x=>(x.round==='bronze'||x.round==='elite_bronze'||x.round==='amateur_bronze')&&!x.winner_id);
+    if(pendingFinals.length===0 && pendingBronze.length===0){
       await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{
         method:'PATCH', headers:{'Prefer':'return=minimal'},
         body:JSON.stringify({status:'closed'})
@@ -8237,8 +8344,8 @@ async function cpResolveMatch(m, tournamentId, silent=false){
     }
     if(!silent) cpToast('🥇 ¡Tenemos campeón!');
 
-  // ── BRONCE ───────────────────────────────────────────────────────
-  } else if(currentRound === 'bronze'){
+  // ── BRONCE (simple, elite_, amateur_) ────────────────────────────
+  } else if(currentRound==='bronze'||currentRound==='elite_bronze'||currentRound==='amateur_bronze'){
     await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${tournamentId}&user_id=eq.${winnerId}`,{
       method:'PATCH', headers:{'Prefer':'return=minimal'},
       body:JSON.stringify({final_position:3})
@@ -8247,8 +8354,10 @@ async function cpResolveMatch(m, tournamentId, silent=false){
       method:'PATCH', headers:{'Prefer':'return=minimal'},
       body:JSON.stringify({final_position:4})
     });
-    const finalMatch = allMatches.find(x=>x.round==='final');
-    if(finalMatch?.winner_id){
+    // Mismo check — cerrar solo si todos los brackets terminaron
+    const pfBronze = allMatches.filter(x=>(x.round==='final'||x.round==='elite_final'||x.round==='amateur_final')&&!x.winner_id);
+    const pfFinal  = allMatches.filter(x=>(x.round==='bronze'||x.round==='elite_bronze'||x.round==='amateur_bronze')&&!x.winner_id&&x.id!==m.id);
+    if(pfBronze.length===0 && pfFinal.length===0){
       await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{
         method:'PATCH', headers:{'Prefer':'return=minimal'},
         body:JSON.stringify({status:'closed'})
