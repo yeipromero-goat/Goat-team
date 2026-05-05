@@ -12958,13 +12958,27 @@ window._coReload = coLoad;
 
   <!-- VIEW: Plan detail / día actual -->
   <div id="rt-view-plan" style="display:none">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <button class="rt-btn ghost sm" onclick="rtShowView('list')">← Planes</button>
       <div style="flex:1">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text)" id="rt-plan-detail-title">—</div>
         <div style="font-size:10px;color:var(--muted)" id="rt-plan-detail-sub">—</div>
       </div>
       <button class="rt-btn sm" onclick="rtEditPlan()">✏️</button>
+    </div>
+
+    <!-- ── RESUMEN ARRIBA — sticky, sin scroll ── -->
+    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--yellow),var(--green),var(--blue))"></div>
+
+      <!-- 3 stats principales -->
+      <div class="rt-stat-grid" id="rt-plan-week-stats" style="margin-bottom:10px"></div>
+
+      <!-- Promedio por flecha por modalidad -->
+      <div id="rt-pfa-wrap" style="display:none">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⬛ Promedio por flecha</div>
+        <div id="rt-pfa-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px"></div>
+      </div>
     </div>
 
     <!-- Week tabs -->
@@ -12975,10 +12989,6 @@ window._coReload = coLoad;
 
     <!-- Activities for selected day -->
     <div id="rt-day-activities"></div>
-
-    <!-- Semana resumen -->
-    <div class="rt-sec" style="margin-top:16px">Resumen de la semana</div>
-    <div class="rt-stat-grid" id="rt-plan-week-stats"></div>
   </div>
 
 </div><!-- rt-wrap -->
@@ -13094,6 +13104,7 @@ window._coReload = coLoad;
 (function(){
 
 const SUPA = 'https://axaiyaflubssaghvhefe.supabase.co';
+window._supabaseSUPA = SUPA;
 const DAYS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 const ACT_ICONS = {asistencia:'✅',calentamiento:'🔥',tiros_sin:'🏹',tiros_con:'🎯',conteo:'📊',torneo:'🏆'};
 const ACT_COLORS = {asistencia:'#5dcaa5',calentamiento:'#d8a05a',tiros_sin:'#5ab4d6',tiros_con:'#d8d15a',conteo:'#9a88dd',torneo:'#e05555'};
@@ -13307,8 +13318,42 @@ function rtRenderPlansList(){
   }
 
   if(forOthers.length && rtIsCoach){
-    html += `<div class="rt-sec">Planes asignados a arqueros</div>`;
-    html += forOthers.map(p=>rtRenderPlanItem(p,false)).join('');
+    html += `<div class="rt-sec" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Planes asignados a arqueros</span>
+      <span style="font-size:10px;color:var(--muted)" id="rt-coach-plans-count"></span>
+    </div>`;
+    html += `<div id="rt-coach-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+      <select id="rt-filter-gender" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
+        <option value="">👤 Género</option>
+        <option value="M">Masculino</option>
+        <option value="F">Femenino</option>
+      </select>
+      <select id="rt-filter-bow" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
+        <option value="">🏹 Modalidad</option>
+        <option value="compuesto">Compuesto</option>
+        <option value="recurvo">Recurvo</option>
+        <option value="barebow">Barebow</option>
+        <option value="tradicional">Tradicional</option>
+      </select>
+      <select id="rt-filter-cat" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
+        <option value="">🎖 Categoría</option>
+        <option value="sub14">Sub 14</option>
+        <option value="sub16">Sub 16</option>
+        <option value="sub18">Sub 18</option>
+        <option value="sub21">Sub 21</option>
+        <option value="sub25">Sub 25</option>
+        <option value="open">Open</option>
+        <option value="master">Master</option>
+      </select>
+    </div>`;
+    html += `<div id="rt-coach-plans-list">${forOthers.map(p=>rtRenderPlanItem(p,false)).join('')}</div>`;
+    // Store for filtering and show initial count
+    window._rtForOthers = forOthers;
+    // Set initial count after DOM renders
+    setTimeout(()=>{
+      const countEl = document.getElementById('rt-coach-plans-count');
+      if(countEl) countEl.textContent = forOthers.length+' planes';
+    }, 50);
   }
 
   if(!html && !myActive.length){
@@ -13943,25 +13988,31 @@ window.rtGoToTorneo = function(){
     window.switchTab('competencias', document.getElementById('sb-competencias'));
 };
 
+// ── Flechas por modalidad ────────────────────────────────
+const RT_MODE_ARROWS = {
+  'indoor-15':15,'indoor-30':30,'indoor-60':60,
+  'outdoor-36':36,'outdoor-72':72,
+  'field-c':24,'field-d':24,'3d':20
+};
+const RT_DISC_COLORS = {indoor:'#e05555',outdoor:'#5ab4d6',field:'#d8d15a','3d':'#5dcaa5'};
+const RT_DISC_LABELS = {indoor:'Indoor',outdoor:'Outdoor',field:'Field','3d':'3D'};
+
 // ── Week stats ────────────────────────────────────────────
 async function rtRenderWeekStats(plan){
   const el = document.getElementById('rt-plan-week-stats');
   try{
+    // Obtener todos los reportes del plan (no solo esta semana) para PFA
     const weekStart = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, 0);
     const weekEnd   = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, 6);
-    const r = await rtFetch(`training_reports?plan_id=eq.${plan.id}&user_id=eq.${rtUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`);
-    const reports = await r.json();
 
-    const asist = reports.filter(r=>r.completed).length;
-    const total = reports.length;
-    const calenta = reports.filter(r=>{
-      // need activity type - simplify: check if any calentamiento completed
-      return r.completed;
-    }).length;
+    const [rWeek, rAll] = await Promise.all([
+      rtFetch(`training_reports?plan_id=eq.${plan.id}&user_id=eq.${rtUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`).then(r=>r.json()),
+      rtFetch(`training_reports?user_id=eq.${rtUserId}&value_done=gt.0&select=value_done,note`).then(r=>r.json())
+    ]);
 
-    const tiros = reports.filter(r=>r.value_done&&r.value_done>0);
-    const tiroPct = tiros.length ? Math.round(tiros.reduce((a,r)=>a+(r.value_done||0),0)/tiros.length) : 0;
-
+    // Stats de la semana
+    const asist = rWeek.filter(r=>r.completed).length;
+    const total = rWeek.length;
     el.innerHTML = `
       <div class="rt-stat-box">
         <div class="rt-stat-val" style="color:#5dcaa5">${asist}</div>
@@ -13975,7 +14026,57 @@ async function rtRenderWeekStats(plan){
         <div class="rt-stat-val" style="color:#9a88dd">${total?Math.round(asist/total*100):0}%</div>
         <div class="rt-stat-lbl">Completado</div>
       </div>`;
-  } catch(e){ el.innerHTML=''; }
+
+    // PFA — buscar en archer_scores del usuario
+    const SUPA2 = window._supabaseSUPA || 'https://axaiyaflubssaghvhefe.supabase.co';
+    const session = (await window._supabaseClient.auth.getSession()).data.session;
+    const h2 = {
+      apikey: window._supabaseAnonKey||'',
+      Authorization: 'Bearer '+(session?.access_token||''),
+      'Content-Type':'application/json'
+    };
+    const scoresRes = await fetch(
+      `${SUPA2}/rest/v1/archer_scores?user_id=eq.${rtUserId}&select=total,mode,label,arrow_count&order=session_date.desc&limit=100`,
+      {headers:h2}
+    );
+    const scores = await scoresRes.json() || [];
+
+    // Agrupar por disciplina
+    const byDisc = {};
+    scores.forEach(s=>{
+      const mode = (s.mode||s.label||'').toLowerCase();
+      const arrows = RT_MODE_ARROWS[mode] || s.arrow_count || null;
+      if(!s.total || !arrows) return;
+      const disc = mode.startsWith('3d') ? '3d'
+        : mode.startsWith('outdoor') ? 'outdoor'
+        : mode.startsWith('field') ? 'field' : 'indoor';
+      if(!byDisc[disc]) byDisc[disc] = [];
+      byDisc[disc].push(s.total / arrows);
+    });
+
+    const pfaWrap = document.getElementById('rt-pfa-wrap');
+    const pfaGrid = document.getElementById('rt-pfa-grid');
+    const discs = Object.keys(byDisc);
+    if(pfaGrid && discs.length){
+      pfaGrid.innerHTML = discs.map(disc=>{
+        const vals = byDisc[disc];
+        const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+        const color = RT_DISC_COLORS[disc]||'var(--muted)';
+        return `<div style="padding:6px 8px;border-radius:7px;background:var(--surface2);border:0.5px solid var(--border);border-left:2px solid ${color}">
+          <div style="font-size:9px;color:${color};font-weight:600;text-transform:uppercase;letter-spacing:.05em">${RT_DISC_LABELS[disc]||disc}</div>
+          <div style="display:flex;align-items:baseline;gap:3px;margin-top:2px">
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text);line-height:1">${avg}</span>
+            <span style="font-size:9px;color:var(--muted)">pts/flecha</span>
+          </div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px">${vals.length} sesión${vals.length!==1?'es':''}</div>
+        </div>`;
+      }).join('');
+      if(pfaWrap) pfaWrap.style.display = 'block';
+    } else if(pfaWrap){
+      pfaWrap.style.display = 'none';
+    }
+
+  } catch(e){ console.error('rtRenderWeekStats error',e); if(el) el.innerHTML=''; }
 }
 
 async function rtLoadWeekStats(){
@@ -13998,6 +14099,92 @@ async function rtLoadWeekStats(){
 }
 
 window.rtEditPlan = function(){ rtToast('Edición de plan próximamente'); };
+
+// ── Filtro de planes del coach ───────────────────────────
+window.rtApplyCoachFilter = async function(){
+  const gender = document.getElementById('rt-filter-gender')?.value || '';
+  const bow    = document.getElementById('rt-filter-bow')?.value    || '';
+  const cat    = document.getElementById('rt-filter-cat')?.value    || '';
+
+  const plans = window._rtForOthers || [];
+  if(!plans.length) return;
+
+  // Necesitamos los perfiles de los arqueros para filtrar
+  if(!window._rtArcherProfiles){
+    const session = (await window._supabaseClient.auth.getSession()).data.session;
+    const h = {
+      apikey: window._supabaseAnonKey||'',
+      Authorization: 'Bearer '+(session?.access_token||''),
+      'Content-Type':'application/json'
+    };
+    const res = await fetch(
+      window._supabaseSUPA + '/rest/v1/archer_profiles?select=user_id,gender,bow_type,category', {headers:h}
+    );
+    const data = await res.json();
+    window._rtArcherProfiles = {};
+    (data||[]).forEach(p=>{ window._rtArcherProfiles[p.user_id] = p; });
+  }
+
+  const filtered = plans.filter(p=>{
+    const prof = window._rtArcherProfiles[p.assigned_to] || {};
+    if(gender && prof.gender !== gender) return false;
+    if(bow    && prof.bow_type !== bow)  return false;
+    if(cat    && prof.category !== cat)  return false;
+    return true;
+  });
+
+  const listEl  = document.getElementById('rt-coach-plans-list');
+  const countEl = document.getElementById('rt-coach-plans-count');
+  if(listEl){
+    listEl.innerHTML = filtered.length
+      ? filtered.map(p=>rtRenderPlanItem(p,false)).join('')
+      : '<div style="padding:16px 0;text-align:center;font-size:12px;color:var(--muted)">Sin planes con ese filtro</div>';
+  }
+  if(countEl){
+    const hasFilter = gender||bow||cat;
+    countEl.textContent = hasFilter ? filtered.length+' / '+plans.length : plans.length+' planes';
+  }
+
+  // Actualizar stats con los planes filtrados
+  await rtRenderCoachStats(filtered);
+};
+
+// Stats agregadas del coach (planes filtrados)
+async function rtRenderCoachStats(plans){
+  if(!plans || !plans.length){
+    document.getElementById('rt-stat-asistencia').textContent = '—';
+    document.getElementById('rt-stat-calenta').textContent    = '—';
+    document.getElementById('rt-stat-tiros').textContent      = '—';
+    return;
+  }
+  // Obtener reportes de todos los arqueros de estos planes
+  const planIds = plans.map(p=>p.id);
+  const today = new Date().toISOString().slice(0,10);
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekStartStr = weekStart.toISOString().slice(0,10);
+
+  const session = (await window._supabaseClient.auth.getSession()).data.session;
+  const h = {
+    apikey: window._supabaseAnonKey||'',
+    Authorization: 'Bearer '+(session?.access_token||''),
+    'Content-Type':'application/json'
+  };
+  const q = planIds.map(id=>`plan_id=eq.${id}`).join(',');
+  const res = await fetch(
+    window._supabaseSUPA + `/rest/v1/training_reports?or=(${q})&report_date=gte.${weekStartStr}&select=*`,
+    {headers:h}
+  );
+  const reports = await res.json() || [];
+
+  const total    = reports.length;
+  const done     = reports.filter(r=>r.completed).length;
+  const withScore= reports.filter(r=>r.value_done && r.value_done > 0).length;
+  const pct      = total > 0 ? Math.round(done/total*100) : null;
+
+  document.getElementById('rt-stat-asistencia').textContent = done || '0';
+  document.getElementById('rt-stat-calenta').textContent    = total || '0';
+  document.getElementById('rt-stat-tiros').textContent      = pct !== null ? pct+'%' : '—';
+}
 
 // ── Exponer funciones de render globalmente ───────────────
 window.rtRenderDayActivities = rtRenderDayActivities;
