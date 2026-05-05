@@ -13292,10 +13292,26 @@ function rtRenderPlansList(){
 
   let html = '';
 
-  // Mis planes: activos + completados juntos
-  const myAll = [...myActive, ...myDone];
+  // Filtrar "mis planes" por la semana visible
+  const {mon: wMon, sun: wSun} = rtUpdateWeekLabel();
+  const wMonStr = wMon.toISOString().slice(0,10);
+  const wSunStr = wSun.toISOString().slice(0,10);
+
+  function planInWeek(p){
+    const start = p.week_start;
+    if(!start) return true;
+    const weeks = p.weeks || 1;
+    const pEnd = new Date(start);
+    pEnd.setDate(pEnd.getDate() + weeks*7 - 1);
+    const pEndStr = pEnd.toISOString().slice(0,10);
+    return start <= wSunStr && pEndStr >= wMonStr;
+  }
+
+  const myAll = [...myActive, ...myDone].filter(planInWeek);
   if(myAll.length){
     html += myAll.map(p=>rtRenderPlanItem(p, p.status==='active')).join('');
+  } else {
+    html += '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--muted)">Sin planes esta semana</div>';
   }
 
   if(forOthers.length && rtIsCoach){
@@ -13330,8 +13346,17 @@ function rtRenderPlansList(){
         <option value="sub18">Sub 18</option>
         <option value="sub21">Sub 21</option>
         <option value="sub25">Sub 25</option>
-        <option value="open">Open</option>
-        <option value="master">Master</option>
+        <option value="mayores">Mayores</option>
+      </select>
+      <select id="rt-filter-days" onchange="rtApplyCoachFilter()" style="flex:1;min-width:80px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
+        <option value="7">7 días</option>
+        <option value="15">15 días</option>
+        <option value="30" selected>30 días</option>
+        <option value="60">60 días</option>
+        <option value="90">90 días</option>
+        <option value="180">180 días</option>
+        <option value="360">360 días</option>
+        <option value="0">Máx</option>
       </select>
     </div>`;
     html += `<div id="rt-coach-plans-list">${forOthers.map(p=>rtRenderPlanItem(p,false)).join('')}</div>`;
@@ -14176,9 +14201,10 @@ async function rtRenderCoachStats(plans){
   }
   // Obtener reportes de todos los arqueros de estos planes
   const planIds = plans.map(p=>p.id);
-  const today = new Date().toISOString().slice(0,10);
-  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  const weekStartStr = weekStart.toISOString().slice(0,10);
+  const days = parseInt(document.getElementById('rt-filter-days')?.value || '30');
+  const dateFrom = new Date();
+  if(days > 0) dateFrom.setDate(dateFrom.getDate() - days);
+  const dateFromStr = days > 0 ? dateFrom.toISOString().slice(0,10) : '2020-01-01';
 
   const session = (await window._supabaseClient.auth.getSession()).data.session;
   const h = {
@@ -14188,7 +14214,7 @@ async function rtRenderCoachStats(plans){
   };
   const q = planIds.map(id=>`plan_id=eq.${id}`).join(',');
   const res = await fetch(
-    window._supabaseSUPA + `/rest/v1/training_reports?or=(${q})&report_date=gte.${weekStartStr}&select=*`,
+    window._supabaseSUPA + `/rest/v1/training_reports?or=(${q})&report_date=gte.${dateFromStr}&select=*`,
     {headers:h}
   );
   const reports = await res.json() || [];
