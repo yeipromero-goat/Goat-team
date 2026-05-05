@@ -12741,6 +12741,22 @@ window._coReload = coLoad;
 }
 .rt-toggle.on .rt-toggle-dot{ transform:translateX(16px); }
 
+/* Time filter chips — mismo estilo que coach tab */
+.rt-tf-btn{
+  padding:5px 12px;border-radius:20px;
+  font-size:11px;font-weight:600;
+  border:0.5px solid rgba(255,255,255,0.12);
+  background:transparent;color:rgba(255,255,255,0.4);
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  transition:all .15s;white-space:nowrap;
+}
+.rt-tf-btn:hover{ color:#fff;border-color:rgba(255,255,255,0.3); }
+.rt-tf-btn.rt-tf-act{
+  background:rgba(216,209,90,0.12);
+  border-color:rgba(216,209,90,0.4);
+  color:#d8d15a;
+}
+
 /* Stats mini */
 .rt-stat-grid{
   display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
@@ -13348,16 +13364,17 @@ function rtRenderPlansList(){
         <option value="sub25">Sub 25</option>
         <option value="mayores">Mayores</option>
       </select>
-      <select id="rt-filter-days" onchange="rtApplyCoachFilter()" style="flex:1;min-width:80px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
-        <option value="7">7 días</option>
-        <option value="15">15 días</option>
-        <option value="30" selected>30 días</option>
-        <option value="60">60 días</option>
-        <option value="90">90 días</option>
-        <option value="180">180 días</option>
-        <option value="360">360 días</option>
-        <option value="0">Máx</option>
-      </select>
+      <input type="hidden" id="rt-filter-days" value="30">
+    </div>`;
+    html += `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px" id="rt-time-filter-chips">
+      <button class="rt-tf-btn" onclick="rtSetFilterDays(7,this)">7d</button>
+      <button class="rt-tf-btn" onclick="rtSetFilterDays(15,this)">15d</button>
+      <button class="rt-tf-btn rt-tf-act" onclick="rtSetFilterDays(30,this)">30d</button>
+      <button class="rt-tf-btn" onclick="rtSetFilterDays(60,this)">60d</button>
+      <button class="rt-tf-btn" onclick="rtSetFilterDays(90,this)">90d</button>
+      <button class="rt-tf-btn" onclick="rtSetFilterDays(180,this)">180d</button>
+      <button class="rt-tf-btn" onclick="rtSetFilterDays(360,this)">360d</button>
+      <button class="rt-tf-btn" onclick="rtSetFilterDays(0,this)">Máx</button>
     </div>`;
     html += `<div id="rt-coach-plans-list">${forOthers.map(p=>rtRenderPlanItem(p,false)).join('')}</div>`;
     // Store for filtering and show initial count
@@ -14138,6 +14155,13 @@ function rtGetCategory(age){
 }
 
 // ── Filtro de planes del coach ────────────────────────────
+window.rtSetFilterDays = function(days, btn){
+  document.getElementById('rt-filter-days').value = days;
+  document.querySelectorAll('.rt-tf-btn').forEach(b=>b.classList.remove('rt-tf-act'));
+  if(btn) btn.classList.add('rt-tf-act');
+  rtApplyCoachFilter();
+};
+
 window.rtApplyCoachFilter = async function(){
   const gender = document.getElementById('rt-filter-gender')?.value || '';
   const bow    = document.getElementById('rt-filter-bow')?.value    || '';
@@ -14193,16 +14217,20 @@ window.rtApplyCoachFilter = async function(){
 
 // Stats agregadas del coach (planes filtrados)
 async function rtRenderCoachStats(plans){
+  const elAsist  = document.getElementById('rt-stat-asistencia');
+  const elCal    = document.getElementById('rt-stat-calenta');
+  const elTiros  = document.getElementById('rt-stat-tiros');
+
   if(!plans || !plans.length){
-    document.getElementById('rt-stat-asistencia').textContent = '—';
-    document.getElementById('rt-stat-calenta').textContent    = '—';
-    document.getElementById('rt-stat-tiros').textContent      = '—';
+    if(elAsist) elAsist.textContent = '—';
+    if(elCal)   elCal.textContent   = '—';
+    if(elTiros) elTiros.textContent = '—';
     return;
   }
-  // Obtener reportes de todos los arqueros de estos planes
-  const planIds = plans.map(p=>p.id);
-  const days = parseInt(document.getElementById('rt-filter-days')?.value || '30');
-  const dateFrom = new Date();
+
+  const planIds   = plans.map(p=>p.id);
+  const days      = parseInt(document.getElementById('rt-filter-days')?.value || '30');
+  const dateFrom  = new Date();
   if(days > 0) dateFrom.setDate(dateFrom.getDate() - days);
   const dateFromStr = days > 0 ? dateFrom.toISOString().slice(0,10) : '2020-01-01';
 
@@ -14212,21 +14240,86 @@ async function rtRenderCoachStats(plans){
     Authorization: 'Bearer '+(session?.access_token||''),
     'Content-Type':'application/json'
   };
+
+  // Obtener reportes + scores en paralelo
   const q = planIds.map(id=>`plan_id=eq.${id}`).join(',');
-  const res = await fetch(
-    window._supabaseSUPA + `/rest/v1/training_reports?or=(${q})&report_date=gte.${dateFromStr}&select=*`,
-    {headers:h}
-  );
-  const reports = await res.json() || [];
+  const userIds = [...new Set(plans.map(p=>p.assigned_to))].join(',');
 
-  const total    = reports.length;
-  const done     = reports.filter(r=>r.completed).length;
-  const withScore= reports.filter(r=>r.value_done && r.value_done > 0).length;
-  const pct      = total > 0 ? Math.round(done/total*100) : null;
+  const [reportsRes, scoresRes] = await Promise.all([
+    fetch(window._supabaseSUPA + `/rest/v1/training_reports?or=(${q})&report_date=gte.${dateFromStr}&select=*`, {headers:h}),
+    fetch(window._supabaseSUPA + `/rest/v1/scores?user_id=in.(${userIds})&select=total,mode,label,avg_arrow,arrow_count&created_at=gte.${dateFromStr}T00:00:00Z`, {headers:h})
+  ]);
 
-  document.getElementById('rt-stat-asistencia').textContent = done || '0';
-  document.getElementById('rt-stat-calenta').textContent    = total || '0';
-  document.getElementById('rt-stat-tiros').textContent      = pct !== null ? pct+'%' : '—';
+  const reports = reportsRes.ok ? (await reportsRes.json() || []) : [];
+  const scores  = scoresRes.ok  ? (await scoresRes.json()  || []) : [];
+
+  // Stats de asistencia y calentamiento en %
+  const asistActs = reports.filter(r=>{
+    // actividades de asistencia completadas
+    return r.completed;
+  });
+  const total = reports.length;
+  const done  = asistActs.length;
+  const asistPct = total > 0 ? Math.round(done/total*100) : null;
+
+  // Tiros: actividades con value_done > 0
+  const tirosReps = reports.filter(r=>r.value_done && r.value_done > 0);
+  const tirosPct  = total > 0 ? Math.round(tirosReps.length/total*100) : null;
+
+  if(elAsist) elAsist.textContent = asistPct !== null ? asistPct+'%' : '—';
+  if(elCal)   elCal.textContent   = total || '0';
+  if(elTiros) elTiros.textContent = tirosPct !== null ? tirosPct+'%' : '—';
+
+  // PFA por disciplina
+  const byDisc = {};
+  const arrScores = Array.isArray(scores) ? scores : [];
+  arrScores.forEach(s=>{
+    const mode = (s.mode||s.label||'').toLowerCase();
+    const pfa  = s.avg_arrow || (s.arrow_count ? s.total/s.arrow_count : null)
+              || (RT_MODE_ARROWS[mode] ? s.total/RT_MODE_ARROWS[mode] : null);
+    if(!s.total || !pfa) return;
+    const disc = mode.startsWith('3d') ? '3d'
+      : mode.startsWith('outdoor') ? 'outdoor'
+      : mode.startsWith('field')   ? 'field' : 'indoor';
+    if(!byDisc[disc]) byDisc[disc] = [];
+    byDisc[disc].push(pfa);
+  });
+
+  // Render PFA grid — insertar después de los stat boxes si no existe
+  let pfaEl = document.getElementById('rt-coach-pfa-grid');
+  if(!pfaEl){
+    const statsEl = document.getElementById('rt-stat-asistencia')?.closest('.rt-stat-grid');
+    if(statsEl){
+      const wrap = document.createElement('div');
+      wrap.id = 'rt-coach-pfa-grid';
+      wrap.style.cssText = 'margin-top:10px';
+      statsEl.parentNode.insertBefore(wrap, statsEl.nextSibling);
+      pfaEl = wrap;
+    }
+  }
+
+  if(pfaEl){
+    const discs = ['indoor','outdoor','field','3d'];
+    const cells = discs.map(disc=>{
+      const vals = byDisc[disc];
+      if(!vals || !vals.length) return `<div style="padding:6px 8px;border-radius:7px;background:var(--surface2);border:0.5px solid var(--border);opacity:.3">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase">${RT_DISC_LABELS[disc]}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Sin datos</div>
+      </div>`;
+      const avg   = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+      const color = RT_DISC_COLORS[disc]||'var(--muted)';
+      return `<div style="padding:6px 8px;border-radius:7px;background:var(--surface2);border:0.5px solid var(--border);border-left:2px solid ${color}">
+        <div style="font-size:9px;color:${color};font-weight:600;text-transform:uppercase;letter-spacing:.05em">${RT_DISC_LABELS[disc]}</div>
+        <div style="display:flex;align-items:baseline;gap:3px;margin-top:2px">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text);line-height:1">${avg}</span>
+          <span style="font-size:9px;color:var(--muted)">pts/flecha</span>
+        </div>
+        <div style="font-size:9px;color:var(--muted);margin-top:1px">${vals.length} sesión${vals.length!==1?'es':''}</div>
+      </div>`;
+    });
+    pfaEl.innerHTML = `<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⬛ Promedio por flecha</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">${cells.join('')}</div>`;
+  }
 }
 
 // ── Exponer funciones de render globalmente ───────────────
