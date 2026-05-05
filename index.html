@@ -13287,18 +13287,15 @@ function rtRenderPlansList(){
   // Planes que creé para otros
   const forOthers = rtPlans.filter(p=>p.assigned_to!==rtUserId);
 
-  if(myActive.length){
-    activeSec.style.display = 'block';
-    activeCard.innerHTML = myActive.map(p=>rtRenderPlanItem(p, true)).join('');
-  } else {
-    activeSec.style.display = 'none';
-  }
+  // Ocultar sección "Plan activo" separada — todo va en "Mis planes"
+  activeSec.style.display = 'none';
 
   let html = '';
 
-  if(myDone.length){
-    html += `<div class="rt-sec" style="margin-top:0">Completados / pausados</div>`;
-    html += myDone.map(p=>rtRenderPlanItem(p,false)).join('');
+  // Mis planes: activos + completados juntos
+  const myAll = [...myActive, ...myDone];
+  if(myAll.length){
+    html += myAll.map(p=>rtRenderPlanItem(p, p.status==='active')).join('');
   }
 
   if(forOthers.length && rtIsCoach){
@@ -14092,6 +14089,26 @@ async function rtLoadWeekStats(){
 window.rtEditPlan = function(){ rtToast('Edición de plan próximamente'); };
 
 // ── Filtro de planes del coach ───────────────────────────
+// Carga perfiles frescos cada vez que se llama (invalida cache al cambiar filtro)
+async function rtLoadArcherProfiles(){
+  const session = (await window._supabaseClient.auth.getSession()).data.session;
+  const h = {
+    apikey: window._supabaseAnonKey||'',
+    Authorization: 'Bearer '+(session?.access_token||''),
+    'Content-Type':'application/json'
+  };
+  // Traer todos los campos relevantes del perfil
+  const res = await fetch(
+    window._supabaseSUPA + '/rest/v1/archer_profiles?select=user_id,gender,bow_type,category&limit=500',
+    {headers:h}
+  );
+  const data = await res.json();
+  console.log('🔵 archer_profiles sample:', data?.slice(0,2));
+  window._rtArcherProfiles = {};
+  (data||[]).forEach(p=>{ window._rtArcherProfiles[p.user_id] = p; });
+  return window._rtArcherProfiles;
+}
+
 window.rtApplyCoachFilter = async function(){
   const gender = document.getElementById('rt-filter-gender')?.value || '';
   const bow    = document.getElementById('rt-filter-bow')?.value    || '';
@@ -14100,27 +14117,26 @@ window.rtApplyCoachFilter = async function(){
   const plans = window._rtForOthers || [];
   if(!plans.length) return;
 
-  // Necesitamos los perfiles de los arqueros para filtrar
-  if(!window._rtArcherProfiles){
-    const session = (await window._supabaseClient.auth.getSession()).data.session;
-    const h = {
-      apikey: window._supabaseAnonKey||'',
-      Authorization: 'Bearer '+(session?.access_token||''),
-      'Content-Type':'application/json'
-    };
-    const res = await fetch(
-      window._supabaseSUPA + '/rest/v1/archer_profiles?select=user_id,gender,bow_type,category', {headers:h}
-    );
-    const data = await res.json();
-    window._rtArcherProfiles = {};
-    (data||[]).forEach(p=>{ window._rtArcherProfiles[p.user_id] = p; });
-  }
+  // Siempre recargar perfiles para tener datos frescos
+  const profiles = await rtLoadArcherProfiles();
+  console.log('🔵 profiles loaded:', Object.keys(profiles).length, '| filter:', {gender,bow,cat});
 
-  const filtered = plans.filter(p=>{
-    const prof = window._rtArcherProfiles[p.assigned_to] || {};
-    if(gender && prof.gender !== gender) return false;
-    if(bow    && prof.bow_type !== bow)  return false;
-    if(cat    && prof.category !== cat)  return false;
+  // Si no hay filtro activo, mostrar todo
+  const hasFilter = gender||bow||cat;
+  const filtered = !hasFilter ? plans : plans.filter(p=>{
+    const prof = profiles[p.assigned_to] || {};
+    console.log('🔵 plan assigned_to:', p.assigned_to, '| prof:', prof);
+    // Comparar gender ignorando mayúsculas y variantes (M/male/Male)
+    if(gender){
+      const pg = (prof.gender||'').toLowerCase();
+      const fg = gender.toLowerCase();
+      // Acepta: M/m/male o F/f/female
+      const gOk = fg==='m' ? (pg==='m'||pg==='male'||pg==='masculino') 
+                            : (pg==='f'||pg==='female'||pg==='femenino');
+      if(!gOk) return false;
+    }
+    if(bow && prof.bow_type !== bow) return false;
+    if(cat && prof.category !== cat) return false;
     return true;
   });
 
@@ -14132,8 +14148,7 @@ window.rtApplyCoachFilter = async function(){
       : '<div style="padding:16px 0;text-align:center;font-size:12px;color:var(--muted)">Sin planes con ese filtro</div>';
   }
   if(countEl){
-    const hasFilter = gender||bow||cat;
-    countEl.textContent = hasFilter ? filtered.length+' / '+plans.length : plans.length+' planes';
+    countEl.textContent = hasFilter ? filtered.length+' / '+plans.length+' planes' : plans.length+' planes';
   }
 
   // Actualizar stats con los planes filtrados
