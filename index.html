@@ -10948,9 +10948,13 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-plunger" placeholder="Ej: Beiter out 2">
           </div>
           <div class="pf-field">
-            <label class="pf-label">Estabilizador central</label>
-            <input class="pf-input" id="sf-stab-center" placeholder="Ej: Fivics 27in">
+            <label class="pf-label">Altura de nocking point (mm)</label>
+            <input class="pf-input" id="sf-nocking-point" type="number" min="-10" max="30" step="0.5" placeholder="Ej: 3">
           </div>
+        </div>
+        <div class="pf-field">
+          <label class="pf-label">Estabilizador central</label>
+          <input class="pf-input" id="sf-stab-center" placeholder="Ej: Fivics 27in">
         </div>
         <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
         <div class="pf-fields-grid">
@@ -10998,6 +11002,16 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-bb-arrow-weight" type="number" min="100" max="600" placeholder="Ej: 320">
           </div>
         </div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Altura de nocking point (mm)</label>
+            <input class="pf-input" id="sf-bb-nocking-point" type="number" min="-10" max="30" step="0.5" placeholder="Ej: 3">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Peso total del arco (kg)</label>
+            <input class="pf-input" id="sf-bb-total-weight" type="number" min="0.5" max="5" step="0.01" placeholder="Ej: 1.8">
+          </div>
+        </div>
       </div>
 
       <div id="sf-compuesto-fields" style="display:none">
@@ -11014,6 +11028,20 @@ window.bmDiscardVideo = function(){
         <div class="pf-field">
           <label class="pf-label">Let-off (%)</label>
           <input class="pf-input" id="sf-letoff" type="number" min="50" max="99" placeholder="Ej: 80">
+        </div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Largo del loop (in)</label>
+            <input class="pf-input" id="sf-loop-length" type="number" min="0" max="6" step="0.0625" placeholder="Ej: 0.5">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Altura del peep (in)</label>
+            <input class="pf-input" id="sf-peep-height" type="number" min="0" max="12" step="0.0625" placeholder="Ej: 4.25">
+          </div>
+        </div>
+        <div class="pf-field">
+          <label class="pf-label">Altura de nocking point (mm)</label>
+          <input class="pf-input" id="sf-cp-nocking-point" type="number" min="-10" max="30" step="0.5" placeholder="Ej: 3">
         </div>
         <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
         <div class="pf-fields-grid">
@@ -11456,6 +11484,11 @@ window.pfSaveSetup = async function(){
     ata:               parseFloat(document.getElementById('sf-ata')?.value)||null,
     brace_height:      parseFloat(document.getElementById('sf-bh')?.value)||null,
     letoff:            parseFloat(document.getElementById('sf-letoff')?.value)||null,
+    // Nuevos specs por tipo
+    loop_length:     parseFloat(document.getElementById('sf-loop-length')?.value)||null,
+    peep_height:     parseFloat(document.getElementById('sf-peep-height')?.value)||null,
+    nocking_point:   parseFloat(document.getElementById('sf-cp-nocking-point')?.value||document.getElementById('sf-nocking-point')?.value||document.getElementById('sf-bb-nocking-point')?.value)||null,
+    bb_total_weight: parseFloat(document.getElementById('sf-bb-total-weight')?.value)||null,
     // Tradicional
     bow_subtype:       document.getElementById('sf-bow-subtype')?.value||null,
     // Estabilizadores — guardados como JSONB en notes extendido
@@ -11500,7 +11533,7 @@ window.pfSaveSetup = async function(){
      'sf-plunger','sf-stab-center','sf-stab-center-len','sf-stab-center-oz',
      'sf-stab-lat1-len','sf-stab-lat1-oz','sf-stab-lat2-len','sf-stab-lat2-oz',
      'sf-bb-plunger','sf-bb-arrow-weight',
-     'sf-ata','sf-bh','sf-letoff',
+     'sf-ata','sf-bh','sf-letoff','sf-loop-length','sf-peep-height','sf-cp-nocking-point','sf-nocking-point','sf-bb-nocking-point','sf-bb-total-weight',
      'sf-cp-stab-center-len','sf-cp-stab-center-oz',
      'sf-cp-stab-lat1-len','sf-cp-stab-lat1-oz',
      'sf-cp-stab-lat2-len','sf-cp-stab-lat2-oz',
