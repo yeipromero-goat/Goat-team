@@ -13420,7 +13420,7 @@ window.rtNavWeek = function(delta){
   if(rtWeekOffset + delta > 0) return; // no ir al futuro
   rtWeekOffset += delta;
   rtUpdateWeekLabel();
-  rtLoadWeekStats();
+  rtLoadPlans();       // recarga lista Y stats con la semana nueva
 };
 
 function rtInit(){
