@@ -13514,19 +13514,30 @@ async function rtLoadCoachArchers(){
 async function rtLoadPlans(){
   if(!rtUserId) return;
   try{
-    // Planes donde soy el destinatario (mis planes)
-    const r1 = await rtFetch(`training_plans?assigned_to=eq.${rtUserId}&order=created_at.desc&limit=30`);
-    const myPlans = await r1.json();
+    // Calcular rango de la semana visible
+    const {mon: wMon, sun: wSun} = rtUpdateWeekLabel();
+    const wMonStr = wMon.toISOString().slice(0,10);
+    const wSunStr = wSun.toISOString().slice(0,10);
 
-    // Planes que creé para otros (solo coach)
+    // Mis planes — traer solo los que tienen week_start dentro o solapando la semana visible
+    const r1 = await rtFetch(`training_plans?assigned_to=eq.${rtUserId}&week_start=lte.${wSunStr}&order=week_start.desc&limit=100`);
+    const myPlansRaw = await r1.json();
+    // Filtrar del lado del cliente para solapamiento exacto
+    const myPlans = myPlansRaw.filter(p=>{
+      if(!p.week_start) return true;
+      const pEnd = new Date(p.week_start);
+      pEnd.setDate(pEnd.getDate() + (p.weeks||1)*7 - 1);
+      return pEnd.toISOString().slice(0,10) >= wMonStr;
+    });
+
+    // Planes que creé para otros (coach) — sin filtro de semana, el coach ve todos
     let createdPlans = [];
     if(rtIsCoach){
-      const r2 = await rtFetch(`training_plans?created_by=eq.${rtUserId}&assigned_to=neq.${rtUserId}&order=created_at.desc&limit=30`);
+      const r2 = await rtFetch(`training_plans?created_by=eq.${rtUserId}&assigned_to=neq.${rtUserId}&order=created_at.desc&limit=200`);
       createdPlans = await r2.json();
     }
 
     rtPlans = [...myPlans, ...createdPlans];
-    // Deduplicar por id
     const seen = new Set();
     rtPlans = rtPlans.filter(p=>{ if(seen.has(p.id)) return false; seen.add(p.id); return true; });
 
@@ -13964,11 +13975,15 @@ async function rtRenderDayActivities(plan){
   el.innerHTML = '<div style="text-align:center;padding:16px;font-size:12px;color:var(--muted)">Cargando...</div>';
 
   try{
-    // Load activities — null day_of_week = aplica a todos los días activos
+    // Load activities — filtrar por semana actual Y día actual
     const aRes = await rtFetch(`training_activities?plan_id=eq.${plan.id}&order=sort_order.asc`);
     const allActs = await aRes.json();
-    // Filtrar: incluir actividades sin día asignado (null) y las del día actual
-    const acts = allActs.filter(a => a.day_of_week === null || a.day_of_week === rtCurrentDay);
+    // Filtrar: semana actual (o null) + día actual (o null)
+    const acts = allActs.filter(a => {
+      const weekOk = a.week_number === null || a.week_number === undefined || a.week_number === rtCurrentWeek;
+      const dayOk  = a.day_of_week === null || a.day_of_week === undefined || a.day_of_week === rtCurrentDay;
+      return weekOk && dayOk;
+    });
 
     // Load reports for this day/week
     const reportDate = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, rtCurrentDay);
