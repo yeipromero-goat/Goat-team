@@ -10956,6 +10956,16 @@ window.bmDiscardVideo = function(){
           <label class="pf-label">Estabilizador central</label>
           <input class="pf-input" id="sf-stab-center" placeholder="Ej: Fivics 27in">
         </div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Cuerda</label>
+            <input class="pf-input" id="sf-rec-string-brand" placeholder="Ej: Double S Recurvo">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Hilos</label>
+            <input class="pf-input" id="sf-rec-string-strands" type="number" min="8" max="24" placeholder="Ej: 14">
+          </div>
+        </div>
         <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
         <div class="pf-fields-grid">
           <div class="pf-field">
@@ -11012,6 +11022,16 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-bb-total-weight" type="number" min="0.5" max="5" step="0.01" placeholder="Ej: 1.8">
           </div>
         </div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Cuerda</label>
+            <input class="pf-input" id="sf-bb-string-brand" placeholder="Ej: Poliester">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Hilos</label>
+            <input class="pf-input" id="sf-bb-string-strands" type="number" min="8" max="24" placeholder="Ej: 14">
+          </div>
+        </div>
       </div>
 
       <div id="sf-compuesto-fields" style="display:none">
@@ -11042,6 +11062,16 @@ window.bmDiscardVideo = function(){
         <div class="pf-field">
           <label class="pf-label">Altura de nocking point (mm)</label>
           <input class="pf-input" id="sf-cp-nocking-point" type="number" min="-10" max="30" step="0.5" placeholder="Ej: 3">
+        </div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Cuerda</label>
+            <input class="pf-input" id="sf-cp-string-brand" placeholder="Ej: Double S Hitec">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Hilos</label>
+            <input class="pf-input" id="sf-cp-string-strands" type="number" min="8" max="24" placeholder="Ej: 18">
+          </div>
         </div>
         <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
         <div class="pf-fields-grid">
@@ -11085,6 +11115,16 @@ window.bmDiscardVideo = function(){
             <option value="longbow">Longbow</option>
             <option value="recurvo">Recurvo tradicional</option>
           </select>
+        </div>
+        <div class="pf-fields-grid">
+          <div class="pf-field">
+            <label class="pf-label">Cuerda</label>
+            <input class="pf-input" id="sf-trad-string-brand" placeholder="Ej: Double S Premium">
+          </div>
+          <div class="pf-field">
+            <label class="pf-label">Hilos</label>
+            <input class="pf-input" id="sf-trad-string-strands" type="number" min="8" max="24" placeholder="Ej: 16">
+          </div>
         </div>
       </div>
 
@@ -11428,6 +11468,11 @@ window.pfEditSetup = function(s){
     document.getElementById('sf-bb-nocking-point').value = s.nocking_point||'';
     document.getElementById('sf-bb-total-weight').value  = s.bb_total_weight||'';
   }
+  // Cuerda por tipo
+  const stringBrandIds = {compuesto:'sf-cp-string-brand',recurvo:'sf-rec-string-brand',barebow:'sf-bb-string-brand',tradicional:'sf-trad-string-brand'};
+  const stringStrandsIds = {compuesto:'sf-cp-string-strands',recurvo:'sf-rec-string-strands',barebow:'sf-bb-string-strands',tradicional:'sf-trad-string-strands'};
+  if(stringBrandIds[s.bow_type])   { const el=document.getElementById(stringBrandIds[s.bow_type]);   if(el) el.value=s.string_brand||''; }
+  if(stringStrandsIds[s.bow_type]) { const el=document.getElementById(stringStrandsIds[s.bow_type]); if(el) el.value=s.string_strands||''; }
   // Tradicional
   if(s.bow_type==='tradicional' && s.bow_subtype){
     document.getElementById('sf-bow-subtype').value = s.bow_subtype;
@@ -11489,6 +11534,15 @@ window.pfSaveSetup = async function(){
     peep_height:     parseFloat(document.getElementById('sf-peep-height')?.value)||null,
     nocking_point:   parseFloat(document.getElementById('sf-cp-nocking-point')?.value||document.getElementById('sf-nocking-point')?.value||document.getElementById('sf-bb-nocking-point')?.value)||null,
     bb_total_weight: parseFloat(document.getElementById('sf-bb-total-weight')?.value)||null,
+    // Cuerda
+    string_brand:   (document.getElementById('sf-cp-string-brand')?.value||
+                     document.getElementById('sf-rec-string-brand')?.value||
+                     document.getElementById('sf-bb-string-brand')?.value||
+                     document.getElementById('sf-trad-string-brand')?.value||'').trim()||null,
+    string_strands: parseInt(document.getElementById('sf-cp-string-strands')?.value||
+                             document.getElementById('sf-rec-string-strands')?.value||
+                             document.getElementById('sf-bb-string-strands')?.value||
+                             document.getElementById('sf-trad-string-strands')?.value)||null,
     // Tradicional
     bow_subtype:       document.getElementById('sf-bow-subtype')?.value||null,
     // Estabilizadores — objeto jsonb directo (no string)
@@ -11533,7 +11587,7 @@ window.pfSaveSetup = async function(){
      'sf-plunger','sf-stab-center','sf-stab-center-len','sf-stab-center-oz',
      'sf-stab-lat1-len','sf-stab-lat1-oz','sf-stab-lat2-len','sf-stab-lat2-oz',
      'sf-bb-plunger','sf-bb-arrow-weight',
-     'sf-ata','sf-bh','sf-letoff','sf-loop-length','sf-peep-height','sf-cp-nocking-point','sf-nocking-point','sf-bb-nocking-point','sf-bb-total-weight',
+     'sf-ata','sf-bh','sf-letoff','sf-loop-length','sf-peep-height','sf-cp-nocking-point','sf-nocking-point','sf-bb-nocking-point','sf-bb-total-weight','sf-cp-string-brand','sf-cp-string-strands','sf-rec-string-brand','sf-rec-string-strands','sf-bb-string-brand','sf-bb-string-strands','sf-trad-string-brand','sf-trad-string-strands',
      'sf-cp-stab-center-len','sf-cp-stab-center-oz',
      'sf-cp-stab-lat1-len','sf-cp-stab-lat1-oz',
      'sf-cp-stab-lat2-len','sf-cp-stab-lat2-oz',
