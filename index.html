@@ -11491,8 +11491,8 @@ window.pfSaveSetup = async function(){
     bb_total_weight: parseFloat(document.getElementById('sf-bb-total-weight')?.value)||null,
     // Tradicional
     bow_subtype:       document.getElementById('sf-bow-subtype')?.value||null,
-    // Estabilizadores — guardados como JSONB en notes extendido
-    stabilizer_config: JSON.stringify({
+    // Estabilizadores — objeto jsonb directo (no string)
+    stabilizer_config: {
       center: {
         len: parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-center-len':'sf-stab-center-len')?.value)||null,
         oz:  parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-center-oz':'sf-stab-center-oz')?.value)||null,
@@ -11505,7 +11505,7 @@ window.pfSaveSetup = async function(){
         len: parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-lat2-len':'sf-stab-lat2-len')?.value)||null,
         oz:  parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-lat2-oz':'sf-stab-lat2-oz')?.value)||null,
       }
-    })
+    }
   };
 
   // Si no tiene hasta y es nuevo, cerrar el setup activo anterior
