@@ -6557,12 +6557,39 @@ if(window._supabaseUserId && window._supabaseToken){
     <div id="cp-room-action-content"></div>
   </div>
 
-  <!-- Bracket (si aplica) -->
-  <div id="cp-bracket-section" style="display:none">
-    <div class="cp-sec">Llaves</div>
-    <div class="cp-bracket">
-      <div style="display:flex;gap:12px" id="cp-bracket-cols"></div>
+  <!-- Mi Match — card de acción cuando hay match pendiente -->
+  <div id="cp-my-match-card" style="display:none;margin-bottom:12px">
+    <div class="cp-card" style="border:1.5px solid rgba(216,209,90,0.35);background:rgba(216,209,90,0.04);position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.06em;color:#d8d15a;text-transform:uppercase">🎯 Mi Match Pendiente</div>
+        <span id="cp-my-match-round" style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(216,209,90,0.12);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3);font-weight:700;letter-spacing:.06em;text-transform:uppercase">—</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+        <div id="cp-my-match-p1" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);text-align:center">
+          <div style="font-size:12px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px">Tú</div>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:rgba(255,255,255,0.3)">VS</div>
+        <div id="cp-my-match-p2" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);text-align:center">
+          <div style="font-size:12px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px">Rival</div>
+        </div>
+      </div>
+      <button id="cp-my-match-btn" class="cp-btn cp-btn-y" style="width:100%;font-size:14px;padding:11px">Jugar ahora →</button>
     </div>
+  </div>
+
+  <!-- Bracket (si aplica) — solo consulta -->
+  <div id="cp-bracket-section" style="display:none">
+    <details open>
+      <summary style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.08em;color:rgba(255,255,255,0.4);cursor:pointer;padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <span>▼</span> LLAVES COMPLETAS
+      </summary>
+      <div class="cp-bracket">
+        <div style="display:flex;gap:12px" id="cp-bracket-cols"></div>
+      </div>
+    </details>
   </div>
 
   <!-- Podium -->
@@ -7667,6 +7694,36 @@ async function cpLoadBracket(tournamentId){
 }
 
 function cpRenderBracket(matches, nameMap, matchFmt, tournamentId){
+  // ── Detectar match pendiente del usuario y mostrar card ──
+  const myPendingMatch = matches.find(m=>
+    (m.player1_id===cpUserId||m.player2_id===cpUserId) && !m.winner_id && !m.is_bye
+  );
+  const myMatchCard = document.getElementById('cp-my-match-card');
+  if(myPendingMatch && myMatchCard){
+    const ROUND_LABELS = {
+      r128:'128avos',r64:'64avos',r32:'32avos',r16:'16avos',
+      qf:'Cuartos de Final',sf:'Semifinal',final:'FINAL',bronze:'3er Lugar',
+      elite_r64:'64avos · Elite',elite_r32:'32avos · Elite',elite_r16:'16avos · Elite',
+      elite_qf:'Cuartos · Elite',elite_sf:'Semi · Elite',elite_final:'FINAL ELITE',
+      amateur_r64:'64avos · Amateur',amateur_r32:'32avos · Amateur',
+      amateur_qf:'Cuartos · Amateur',amateur_sf:'Semi · Amateur',amateur_final:'FINAL AMATEUR',
+    };
+    const p1Name = nameMap[myPendingMatch.player1_id] || 'Arquero';
+    const p2Name = nameMap[myPendingMatch.player2_id] || 'Arquero';
+    const isP1   = myPendingMatch.player1_id === cpUserId;
+    const myName = isP1 ? p1Name : p2Name;
+    const rivalName = isP1 ? p2Name : p1Name;
+
+    document.getElementById('cp-my-match-round').textContent = ROUND_LABELS[myPendingMatch.round] || myPendingMatch.round;
+    document.getElementById('cp-my-match-p1').querySelector('div').textContent = myName;
+    document.getElementById('cp-my-match-p2').querySelector('div').textContent = rivalName;
+    document.getElementById('cp-my-match-btn').onclick = ()=>cpOpenMatch(myPendingMatch.id, tournamentId, matchFmt);
+    myMatchCard.style.display = 'block';
+  } else if(myMatchCard){
+    myMatchCard.style.display = 'none';
+  }
+
+
   const rounds=[...new Set(matches.map(m=>m.round))];
 
   // Orden canonico — soporta bracket simple, elite_ y amateur_
@@ -10326,6 +10383,27 @@ async function bmSaveSession(){
     avgAngles[k] = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
   });
 
+  // Generar tips del análisis basados en promedios
+  const sessionTips = [];
+  const A = avgAngles;
+  const I = IDEAL;
+  if(A.elbow !== null){
+    if(A.elbow < I.elbow.min)      sessionTips.push({icon:'💪', status:'bad',  txt:`Codo muy cerrado (${A.elbow}°) — relaja el brazo de jale, ideal ${I.elbow.min}–${I.elbow.max}°`});
+    else if(A.elbow > I.elbow.max) sessionTips.push({icon:'💪', status:'bad',  txt:`Codo muy abierto (${A.elbow}°) — lleva más atrás el anclaje, ideal ${I.elbow.min}–${I.elbow.max}°`});
+    else                            sessionTips.push({icon:'💪', status:'good', txt:`Codo en rango ideal (${A.elbow}°)`});
+  }
+  if(A.shoulder !== null){
+    if(A.shoulder < I.shoulder.min)      sessionTips.push({icon:'🏹', status:'bad',  txt:`Hombro muy bajo (${A.shoulder}°) — sube el codo del arco`});
+    else if(A.shoulder > I.shoulder.max) sessionTips.push({icon:'🏹', status:'warn', txt:`Hombro elevado (${A.shoulder}°) — baja y relaja el hombro del arco`});
+    else                                  sessionTips.push({icon:'🏹', status:'good', txt:`Hombro bien posicionado (${A.shoulder}°)`});
+  }
+  if(A.wrist !== null && A.wrist < I.wrist.min){
+    sessionTips.push({icon:'✋', status:'bad', txt:`Muñeca doblada (${A.wrist}°) — alinea la muñeca con el antebrazo`});
+  }
+  if(A.spine !== null && (A.spine < I.spine.min || A.spine > I.spine.max)){
+    sessionTips.push({icon:'🧍', status:'warn', txt:`Columna inclinada (${A.spine}°) — mantén el torso vertical`});
+  }
+
   const session = {
     id: Date.now(),
     date: new Date().toISOString(),
@@ -10333,6 +10411,7 @@ async function bmSaveSession(){
     duration_ms: duration,
     avg_score: avgScore,
     avg_angles: avgAngles,
+    tips: sessionTips,
     frames: bmFrameData.length
   };
 
@@ -10396,17 +10475,46 @@ function bmRenderSessions(){
       ? `Codo ${s.avg_angles.elbow??'—'}° · Hombro ${s.avg_angles.shoulder??'—'}° · Muñeca ${s.avg_angles.wrist??'—'}°`
       : '';
 
-    return`<div class="bm-session-item">
-      <div style="text-align:center;min-width:44px">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:${scColor};line-height:1">${sc}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.35)">/ 100</div>
+    // Render tips
+    const tipsHtml = s.tips && s.tips.length
+      ? `<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.07)">
+          ${s.tips.map(t=>{
+            const c = t.status==='good' ? '#5dcaa5' : t.status==='warn' ? '#d8d15a' : '#e05555';
+            const bg = t.status==='good' ? 'rgba(93,202,165,0.06)' : t.status==='warn' ? 'rgba(216,209,90,0.06)' : 'rgba(224,85,85,0.06)';
+            return `<div style="display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:0.5px solid rgba(255,255,255,0.04)">
+              <span style="font-size:13px;flex-shrink:0">${t.icon}</span>
+              <span style="font-size:10px;color:${c};line-height:1.4">${t.txt}</span>
+            </div>`;
+          }).join('')}
+        </div>` : '';
+
+    // Angle badges
+    const angBadges = s.avg_angles ? ['elbow','shoulder','wrist','spine'].map(k=>{
+      const v = s.avg_angles[k];
+      if(v===null||v===undefined) return '';
+      // Determine color from ideal ranges (approx)
+      const ranges = {elbow:{min:145,max:165},shoulder:{min:75,max:100},wrist:{min:155,max:180},spine:{min:85,max:95}};
+      const r = ranges[k];
+      const c = v>=r.min&&v<=r.max ? '#5dcaa5' : (v>=r.min-10&&v<=r.max+10) ? '#d8d15a' : '#e05555';
+      const label = {elbow:'Codo',shoulder:'Hombro',wrist:'Muñeca',spine:'Columna'}[k];
+      return `<span style="font-size:9px;padding:2px 6px;border-radius:10px;background:${c}18;color:${c};border:0.5px solid ${c}44;white-space:nowrap">${label} ${v}°</span>`;
+    }).join('') : '';
+
+    return`<div style="background:var(--surface,rgba(255,255,255,0.03));border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;margin-bottom:8px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${scColor}66"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="text-align:center;min-width:44px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:${scColor};line-height:1">${sc}</div>
+          <div style="font-size:8px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.05em">/ 100</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.8);margin-bottom:3px">${s.bow_type==='compuesto'?'🎯 Compuesto':'🏹 Recurvo'} · ${dateStr}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4)">${dur} · ${s.frames} frames</div>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:${gradeColor};padding:4px 10px;border-radius:8px;background:${gradeColor}18;border:0.5px solid ${gradeColor}44;flex-shrink:0">${grade}</div>
       </div>
-      <div class="bm-session-info">
-        <div class="bm-session-date">${s.bow_type==='compuesto'?'🎯':'🏹'} ${dateStr}</div>
-        <div class="bm-session-meta">${angStr}</div>
-        <div class="bm-session-meta">${dur} · ${s.frames} frames</div>
-      </div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${gradeColor};padding:4px 8px;border-radius:6px;background:${gradeColor}18;border:0.5px solid ${gradeColor}44">${grade}</div>
+      ${angBadges ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:${s.tips&&s.tips.length?'0':'0'}">${angBadges}</div>` : ''}
+      ${tipsHtml}
     </div>`;
   }).join('');
 }
