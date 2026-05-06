@@ -7782,17 +7782,44 @@ function cpRenderBracket(matches, nameMap, matchFmt, tournamentId){
     </div>` : `<div style="display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto">${html}</div>`;
   }
 
+  // Detectar rondas avanzadas (final, semis, cuartos) y rondas tempranas (r32, r64, r128)
+  const LATE_ROUNDS  = ['final','bronze','sf','qf','r16',
+    'elite_final','elite_bronze','elite_sf','elite_qf','elite_r16',
+    'amateur_final','amateur_bronze','amateur_sf','amateur_qf','amateur_r16'];
+  const EARLY_ROUNDS = ['r128','r64','r32',
+    'elite_r64','elite_r32','amateur_r128','amateur_r64','amateur_r32'];
+
+  function renderCollapsible(sectionRounds, label){
+    // Rondas tempranas colapsadas por defecto
+    const uid = 'bracket-early-'+Math.random().toString(36).slice(2,7);
+    return `<details style="margin-top:8px;border:0.5px solid rgba(255,255,255,0.07);border-radius:8px;overflow:hidden">
+      <summary style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">
+        <span>▶</span> ${label} <span style="margin-left:auto;font-size:9px">(toca para ver)</span>
+      </summary>
+      <div style="padding:10px;overflow-x:auto">
+        ${renderBracketSection(sectionRounds, null, null)}
+      </div>
+    </details>`;
+  }
+
   if(isDual){
     const eliteRounds   = rounds.filter(r=>r.startsWith('elite_'));
     const amateurRounds = rounds.filter(r=>r.startsWith('amateur_'));
+    const eliteLate     = eliteRounds.filter(r=>LATE_ROUNDS.includes(r));
+    const eliteEarly    = eliteRounds.filter(r=>EARLY_ROUNDS.includes(r));
+    const amateurLate   = amateurRounds.filter(r=>LATE_ROUNDS.includes(r));
+    const amateurEarly  = amateurRounds.filter(r=>EARLY_ROUNDS.includes(r));
     document.getElementById('cp-bracket-cols').innerHTML =
-      renderBracketSection(eliteRounds,   '⭐ Bracket Elite — Top 64',     '#d8d15a') +
-      renderBracketSection(amateurRounds, '🌱 Bracket Amateur',             '#5dcaa5');
+      renderBracketSection(eliteLate,   '⭐ Bracket Elite — Top 64', '#d8d15a') +
+      (eliteEarly.length ? renderCollapsible(eliteEarly, 'Rondas anteriores · Elite') : '') +
+      renderBracketSection(amateurLate, '🌱 Bracket Amateur',        '#5dcaa5') +
+      (amateurEarly.length ? renderCollapsible(amateurEarly, 'Rondas anteriores · Amateur') : '');
   } else {
-    const mainRounds = rounds.filter(r=>!r.endsWith('bronze')&&r!=='final');
-    const endRounds  = rounds.filter(r=>r==='final'||r==='bronze');
+    const lateRounds  = rounds.filter(r=>LATE_ROUNDS.includes(r));
+    const earlyRounds = rounds.filter(r=>EARLY_ROUNDS.includes(r));
     document.getElementById('cp-bracket-cols').innerHTML =
-      renderBracketSection([...mainRounds,...endRounds], null, null);
+      renderBracketSection(lateRounds, null, null) +
+      (earlyRounds.length ? renderCollapsible(earlyRounds, 'Rondas anteriores') : '');
   }
 }
 // ── ABRIR MATCH ──────────────────────────────────────────────────
