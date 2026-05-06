@@ -10948,12 +10948,6 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-plunger" placeholder="Ej: Beiter out 2">
           </div>
           <div class="pf-field">
-            <label class="pf-label">Altura de nocking point (mm)</label>
-            <input class="pf-input" id="sf-nocking-point" type="number" min="-10" max="30" step="0.5" placeholder="Ej: 3">
-          </div>
-        </div>
-        <div class="pf-fields-grid">
-          <div class="pf-field">
             <label class="pf-label">Estabilizador central</label>
             <input class="pf-input" id="sf-stab-center" placeholder="Ej: Fivics 27in">
           </div>
@@ -11004,16 +10998,6 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-bb-arrow-weight" type="number" min="100" max="600" placeholder="Ej: 320">
           </div>
         </div>
-        <div class="pf-fields-grid">
-          <div class="pf-field">
-            <label class="pf-label">Altura de nocking point (mm)</label>
-            <input class="pf-input" id="sf-bb-nocking-point" type="number" min="-10" max="30" step="0.5" placeholder="Ej: 3">
-          </div>
-          <div class="pf-field">
-            <label class="pf-label">Peso total del arco (kg)</label>
-            <input class="pf-input" id="sf-bb-total-weight" type="number" min="0.5" max="5" step="0.01" placeholder="Ej: 1.8">
-          </div>
-        </div>
       </div>
 
       <div id="sf-compuesto-fields" style="display:none">
@@ -11027,25 +11011,9 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-bh" type="number" min="5" max="9" step="0.25" placeholder="Ej: 6.5">
           </div>
         </div>
-        <div class="pf-fields-grid">
-          <div class="pf-field">
-            <label class="pf-label">Let-off (%)</label>
-            <input class="pf-input" id="sf-letoff" type="number" min="50" max="99" placeholder="Ej: 80">
-          </div>
-          <div class="pf-field">
-            <label class="pf-label">Largo del loop (in)</label>
-            <input class="pf-input" id="sf-loop-length" type="number" min="0" max="6" step="0.0625" placeholder="Ej: 0.5">
-          </div>
-        </div>
-        <div class="pf-fields-grid">
-          <div class="pf-field">
-            <label class="pf-label">Altura del peep (in)</label>
-            <input class="pf-input" id="sf-peep-height" type="number" min="0" max="10" step="0.0625" placeholder="Ej: 4.25">
-          </div>
-          <div class="pf-field">
-            <label class="pf-label">Altura de nocking point (mm)</label>
-            <input class="pf-input" id="sf-cp-nocking-point" type="number" min="-10" max="30" step="0.5" placeholder="Ej: 3">
-          </div>
+        <div class="pf-field">
+          <label class="pf-label">Let-off (%)</label>
+          <input class="pf-input" id="sf-letoff" type="number" min="50" max="99" placeholder="Ej: 80">
         </div>
         <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
         <div class="pf-fields-grid">
@@ -11400,7 +11368,7 @@ window.pfEditSetup = function(s){
   document.getElementById('sf-until').value         = s.active_until||'';
   document.getElementById('sf-notes').value         = s.notes||'';
 
-  // Setear tipo de arco y mostrar campos correspondientes
+  // Setear tipo de arco ANTES de llamar pfUpdateSetupFields
   document.getElementById('sf-bow-type').value = s.bow_type||'';
   pfUpdateSetupFields();
 
@@ -11416,13 +11384,19 @@ window.pfEditSetup = function(s){
   }
   // Compuesto
   if(s.bow_type==='compuesto'){
-    document.getElementById('sf-ata').value    = s.ata||'';
-    document.getElementById('sf-bh').value     = s.brace_height||'';
-    document.getElementById('sf-letoff').value = s.letoff||'';
-    document.getElementById('sf-loop-length').value     = s.loop_length||'';
-    document.getElementById('sf-peep-height').value     = s.peep_height||'';
+    document.getElementById('sf-ata').value              = s.ata||'';
+    document.getElementById('sf-bh').value               = s.brace_height||'';
+    document.getElementById('sf-letoff').value           = s.letoff||'';
+    document.getElementById('sf-loop-length').value      = s.loop_length||'';
+    document.getElementById('sf-peep-height').value      = s.peep_height||'';
     document.getElementById('sf-cp-nocking-point').value = s.nocking_point||'';
-    document.getElementById('sf-nocking-point').value    = s.nocking_point||'';
+  }
+  // Recurvo/Tradicional — nocking point
+  if(s.bow_type==='recurvo'||s.bow_type==='tradicional'){
+    document.getElementById('sf-nocking-point').value = s.nocking_point||'';
+  }
+  // Barebow — nocking point + peso total
+  if(s.bow_type==='barebow'){
     document.getElementById('sf-bb-nocking-point').value = s.nocking_point||'';
     document.getElementById('sf-bb-total-weight').value  = s.bb_total_weight||'';
   }
@@ -11484,14 +11458,6 @@ window.pfSaveSetup = async function(){
     letoff:            parseFloat(document.getElementById('sf-letoff')?.value)||null,
     // Tradicional
     bow_subtype:       document.getElementById('sf-bow-subtype')?.value||null,
-    // Nuevos specs — leer el campo correcto según tipo de arco
-    nocking_point:     (()=>{
-      const ids = {'recurvo':'sf-nocking-point','barebow':'sf-bb-nocking-point','compuesto':'sf-cp-nocking-point','tradicional':'sf-nocking-point'};
-      return parseFloat(document.getElementById(ids[bowType]||'sf-nocking-point')?.value)||null;
-    })(),
-    loop_length:       parseFloat(document.getElementById('sf-loop-length')?.value)||null,
-    peep_height:       parseFloat(document.getElementById('sf-peep-height')?.value)||null,
-    bb_total_weight:   parseFloat(document.getElementById('sf-bb-total-weight')?.value)||null,
     // Estabilizadores — guardados como JSONB en notes extendido
     stabilizer_config: JSON.stringify({
       center: {
@@ -11523,10 +11489,6 @@ window.pfSaveSetup = async function(){
   const method = editId ? 'PATCH' : 'POST';
   const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
 
-  if(!res.ok && res.status!==201 && res.status!==204){
-    const errText = await res.text();
-    console.error('❌ pfSaveSetup error', res.status, errText);
-  }
   if(res.ok || res.status===201 || res.status===204){
     pfShowMsg(editId ? '✓ Setup actualizado' : '✓ Setup guardado', true);
     document.getElementById('pf-setup-form').classList.remove('open');
@@ -11538,7 +11500,7 @@ window.pfSaveSetup = async function(){
      'sf-plunger','sf-stab-center','sf-stab-center-len','sf-stab-center-oz',
      'sf-stab-lat1-len','sf-stab-lat1-oz','sf-stab-lat2-len','sf-stab-lat2-oz',
      'sf-bb-plunger','sf-bb-arrow-weight',
-     'sf-ata','sf-bh','sf-letoff','sf-loop-length','sf-peep-height','sf-cp-nocking-point','sf-nocking-point','sf-bb-nocking-point','sf-bb-total-weight',
+     'sf-ata','sf-bh','sf-letoff',
      'sf-cp-stab-center-len','sf-cp-stab-center-oz',
      'sf-cp-stab-lat1-len','sf-cp-stab-lat1-oz',
      'sf-cp-stab-lat2-len','sf-cp-stab-lat2-oz',
@@ -11597,12 +11559,8 @@ async function pfLoadSetups(){
     if(s.letoff)       fields.push({l:'Let-off',v:s.letoff+'%'});
     if(s.plunger_setting) fields.push({l:'Botón',v:s.plunger_setting});
     if(s.stabilizer)   fields.push({l:'Central',v:s.stabilizer});
-    if(s.bb_plunger)      fields.push({l:'Botón',v:s.bb_plunger});
+    if(s.bb_plunger)   fields.push({l:'Botón',v:s.bb_plunger});
     if(s.bb_arrow_weight) fields.push({l:'Peso flecha',v:s.bb_arrow_weight+'gr'});
-    if(s.bb_total_weight) fields.push({l:'Peso total',v:s.bb_total_weight+'kg'});
-    if(s.loop_length)     fields.push({l:'Loop',v:s.loop_length+'"'});
-    if(s.peep_height)     fields.push({l:'Peep',v:s.peep_height+'"'});
-    if(s.nocking_point)   fields.push({l:'Nocking pt.',v:s.nocking_point+'mm'});
 
     // Estabilizadores
     let stabHtml = '';
