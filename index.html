@@ -11574,7 +11574,9 @@ window.pfSaveSetup = async function(){
     ? `${SUPA}/rest/v1/archer_setups?id=eq.${editId}&user_id=eq.${userId}`
     : `${SUPA}/rest/v1/archer_setups`;
   const method = editId ? 'PATCH' : 'POST';
-  const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
+  // En PATCH no mandar user_id (puede chocar con RLS)
+  const body = editId ? (({user_id, ...rest}) => rest)(payload) : payload;
+  const res = await fetch(url, { method, headers, body: JSON.stringify(body) });
 
   if(res.ok || res.status===201 || res.status===204){
     pfShowMsg(editId ? '✓ Setup actualizado' : '✓ Setup guardado', true);
@@ -11646,8 +11648,14 @@ async function pfLoadSetups(){
     if(s.letoff)       fields.push({l:'Let-off',v:s.letoff+'%'});
     if(s.plunger_setting) fields.push({l:'Botón',v:s.plunger_setting});
     if(s.stabilizer)   fields.push({l:'Central',v:s.stabilizer});
-    if(s.bb_plunger)   fields.push({l:'Botón',v:s.bb_plunger});
+    if(s.bb_plunger)      fields.push({l:'Botón',v:s.bb_plunger});
     if(s.bb_arrow_weight) fields.push({l:'Peso flecha',v:s.bb_arrow_weight+'gr'});
+    if(s.bb_total_weight) fields.push({l:'Peso total',v:s.bb_total_weight+'kg'});
+    if(s.loop_length)     fields.push({l:'Loop',v:s.loop_length+'"'});
+    if(s.peep_height)     fields.push({l:'Peep',v:s.peep_height+'"'});
+    if(s.nocking_point)   fields.push({l:'Nocking pt.',v:s.nocking_point+'mm'});
+    if(s.string_brand)    fields.push({l:'Cuerda',v:s.string_brand});
+    if(s.string_strands)  fields.push({l:'Hilos',v:s.string_strands});
 
     // Estabilizadores
     let stabHtml = '';
