@@ -14956,7 +14956,7 @@ window.rtOpenAthleteView = function(userId){
   if(!el) return;
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <button onclick="rtRenderAthletesList(window._rtForOthers||[])" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0">← Atletas</button>
+      <button onclick="rtRenderAthletesList(window._rtForOthers||[])" style="display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;font-weight:500;font-family:'DM Sans',sans-serif">← Atletas</button>
       <div style="font-size:13px;font-weight:600;color:var(--text)">👤 ${name}</div>
     </div>
     ${plans.map(p=>rtRenderPlanItem(p,false)).join('')}`;
