@@ -13660,19 +13660,12 @@ function rtRenderPlansList(){
     html += '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--muted)">Sin planes esta semana</div>';
   }
 
-  if(forOthers.length && rtIsCoach){
-    html += `<div class="rt-sec" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Planes asignados a arqueros</span>
-      <span style="font-size:10px;color:var(--muted)" id="rt-coach-plans-count"></span>
-    </div>`;
-    // ── Stats primero ──
-    html += `<div class="rt-stat-grid" style="margin-bottom:12px">
-      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-asistencia">—</div><div class="rt-stat-lbl">Asistencia</div></div>
-      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-calenta">—</div><div class="rt-stat-lbl">Calenta.</div></div>
-      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-tiros">—</div><div class="rt-stat-lbl">% Tiros</div></div>
-    </div>`;
-    // ── Filtros segundo ──
-    html += `<div id="rt-coach-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+  if(rtIsCoach){
+    window._rtForOthers = forOthers;
+
+    // ── 1. FILTROS ──
+    html += `<div class="rt-sec">Mis atletas</div>`;
+    html += `<div id="rt-coach-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
       <select id="rt-filter-gender" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
         <option value="">👤 Género</option>
         <option value="varonil">Varonil</option>
@@ -13706,14 +13699,21 @@ function rtRenderPlansList(){
       <button class="rt-tf-btn" onclick="rtSetFilterDays(360,this)">360d</button>
       <button class="rt-tf-btn" onclick="rtSetFilterDays(0,this)">Máx</button>
     </div>`;
-    html += `<div id="rt-coach-plans-list">${forOthers.map(p=>rtRenderPlanItem(p,false)).join('')}</div>`;
-    // Store for filtering and show initial count
-    window._rtForOthers = forOthers;
-    // Set initial count after DOM renders
-    setTimeout(()=>{
-      const countEl = document.getElementById('rt-coach-plans-count');
-      if(countEl) countEl.textContent = forOthers.length+' planes';
-    }, 50);
+
+    // ── 2. STATS del grupo ──
+    html += `<div class="rt-stat-grid" style="margin-bottom:14px">
+      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-asistencia">—</div><div class="rt-stat-lbl">Asistencia</div></div>
+      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-calenta">—</div><div class="rt-stat-lbl">Calenta.</div></div>
+      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-tiros">—</div><div class="rt-stat-lbl">% Tiros</div></div>
+    </div>`;
+
+    // ── 3. LISTA DE ATLETAS (no de planes) ──
+    html += `<div id="rt-coach-athletes-list"></div>`;
+    // Hidden for compat
+    html += `<div id="rt-coach-plans-list" style="display:none"></div>`;
+    html += `<input type="hidden" id="rt-coach-plans-count">`;
+
+    setTimeout(()=>rtRenderAthletesList(forOthers), 60);
   }
 
   if(!html && !myActive.length){
@@ -14576,19 +14576,13 @@ window.rtApplyCoachFilter = async function(){
     return true;
   });
 
-  const listEl  = document.getElementById('rt-coach-plans-list');
-  const countEl = document.getElementById('rt-coach-plans-count');
-  if(listEl){
-    listEl.innerHTML = filtered.length
-      ? filtered.map(p=>rtRenderPlanItem(p,false)).join('')
-      : '<div style="padding:16px 0;text-align:center;font-size:12px;color:var(--muted)">Sin planes con ese filtro</div>';
-  }
-  if(countEl){
-    countEl.textContent = hasFilter ? filtered.length+' / '+plans.length+' planes' : plans.length+' planes';
-  }
+  // Actualizar lista de atletas
+  rtRenderAthletesList(filtered);
+
+  // Actualizar stats
   await rtRenderCoachStats(filtered);
 
-  // Invalidar cache para próxima llamada (perfil puede actualizarse)
+  // Invalidar cache para próxima llamada
   window._rtArcherProfiles = null;
 };
 
@@ -14708,6 +14702,63 @@ async function rtRenderCoachStats(plans){
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">${cells.join('')}</div>`;
   }
 }
+
+// ── Lista de atletas para coach ──────────────────────────
+function rtRenderAthletesList(plans){
+  const el = document.getElementById('rt-coach-athletes-list');
+  if(!el) return;
+
+  // Agrupar planes por atleta
+  const byAthlete = {};
+  plans.forEach(p=>{
+    const uid = p.assigned_to;
+    if(!byAthlete[uid]) byAthlete[uid] = {uid, name: rtArcherNames[uid]||'Arquero', plans:[]};
+    byAthlete[uid].plans.push(p);
+  });
+
+  const athletes = Object.values(byAthlete);
+  if(!athletes.length){
+    el.innerHTML = '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--muted)">Sin atletas con ese filtro</div>';
+    return;
+  }
+
+  el.innerHTML = athletes.map(a=>{
+    const initials = a.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const planCount = a.plans.length;
+    return `<div onclick="rtOpenAthleteView('${a.uid}')"
+      style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:var(--surface);border:0.5px solid var(--border2);margin-bottom:6px;cursor:pointer;transition:background .15s"
+      onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='var(--surface)'">
+      <div style="width:38px;height:38px;border-radius:50%;background:rgba(216,209,90,0.15);border:1.5px solid rgba(216,209,90,0.3);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--yellow);flex-shrink:0">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.name}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${planCount} plan${planCount!==1?'es':''} esta semana</div>
+      </div>
+      <div style="color:var(--muted);font-size:16px">›</div>
+    </div>`;
+  }).join('');
+}
+
+// Al clickear un atleta — mostrar sus planes de esta semana
+window.rtOpenAthleteView = function(userId){
+  const plans = (window._rtForOthers||[]).filter(p=>p.assigned_to===userId);
+  const name  = rtArcherNames[userId]||'Arquero';
+
+  if(plans.length === 1){
+    // Solo un plan — abrir directo
+    rtOpenPlan(plans[0].id);
+    return;
+  }
+
+  // Varios planes — mostrar lista filtrada por ese atleta
+  const el = document.getElementById('rt-coach-athletes-list');
+  if(!el) return;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <button onclick="rtRenderAthletesList(window._rtForOthers||[])" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0">← Atletas</button>
+      <div style="font-size:13px;font-weight:600;color:var(--text)">👤 ${name}</div>
+    </div>
+    ${plans.map(p=>rtRenderPlanItem(p,false)).join('')}`;
+};
 
 // ── Exponer funciones de render globalmente ───────────────
 window.rtRenderDayActivities = rtRenderDayActivities;
