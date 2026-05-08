@@ -13268,12 +13268,22 @@ window._coReload = coLoad;
     <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--yellow),var(--green),var(--blue))"></div>
 
+      <!-- Navegador de semana para stats -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Semana</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="rtPlanStatNavWeek(-1)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px">‹</button>
+          <span style="font-size:11px;font-weight:600;color:var(--text);min-width:80px;text-align:center" id="rt-plan-stat-week-label">Esta semana</span>
+          <button onclick="rtPlanStatNavWeek(1)" id="rt-plan-stat-next-btn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px;opacity:0.2">›</button>
+        </div>
+      </div>
+
       <!-- 3 stats principales -->
       <div class="rt-stat-grid" id="rt-plan-week-stats" style="margin-bottom:10px"></div>
 
       <!-- Promedio por flecha por modalidad -->
       <div id="rt-pfa-wrap" style="display:none">
-        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⬛ Promedio por flecha</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⬛ Promedio por flecha · esta semana</div>
         <div id="rt-pfa-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px"></div>
       </div>
     </div>
@@ -13984,8 +13994,14 @@ window.rtOpenPlan = async function(planId){
   if(!plan){ rtToast('Error cargando plan'); return; }
 
   rtCurrentPlan = plan;
-  window.rtCurrentPlan = plan; // expose globally for debugging
+  window.rtCurrentPlan = plan;
   rtCurrentWeek = 1;
+  rtPlanStatWeekOffset = 0; // reset stat week on open
+  // Reset stat week label
+  const swLabel = document.getElementById('rt-plan-stat-week-label');
+  if(swLabel) swLabel.textContent = 'Esta semana';
+  const swNext = document.getElementById('rt-plan-stat-next-btn');
+  if(swNext) swNext.style.opacity = '0.2';
 
   document.getElementById('rt-plan-detail-title').textContent = plan.title||'Plan';
   // Si el plan es de otro arquero, mostrar su nombre
@@ -14347,6 +14363,26 @@ window.rtGoToTorneo = function(){
     window.switchTab('competencias', document.getElementById('sb-competencias'));
 };
 
+// ── Semana del panel de stats del plan ───────────────────
+let rtPlanStatWeekOffset = 0;
+
+window.rtPlanStatNavWeek = function(delta){
+  const plan = rtCurrentPlan;
+  if(!plan) return;
+  if(rtPlanStatWeekOffset + delta > 0) return; // no ir al futuro
+  rtPlanStatWeekOffset += delta;
+  // Actualizar label
+  const label = document.getElementById('rt-plan-stat-week-label');
+  const nextBtn = document.getElementById('rt-plan-stat-next-btn');
+  if(label){
+    label.textContent = rtPlanStatWeekOffset === 0 ? 'Esta semana'
+      : rtPlanStatWeekOffset === -1 ? 'Semana pasada'
+      : 'Hace '+ Math.abs(rtPlanStatWeekOffset) +' semanas';
+  }
+  if(nextBtn) nextBtn.style.opacity = rtPlanStatWeekOffset >= 0 ? '0.2' : '1';
+  rtRenderWeekStats(plan);
+};
+
 // ── Flechas por modalidad ────────────────────────────────
 const RT_MODE_ARROWS = {
   'indoor-15':15,'indoor-30':30,'indoor-60':60,
@@ -14360,14 +14396,22 @@ const RT_DISC_LABELS = {indoor:'Indoor',outdoor:'Outdoor',field:'Field','3d':'3D
 async function rtRenderWeekStats(plan){
   const el = document.getElementById('rt-plan-week-stats');
   try{
-    // Obtener todos los reportes del plan (no solo esta semana) para PFA
-    const weekStart = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, 0);
-    const weekEnd   = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, 6);
+    // Usar el user_id del plan (puede ser otro arquero) en lugar del coach
+    const planUserId = plan.assigned_to || rtUserId;
 
-    const [rWeek, rAll] = await Promise.all([
-      rtFetch(`training_reports?plan_id=eq.${plan.id}&user_id=eq.${rtUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`).then(r=>r.json()),
-      rtFetch(`training_reports?user_id=eq.${rtUserId}&value_done=gt.0&select=value_done,note`).then(r=>r.json())
+    // Calcular rango de la semana del panel de stats
+    const now = new Date();
+    const statMon = new Date(now);
+    statMon.setDate(now.getDate() - ((now.getDay()+6)%7) + rtPlanStatWeekOffset*7);
+    const statSun = new Date(statMon); statSun.setDate(statMon.getDate()+6);
+    const weekStart = statMon.toISOString().slice(0,10);
+    const weekEnd   = statSun.toISOString().slice(0,10);
+
+    const [rWeek, scoresRaw2] = await Promise.all([
+      rtFetch(`training_reports?plan_id=eq.${plan.id}&user_id=eq.${planUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`).then(r=>r.json()),
+      fetch(`${SUPA2}/rest/v1/scores?user_id=eq.${planUserId}&select=total,mode,label,arrow_count,avg_arrow&session_date=gte.${weekStart}&session_date=lte.${weekEnd}&order=session_date.desc&limit=100`, {headers:h2}).then(r=>r.ok?r.json():[])
     ]);
+    const rAll = []; // no se usa, solo rWeek
 
     // Stats de la semana
     const asist = rWeek.filter(r=>r.completed).length;
@@ -14394,12 +14438,7 @@ async function rtRenderWeekStats(plan){
       Authorization: 'Bearer '+(session?.access_token||''),
       'Content-Type':'application/json'
     };
-    const scoresRes = await fetch(
-      `${SUPA2}/rest/v1/scores?user_id=eq.${rtUserId}&select=total,mode,label,arrow_count,avg_arrow&order=session_date.desc&limit=100`,
-      {headers:h2}
-    );
-    const scoresRaw = scoresRes.ok ? await scoresRes.json() : [];
-    const scores = Array.isArray(scoresRaw) ? scoresRaw : [];
+    const scores = Array.isArray(scoresRaw2) ? scoresRaw2 : [];
 
     // Agrupar por disciplina — usar avg_arrow si está disponible
     const byDisc = {};
