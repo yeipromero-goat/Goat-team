@@ -13583,11 +13583,17 @@ async function rtLoadPlans(){
       return pEnd.toISOString().slice(0,10) >= wMonStr;
     });
 
-    // Planes que creé para otros (coach) — sin filtro de semana, el coach ve todos
+    // Planes que creé para otros (coach) — filtrar por semana visible
     let createdPlans = [];
     if(rtIsCoach){
-      const r2 = await rtFetch(`training_plans?created_by=eq.${rtUserId}&assigned_to=neq.${rtUserId}&order=created_at.desc&limit=200`);
-      createdPlans = await r2.json();
+      const r2 = await rtFetch(`training_plans?created_by=eq.${rtUserId}&assigned_to=neq.${rtUserId}&week_start=lte.${wSunStr}&order=week_start.desc&limit=200`);
+      const createdRaw = await r2.json();
+      createdPlans = createdRaw.filter(p=>{
+        if(!p.week_start) return true;
+        const pEnd = new Date(p.week_start);
+        pEnd.setDate(pEnd.getDate() + (p.weeks||1)*7 - 1);
+        return pEnd.toISOString().slice(0,10) >= wMonStr;
+      });
     }
 
     rtPlans = [...myPlans, ...createdPlans];
