@@ -13140,7 +13140,7 @@ window._coReload = coLoad;
       <div id="rt-for-who-section" style="display:none;margin-bottom:14px">
         <div class="rt-label">Asignar a</div>
         <select class="rt-input" id="rt-assign-mode" onchange="rtToggleAssignMode(this.value)" style="margin-bottom:8px">
-          <option value="self">Para mí mismo</option>
+          <option value="self" id="rt-assign-self-opt">Para mí mismo</option>
           <option value="specific">Arquero específico</option>
           <option value="mass">Grupo de arqueros</option>
         </select>
@@ -13484,6 +13484,12 @@ function rtInit(){
 
   if(rtIsCoach){
     document.getElementById('rt-for-who-section').style.display = 'block';
+    // Coach no puede asignarse planes a sí mismo — quitar esa opción
+    const selfOpt = document.getElementById('rt-assign-self-opt');
+    if(selfOpt) selfOpt.remove();
+    // Default a arquero específico
+    const assignMode = document.getElementById('rt-assign-mode');
+    if(assignMode) { assignMode.value = 'specific'; rtToggleAssignMode('specific'); }
     rtLoadCoachArchers();
   }
 
