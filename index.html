@@ -11909,6 +11909,21 @@ document.addEventListener('supabase-user-ready', ()=>{
 
 <div class="co-wrap">
 
+  <!-- Sub-navegación -->
+  <div style="display:flex;gap:4px;margin-bottom:16px;background:rgba(255,255,255,0.04);border-radius:10px;padding:3px">
+    <button id="co-sub-stats" onclick="coSwitchSub('stats',this)"
+      style="flex:1;padding:8px;border-radius:8px;border:none;background:rgba(216,209,90,0.12);color:var(--yellow);font-weight:600;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s">
+      📊 Estadísticas
+    </button>
+    <button id="co-sub-training" onclick="coSwitchSub('training',this)"
+      style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-weight:600;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s">
+      📅 Entrenamientos
+    </button>
+  </div>
+
+  <!-- Panel: Estadísticas -->
+  <div id="co-panel-stats">
+
   <!-- Filtros -->
   <div class="co-filters" style="grid-template-columns:1fr 1fr;">
     <div>
@@ -12035,6 +12050,66 @@ document.addEventListener('supabase-user-ready', ()=>{
   <div class="co-table" id="co-table">
     <div class="co-loading">Cargando arqueros...</div>
   </div>
+
+  </div><!-- end co-panel-stats -->
+
+  <!-- Panel: Entrenamientos -->
+  <div id="co-panel-training" style="display:none">
+
+    <!-- Filtros -->
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+      <select id="co-tr-gender" onchange="coTrApplyFilter()" style="flex:1;min-width:90px;padding:7px 10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif">
+        <option value="">👤 Género</option>
+        <option value="varonil">Varonil</option>
+        <option value="femenil">Femenil</option>
+      </select>
+      <select id="co-tr-bow" onchange="coTrApplyFilter()" style="flex:1;min-width:90px;padding:7px 10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif">
+        <option value="">🏹 Modalidad</option>
+        <option value="compuesto">Compuesto</option>
+        <option value="recurvo">Recurvo</option>
+        <option value="barebow">Barebow</option>
+        <option value="tradicional">Tradicional</option>
+      </select>
+      <select id="co-tr-cat" onchange="coTrApplyFilter()" style="flex:1;min-width:90px;padding:7px 10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif">
+        <option value="">🎖 Categoría</option>
+        <option value="sub14">Sub 14</option>
+        <option value="sub16">Sub 16</option>
+        <option value="sub18">Sub 18</option>
+        <option value="sub21">Sub 21</option>
+        <option value="sub25">Sub 25</option>
+        <option value="mayores">Mayores</option>
+      </select>
+    </div>
+
+    <!-- Navegador de semana -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:10px 14px;background:var(--surface);border:0.5px solid var(--border2);border-radius:10px">
+      <button onclick="coTrNavWeek(-1)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 6px">&#8249;</button>
+      <span style="font-size:13px;font-weight:600;color:var(--text)" id="co-tr-week-label">Esta semana</span>
+      <button onclick="coTrNavWeek(1)" id="co-tr-next-btn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 6px;opacity:0.2">&#8250;</button>
+    </div>
+
+    <!-- Stats del grupo -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+      <div style="text-align:center;padding:12px 8px;border-radius:10px;background:var(--surface);border:0.5px solid var(--border2)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:#5dcaa5;line-height:1" id="co-tr-stat-asist">—</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Asistencia</div>
+      </div>
+      <div style="text-align:center;padding:12px 8px;border-radius:10px;background:var(--surface);border:0.5px solid var(--border2)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:#d8a05a;line-height:1" id="co-tr-stat-acts">—</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Actividades</div>
+      </div>
+      <div style="text-align:center;padding:12px 8px;border-radius:10px;background:var(--surface);border:0.5px solid var(--border2)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:#9a88dd;line-height:1" id="co-tr-stat-pct">—</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">% Completado</div>
+      </div>
+    </div>
+
+    <!-- Lista de atletas -->
+    <div id="co-tr-athletes-list">
+      <div style="text-align:center;padding:24px 0;font-size:12px;color:var(--muted)">Cargando atletas...</div>
+    </div>
+
+  </div><!-- end co-panel-training -->
 
 </div><!-- end co-wrap -->
 
@@ -12835,6 +12910,162 @@ if(window._supabaseUserId){
 }
 
 window._coReload = coLoad;
+
+// ── Sub-navegación Coach ──────────────────────────────────
+window.coSwitchSub = function(sub, btn){
+  ['stats','training'].forEach(s=>{
+    const panel = document.getElementById('co-panel-'+s);
+    const b     = document.getElementById('co-sub-'+s);
+    if(panel) panel.style.display = s===sub ? 'block' : 'none';
+    if(b){
+      if(s===sub){
+        b.style.background = 'rgba(216,209,90,0.12)';
+        b.style.color = 'var(--yellow)';
+      } else {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--muted)';
+      }
+    }
+  });
+  if(sub==='training') coTrInit();
+};
+
+// ── Panel Entrenamientos ──────────────────────────────────
+let coTrWeekOffset = 0;
+let coTrAllProfiles = [];
+let coTrInitDone = false;
+
+async function coTrInit(){
+  if(coTrInitDone && coTrAllProfiles.length) { coTrApplyFilter(); return; }
+  // Cargar perfiles del club
+  try{
+    let profilesUrl = '/rest/v1/archer_profiles?select=*&order=display_name.asc&limit=200';
+    let coachClubs = [];
+    try{
+      const payload = JSON.parse(atob(window._supabaseToken.split('.')[1]));
+      coachClubs = payload?.user_metadata?.coach_clubs || [];
+    }catch(e){}
+    if(coachClubs.length){
+      profilesUrl += '&club_name=in.(' + coachClubs.map(c=>`"${c}"`).join(',') + ')';
+    }
+    const data = await coFetch(profilesUrl);
+    coTrAllProfiles = (data||[]).filter(p=>p.user_id !== window._supabaseUserId);
+    coTrInitDone = true;
+    coTrApplyFilter();
+  }catch(e){ console.error('coTrInit:', e); }
+}
+
+window.coTrNavWeek = function(delta){
+  if(coTrWeekOffset + delta > 0) return;
+  coTrWeekOffset += delta;
+  const label = document.getElementById('co-tr-week-label');
+  const nextBtn = document.getElementById('co-tr-next-btn');
+  if(label) label.textContent = coTrWeekOffset===0 ? 'Esta semana'
+    : coTrWeekOffset===-1 ? 'Semana pasada'
+    : 'Hace '+Math.abs(coTrWeekOffset)+' semanas';
+  if(nextBtn) nextBtn.style.opacity = coTrWeekOffset>=0 ? '0.2' : '1';
+  coTrApplyFilter();
+};
+
+window.coTrApplyFilter = async function(){
+  const gender = document.getElementById('co-tr-gender')?.value||'';
+  const bow    = document.getElementById('co-tr-bow')?.value||'';
+  const cat    = document.getElementById('co-tr-cat')?.value||'';
+
+  const filtered = coTrAllProfiles.filter(p=>{
+    if(gender && p.gender!==gender) return false;
+    if(bow    && p.bow_type!==bow)  return false;
+    if(cat){
+      const age = coGetAge(p.birth_date);
+      const c   = coGetCategory(age);
+      if(!c||c.key!==cat) return false;
+    }
+    return true;
+  });
+
+  // Calcular semana
+  const now = new Date();
+  const mon = new Date(now); mon.setDate(now.getDate()-((now.getDay()+6)%7)+coTrWeekOffset*7);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  const wMon = mon.toISOString().slice(0,10);
+  const wSun = sun.toISOString().slice(0,10);
+
+  // Cargar planes de esta semana para estos atletas
+  const userIds = filtered.map(p=>p.user_id);
+  if(!userIds.length){
+    document.getElementById('co-tr-athletes-list').innerHTML =
+      '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--muted)">Sin atletas con ese filtro</div>';
+    return;
+  }
+
+  try{
+    const session = (await window._supabaseClient.auth.getSession()).data.session;
+    const headers = { apikey:window._supabaseAnonKey||'', Authorization:'Bearer '+(session?.access_token||'') };
+    const SUPA_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
+
+    // Planes de la semana para estos atletas
+    const [plansRes, reportsRes] = await Promise.all([
+      fetch(`${SUPA_URL}/rest/v1/training_plans?assigned_to=in.(${userIds.join(',')})&week_start=lte.${wSun}&order=week_start.desc&limit=500`, {headers}),
+      fetch(`${SUPA_URL}/rest/v1/training_reports?user_id=in.(${userIds.join(',')})&report_date=gte.${wMon}&report_date=lte.${wSun}&select=user_id,completed,value_done`, {headers})
+    ]);
+
+    const allPlans   = (await plansRes.json()||[]).filter(p=>{
+      if(!p.week_start) return true;
+      const pEnd = new Date(p.week_start); pEnd.setDate(pEnd.getDate()+(p.weeks||1)*7-1);
+      return pEnd.toISOString().slice(0,10)>=wMon;
+    });
+    const allReports = await reportsRes.json()||[];
+
+    // Stats del grupo
+    const total = allReports.length;
+    const done  = allReports.filter(r=>r.completed).length;
+    const archersWithReport = new Set(allReports.filter(r=>r.completed).map(r=>r.user_id)).size;
+    document.getElementById('co-tr-stat-asist').innerHTML =
+      `${archersWithReport}<span style="font-size:0.5em;color:var(--muted);margin-left:2px">de ${filtered.length}</span>`;
+    document.getElementById('co-tr-stat-acts').innerHTML =
+      `${done}<span style="font-size:0.5em;color:var(--muted);margin-left:2px">de ${total}</span>`;
+    document.getElementById('co-tr-stat-pct').textContent = total ? Math.round(done/total*100)+'%' : '—';
+
+    // Lista de atletas
+    const listEl = document.getElementById('co-tr-athletes-list');
+    if(!listEl) return;
+
+    const plansMap = {};
+    allPlans.forEach(p=>{ if(!plansMap[p.assigned_to]) plansMap[p.assigned_to]=[]; plansMap[p.assigned_to].push(p); });
+    const reportsMap = {};
+    allReports.forEach(r=>{ if(!reportsMap[r.user_id]) reportsMap[r.user_id]={done:0,total:0}; reportsMap[r.user_id].total++; if(r.completed) reportsMap[r.user_id].done++; });
+
+    listEl.innerHTML = filtered.map(p=>{
+      const initials = (p.display_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const plans    = plansMap[p.user_id]||[];
+      const reps     = reportsMap[p.user_id]||{done:0,total:0};
+      const hasPlan  = plans.length > 0;
+      const statusColor = reps.done>0 ? '#5dcaa5' : hasPlan ? '#d8d15a' : 'rgba(255,255,255,0.2)';
+      const statusText  = reps.done>0 ? `✓ ${reps.done}/${reps.total} acts` : hasPlan ? `${plans.length} plan${plans.length!==1?'es':''}` : 'Sin plan';
+      return `<div onclick="coTrOpenAthlete('${p.user_id}')"
+        style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;background:var(--surface);border:0.5px solid var(--border2);margin-bottom:6px;cursor:pointer;border-left:2px solid ${statusColor}"
+        onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='var(--surface)'">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(216,209,90,0.12);border:1.5px solid rgba(216,209,90,0.25);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--yellow);flex-shrink:0">${initials}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.display_name||'Arquero'}</div>
+          <div style="font-size:10px;color:${statusColor};margin-top:1px">${statusText}</div>
+        </div>
+        <div style="color:var(--muted);font-size:14px">›</div>
+      </div>`;
+    }).join('') || '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--muted)">Sin atletas</div>';
+
+  }catch(e){ console.error('coTrApplyFilter:', e); }
+};
+
+// Al clickear un atleta en entrenamientos — ir al tab rutina con ese atleta
+window.coTrOpenAthlete = function(userId){
+  // Navegar al tab rutina y abrir los planes de ese atleta
+  if(typeof switchTab==='function')
+    switchTab('rutina', document.getElementById('sb-rutina'));
+  setTimeout(()=>{
+    if(window.rtOpenAthleteView) window.rtOpenAthleteView(userId);
+  }, 400);
+};
 
 })();
 </script>
