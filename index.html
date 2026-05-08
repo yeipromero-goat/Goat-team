@@ -14430,21 +14430,30 @@ async function rtRenderWeekStats(plan){
 }
 
 async function rtLoadWeekStats(){
-  // Stats generales de esta semana en la lista
-  const now = new Date();
-  const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7));
+  // Si es coach, las stats las maneja rtRenderCoachStats — no pisar
+  if(rtIsCoach){
+    // Disparar cálculo del coach con los planes filtrados
+    const forOthers = window._rtForOthers || [];
+    if(forOthers.length) await rtRenderCoachStats(forOthers);
+    return;
+  }
+
+  // Arquero normal: stats de su propia semana
+  const {mon, sun} = rtUpdateWeekLabel();
   const weekStart = mon.toISOString().slice(0,10);
-  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
-  const weekEnd = sun.toISOString().slice(0,10);
+  const weekEnd   = sun.toISOString().slice(0,10);
 
   try{
     const r = await rtFetch(`training_reports?user_id=eq.${rtUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`);
     const reps = await r.json();
     const done = reps.filter(r=>r.completed).length;
     const total = reps.length;
-    document.getElementById('rt-stat-asistencia').textContent = done;
-    document.getElementById('rt-stat-calenta').textContent = total;
-    document.getElementById('rt-stat-tiros').textContent = total ? Math.round(done/total*100)+'%' : '—';
+    const elA = document.getElementById('rt-stat-asistencia');
+    const elC = document.getElementById('rt-stat-calenta');
+    const elT = document.getElementById('rt-stat-tiros');
+    if(elA) elA.textContent = done;
+    if(elC) elC.textContent = total;
+    if(elT) elT.textContent = total ? Math.round(done/total*100)+'%' : '—';
   } catch(e){}
 }
 
@@ -14559,12 +14568,12 @@ async function rtRenderCoachStats(plans){
     'Content-Type':'application/json'
   };
 
-  // Obtener reportes + scores en paralelo
-  const q = planIds.map(id=>`plan_id=eq.${id}`).join(',');
+  // Obtener reportes por user_id (más corto que plan_id OR) + scores
   const userIds = [...new Set(plans.map(p=>p.assigned_to))].join(',');
+  const planIds_set = new Set(planIds);
 
   const [reportsRes, scoresRes] = await Promise.all([
-    fetch(window._supabaseSUPA + `/rest/v1/training_reports?or=(${q})&report_date=gte.${dateFromStr}&select=*`, {headers:h}),
+    fetch(window._supabaseSUPA + `/rest/v1/training_reports?user_id=in.(${userIds})&report_date=gte.${dateFromStr}&select=*`, {headers:h}),
     fetch(window._supabaseSUPA + `/rest/v1/scores?user_id=in.(${userIds})&select=total,mode,label,avg_arrow,arrow_count&created_at=gte.${dateFromStr}T00:00:00Z`, {headers:h})
   ]);
 
