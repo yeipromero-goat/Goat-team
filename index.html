@@ -14584,8 +14584,18 @@ async function rtRenderCoachStats(plans){
   const tirosReps = reports.filter(r=>r.value_done && r.value_done > 0);
   const tirosPct  = total > 0 ? Math.round(tirosReps.length/total*100) : null;
 
-  if(elAsist) elAsist.textContent = asistPct !== null ? asistPct+'%' : '—';
-  if(elCal)   elCal.textContent   = total || '0';
+  // Asistencia: "X de Y" — X completaron, Y total de arqueros con plan
+  const totalArchers = plans.length;
+  const archersWithReport = new Set(reports.filter(r=>r.completed).map(r=>r.user_id)).size;
+
+  if(elAsist) elAsist.innerHTML = archersWithReport > 0
+    ? `<span style="font-size:1em">${archersWithReport}</span><span style="font-size:0.55em;color:var(--muted);margin-left:2px">de ${totalArchers}</span>`
+    : '0 de '+totalArchers;
+
+  if(elCal) elCal.innerHTML = total > 0
+    ? `<span style="font-size:1em">${done}</span><span style="font-size:0.55em;color:var(--muted);margin-left:2px">de ${total}</span>`
+    : '0 de '+total;
+
   if(elTiros) elTiros.textContent = tirosPct !== null ? tirosPct+'%' : '—';
 
   // PFA por disciplina
