@@ -13894,7 +13894,7 @@ function rtRenderPlansList(){
   if(rtIsCoach){
     window._rtForOthers = forOthers;
 
-    // ── 1. FILTROS ──
+    // 3. FILTROS (semana ya está arriba del todo en el HTML)
     html += `<div class="rt-sec">Mis atletas</div>`;
     html += `<div id="rt-coach-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
       <select id="rt-filter-gender" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
@@ -13920,27 +13920,9 @@ function rtRenderPlansList(){
       </select>
       <input type="hidden" id="rt-filter-days" value="30">
     </div>`;
-    html += `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px" id="rt-time-filter-chips">
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(7,this)">7d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(15,this)">15d</button>
-      <button class="rt-tf-btn rt-tf-act" onclick="rtSetFilterDays(30,this)">30d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(60,this)">60d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(90,this)">90d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(180,this)">180d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(360,this)">360d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(0,this)">Máx</button>
-    </div>`;
 
-    // ── 2. STATS del grupo ──
-    html += `<div class="rt-stat-grid" style="margin-bottom:14px">
-      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-asistencia">—</div><div class="rt-stat-lbl">Asistencia</div></div>
-      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-calenta">—</div><div class="rt-stat-lbl">Calenta.</div></div>
-      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-tiros">—</div><div class="rt-stat-lbl">% Tiros</div></div>
-    </div>`;
-
-    // ── 3. LISTA DE ATLETAS (no de planes) ──
+    // 4. LISTA DE ATLETAS
     html += `<div id="rt-coach-athletes-list"></div>`;
-    // Hidden for compat
     html += `<div id="rt-coach-plans-list" style="display:none"></div>`;
     html += `<input type="hidden" id="rt-coach-plans-count">`;
 
@@ -14711,15 +14693,7 @@ async function rtRenderWeekStats(plan){
 }
 
 async function rtLoadWeekStats(){
-  // Si es coach, las stats las maneja rtRenderCoachStats — no pisar
-  if(rtIsCoach){
-    // Disparar cálculo del coach con los planes filtrados
-    const forOthers = window._rtForOthers || [];
-    if(forOthers.length) await rtRenderCoachStats(forOthers);
-    return;
-  }
-
-  // Arquero normal: stats de su propia semana
+  // Stats de la semana del arquero (coach también puede tener sus propios planes)
   const {mon, sun} = rtUpdateWeekLabel();
   const weekStart = mon.toISOString().slice(0,10);
   const weekEnd   = sun.toISOString().slice(0,10);
@@ -14810,10 +14784,7 @@ window.rtApplyCoachFilter = async function(){
   // Actualizar lista de atletas
   rtRenderAthletesList(filtered);
 
-  // Actualizar stats
-  await rtRenderCoachStats(filtered);
-
-  // Invalidar cache para próxima llamada
+  // Invalidar cache
   window._rtArcherProfiles = null;
 };
 
