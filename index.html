@@ -13988,7 +13988,12 @@ window.rtOpenPlan = async function(planId){
   rtCurrentWeek = 1;
 
   document.getElementById('rt-plan-detail-title').textContent = plan.title||'Plan';
+  // Si el plan es de otro arquero, mostrar su nombre
+  const isOthersPlan = plan.assigned_to && plan.assigned_to !== rtUserId;
+  // Buscar nombre en rtArcherNames (ya cargado)
+  const archerName = isOthersPlan ? (rtArcherNames[plan.assigned_to] || null) : null;
   document.getElementById('rt-plan-detail-sub').textContent =
+    (archerName ? '👤 ' + archerName + ' · ' : '') +
     `${plan.weeks||1} semana${(plan.weeks||1)>1?'s':''} · desde ${new Date(plan.week_start).toLocaleDateString('es-MX',{day:'numeric',month:'short'})}`;
 
   // Week tabs
