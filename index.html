@@ -10894,6 +10894,9 @@ window.bmDiscardVideo = function(){
       </div>
     </div>
 
+    <!-- Radar del setup activo -->
+    <div id="pf-setup-radar-wrap" style="display:none;margin-bottom:16px"></div>
+
     <!-- Botón agregar -->
     <button class="pf-add-btn" id="pf-add-setup-btn" onclick="pfToggleSetupForm()">
       + Agregar setup de equipo
@@ -11526,8 +11529,8 @@ window.pfSaveSetup = async function(){
     bb_plunger:        document.getElementById('sf-bb-plunger')?.value.trim()||null,
     bb_arrow_weight:   parseFloat(document.getElementById('sf-bb-arrow-weight')?.value)||null,
     // Compuesto
-    ata:               parseFloat(document.getElementById('sf-ata')?.value)||null,
-    brace_height:      parseFloat(document.getElementById('sf-bh')?.value)||null,
+    ata:               (()=>{ const v=document.getElementById('sf-ata')?.value; console.log('🔵 sf-ata value:', v); return parseFloat(v)||null; })(),
+    brace_height:      (()=>{ const v=document.getElementById('sf-bh')?.value; console.log('🔵 sf-bh value:', v); return parseFloat(v)||null; })(),
     letoff:            parseFloat(document.getElementById('sf-letoff')?.value)||null,
     // Nuevos specs por tipo
     loop_length:     parseFloat(document.getElementById('sf-loop-length')?.value)||null,
@@ -11605,6 +11608,138 @@ window.pfSaveSetup = async function(){
 };
 
 // ── Cargar y renderizar setups ───────────────────────────
+// ── Radar del setup activo vs rangos ideales ─────────────
+function pfRenderSetupRadar(s){
+  const wrap = document.getElementById('pf-setup-radar-wrap');
+  if(!wrap) return;
+
+  if(s.bow_type !== 'compuesto'){
+    wrap.style.display = 'none';
+    return;
+  }
+
+  // Rangos ideales por disciplina para compuesto
+  const IDEALS = {
+    indoor:  {fps:[260,320], ata:[38,42], bh:[7.0,7.5], letoff:[75,85], loop:[0.375,0.625], peep:[3.5,5.5]},
+    outdoor: {fps:[275,330], ata:[36,40], bh:[7.0,7.0], letoff:[65,75], loop:[0.375,0.5],   peep:[4.0,6.0]},
+    field:   {fps:[290,340], ata:[34,37], bh:[6.0,7.0], letoff:[70,80], loop:[0.25,0.5],    peep:[4.0,6.0]},
+    '3d':    {fps:[300,340], ata:[30,35], bh:[6.0,7.0], letoff:[75,90], loop:[0.25,0.5],    peep:[3.5,5.0]},
+  };
+
+  // Calcular score 0-100 para cada disciplina
+  function scoreForDisc(disc){
+    const r = IDEALS[disc];
+    let pts = 0, total = 0;
+    const check = (val, range, weight=1) => {
+      if(!val) return;
+      total += weight;
+      if(val >= range[0] && val <= range[1]) pts += weight;
+      else {
+        const mid = (range[0]+range[1])/2;
+        const half = (range[1]-range[0])/2||1;
+        const dist = Math.abs(val - mid) - half;
+        pts += weight * Math.max(0, 1 - dist/half);
+      }
+    };
+    check(parseFloat(s.fps||s.ata), r.fps, 2);    // fps proxy: usar ata como indicador
+    check(parseFloat(s.ata),        r.ata, 2);
+    check(parseFloat(s.brace_height), r.bh, 1.5);
+    check(parseFloat(s.letoff),     r.letoff, 2);
+    check(parseFloat(s.loop_length), r.loop, 1);
+    check(parseFloat(s.peep_height), r.peep, 1);
+    return total > 0 ? Math.round((pts/total)*100) : 0;
+  }
+
+  const discs = ['indoor','outdoor','field','3d'];
+  const labels = ['Indoor','Outdoor','Field','3D'];
+  const scores = discs.map(d => scoreForDisc(d));
+  const generalScore = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+
+  // Tips basados en specs reales
+  const tips = [];
+  const bestDisc = discs[scores.indexOf(Math.max(...scores))];
+  const bestLabel = labels[scores.indexOf(Math.max(...scores))];
+  tips.push(`Mejor configurado para <span style="color:var(--yellow)">${bestLabel}</span>`);
+
+  if(parseFloat(s.letoff) < 75)
+    tips.push(`⚡ Sube LetOff a 75%+ para ganar ventaja en <span style="color:#5dcaa5">3D</span> e <span style="color:#5ab4d6">Indoor</span>`);
+  if(parseFloat(s.ata) < 34)
+    tips.push(`⚡ ATA corto beneficia <span style="color:#5dcaa5">3D</span>, pero limita estabilidad en <span style="color:#5ab4d6">Indoor</span>`);
+  if(parseFloat(s.ata) > 40)
+    tips.push(`⚡ ATA largo ideal para <span style="color:#5ab4d6">Indoor</span> y <span style="color:#d8a05a">Outdoor</span>`);
+
+  // SVG pentágono radar
+  const size = 220;
+  const cx = size/2, cy = size/2 + 15;
+  const r_max = 85;
+  const allScores = [generalScore, ...scores];
+  const allLabels = ['General', ...labels];
+  const colors = ['#d8d15a','#5ab4d6','#d8a05a','#e05555','#9a88dd'];
+
+  function polar(angle, radius, cx, cy){
+    const rad = (angle - 90) * Math.PI / 180;
+    return [cx + radius * Math.cos(rad), cy + radius * Math.sin(rad)];
+  }
+
+  const n = 5; // General + 4 discs
+  const angles = Array.from({length:n},(_,i)=>i*(360/n));
+
+  // Grid lines
+  let gridSVG = '';
+  [25,50,75,100].forEach(pct=>{
+    const pts = angles.map(a=>polar(a, r_max*pct/100, cx, cy));
+    gridSVG += `<polygon points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>`;
+    gridSVG += `<text x="${cx}" y="${cy - r_max*pct/100 + 3}" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.2)">${pct}</text>`;
+  });
+
+  // Axis lines
+  let axisSVG = angles.map(a=>{
+    const [x,y] = polar(a, r_max, cx, cy);
+    return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>`;
+  }).join('');
+
+  // Data polygon
+  const dataPoints = angles.map((a,i) => polar(a, r_max * allScores[i]/100, cx, cy));
+  const polyPoints = dataPoints.map(p=>p.join(',')).join(' ');
+
+  // Dots and labels
+  let dotsSVG = '', labelsSVG = '';
+  angles.forEach((a,i)=>{
+    const [dx,dy] = dataPoints[i];
+    dotsSVG += `<circle cx="${dx}" cy="${dy}" r="3.5" fill="${colors[i]}" stroke="rgba(0,0,0,0.5)" stroke-width="1"/>`;
+    const [lx,ly] = polar(a, r_max + 16, cx, cy);
+    const anchor = lx < cx-5 ? 'end' : lx > cx+5 ? 'start' : 'middle';
+    labelsSVG += `<text x="${lx}" y="${ly+4}" text-anchor="${anchor}" font-size="10" font-weight="600" fill="${colors[i]}">${allLabels[i]}</text>`;
+  });
+
+  const svgH = size + 20;
+  const radarSVG = `<svg viewBox="0 0 ${size} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:280px;display:block;margin:0 auto">
+    ${gridSVG}${axisSVG}
+    <polygon points="${polyPoints}" fill="rgba(216,209,90,0.15)" stroke="#d8d15a" stroke-width="1.5"/>
+    ${dotsSVG}${labelsSVG}
+  </svg>`;
+
+  // Legend
+  const legendHTML = allScores.map((sc,i)=>`
+    <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;white-space:nowrap">
+      <span style="width:8px;height:8px;border-radius:50%;background:${colors[i]};display:inline-block"></span>
+      <span style="color:rgba(255,255,255,0.5)">${allLabels[i]}</span>
+      <span style="color:${colors[i]};font-weight:700">${sc}</span>
+    </span>`).join('');
+
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#d8d15a,#5dcaa5,#5ab4d6)"></div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.06em;color:var(--text);margin-bottom:12px">${(s.name||'Setup activo').toUpperCase()} — Aptitud por disciplina</div>
+      ${radarSVG}
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;margin-bottom:10px">${legendHTML}</div>
+      <div style="border-top:0.5px solid rgba(255,255,255,0.07);padding-top:10px">
+        ${tips.map(t=>`<div style="font-size:11px;color:rgba(255,255,255,0.55);line-height:1.5;margin-bottom:3px">${t}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
 async function pfLoadSetups(){
   const userId = window._supabaseUserId;
   if(!userId) return;
@@ -11633,6 +11768,10 @@ async function pfLoadSetups(){
 
   const BOW_ICONS = {recurvo:'🏹',compuesto:'🎯',barebow:'🪃',tradicional:'🪵'};
   const BOW_NAMES = {recurvo:'Recurvo',compuesto:'Compuesto',barebow:'Bare bow',tradicional:'Tradicional'};
+
+  // Render radar for active setup first
+  const activeSetup = setups.find(s=>s.id===activeSetupId) || setups[0];
+  if(activeSetup) pfRenderSetupRadar(activeSetup);
 
   listEl.innerHTML = setups.map(s=>{
     const isActive = s.id === activeSetupId;
