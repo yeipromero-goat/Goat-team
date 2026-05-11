@@ -11500,6 +11500,9 @@ window.pfEditSetup = function(s){
 window.pfSaveSetup = async function(){
   const userId = window._supabaseUserId;
   if(!userId) return;
+  // Force blur on all inputs to commit any pending iOS keyboard values
+  document.querySelectorAll('#pf-setup-form input, #pf-setup-form select').forEach(el=>{ try{el.blur();}catch(e){} });
+  await new Promise(r=>setTimeout(r,50)); // pequeño delay para que el DOM actualice
   const bowType = document.getElementById('sf-bow-type').value;
   if(!bowType){ pfShowMsg('Selecciona el tipo de arco', false); return; }
   const editId = document.getElementById('sf-edit-id').value;
