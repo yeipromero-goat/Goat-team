@@ -11496,16 +11496,29 @@ window.pfEditSetup = function(s){
   }
 };
 
+// ── Helpers de lectura de campo ───────────────────────────
+function pfVal(id){
+  const el = document.getElementById(id);
+  if(!el) return '';
+  return el.value;
+}
+function pfFloat(id){ const v = pfVal(id); return v !== '' && !isNaN(parseFloat(v)) ? parseFloat(v) : null; }
+function pfInt(id)  { const v = pfVal(id); return v !== '' && !isNaN(parseInt(v))   ? parseInt(v)   : null; }
+function pfStr(id)  { const v = pfVal(id).trim(); return v || null; }
+
 // ── Guardar setup (POST nuevo o PATCH edición) ────────────
 window.pfSaveSetup = async function(){
   const userId = window._supabaseUserId;
   if(!userId) return;
-  // Force blur on all inputs to commit any pending iOS keyboard values
-  document.querySelectorAll('#pf-setup-form input, #pf-setup-form select').forEach(el=>{ try{el.blur();}catch(e){} });
-  await new Promise(r=>setTimeout(r,50)); // pequeño delay para que el DOM actualice
-  const bowType = document.getElementById('sf-bow-type').value;
+
+  // Force blur en todos los inputs para que iOS/Android committeen el valor del teclado
+  document.querySelectorAll('#pf-setup-form input, #pf-setup-form select').forEach(el=>{ try{ el.blur(); }catch(e){} });
+  // Delay generoso (150ms) para que el DOM refleje los valores antes de leerlos
+  await new Promise(r => setTimeout(r, 150));
+
+  const bowType = pfVal('sf-bow-type');
   if(!bowType){ pfShowMsg('Selecciona el tipo de arco', false); return; }
-  const editId = document.getElementById('sf-edit-id').value;
+  const editId = pfVal('sf-edit-id');
 
   const session = (await window._supabaseClient.auth.getSession()).data.session;
   const headers = {
@@ -11515,58 +11528,76 @@ window.pfSaveSetup = async function(){
     'Prefer': 'return=representation'
   };
 
+  // Campos base (comunes a todos los tipos)
   const payload = {
     user_id:      userId,
-    name:         document.getElementById('sf-name')?.value.trim()||null,
+    name:         pfStr('sf-name'),
     bow_type:     bowType,
-    draw_weight:  parseFloat(document.getElementById('sf-draw-weight').value)||null,
-    arrow_length: parseFloat(document.getElementById('sf-arrow-length').value)||null,
-    point_weight: parseInt(document.getElementById('sf-point-weight').value)||null,
-    active_from:  document.getElementById('sf-from').value || new Date().toISOString().slice(0,10),
-    active_until: document.getElementById('sf-until').value || null,
-    notes:        document.getElementById('sf-notes').value.trim()||null,
-    // Recurvo
-    plunger_setting:   document.getElementById('sf-plunger')?.value.trim()||null,
-    stabilizer:        document.getElementById('sf-stab-center')?.value.trim()||null,
-    // Barebow
-    bb_plunger:        document.getElementById('sf-bb-plunger')?.value.trim()||null,
-    bb_arrow_weight:   parseFloat(document.getElementById('sf-bb-arrow-weight')?.value)||null,
-    // Compuesto
-    ata:               (()=>{ const v=document.getElementById('pf-sf-ata')?.value; console.log('🔵 sf-ata value:', v); return parseFloat(v)||null; })(),
-    brace_height:      (()=>{ const v=document.getElementById('pf-sf-bh')?.value; console.log('🔵 sf-bh value:', v); return parseFloat(v)||null; })(),
-    letoff:            parseFloat(document.getElementById('sf-letoff')?.value)||null,
-    // Nuevos specs por tipo
-    loop_length:     parseFloat(document.getElementById('sf-loop-length')?.value)||null,
-    peep_height:     parseFloat(document.getElementById('sf-peep-height')?.value)||null,
-    nocking_point:   parseFloat(document.getElementById('sf-cp-nocking-point')?.value||document.getElementById('sf-nocking-point')?.value||document.getElementById('sf-bb-nocking-point')?.value)||null,
-    bb_total_weight: parseFloat(document.getElementById('sf-bb-total-weight')?.value)||null,
-    // Cuerda
-    string_brand:   (document.getElementById('sf-cp-string-brand')?.value||
-                     document.getElementById('sf-rec-string-brand')?.value||
-                     document.getElementById('sf-bb-string-brand')?.value||
-                     document.getElementById('sf-trad-string-brand')?.value||'').trim()||null,
-    string_strands: parseInt(document.getElementById('sf-cp-string-strands')?.value||
-                             document.getElementById('sf-rec-string-strands')?.value||
-                             document.getElementById('sf-bb-string-strands')?.value||
-                             document.getElementById('sf-trad-string-strands')?.value)||null,
-    // Tradicional
-    bow_subtype:       document.getElementById('sf-bow-subtype')?.value||null,
-    // Estabilizadores — objeto jsonb directo (no string)
-    stabilizer_config: {
-      center: {
-        len: parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-center-len':'sf-stab-center-len')?.value)||null,
-        oz:  parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-center-oz':'sf-stab-center-oz')?.value)||null,
-      },
-      lat1: {
-        len: parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-lat1-len':'sf-stab-lat1-len')?.value)||null,
-        oz:  parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-lat1-oz':'sf-stab-lat1-oz')?.value)||null,
-      },
-      lat2: {
-        len: parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-lat2-len':'sf-stab-lat2-len')?.value)||null,
-        oz:  parseFloat(document.getElementById(bowType==='compuesto'?'sf-cp-stab-lat2-oz':'sf-stab-lat2-oz')?.value)||null,
-      }
-    }
+    draw_weight:  pfFloat('sf-draw-weight'),
+    arrow_length: pfFloat('sf-arrow-length'),
+    point_weight: pfInt('sf-point-weight'),
+    active_from:  pfVal('sf-from') || new Date().toISOString().slice(0,10),
+    active_until: pfVal('sf-until') || null,
+    notes:        pfStr('sf-notes'),
+    // Limpiar campos de otros tipos por defecto
+    plunger_setting: null, stabilizer: null,
+    bb_plunger: null, bb_arrow_weight: null, bb_total_weight: null,
+    ata: null, brace_height: null, letoff: null,
+    loop_length: null, peep_height: null, nocking_point: null,
+    string_brand: null, string_strands: null,
+    bow_subtype: null,
+    stabilizer_config: null,
   };
+
+  // Campos específicos por tipo — sólo lee los campos que corresponden al tipo seleccionado
+  if(bowType === 'recurvo'){
+    payload.plunger_setting = pfStr('sf-plunger');
+    payload.stabilizer      = pfStr('sf-stab-center');
+    payload.nocking_point   = pfFloat('sf-nocking-point');
+    payload.string_brand    = pfStr('sf-rec-string-brand');
+    payload.string_strands  = pfInt('sf-rec-string-strands');
+    payload.stabilizer_config = {
+      center: { len: pfFloat('sf-stab-center-len'),  oz: pfFloat('sf-stab-center-oz')  },
+      lat1:   { len: pfFloat('sf-stab-lat1-len'),    oz: pfFloat('sf-stab-lat1-oz')    },
+      lat2:   { len: pfFloat('sf-stab-lat2-len'),    oz: pfFloat('sf-stab-lat2-oz')    },
+    };
+  }
+
+  if(bowType === 'barebow'){
+    payload.bb_plunger      = pfStr('sf-bb-plunger');
+    payload.bb_arrow_weight = pfFloat('sf-bb-arrow-weight');
+    payload.bb_total_weight = pfFloat('sf-bb-total-weight');
+    payload.nocking_point   = pfFloat('sf-bb-nocking-point');
+    payload.string_brand    = pfStr('sf-bb-string-brand');
+    payload.string_strands  = pfInt('sf-bb-string-strands');
+  }
+
+  if(bowType === 'compuesto'){
+    // ATA y Brace Height: lectura directa y log de debug
+    const ataRaw = document.getElementById('pf-sf-ata')?.value ?? '';
+    const bhRaw  = document.getElementById('pf-sf-bh')?.value  ?? '';
+    console.log('[pfSaveSetup] compuesto — ata raw:', JSON.stringify(ataRaw), '| bh raw:', JSON.stringify(bhRaw));
+    payload.ata           = ataRaw !== '' ? parseFloat(ataRaw) || null : null;
+    payload.brace_height  = bhRaw  !== '' ? parseFloat(bhRaw)  || null : null;
+    payload.letoff        = pfFloat('sf-letoff');
+    payload.loop_length   = pfFloat('sf-loop-length');
+    payload.peep_height   = pfFloat('sf-peep-height');
+    payload.nocking_point = pfFloat('sf-cp-nocking-point');
+    payload.string_brand  = pfStr('sf-cp-string-brand');
+    payload.string_strands= pfInt('sf-cp-string-strands');
+    payload.stabilizer_config = {
+      center: { len: pfFloat('sf-cp-stab-center-len'), oz: pfFloat('sf-cp-stab-center-oz') },
+      lat1:   { len: pfFloat('sf-cp-stab-lat1-len'),   oz: pfFloat('sf-cp-stab-lat1-oz')   },
+      lat2:   { len: pfFloat('sf-cp-stab-lat2-len'),   oz: pfFloat('sf-cp-stab-lat2-oz')   },
+    };
+  }
+
+  if(bowType === 'tradicional'){
+    payload.bow_subtype    = pfVal('sf-bow-subtype') || null;
+    payload.nocking_point  = pfFloat('sf-nocking-point');
+    payload.string_brand   = pfStr('sf-trad-string-brand');
+    payload.string_strands = pfInt('sf-trad-string-strands');
+  }
 
   // Si no tiene hasta y es nuevo, cerrar el setup activo anterior
   if(!payload.active_until && !editId){
@@ -11599,7 +11630,7 @@ window.pfSaveSetup = async function(){
      'sf-cp-stab-center-len','sf-cp-stab-center-oz',
      'sf-cp-stab-lat1-len','sf-cp-stab-lat1-oz',
      'sf-cp-stab-lat2-len','sf-cp-stab-lat2-oz',
-     'sf-until','sf-notes'].forEach(id=>{
+     'sf-from','sf-until','sf-notes'].forEach(id=>{
       const el = document.getElementById(id); if(el) el.value='';
     });
     document.getElementById('sf-bow-type').value='';
