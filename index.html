@@ -11041,11 +11041,11 @@ window.bmDiscardVideo = function(){
         <div class="pf-fields-grid">
           <div class="pf-field">
             <label class="pf-label">ATA (in)</label>
-            <input class="pf-input" id="sf-ata" type="number" min="28" max="42" step="0.25" placeholder="Ej: 36">
+            <input class="pf-input" id="pf-sf-ata" type="number" min="28" max="42" step="0.25" placeholder="Ej: 36">
           </div>
           <div class="pf-field">
             <label class="pf-label">Brace Height (in)</label>
-            <input class="pf-input" id="sf-bh" type="number" min="5" max="9" step="0.25" placeholder="Ej: 6.5">
+            <input class="pf-input" id="pf-sf-bh" type="number" min="5" max="9" step="0.25" placeholder="Ej: 6.5">
           </div>
         </div>
         <div class="pf-field">
@@ -11455,8 +11455,8 @@ window.pfEditSetup = function(s){
   }
   // Compuesto
   if(s.bow_type==='compuesto'){
-    document.getElementById('sf-ata').value              = s.ata||'';
-    document.getElementById('sf-bh').value               = s.brace_height||'';
+    document.getElementById('pf-sf-ata').value              = s.ata||'';
+    document.getElementById('pf-sf-bh').value               = s.brace_height||'';
     document.getElementById('sf-letoff').value           = s.letoff||'';
     document.getElementById('sf-loop-length').value      = s.loop_length||'';
     document.getElementById('sf-peep-height').value      = s.peep_height||'';
@@ -11532,8 +11532,8 @@ window.pfSaveSetup = async function(){
     bb_plunger:        document.getElementById('sf-bb-plunger')?.value.trim()||null,
     bb_arrow_weight:   parseFloat(document.getElementById('sf-bb-arrow-weight')?.value)||null,
     // Compuesto
-    ata:               (()=>{ const v=document.getElementById('sf-ata')?.value; console.log('🔵 sf-ata value:', v); return parseFloat(v)||null; })(),
-    brace_height:      (()=>{ const v=document.getElementById('sf-bh')?.value; console.log('🔵 sf-bh value:', v); return parseFloat(v)||null; })(),
+    ata:               (()=>{ const v=document.getElementById('pf-sf-ata')?.value; console.log('🔵 sf-ata value:', v); return parseFloat(v)||null; })(),
+    brace_height:      (()=>{ const v=document.getElementById('pf-sf-bh')?.value; console.log('🔵 sf-bh value:', v); return parseFloat(v)||null; })(),
     letoff:            parseFloat(document.getElementById('sf-letoff')?.value)||null,
     // Nuevos specs por tipo
     loop_length:     parseFloat(document.getElementById('sf-loop-length')?.value)||null,
@@ -11595,7 +11595,7 @@ window.pfSaveSetup = async function(){
      'sf-plunger','sf-stab-center','sf-stab-center-len','sf-stab-center-oz',
      'sf-stab-lat1-len','sf-stab-lat1-oz','sf-stab-lat2-len','sf-stab-lat2-oz',
      'sf-bb-plunger','sf-bb-arrow-weight',
-     'sf-ata','sf-bh','sf-letoff','sf-loop-length','sf-peep-height','sf-cp-nocking-point','sf-nocking-point','sf-bb-nocking-point','sf-bb-total-weight','sf-cp-string-brand','sf-cp-string-strands','sf-rec-string-brand','sf-rec-string-strands','sf-bb-string-brand','sf-bb-string-strands','sf-trad-string-brand','sf-trad-string-strands',
+     'pf-sf-ata','pf-sf-bh','sf-letoff','sf-loop-length','sf-peep-height','sf-cp-nocking-point','sf-nocking-point','sf-bb-nocking-point','sf-bb-total-weight','sf-cp-string-brand','sf-cp-string-strands','sf-rec-string-brand','sf-rec-string-strands','sf-bb-string-brand','sf-bb-string-strands','sf-trad-string-brand','sf-trad-string-strands',
      'sf-cp-stab-center-len','sf-cp-stab-center-oz',
      'sf-cp-stab-lat1-len','sf-cp-stab-lat1-oz',
      'sf-cp-stab-lat2-len','sf-cp-stab-lat2-oz',
