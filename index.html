@@ -10887,15 +10887,14 @@ window.bmDiscardVideo = function(){
       Registra el setup que usas en cada etapa. Al analizar tus puntuaciones podrás saber qué equipo traías en ese periodo.
     </div>
 
-    <!-- Lista de setups -->
-    <div id="pf-setups-list">
-      <div style="text-align:center;padding:16px 0;font-size:12px;color:rgba(255,255,255,0.25)">
-        Sin setups registrados aún
-      </div>
-    </div>
+    <!-- Arco activo -->
+    <div id="pf-setups-active"></div>
 
     <!-- Radar del setup activo -->
     <div id="pf-setup-radar-wrap" style="display:none;margin-bottom:16px"></div>
+
+    <!-- Resto de arcos -->
+    <div id="pf-setups-others"></div>
 
     <!-- Botón agregar -->
     <button class="pf-add-btn" id="pf-add-setup-btn" onclick="pfToggleSetupForm()">
@@ -11777,8 +11776,9 @@ function pfRenderSetupRadar(s){
 async function pfLoadSetups(){
   const userId = window._supabaseUserId;
   if(!userId) return;
-  const listEl = document.getElementById('pf-setups-list');
-  if(!listEl) return;
+  const activeEl = document.getElementById('pf-setups-active');
+  const othersEl = document.getElementById('pf-setups-others');
+  if(!activeEl || !othersEl) return;
 
   const session = (await window._supabaseClient.auth.getSession()).data.session;
   const headers = {
@@ -11796,39 +11796,40 @@ async function pfLoadSetups(){
   const setups = await res.json();
 
   if(!Array.isArray(setups)||!setups.length){
-    listEl.innerHTML='<div style="text-align:center;padding:16px 0;font-size:12px;color:rgba(255,255,255,0.25)">Sin setups registrados aún</div>';
+    activeEl.innerHTML='<div style="text-align:center;padding:16px 0;font-size:12px;color:rgba(255,255,255,0.25)">Sin setups registrados aún</div>';
+    othersEl.innerHTML='';
     return;
   }
 
   const BOW_ICONS = {recurvo:'🏹',compuesto:'🎯',barebow:'🪃',tradicional:'🪵'};
   const BOW_NAMES = {recurvo:'Recurvo',compuesto:'Compuesto',barebow:'Bare bow',tradicional:'Tradicional'};
 
-  // Render radar for active setup first
-  const activeSetup = setups.find(s=>s.id===activeSetupId) || setups[0];
-  if(activeSetup) pfRenderSetupRadar(activeSetup);
+  // Render radar for active setup (between active card and others)
+  const activeSetupObj = setups.find(s=>s.id===activeSetupId) || setups[0];
+  if(activeSetupObj) pfRenderSetupRadar(activeSetupObj);
 
-  listEl.innerHTML = setups.map(s=>{
+  function renderCard(s){
     const isActive = s.id === activeSetupId;
     const fromStr  = s.active_from ? new Date(s.active_from).toLocaleDateString('es-MX',{month:'short',year:'numeric'}) : '—';
     const untilStr = s.active_until ? new Date(s.active_until).toLocaleDateString('es-MX',{month:'short',year:'numeric'}) : 'hoy';
 
     const fields = [];
     if(s.draw_weight)  fields.push({l:'Libras',v:s.draw_weight+'#'});
-    if(s.arrow_length) fields.push({l:'Flecha',v:s.arrow_length+'"'});
+    if(s.arrow_length) fields.push({l:'Flecha',v:s.arrow_length+'"' });
     if(s.point_weight) fields.push({l:'Punta',v:s.point_weight+'gr'});
-    if(s.ata)          fields.push({l:'ATA',v:s.ata+'"'});
-    if(s.brace_height) fields.push({l:'Brace H.',v:s.brace_height+'"'});
+    if(s.ata)          fields.push({l:'ATA',v:s.ata+'"' });
+    if(s.brace_height) fields.push({l:'Brace H.',v:s.brace_height+'"' });
     if(s.letoff)       fields.push({l:'Let-off',v:s.letoff+'%'});
+    if(s.loop_length)     fields.push({l:'Loop',v:s.loop_length+'"' });
+    if(s.peep_height)     fields.push({l:'Peep',v:s.peep_height+'"' });
+    if(s.nocking_point)   fields.push({l:'Nocking pt.',v:s.nocking_point+'mm'});
+    if(s.string_brand)    fields.push({l:'Cuerda',v:s.string_brand});
+    if(s.string_strands)  fields.push({l:'Hilos',v:s.string_strands});
     if(s.plunger_setting) fields.push({l:'Botón',v:s.plunger_setting});
     if(s.stabilizer)   fields.push({l:'Central',v:s.stabilizer});
     if(s.bb_plunger)      fields.push({l:'Botón',v:s.bb_plunger});
     if(s.bb_arrow_weight) fields.push({l:'Peso flecha',v:s.bb_arrow_weight+'gr'});
     if(s.bb_total_weight) fields.push({l:'Peso total',v:s.bb_total_weight+'kg'});
-    if(s.loop_length)     fields.push({l:'Loop',v:s.loop_length+'"'});
-    if(s.peep_height)     fields.push({l:'Peep',v:s.peep_height+'"'});
-    if(s.nocking_point)   fields.push({l:'Nocking pt.',v:s.nocking_point+'mm'});
-    if(s.string_brand)    fields.push({l:'Cuerda',v:s.string_brand});
-    if(s.string_strands)  fields.push({l:'Hilos',v:s.string_strands});
 
     // Estabilizadores
     let stabHtml = '';
@@ -11848,7 +11849,7 @@ async function pfLoadSetups(){
       }catch(e){}
     }
 
-    return`<div class="pf-setup-item ${isActive?'active-setup':''}">
+    return `<div class="pf-setup-item ${isActive?'active-setup':''}">
       <div class="pf-setup-header">
         <div>
           <div class="pf-setup-title">${BOW_ICONS[s.bow_type]||'🏹'} ${s.name || BOW_NAMES[s.bow_type]||s.bow_type}</div>
@@ -11879,7 +11880,18 @@ async function pfLoadSetups(){
         </div>
       </div>`:''}
     </div>`;
-  }).join('');
+  }
+
+  // 1. Arco activo
+  const activeCards = setups.filter(s => s.id === activeSetupId);
+  activeEl.innerHTML = activeCards.map(renderCard).join('') ||
+    '<div style="text-align:center;padding:16px 0;font-size:12px;color:rgba(255,255,255,0.25)">Sin arco activo</div>';
+
+  // 2. Radar se renderiza entre los dos bloques (ya está en el DOM entre activeEl y othersEl)
+
+  // 3. Otros arcos
+  const otherCards = setups.filter(s => s.id !== activeSetupId);
+  othersEl.innerHTML = otherCards.map(renderCard).join('');
 }
 document.getElementById('pf-birth').addEventListener('change', function(){
   pfUpdateAgeBadge(this.value);
