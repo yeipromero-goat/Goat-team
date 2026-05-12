@@ -6122,6 +6122,8 @@ function btRenderH(){
       </div>
     </div>`;
   }).join('');
+  // Notas de ajuste
+  btRenderAdjNotes();
 }
 
 function btDrawSpark(data, sessions){
@@ -6129,34 +6131,142 @@ function btDrawSpark(data, sessions){
   document.getElementById('bt-spark-legend').innerHTML='';
   const ctx=c.getContext('2d'),W=c.offsetWidth||400,H=90;
   c.width=W;c.height=H;ctx.clearRect(0,0,W,H);
-  if(data.length<2){ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();return;}
-  const mn=Math.min(...data)*0.97,mx=Math.max(...data)*1.03,r=mx-mn||1;
-  const pts=data.map((v,i)=>({x:i/(data.length-1)*(W-16)+8,y:H-8-(v-mn)/r*(H-20)}));
-  ctx.beginPath();ctx.moveTo(pts[0].x,H-2);pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(pts[pts.length-1].x,H-2);ctx.closePath();
-  ctx.fillStyle='rgba(216,209,90,0.06)';ctx.fill();
-  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
-  for(let i=1;i<pts.length;i++){const mx2=(pts[i-1].x+pts[i].x)/2,my=(pts[i-1].y+pts[i].y)/2;ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,mx2,my);}
-  ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
-  ctx.strokeStyle='#d8d15a';ctx.lineWidth=2;ctx.stroke();
-  [pts[0],pts[pts.length-1]].forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle='#d8d15a';ctx.fill();});
+  if(data.length<2){ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();}
 
-  // Markers de ajuste de setup
-  if(sessions && window._btAdjustments?.length){
-    sessions.forEach((s,i)=>{
-      const hasAdj = window._btAdjustments.some(a=> a.adjusted_at && s.date && a.adjusted_at.slice(0,10)===s.date.slice(0,10));
-      if(!hasAdj) return;
-      const pt = pts[i];
-      if(!pt) return;
-      // Línea vertical punteada
-      ctx.setLineDash([2,3]);
-      ctx.strokeStyle='rgba(154,136,221,0.5)';ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(pt.x,0);ctx.lineTo(pt.x,H);ctx.stroke();
-      ctx.setLineDash([]);
-      // Rombo marcador
-      ctx.fillStyle='#9a88dd';
-      ctx.beginPath();ctx.moveTo(pt.x,2);ctx.lineTo(pt.x+4,6);ctx.lineTo(pt.x,10);ctx.lineTo(pt.x-4,6);ctx.closePath();ctx.fill();
+  // Calcular rango de fechas total (sesiones + ajustes standalone)
+  const adjs = (window._btAdjustments||[]);
+  let allDates = sessions ? sessions.map(s=>new Date(s.date)) : [];
+  adjs.forEach(a=>{ if(a.adjusted_at) allDates.push(new Date(a.adjusted_at)); });
+  const minDate = allDates.length ? Math.min(...allDates.map(d=>d.getTime())) : 0;
+  const maxDate = allDates.length ? Math.max(...allDates.map(d=>d.getTime())) : 1;
+  const dateRange = maxDate - minDate || 1;
+
+  let pts = [];
+  if(data.length>=2){
+    const mn=Math.min(...data)*0.97,mx=Math.max(...data)*1.03,r=mx-mn||1;
+    if(sessions && sessions.length===data.length){
+      pts = sessions.map((s,i)=>({
+        x: 8 + (new Date(s.date).getTime()-minDate)/dateRange*(W-16),
+        y: H-8-(data[i]-mn)/r*(H-20)
+      }));
+    } else {
+      pts = data.map((v,i)=>({x:i/(data.length-1)*(W-16)+8,y:H-8-(v-mn)/r*(H-20)}));
+    }
+    ctx.beginPath();ctx.moveTo(pts[0].x,H-2);pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(pts[pts.length-1].x,H-2);ctx.closePath();
+    ctx.fillStyle='rgba(216,209,90,0.06)';ctx.fill();
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++){const mx2=(pts[i-1].x+pts[i].x)/2,my=(pts[i-1].y+pts[i].y)/2;ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,mx2,my);}
+    ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
+    ctx.strokeStyle='#d8d15a';ctx.lineWidth=2;ctx.stroke();
+    [pts[0],pts[pts.length-1]].forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle='#d8d15a';ctx.fill();});
+  }
+
+  // Markers de ajuste — uno por fecha única, independientes de si hay sesión
+  const adjByDate = {};
+  adjs.forEach(a=>{
+    if(!a.adjusted_at) return;
+    const d = a.adjusted_at.slice(0,10);
+    if(!adjByDate[d]) adjByDate[d] = [];
+    adjByDate[d].push(a.note);
+  });
+
+  // Guardar hitboxes para click
+  c._adjHitboxes = [];
+
+  Object.entries(adjByDate).forEach(([dateStr, notes])=>{
+    const t = new Date(dateStr).getTime();
+    const px = allDates.length>1 ? 8 + (t-minDate)/dateRange*(W-16) : W/2;
+    // Línea vertical punteada
+    ctx.setLineDash([2,3]);
+    ctx.strokeStyle='rgba(154,136,221,0.55)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,H-14);ctx.stroke();
+    ctx.setLineDash([]);
+    // Punto morado en la base
+    ctx.fillStyle='#9a88dd';
+    ctx.beginPath();ctx.arc(px, H-8, 5, 0, Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.4)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(px, H-8, 5, 0, Math.PI*2);ctx.stroke();
+    // Guardar hitbox
+    c._adjHitboxes.push({x:px, y:H-8, r:10, date:dateStr, notes});
+  });
+
+  // Listener de click (se registra una sola vez)
+  if(!c._adjClickBound){
+    c._adjClickBound = true;
+    c.style.cursor = 'default';
+    c.addEventListener('mousemove', function(e){
+      const rect=c.getBoundingClientRect();
+      const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+      const hit = (c._adjHitboxes||[]).some(h=>Math.hypot(mx-h.x,my-h.y)<=h.r);
+      c.style.cursor = hit ? 'pointer' : 'default';
+    });
+    c.addEventListener('click', function(e){
+      const rect=c.getBoundingClientRect();
+      const mx=(e.clientX-rect.left)*(c.width/rect.width);
+      const my=(e.clientY-rect.top)*(c.height/rect.height);
+      const hit = (c._adjHitboxes||[]).find(h=>Math.hypot(mx-h.x,my-h.y)<=h.r*1.5);
+      if(hit) btShowAdjTooltip(hit, e.clientX, e.clientY);
     });
   }
+}
+
+// ── Tooltip de nota de ajuste ───────────────────────────
+function btShowAdjTooltip(hit, clientX, clientY){
+  let tip = document.getElementById('bt-adj-tooltip');
+  if(!tip){
+    tip = document.createElement('div');
+    tip.id = 'bt-adj-tooltip';
+    tip.style.cssText = 'position:fixed;z-index:9999;background:#1e1e28;border:1px solid rgba(154,136,221,0.4);border-radius:10px;padding:10px 14px;max-width:260px;box-shadow:0 4px 20px rgba(0,0,0,0.5);pointer-events:none';
+    document.body.appendChild(tip);
+  }
+  const d = new Date(hit.date + 'T12:00:00');
+  const dateStr = d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  tip.innerHTML = `
+    <div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#9a88dd;margin-bottom:5px">📍 Ajuste de equipo</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:6px">${dateStr}</div>
+    ${hit.notes.map(n=>`<div style="font-size:12px;color:#fff;padding:4px 0;border-bottom:0.5px solid rgba(255,255,255,0.07);line-height:1.4">${n}</div>`).join('')}
+  `;
+  // Posicionar cerca del click pero dentro de la ventana
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let tx = clientX + 12, ty = clientY - 20;
+  if(tx + 280 > vw) tx = clientX - 280;
+  if(ty + 150 > vh) ty = clientY - 150;
+  tip.style.left = tx + 'px';
+  tip.style.top  = ty + 'px';
+  tip.style.display = 'block';
+  clearTimeout(tip._hide);
+  tip._hide = setTimeout(()=>{ tip.style.display='none'; }, 4000);
+  // También cerrar con click en cualquier lado
+  const close = ()=>{ tip.style.display='none'; document.removeEventListener('click', close); };
+  setTimeout(()=> document.addEventListener('click', close, {once:true}), 50);
+}
+
+// ── Renderizar notas recientes bajo la gráfica ───────────
+function btRenderAdjNotes(){
+  let el = document.getElementById('bt-adj-notes');
+  if(!el){
+    const sub = document.getElementById('bt-sub-trends');
+    if(!sub) return;
+    el = document.createElement('div');
+    el.id = 'bt-adj-notes';
+    sub.parentNode.insertBefore(el, sub.nextSibling);
+  }
+  const adjs = (window._btAdjustments||[]).slice(0,5);
+  if(!adjs.length){ el.innerHTML=''; return; }
+  el.innerHTML = `
+    <div style="margin-top:14px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:8px">Notas de equipo recientes</div>
+      ${adjs.map(a=>{
+        const d = a.adjusted_at ? new Date(a.adjusted_at+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'}) : '—';
+        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:0.5px solid rgba(255,255,255,0.06)">
+          <div style="width:8px;height:8px;border-radius:50%;background:#9a88dd;flex-shrink:0;margin-top:3px"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:2px">${d}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.75);line-height:1.4">${a.note||''}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function btDrawSparkMulti(lines){
@@ -6212,6 +6322,28 @@ function btDrawSparkMulti(lines){
       </span>`
     }).join('');
   }
+
+  // Markers de ajuste en modo multi-línea
+  const adjs2 = (window._btAdjustments||[]);
+  if(adjs2.length){
+    const adjByDate2 = {};
+    adjs2.forEach(a=>{ if(!a.adjusted_at) return; const d=a.adjusted_at.slice(0,10); if(!adjByDate2[d]) adjByDate2[d]=[]; adjByDate2[d].push(a.note); });
+    // Rango de fechas: usar todos los puntos de todas las líneas
+    const nLines = lines.filter(l=>l.avgs.length>0);
+    if(nLines.length){
+      // Aproximar posición X basada en índice promedio de la línea más larga
+      Object.entries(adjByDate2).forEach(([dateStr, notes])=>{
+        // Dibujar marcador en posición proporcional al rango de datos
+        const approxX = W * 0.85; // fallback: marcar al final
+        ctx.setLineDash([2,3]);
+        ctx.strokeStyle='rgba(154,136,221,0.4)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(approxX,0);ctx.lineTo(approxX,H-14);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle='#9a88dd';
+        ctx.beginPath();ctx.arc(approxX,H-8,5,0,Math.PI*2);ctx.fill();
+      });
+    }
+  }
 }
 
 // ── Cargar setup activo para el banner ───────────────────
@@ -6248,11 +6380,20 @@ async function btLoadAdjustments(){
   if(!userId) return;
   try{
     const SUPA='https://axaiyaflubssaghvhefe.supabase.co';
-    const headers={'apikey':window._supabaseAnonKey||'','Authorization':'Bearer '+(window._supabaseToken||'')};
-    const res = await fetch(`${SUPA}/rest/v1/setup_adjustments?user_id=eq.${userId}&order=adjusted_at.desc&limit=100`,{headers});
+    const session = window._supabaseClient ? (await window._supabaseClient.auth.getSession()).data.session : null;
+    const token = session?.access_token || window._supabaseToken || '';
+    const headers={'apikey':window._supabaseAnonKey||'','Authorization':'Bearer '+token};
+    const res = await fetch(`${SUPA}/rest/v1/setup_adjustments?user_id=eq.${userId}&order=adjusted_at.desc&limit=200`,{headers});
     window._btAdjustments = await res.json();
   }catch(e){ window._btAdjustments = []; }
 }
+
+// Escuchar guardado de notas desde tab-perfil
+window.addEventListener('setup-adjustment-saved', function(){
+  btLoadAdjustments().then(()=>{
+    btRenderH();
+  });
+});
 
 // Inicializar
 if(window._supabaseUserId && window._supabaseToken){
@@ -11389,26 +11530,46 @@ window.pfSaveAdjustment = async function(setupId){
   const userId = window._supabaseUserId;
   const noteEl = document.getElementById('pf-adj-note-'+setupId);
   const note = noteEl?.value.trim();
-  if(!note){ return; }
+  if(!note){
+    pfShowMsg('Escribe una nota antes de guardar', false);
+    return;
+  }
+  const today = new Date().toISOString().slice(0,10);
   const session = (await window._supabaseClient.auth.getSession()).data.session;
   const headers = {
     'apikey': window._supabaseAnonKey||'',
     'Authorization': 'Bearer '+(session?.access_token||''),
     'Content-Type': 'application/json',
-    'Prefer': 'return=minimal'
+    'Prefer': 'return=representation'
   };
-  const res = await fetch(`${SUPA}/rest/v1/setup_adjustments`, {
-    method:'POST', headers,
-    body: JSON.stringify({
-      user_id: userId,
-      setup_id: setupId,
-      note,
-      adjusted_at: new Date().toISOString().slice(0,10)
-    })
-  });
-  if(res.ok || res.status===201){
-    noteEl.value = '';
-    pfShowMsg('✓ Ajuste registrado — aparecerá en tu gráfica', true);
+  try{
+    const res = await fetch(`${SUPA}/rest/v1/setup_adjustments`, {
+      method:'POST', headers,
+      body: JSON.stringify({
+        user_id:     userId,
+        setup_id:    setupId,
+        note,
+        adjusted_at: today
+      })
+    });
+    if(res.ok || res.status===201){
+      const saved = await res.json().catch(()=>[]);
+      noteEl.value = '';
+      pfShowMsg('✓ Nota guardada — aparecerá en tu gráfica como punto morado', true);
+      // Actualizar cache global de ajustes para que la bitácora los muestre sin recargar
+      if(!window._btAdjustments) window._btAdjustments = [];
+      const newAdj = Array.isArray(saved) ? saved[0] : saved;
+      if(newAdj) window._btAdjustments.unshift(newAdj);
+      else window._btAdjustments.unshift({user_id:userId, setup_id:setupId, note, adjusted_at:today});
+      // Disparar evento para que la bitácora refresque la gráfica si está visible
+      window.dispatchEvent(new CustomEvent('setup-adjustment-saved'));
+      if(typeof showToast === 'function') showToast('✓ Nota de equipo guardada');
+    } else {
+      const errTxt = await res.text();
+      pfShowMsg('Error al guardar: ' + errTxt.slice(0,80), false);
+    }
+  } catch(e){
+    pfShowMsg('Error: ' + e.message, false);
   }
 };
 window.pfCancelSetupEdit = function(){
