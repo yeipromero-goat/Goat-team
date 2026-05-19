@@ -5523,6 +5523,12 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
     <button class="bt-fp" onclick="btSf('field',this,'bt-fm')">Field</button>
     <button class="bt-fp" onclick="btSf('3d',this,'bt-fm')">3D</button>
   </div>
+  <div class="bt-filters" id="bt-fs">
+    <button class="bt-fp act" onclick="btSfSrc('all',this)">🏹 Todas</button>
+    <button class="bt-fp" onclick="btSfSrc('practica',this)">Práctica</button>
+    <button class="bt-fp" onclick="btSfSrc('liga',this)">Liga</button>
+    <button class="bt-fp" onclick="btSfSrc('torneo',this)">Torneo</button>
+  </div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px">
     <div class="bt-metric"><div class="v" id="bt-ms">0</div><div class="l">Sesiones</div></div>
     <div class="bt-metric"><div class="v" id="bt-ma">—</div><div class="l">P/Flecha</div></div>
@@ -5577,7 +5583,7 @@ const BT_MODES={
 };
 function btSpLabel(g){return{outdoor:"X's",indoor:"X's",field:"6's",'3d':"12/11's"}[g]||"X's";}
 
-let btSessions=[], btFDays=90, btFMod='all', btCurMode=null, btState={};
+let btSessions=[], btFDays=90, btFMod='all', btFSrc='all', btCurMode=null, btState={};
 let btUsingDemo=false;
 
 const BT_DEMO_NOTES=['Sin viento','Viento leve norte','Torneo clasificatorio','Entrenamiento técnico','Concentración +','Temperatura ideal','Sesión matutina','Fatiga últimos ends','Mejor del mes','Nuevo anclaje','Práctica larga','Con coach JPR'];
@@ -5627,13 +5633,51 @@ function btMakeDemoSessions(){
 
 function btLoadSessions(){
   if(typeof window.supabaseLoadScores==='function' && window._supabaseToken){
-    window.supabaseLoadScores().then(function(data){
-      if(data && data.length>0){
-        btSessions=data;
-        btUsingDemo=false;
+    const SUPA = 'https://axaiyaflubssaghvhefe.supabase.co';
+    const h = {apikey:window._supabaseAnonKey||'', Authorization:'Bearer '+window._supabaseToken};
+    const userId = window._supabaseUserId;
+
+    Promise.all([
+      window.supabaseLoadScores(),
+      userId ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&select=score,submitted_at,round_number,league_id&order=submitted_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([]),
+      userId ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_score,qualifying_at,tournament_id&order=qualifying_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([])
+    ]).then(function([daily, liga, torneo]){
+      let all = [];
+      // Práctica diaria
+      if(Array.isArray(daily) && daily.length){
+        daily.forEach(s=>{ s.src = s.src||'practica'; });
+        all = all.concat(daily);
+      }
+      // Liga
+      if(Array.isArray(liga)){
+        liga.forEach(s=>{
+          if(!s.score) return;
+          all.push({
+            src:'liga', g:'indoor', mode:'liga', lbl:'Liga',
+            total:s.score, n:30, avg:+(s.score/30).toFixed(2), sp:0,
+            date:s.submitted_at||new Date().toISOString(),
+            label:'Liga Ronda '+(s.round_number||'—')
+          });
+        });
+      }
+      // Torneo
+      if(Array.isArray(torneo)){
+        torneo.forEach(s=>{
+          if(!s.qualifying_score) return;
+          all.push({
+            src:'torneo', g:'outdoor', mode:'torneo', lbl:'Torneo',
+            total:s.qualifying_score, n:36, avg:+(s.qualifying_score/36).toFixed(2), sp:0,
+            date:s.qualifying_at||new Date().toISOString(),
+            label:'Torneo Clasificatorio'
+          });
+        });
+      }
+      if(all.length > 0){
+        btSessions = all;
+        btUsingDemo = false;
       } else {
-        btSessions=btMakeDemoSessions();
-        btUsingDemo=true;
+        btSessions = btMakeDemoSessions();
+        btUsingDemo = true;
       }
       btRenderH();
     });
@@ -5984,6 +6028,13 @@ window.btSaveSession=function(){
   }
 }
 
+window.btSfSrc=function(v,el){
+  btFSrc=v;
+  document.getElementById('bt-fs').querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+  btRenderH();
+}
+
 window.btSf=function(v,el,id){
   if(id==='bt-fd')btFDays=v;else btFMod=v;
   document.getElementById(id).querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
@@ -5994,7 +6045,8 @@ function btFilt(){
   const now=Date.now();
   return btSessions.filter(s=>{
     const age=(now-new Date(s.date).getTime())/86400000;
-    return(btFDays===0||age<=btFDays)&&(btFMod==='all'||s.g===btFMod);
+    const srcOk = btFSrc==='all' || (s.src||'practica')===btFSrc;
+    return(btFDays===0||age<=btFDays)&&(btFMod==='all'||s.g===btFMod)&&srcOk;
   });
 }
 
