@@ -5423,6 +5423,76 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
         <div class="dname">3D</div><div class="dsub">A tu elección</div>
       </div>
     </div>
+
+    <!-- Registro rápido torneo externo -->
+    <div style="margin-top:10px">
+      <div class="bt-disc-card" style="display:flex;align-items:center;gap:12px;text-align:left;padding:12px 16px" onclick="btShowTorneoExterno()">
+        <span style="font-size:28px">🏅</span>
+        <div>
+          <div class="dname" style="margin-top:0">Resultado de torneo externo</div>
+          <div class="dsub">Registra un score de competencia fuera de la plataforma</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla: registro rápido torneo externo -->
+  <div id="bt-s-torneo-ext" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <button class="bt-abtn" onclick="btShowS('bt-s-inicio')">←</button>
+      <div style="font-size:13px;font-weight:600;color:var(--text)">Torneo externo</div>
+      <div style="width:32px"></div>
+    </div>
+
+    <!-- Nombre del torneo -->
+    <div class="bt-sec">Nombre del torneo</div>
+    <input id="bt-te-nombre" type="text" placeholder="Ej: Nacional Juvenil 2026"
+      style="width:100%;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:14px">
+
+    <!-- Formato -->
+    <div class="bt-sec">Formato</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px" id="bt-te-formats">
+      <div class="bt-disc-card" data-fmt="outdoor-36" data-arrows="36" onclick="btTeSelFmt(this)">
+        <div class="dname" style="margin-top:4px">Outdoor 36</div><div class="dsub">36 flechas · 10pts</div>
+      </div>
+      <div class="bt-disc-card" data-fmt="outdoor-72" data-arrows="72" onclick="btTeSelFmt(this)">
+        <div class="dname" style="margin-top:4px">Outdoor 72</div><div class="dsub">72 flechas · 10pts</div>
+      </div>
+      <div class="bt-disc-card" data-fmt="indoor-30" data-arrows="30" onclick="btTeSelFmt(this)">
+        <div class="dname" style="margin-top:4px">Indoor 30</div><div class="dsub">30 flechas · 10pts</div>
+      </div>
+      <div class="bt-disc-card" data-fmt="indoor-60" data-arrows="60" onclick="btTeSelFmt(this)">
+        <div class="dname" style="margin-top:4px">Indoor 60</div><div class="dsub">60 flechas · 10pts</div>
+      </div>
+      <div class="bt-disc-card" data-fmt="field-c" data-arrows="24" onclick="btTeSelFmt(this)">
+        <div class="dname" style="margin-top:4px">Field 24</div><div class="dsub">24 flechas conocidas</div>
+      </div>
+      <div class="bt-disc-card" data-fmt="3d" data-arrows="20" onclick="btTeSelFmt(this)">
+        <div class="dname" style="margin-top:4px">3D 20</div><div class="dsub">20 animales</div>
+      </div>
+    </div>
+
+    <!-- Total -->
+    <div class="bt-sec">Total obtenido</div>
+    <input id="bt-te-total" type="number" min="0" max="720" placeholder="Ej: 310"
+      style="width:100%;padding:12px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:28px;text-align:center;box-sizing:border-box;margin-bottom:8px">
+    <div id="bt-te-avg" style="text-align:center;font-size:11px;color:var(--muted);margin-bottom:14px">— pts/flecha</div>
+
+    <!-- Fecha -->
+    <div class="bt-sec">Fecha</div>
+    <input id="bt-te-fecha" type="date"
+      style="width:100%;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:14px">
+
+    <!-- Notas opcionales -->
+    <div class="bt-sec">Notas <span style="font-size:10px;color:var(--muted)">(opcional)</span></div>
+    <input id="bt-te-notas" type="text" placeholder="Ej: Viento fuerte, 18m"
+      style="width:100%;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:20px">
+
+    <button onclick="btGuardarTorneoExterno()"
+      style="width:100%;padding:12px;background:#d8d15a;border:none;border-radius:10px;color:#0e0e0e;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.05em;cursor:pointer">
+      REGISTRAR RESULTADO
+    </button>
+    <div id="bt-te-msg" style="text-align:center;font-size:12px;margin-top:10px;color:#5dcaa5"></div>
   </div>
 
   <div id="bt-s-config" style="display:none">
@@ -5755,7 +5825,7 @@ window.btCancelPlanConteo = function(){
 };
 
 window.btShowS=function(id){
-  ['bt-s-inicio','bt-s-config','bt-s-sesion','bt-s-resumen'].forEach(s=>{
+  ['bt-s-inicio','bt-s-config','bt-s-sesion','bt-s-resumen','bt-s-torneo-ext'].forEach(s=>{
     const el=document.getElementById(s);if(el)el.style.display=s===id?'block':'none';
   });
 }
@@ -6028,6 +6098,111 @@ window.btSaveSession=function(){
   }
 }
 
+// ── Torneo externo ────────────────────────────────────────
+let btTeFormat = null;
+let btTeArrows = null;
+
+window.btShowTorneoExterno = function(){
+  btTeFormat = null; btTeArrows = null;
+  // Set today's date
+  document.getElementById('bt-te-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('bt-te-total').value = '';
+  document.getElementById('bt-te-nombre').value = '';
+  document.getElementById('bt-te-notas').value = '';
+  document.getElementById('bt-te-avg').textContent = '— pts/flecha';
+  document.getElementById('bt-te-msg').textContent = '';
+  document.querySelectorAll('#bt-te-formats .bt-disc-card').forEach(c=>c.classList.remove('sel'));
+  btShowS('bt-s-torneo-ext');
+};
+
+window.btTeSelFmt = function(el){
+  document.querySelectorAll('#bt-te-formats .bt-disc-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  btTeFormat = el.dataset.fmt;
+  btTeArrows = parseInt(el.dataset.arrows);
+  btTeUpdateAvg();
+};
+
+window.btTeUpdateAvg = function(){
+  const total = parseInt(document.getElementById('bt-te-total')?.value);
+  const avgEl = document.getElementById('bt-te-avg');
+  if(total > 0 && btTeArrows > 0){
+    avgEl.textContent = (total/btTeArrows).toFixed(2) + ' pts/flecha';
+    avgEl.style.color = '#5dcaa5';
+  } else {
+    avgEl.textContent = '— pts/flecha';
+    avgEl.style.color = 'var(--muted)';
+  }
+};
+
+// Attach live update on total input
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('bt-te-total')?.addEventListener('input', window.btTeUpdateAvg);
+});
+
+window.btGuardarTorneoExterno = async function(){
+  const nombre = document.getElementById('bt-te-nombre').value.trim();
+  const total  = parseInt(document.getElementById('bt-te-total').value);
+  const fecha  = document.getElementById('bt-te-fecha').value;
+  const notas  = document.getElementById('bt-te-notas').value.trim();
+  const msgEl  = document.getElementById('bt-te-msg');
+
+  if(!btTeFormat){ msgEl.style.color='#e05555'; msgEl.textContent='Elige un formato'; return; }
+  if(!total || total < 1){ msgEl.style.color='#e05555'; msgEl.textContent='Ingresa el total obtenido'; return; }
+  if(!fecha){ msgEl.style.color='#e05555'; msgEl.textContent='Ingresa la fecha'; return; }
+
+  const userId = window._supabaseUserId;
+  if(!userId){ msgEl.style.color='#e05555'; msgEl.textContent='Sin sesión activa'; return; }
+
+  const SUPA = 'https://axaiyaflubssaghvhefe.supabase.co';
+  const session = (await window._supabaseClient.auth.getSession()).data.session;
+  const headers = {
+    apikey: window._supabaseAnonKey||'',
+    Authorization: 'Bearer '+(session?.access_token||''),
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal'
+  };
+
+  const disc = btTeFormat.split('-')[0] || 'outdoor';
+  const avg  = btTeArrows > 0 ? +(total/btTeArrows).toFixed(2) : 0;
+
+  const payload = {
+    user_id:      userId,
+    mode:         btTeFormat,
+    group_name:   disc,
+    label:        nombre || 'Torneo',
+    total:        total,
+    arrow_count:  btTeArrows,
+    avg_arrow:    avg,
+    session_date: fecha,
+    notes:        notas || null,
+    // Tag como torneo externo
+    setup_note:   'torneo-externo'
+  };
+
+  try{
+    const res = await fetch(`${SUPA}/rest/v1/scores`, {
+      method: 'POST', headers, body: JSON.stringify(payload)
+    });
+    if(res.ok || res.status===201){
+      msgEl.style.color = '#5dcaa5';
+      msgEl.textContent = '✓ Resultado registrado';
+      // Recargar historial
+      setTimeout(()=>{
+        btLoadSessions();
+        btShowMain('historial');
+      }, 1200);
+    } else {
+      const err = await res.text();
+      msgEl.style.color = '#e05555';
+      msgEl.textContent = 'Error: ' + err.slice(0,60);
+    }
+  } catch(e){
+    msgEl.style.color = '#e05555';
+    msgEl.textContent = 'Error de conexión';
+  }
+};
+
 window.btSfSrc=function(v,el){
   btFSrc=v;
   document.getElementById('bt-fs').querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
@@ -6045,7 +6220,9 @@ function btFilt(){
   const now=Date.now();
   return btSessions.filter(s=>{
     const age=(now-new Date(s.date).getTime())/86400000;
-    const srcOk = btFSrc==='all' || (s.src||'practica')===btFSrc;
+    // Detectar src: torneo-externo guardado en setup_note
+    const src = s.src || (s.setup_note==='torneo-externo' ? 'torneo' : 'practica');
+    const srcOk = btFSrc==='all' || src===btFSrc;
     return(btFDays===0||age<=btFDays)&&(btFMod==='all'||s.g===btFMod)&&srcOk;
   });
 }
