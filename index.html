@@ -6354,65 +6354,197 @@ function btRenderH(){
   const subEl=document.getElementById('bt-sub-trends');
   if(btFMod!=='all'){
     const byMode={};fs.forEach(s=>{if(!byMode[s.mode])byMode[s.mode]=[];byMode[s.mode].push(s);});
-    const entries=Object.entries(byMode).filter(([,v])=>v.length>=2);
+    // Filtrar modos válidos (excluir 'torneo' y similares)
+    const VALID_MODES_FOR_DISC = {
+      outdoor:['outdoor-15','outdoor-36','outdoor-72'],
+      indoor: ['indoor-15','indoor-30','indoor-60'],
+      field:  ['field-c','field-d','field-48'],
+      '3d':   ['3d']
+    };
+    const validModes = VALID_MODES_FOR_DISC[btFMod]||[];
+    const entries=Object.entries(byMode)
+      .filter(([m,v])=>validModes.includes(m) && v.length>=1)
+      .sort(([a],[b])=>validModes.indexOf(a)-validModes.indexOf(b));
     if(entries.length){
+      const is3d = btFMod==='3d';
       subEl.innerHTML=`<div class="bt-sec" style="margin-bottom:8px;margin-top:4px">Por formato</div>`+
       entries.map(([mode,v])=>{
         const sv=[...v].sort((a,b)=>new Date(a.date)-new Date(b.date));
-        const d=sv[sv.length-1].avg-sv[0].avg;
+        const d=sv.length>=2 ? sv[sv.length-1].avg-sv[0].avg : 0;
         const avgT=(v.reduce((a,s)=>a+s.total,0)/v.reduce((a,s)=>a+s.n,0)).toFixed(1);
         const bestT=Math.max(...v.map(s=>s.total));
+        const mxT=MAX_BY_MODE[mode];
+        const mLabel=MODE_LABELS[mode]||mode;
         return`<div class="bt-sub-trend">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div style="font-size:12px;font-weight:600;color:#fff">${BT_MODES[mode]?.lbl||mode}</div>
-            <span style="font-size:12px;font-weight:600" class="${d>0?'bt-tup':d<0?'bt-tdn':'bt-muted'}">${d>0?'↑ +':''}${d.toFixed(2)} p/f</span>
+            <div style="font-size:12px;font-weight:600;color:#fff">${mLabel}</div>
+            ${d!==0?`<span style="font-size:12px;font-weight:600" class="${d>0?'bt-tup':'bt-tdn'}">${d>0?'↑ +':''}${d.toFixed(2)} p/f</span>`:''}
           </div>
           <div style="display:flex;gap:14px">
             <div><div class="bt-num" style="font-size:20px;color:${BT_COLORS[btFMod]}">${avgT}</div><div class="bt-muted" style="font-size:9px;text-transform:uppercase">P/Flecha</div></div>
-            <div><div class="bt-num" style="font-size:20px;color:#fff">${bestT}</div><div class="bt-muted" style="font-size:9px;text-transform:uppercase">Mejor</div></div>
+            ${is3d?'':`<div><div class="bt-num" style="font-size:20px;color:#fff">${bestT}${mxT?`<span class="bt-muted" style="font-size:11px"> /${mxT}</span>`:''}</div><div class="bt-muted" style="font-size:9px;text-transform:uppercase">Mejor</div></div>`}
             <div><div class="bt-num" style="font-size:20px;color:rgba(255,255,255,0.5)">${v.length}</div><div class="bt-muted" style="font-size:9px;text-transform:uppercase">Sesiones</div></div>
           </div>
         </div>`;
       }).join('');
     } else subEl.innerHTML='';
   } else subEl.innerHTML='';
-  const grps={};fs.forEach(s=>{if(!grps[s.g])grps[s.g]=[];grps[s.g].push(s);});
-  document.getElementById('bt-mods').innerHTML=Object.entries(grps).map(([g,v])=>{
-    const tA2=v.reduce((a,s)=>a+s.n,0),tP2=v.reduce((a,s)=>a+s.total,0);
-    return`<div class="bt-srow">
-      <div style="display:flex;align-items:flex-start;gap:8px;min-width:90px">
-        <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
-        <div><div style="font-size:12px;font-weight:600;color:#fff">${BT_GLABELS[g]}</div><div class="bt-muted" style="font-size:10px">${v.length} sesiones</div></div>
-      </div>
-      <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:#fff">${(tP2/tA2).toFixed(1)}</div><div class="bt-muted" style="font-size:9px">P/FLECHA</div></div>
-      <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:${BT_COLORS[g]}">${Math.max(...v.map(s=>s.total))}</div><div class="bt-muted" style="font-size:9px">MEJOR</div></div>
-      <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:#d8d15a">${v.reduce((a,s)=>a+s.sp,0)}</div><div class="bt-muted" style="font-size:9px">${btSpLabel(g).toUpperCase()}</div></div>
-    </div>`;
-  }).join('');
-  // Récords: por grupo (outdoor/indoor/field/3d), comparar por avg p/flecha
-  // así 642/72 (8.9 p/f) es mejor que 360/36 (10 p/f) solo si es mayor avg
-  // Guardar mejor avg Y mejor total por modo para mostrar ambos
-  const pbG={};
-  btSessions.forEach(s=>{
-    if(!s.g) return;
-    const avg = s.avg || (s.n>0 ? s.total/s.n : 0);
-    if(!pbG[s.g] || avg > (pbG[s.g].avg || pbG[s.g].total/pbG[s.g].n || 0)) pbG[s.g]=s;
-  });
-  document.getElementById('bt-pbs').innerHTML=Object.entries(pbG).map(([g,s])=>{
-    const pct=Math.round(s.total/s.max*100);
-    return`<div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-        <div style="display:flex;align-items:center;gap:7px">
+  // ── POR MODALIDAD ──────────────────────────────────────────────
+  const MODE_GROUPS = {
+    outdoor:['outdoor-15','outdoor-36','outdoor-72'],
+    indoor: ['indoor-15','indoor-30','indoor-60'],
+    field:  ['field-c','field-d','field-48'],
+    '3d':   ['3d']
+  };
+  const MODE_LABELS = {
+    'outdoor-15':'15 tiros','outdoor-36':'36 tiros','outdoor-72':'72 tiros',
+    'indoor-15':'15 tiros','indoor-30':'30 tiros','indoor-60':'60 tiros',
+    'field-c':'Conocidas','field-d':'Desconocidas','field-48':'48 dianas',
+    '3d':'3D'
+  };
+  const MAX_BY_MODE = {
+    'outdoor-15':150,'outdoor-36':360,'outdoor-72':720,
+    'indoor-15':150,'indoor-30':300,'indoor-60':600,
+    'field-c':288,'field-d':288,'field-48':576,'3d':null
+  };
+
+  if(btFMod==='all'){
+    // Vista global: avg p/flecha por disciplina
+    const grps={};fs.forEach(s=>{if(!grps[s.g])grps[s.g]=[];grps[s.g].push(s);});
+    document.getElementById('bt-mods').innerHTML=Object.entries(grps).map(([g,v])=>{
+      const tA2=v.reduce((a,s)=>a+s.n,0),tP2=v.reduce((a,s)=>a+s.total,0);
+      return`<div class="bt-srow">
+        <div style="display:flex;align-items:flex-start;gap:8px;min-width:90px">
           <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
-          <span style="font-size:12px;font-weight:600;color:#fff">${BT_GLABELS[g]}</span>
-          <span class="bt-pill" style="background:${BT_COLORS[g]}22;color:${BT_COLORS[g]};border:0.5px solid ${BT_COLORS[g]}44">${s.lbl}</span>
+          <div><div style="font-size:12px;font-weight:600;color:#fff">${BT_GLABELS[g]}</div><div class="bt-muted" style="font-size:10px">${v.length} sesiones</div></div>
         </div>
-        <div><span class="bt-num" style="font-size:20px;color:#fff">${s.total}</span><span class="bt-muted" style="font-size:11px"> / ${s.max}</span></div>
-      </div>
-      <div class="bt-pb"><div class="bt-pbf" style="width:${pct}%;background:${BT_COLORS[g]}"></div></div>
-      <div class="bt-muted" style="font-size:10px;margin-top:3px">${pct}% del máximo · ${new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric',year:'numeric'})}</div>
-    </div>`;
-  }).join('');
+        <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:#fff">${(tP2/tA2).toFixed(1)}</div><div class="bt-muted" style="font-size:9px">P/FLECHA</div></div>
+        <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:${BT_COLORS[g]}">${Math.max(...v.map(s=>s.total))}</div><div class="bt-muted" style="font-size:9px">MEJOR</div></div>
+        <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:#d8d15a">${v.reduce((a,s)=>a+s.sp,0)}</div><div class="bt-muted" style="font-size:9px">${btSpLabel(g).toUpperCase()}</div></div>
+      </div>`;
+    }).join('');
+
+    // Récords globales: mejor por formato clave de cada disciplina
+    // Outdoor: mejor 72 (sumatoria) | Indoor: mejor 60 (sumatoria)
+    // 3D: mejor avg | Field-c y Field-d: mejores sumatorias
+    const KEY_MODES = ['outdoor-72','indoor-60','field-c','field-d','3d'];
+    const pbAll={};
+    btSessions.forEach(s=>{
+      if(!s.mode) return;
+      const km = KEY_MODES.includes(s.mode) ? s.mode : null;
+      if(!km) return;
+      if(km==='3d'){
+        const avg=s.avg||(s.n>0?s.total/s.n:0);
+        if(!pbAll[km]||avg>(pbAll[km].avg||pbAll[km].total/pbAll[km].n||0)) pbAll[km]=s;
+      } else {
+        if(!pbAll[km]||s.total>pbAll[km].total) pbAll[km]=s;
+      }
+    });
+    document.getElementById('bt-pbs').innerHTML=KEY_MODES.filter(m=>pbAll[m]).map(m=>{
+      const s=pbAll[m], g=s.g||m.split('-')[0], mx=MAX_BY_MODE[m];
+      const is3d=m==='3d';
+      if(is3d){
+        const avg=s.avg||(s.n>0?+(s.total/s.n).toFixed(2):0);
+        return`<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <div style="display:flex;align-items:center;gap:7px">
+              <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
+              <span style="font-size:12px;font-weight:600;color:#fff">3D</span>
+              <span class="bt-pill" style="background:${BT_COLORS[g]}22;color:${BT_COLORS[g]};border:0.5px solid ${BT_COLORS[g]}44">Mejor avg</span>
+            </div>
+            <div><span class="bt-num" style="font-size:20px;color:#fff">${avg}</span><span class="bt-muted" style="font-size:11px"> p/f</span></div>
+          </div>
+          <div class="bt-muted" style="font-size:10px;margin-top:3px">${new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric',year:'numeric'})}</div>
+        </div>`;
+      }
+      const pct=mx?Math.round(s.total/mx*100):null;
+      return`<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <div style="display:flex;align-items:center;gap:7px">
+            <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
+            <span style="font-size:12px;font-weight:600;color:#fff">${BT_GLABELS[g]}</span>
+            <span class="bt-pill" style="background:${BT_COLORS[g]}22;color:${BT_COLORS[g]};border:0.5px solid ${BT_COLORS[g]}44">${MODE_LABELS[m]||m}</span>
+          </div>
+          <div><span class="bt-num" style="font-size:20px;color:#fff">${s.total}</span>${mx?`<span class="bt-muted" style="font-size:11px"> / ${mx}</span>`:''}</div>
+        </div>
+        ${pct?`<div class="bt-pb"><div class="bt-pbf" style="width:${pct}%;background:${BT_COLORS[g]}"></div></div>
+        <div class="bt-muted" style="font-size:10px;margin-top:3px">${pct}% del máximo · ${new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric',year:'numeric'})}</div>`:''}
+      </div>`;
+    }).join('');
+
+  } else {
+    // Vista por disciplina: avg p/flecha por cada formato
+    const modes = MODE_GROUPS[btFMod]||[];
+    const byMode={};
+    fs.forEach(s=>{ const m=s.mode; if(modes.includes(m)||(!modes.length&&s.g===btFMod)){ if(!byMode[m])byMode[m]=[]; byMode[m].push(s); }});
+    // También incluir sesiones de 3D sin modo específico
+    if(btFMod==='3d') fs.forEach(s=>{ if(s.g==='3d'){ if(!byMode['3d'])byMode['3d']=[]; if(!byMode['3d'].includes(s)) byMode['3d'].push(s); }});
+
+    const orderedModes = (MODE_GROUPS[btFMod]||[]).filter(m=>byMode[m]);
+    document.getElementById('bt-mods').innerHTML=orderedModes.map(m=>{
+      const v=byMode[m];
+      const tA2=v.reduce((a,s)=>a+s.n,0),tP2=v.reduce((a,s)=>a+s.total,0);
+      const is3d=m==='3d';
+      const mxT=MAX_BY_MODE[m];
+      const bestT=Math.max(...v.map(s=>s.total));
+      const bestAvg=(tP2/tA2).toFixed(1);
+      return`<div class="bt-srow">
+        <div style="display:flex;align-items:flex-start;gap:8px;min-width:90px">
+          <div class="bt-dot" style="background:${BT_COLORS[btFMod]}"></div>
+          <div><div style="font-size:12px;font-weight:600;color:#fff">${MODE_LABELS[m]||m}</div><div class="bt-muted" style="font-size:10px">${v.length} sesión${v.length!==1?'es':''}</div></div>
+        </div>
+        <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:#fff">${bestAvg}</div><div class="bt-muted" style="font-size:9px">P/FLECHA</div></div>
+        <div style="text-align:center">
+          <div class="bt-num" style="font-size:20px;color:${BT_COLORS[btFMod]}">${is3d?bestAvg:bestT}${!is3d&&mxT?`<span style="font-size:11px;color:rgba(255,255,255,0.3)"> /${mxT}</span>`:''}</div>
+          <div class="bt-muted" style="font-size:9px">${is3d?'MEJOR P/F':'MEJOR'}</div>
+        </div>
+        <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:#d8d15a">${v.reduce((a,s)=>a+s.sp,0)}</div><div class="bt-muted" style="font-size:9px">${btSpLabel(btFMod).toUpperCase()}</div></div>
+      </div>`;
+    }).join('') || `<div class="bt-muted" style="padding:8px 0">Sin sesiones en este período</div>`;
+
+    // Récords por formato
+    const pbM={};
+    fs.forEach(s=>{
+      if(!s.mode) return;
+      const m=s.mode;
+      if(!modes.includes(m)&&btFMod!=='3d') return;
+      if(btFMod==='3d'){
+        const avg=s.avg||(s.n>0?s.total/s.n:0);
+        if(!pbM[m]||avg>(pbM[m].avg||pbM[m].total/pbM[m].n||0)) pbM[m]=s;
+      } else {
+        if(!pbM[m]||s.total>pbM[m].total) pbM[m]=s;
+      }
+    });
+    document.getElementById('bt-pbs').innerHTML=modes.filter(m=>pbM[m]).map(m=>{
+      const s=pbM[m], g=btFMod, mx=MAX_BY_MODE[m];
+      const is3d=g==='3d';
+      if(is3d){
+        const avg=s.avg||(s.n>0?+(s.total/s.n).toFixed(2):0);
+        return`<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <div style="display:flex;align-items:center;gap:7px">
+              <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
+              <span style="font-size:12px;font-weight:600;color:#fff">Mejor promedio</span>
+            </div>
+            <div><span class="bt-num" style="font-size:20px;color:#fff">${avg}</span><span class="bt-muted" style="font-size:11px"> p/f</span></div>
+          </div>
+          <div class="bt-muted" style="font-size:10px;margin-top:3px">${new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric',year:'numeric'})}</div>
+        </div>`;
+      }
+      const pct=mx?Math.round(s.total/mx*100):null;
+      return`<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <div style="display:flex;align-items:center;gap:7px">
+            <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
+            <span style="font-size:12px;font-weight:600;color:#fff">${MODE_LABELS[m]||m}</span>
+          </div>
+          <div><span class="bt-num" style="font-size:20px;color:#fff">${s.total}</span>${mx?`<span class="bt-muted" style="font-size:11px"> / ${mx}</span>`:''}</div>
+        </div>
+        ${pct?`<div class="bt-pb"><div class="bt-pbf" style="width:${pct}%;background:${BT_COLORS[g]}"></div></div>
+        <div class="bt-muted" style="font-size:10px;margin-top:3px">${pct}% del máximo · ${new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric',year:'numeric'})}</div>`:''}
+      </div>`;
+    }).join('') || `<div class="bt-muted" style="padding:8px 0">Sin récords en este período</div>`;
+  }
   document.getElementById('bt-hl').innerHTML=fs.map(s=>{
     const d=new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric'});
     const pct=s.max?Math.round(s.total/s.max*100):null;
