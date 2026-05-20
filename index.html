@@ -6199,6 +6199,10 @@ window.btGuardarTorneoExterno = async function(){
     setup_note:   'torneo-externo'
   };
 
+  // Deshabilitar botón para evitar doble click
+  const saveBtn = document.querySelector('#bt-s-torneo-ext button[onclick*="btGuardar"]');
+  if(saveBtn){ saveBtn.disabled = true; saveBtn.style.opacity = '0.5'; }
+
   try{
     const res = await fetch(`${SUPA}/rest/v1/scores`, {
       method: 'POST', headers, body: JSON.stringify(payload)
@@ -6206,7 +6210,6 @@ window.btGuardarTorneoExterno = async function(){
     if(res.ok || res.status===201){
       msgEl.style.color = '#5dcaa5';
       msgEl.textContent = '✓ Resultado registrado';
-      // Recargar historial
       setTimeout(()=>{
         btLoadSessions();
         btShowMain('historial');
@@ -6215,6 +6218,7 @@ window.btGuardarTorneoExterno = async function(){
       const err = await res.text();
       msgEl.style.color = '#e05555';
       msgEl.textContent = 'Error: ' + err.slice(0,60);
+      if(saveBtn){ saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
     }
   } catch(e){
     msgEl.style.color = '#e05555';
