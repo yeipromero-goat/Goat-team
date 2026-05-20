@@ -5751,29 +5751,23 @@ function btLoadSessions(){
       let all = [];
       // Práctica diaria
       if(Array.isArray(daily) && daily.length){
+        const MAX_MAP = {
+          'outdoor-15':150,'outdoor-36':360,'outdoor-72':720,
+          'indoor-15':150,'indoor-30':300,'indoor-60':600,
+          'field-c':288,'field-d':288,'field-48':576,'3d':null
+        };
         daily.forEach(s=>{
-          // Normalizar sesiones de torneo externo que llegan de supabaseLoadScores
-          if(s.setup_note === 'torneo-externo'){
-            s.src = 'torneo';
-            // Derivar g y lbl del mode si no existen
-            if(!s.g) s.g = (s.mode||'outdoor').split('-')[0];
-            if(!s.lbl) s.lbl = s.label || 'Torneo';
-            // n y avg — calcular del total si faltan
-            if(!s.n && s.arrow_count) s.n = s.arrow_count;
-            if(!s.avg && s.avg_arrow) s.avg = s.avg_arrow;
-            if(!s.avg && s.n > 0) s.avg = +(s.total/s.n).toFixed(2);
-            // max — según formato
-            const maxMap = {
-              'outdoor-15':150,'outdoor-36':360,'outdoor-72':720,
-              'indoor-15':150,'indoor-30':300,'indoor-60':600,
-              'field-c':288,'field-d':288,'field-48':576,
-              '3d':null
-            };
-            if(!s.max) s.max = maxMap[s.mode] || null;
-            if(!s.sp) s.sp = 0;
-          } else {
-            s.src = s.src||'practica';
-          }
+          // Normalizar TODOS los campos que pueden venir como group_name, label, etc.
+          if(!s.g)    s.g    = s.group_name || (s.mode||'outdoor').split('-')[0];
+          if(!s.lbl)  s.lbl  = s.label      || (s.mode||'—');
+          if(!s.n)    s.n    = s.arrow_count || 0;
+          if(!s.avg)  s.avg  = s.avg_arrow   || (s.n>0 ? +(s.total/s.n).toFixed(2) : 0);
+          if(!s.max)  s.max  = MAX_MAP[s.mode] || null;
+          if(!s.sp)   s.sp   = s.specials    || 0;
+          if(!s.date) s.date = s.session_date || s.created_at || new Date().toISOString();
+          // Fuente
+          if(s.setup_note === 'torneo-externo') s.src = 'torneo';
+          else s.src = s.src || 'practica';
         });
         all = all.concat(daily);
       }
