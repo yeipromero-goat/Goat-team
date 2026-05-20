@@ -6107,11 +6107,11 @@ window.btSaveSession=function(){
 }
 
 // ── Torneo externo ────────────────────────────────────────
-let btTeFormat = null;
-let btTeArrows = null;
+window.window.btTeFormat = null;
+window.window.btTeArrows = null;
 
 window.btShowTorneoExterno = function(){
-  btTeFormat = null; btTeArrows = null;
+  window.btTeFormat = null; window.btTeArrows = null;
   // Set today's date
   document.getElementById('bt-te-fecha').value = new Date().toISOString().slice(0,10);
   document.getElementById('bt-te-total').value = '';
@@ -6126,18 +6126,18 @@ window.btShowTorneoExterno = function(){
 window.btTeSelFmt = function(el){
   document.querySelectorAll('#bt-te-formats .bt-disc-card').forEach(c=>c.classList.remove('sel'));
   el.classList.add('sel');
-  btTeFormat = el.dataset.fmt;
-  btTeArrows = parseInt(el.dataset.arrows);
+  window.btTeFormat = el.dataset.fmt;
+  window.btTeArrows = parseInt(el.dataset.arrows);
   // Show/hide 3D animals input
   const is3d = btTeFormat === '3d';
   document.getElementById('bt-te-3d-wrap').style.display = is3d ? 'block' : 'none';
-  if(is3d){ btTeArrows = 0; } // reset until user enters count
+  if(is3d){ window.btTeArrows = 0; } // reset until user enters count
   btTeUpdateAvg();
 };
 
 window.btTeUpdate3DArrows = function(){
   const n = parseInt(document.getElementById('bt-te-animales')?.value);
-  btTeArrows = n > 0 ? n : 0;
+  window.btTeArrows = n > 0 ? n : 0;
   btTeUpdateAvg();
 };
 
@@ -6165,7 +6165,7 @@ window.btGuardarTorneoExterno = async function(){
   const notas  = document.getElementById('bt-te-notas').value.trim();
   const msgEl  = document.getElementById('bt-te-msg');
 
-  if(!btTeFormat){ msgEl.style.color='#e05555'; msgEl.textContent='Elige un formato'; return; }
+  if(!window.btTeFormat){ msgEl.style.color='#e05555'; msgEl.textContent='Elige un formato'; return; }
   if(!total || total < 1){ msgEl.style.color='#e05555'; msgEl.textContent='Ingresa el total obtenido'; return; }
   if(!fecha){ msgEl.style.color='#e05555'; msgEl.textContent='Ingresa la fecha'; return; }
 
@@ -6181,7 +6181,7 @@ window.btGuardarTorneoExterno = async function(){
     'Prefer': 'return=minimal'
   };
 
-  const disc = btTeFormat.split('-')[0] || 'outdoor';
+  const disc = window.btTeFormat.split('-')[0] || 'outdoor';
   const avg  = btTeArrows > 0 ? +(total/btTeArrows).toFixed(2) : 0;
 
   const payload = {
