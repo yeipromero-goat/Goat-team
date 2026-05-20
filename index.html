@@ -5690,6 +5690,7 @@ const BT_MODES={
 function btSpLabel(g){return{outdoor:"X's",indoor:"X's",field:"6's",'3d':"12/11's"}[g]||"X's";}
 
 let btSessions=[], btFDays=90, btFMod='all', btFSrc='all', btCurMode=null, btState={};
+window._btDebug = ()=>({ sessions:btSessions, filt:btFilt(), mod:btFMod, src:btFSrc });
 let btUsingDemo=false;
 
 const BT_DEMO_NOTES=['Sin viento','Viento leve norte','Torneo clasificatorio','Entrenamiento técnico','Concentración +','Temperatura ideal','Sesión matutina','Fatiga últimos ends','Mejor del mes','Nuevo anclaje','Práctica larga','Con coach JPR'];
