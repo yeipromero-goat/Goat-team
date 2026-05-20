@@ -6299,6 +6299,25 @@ function btFilt(){
 function btRenderH(){
   const fs=btFilt();const now=Date.now();
 
+  // ── Constantes de modos — disponibles en todo btRenderH ──
+  const MODE_GROUPS = {
+    outdoor:['outdoor-15','outdoor-36','outdoor-72'],
+    indoor: ['indoor-15','indoor-30','indoor-60'],
+    field:  ['field-c','field-d','field-48'],
+    '3d':   ['3d']
+  };
+  const MODE_LABELS = {
+    'outdoor-15':'15 tiros','outdoor-36':'36 tiros','outdoor-72':'72 tiros',
+    'indoor-15':'15 tiros','indoor-30':'30 tiros','indoor-60':'60 tiros',
+    'field-c':'Field conocidas','field-d':'Field desconocidas','field-48':'Field 48',
+    '3d':'3D'
+  };
+  const MAX_BY_MODE = {
+    'outdoor-15':150,'outdoor-36':360,'outdoor-72':720,
+    'indoor-15':150,'indoor-30':300,'indoor-60':600,
+    'field-c':288,'field-d':288,'field-48':576,'3d':null
+  };
+
   // Banner demo
   const existingBanner=document.getElementById('bt-demo-banner');
   if(existingBanner) existingBanner.remove();
@@ -6385,23 +6404,6 @@ function btRenderH(){
     } else subEl.innerHTML='';
   } else subEl.innerHTML='';
   // ── POR MODALIDAD ──────────────────────────────────────────────
-  const MODE_GROUPS = {
-    outdoor:['outdoor-15','outdoor-36','outdoor-72'],
-    indoor: ['indoor-15','indoor-30','indoor-60'],
-    field:  ['field-c','field-d','field-48'],
-    '3d':   ['3d']
-  };
-  const MODE_LABELS = {
-    'outdoor-15':'15 tiros','outdoor-36':'36 tiros','outdoor-72':'72 tiros',
-    'indoor-15':'15 tiros','indoor-30':'30 tiros','indoor-60':'60 tiros',
-    'field-c':'Conocidas','field-d':'Desconocidas','field-48':'48 dianas',
-    '3d':'3D'
-  };
-  const MAX_BY_MODE = {
-    'outdoor-15':150,'outdoor-36':360,'outdoor-72':720,
-    'indoor-15':150,'indoor-30':300,'indoor-60':600,
-    'field-c':288,'field-d':288,'field-48':576,'3d':null
-  };
 
   if(btFMod==='all'){
     // Vista global: avg p/flecha por disciplina
