@@ -5467,9 +5467,17 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
       <div class="bt-disc-card" data-fmt="field-c" data-arrows="24" onclick="btTeSelFmt(this)">
         <div class="dname" style="margin-top:4px">Field 24</div><div class="dsub">24 flechas conocidas</div>
       </div>
-      <div class="bt-disc-card" data-fmt="3d" data-arrows="20" onclick="btTeSelFmt(this)">
-        <div class="dname" style="margin-top:4px">3D 20</div><div class="dsub">20 animales</div>
+      <div class="bt-disc-card" data-fmt="3d" data-arrows="0" onclick="btTeSelFmt(this)" id="bt-te-3d-card">
+        <div class="dname" style="margin-top:4px">3D</div><div class="dsub">Elige número de animales</div>
       </div>
+    </div>
+
+    <!-- Animales 3D — solo visible cuando se selecciona 3D -->
+    <div id="bt-te-3d-wrap" style="display:none;margin-bottom:14px">
+      <div class="bt-sec">Número de animales</div>
+      <input id="bt-te-animales" type="number" min="1" max="60" placeholder="Ej: 20"
+        style="width:100%;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;text-align:center;box-sizing:border-box"
+        oninput="btTeUpdate3DArrows()">
     </div>
 
     <!-- Total -->
@@ -6120,6 +6128,16 @@ window.btTeSelFmt = function(el){
   el.classList.add('sel');
   btTeFormat = el.dataset.fmt;
   btTeArrows = parseInt(el.dataset.arrows);
+  // Show/hide 3D animals input
+  const is3d = btTeFormat === '3d';
+  document.getElementById('bt-te-3d-wrap').style.display = is3d ? 'block' : 'none';
+  if(is3d){ btTeArrows = 0; } // reset until user enters count
+  btTeUpdateAvg();
+};
+
+window.btTeUpdate3DArrows = function(){
+  const n = parseInt(document.getElementById('bt-te-animales')?.value);
+  btTeArrows = n > 0 ? n : 0;
   btTeUpdateAvg();
 };
 
@@ -6169,6 +6187,7 @@ window.btGuardarTorneoExterno = async function(){
   const payload = {
     user_id:      userId,
     mode:         btTeFormat,
+    // id es bigint con secuencia — no mandar, Supabase lo genera
     group_name:   disc,
     label:        nombre || 'Torneo',
     total:        total,
