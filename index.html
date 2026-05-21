@@ -5746,7 +5746,7 @@ function btLoadSessions(){
 
     Promise.all([
       window.supabaseLoadScores(),
-      userId ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&select=score,submitted_at,round_number,league_id&order=submitted_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([]),
+      userId ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&select=score,submitted_at,round_id,league_id&order=submitted_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([]),
       userId ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_score,qualifying_at,tournament_id&order=qualifying_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([])
     ]).then(function([daily, liga, torneo]){
       let all = [];
@@ -5780,7 +5780,7 @@ function btLoadSessions(){
             src:'liga', g:'indoor', mode:'liga', lbl:'Liga',
             total:s.score, n:30, avg:+(s.score/30).toFixed(2), sp:0,
             date:s.submitted_at||new Date().toISOString(),
-            label:'Liga Ronda '+(s.round_number||'—')
+            label:'Liga Ronda '+(s.round_id||'—')
           });
         });
       }
