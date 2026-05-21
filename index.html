@@ -3932,6 +3932,12 @@ function renderArcherCards() {
 
 // — INIT —
 // ── INIT ──
+// Stubs por si los loaders viven en otro partial (scoring.js removido)
+if(typeof loadArchersFromSupabase === 'undefined') window.loadArchersFromSupabase = ()=>Promise.resolve();
+if(typeof loadCoachesFromSupabase === 'undefined') window.loadCoachesFromSupabase = ()=>Promise.resolve();
+if(typeof loadBowsFromSupabase    === 'undefined') window.loadBowsFromSupabase    = ()=>Promise.resolve();
+if(typeof loadCardsFromSupabase   === 'undefined') window.loadCardsFromSupabase   = ()=>Promise.resolve();
+
 document.addEventListener('DOMContentLoaded', async function() {
 
   // ── 1. Cargar todos los datos en paralelo (archers, coaches, bows, cards) ──
