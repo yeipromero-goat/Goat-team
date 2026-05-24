@@ -15366,29 +15366,41 @@ async function rtRenderWeekStats(plan){
     const weekStart = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, 0);
     const weekEnd   = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, 6);
 
-    const [rWeek, rAll] = await Promise.all([
-      rtFetch(`training_reports?plan_id=eq.${plan.id}&user_id=eq.${rtUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`).then(r=>r.json()),
-      rtFetch(`training_reports?user_id=eq.${rtUserId}&value_done=gt.0&select=value_done,note`).then(r=>r.json())
+    const planUserId = plan.assigned_to || rtUserId;
+
+    const [rWeek, actsRaw, rAll] = await Promise.all([
+      rtFetch(`training_reports?plan_id=eq.${plan.id}&user_id=eq.${planUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`).then(r=>r.json()),
+      rtFetch(`training_activities?plan_id=eq.${plan.id}&order=sort_order.asc`).then(r=>r.json()),
+      rtFetch(`training_reports?user_id=eq.${planUserId}&value_done=gt.0&select=value_done,note`).then(r=>r.json())
     ]);
 
-    // Stats de la semana
-    const done  = rWeek.filter(r=>r.completed).length;
-    const total = rWeek.length;
-    // Calcular completado real — suma de value_done vs valor esperado
-    const realPct = total > 0 ? Math.round(
-      rWeek.reduce((acc,r)=>{
-        const expected = parseFloat(r.expected_value||r.value_done||1);
-        const actual   = parseFloat(r.value_done||0);
-        return acc + Math.min(1, actual/(expected||1));
-      }, 0) / total * 100
-    ) : 0;
+    // Total actividades reales del plan (excluyendo asistencia)
+    const allActs2 = Array.isArray(actsRaw) ? actsRaw : [];
+    const totalActs = allActs2.filter(a=>a.type!=='attendance').length;
+    const reports   = Array.isArray(rWeek) ? rWeek : [];
+    const done      = reports.filter(r=>r.completed).length;
+
+    // % real — basado en value_done de cada actividad que tiene objetivo
+    const actsWithGoal = allActs2.filter(a=>a.type!=='attendance' && a.value_target>0);
+    let realPct = 0;
+    if(actsWithGoal.length > 0){
+      const totalProgress = actsWithGoal.reduce((acc,a)=>{
+        const rep = reports.find(r=>r.activity_id===a.id);
+        const actual = parseFloat(rep?.value_done||0);
+        return acc + Math.min(1, actual/(a.value_target||1));
+      }, 0);
+      realPct = Math.round(totalProgress / actsWithGoal.length * 100);
+    } else if(totalActs > 0){
+      realPct = Math.round(done / totalActs * 100);
+    }
+
     el.innerHTML = `
       <div class="rt-stat-box">
         <div class="rt-stat-val" style="color:#5dcaa5">${done}</div>
         <div class="rt-stat-lbl">Reportes</div>
       </div>
       <div class="rt-stat-box">
-        <div class="rt-stat-val" style="color:#d8a05a;font-size:${total>9?'20px':'26px'}">${done}<span style="font-size:14px;color:rgba(255,255,255,0.3)"> / ${total}</span></div>
+        <div class="rt-stat-val" style="color:#d8a05a">${done}<span style="font-size:14px;color:rgba(255,255,255,0.3)"> / ${totalActs}</span></div>
         <div class="rt-stat-lbl">Actividades</div>
       </div>
       <div class="rt-stat-box">
