@@ -15372,19 +15372,27 @@ async function rtRenderWeekStats(plan){
     ]);
 
     // Stats de la semana
-    const asist = rWeek.filter(r=>r.completed).length;
+    const done  = rWeek.filter(r=>r.completed).length;
     const total = rWeek.length;
+    // Calcular completado real — suma de value_done vs valor esperado
+    const realPct = total > 0 ? Math.round(
+      rWeek.reduce((acc,r)=>{
+        const expected = parseFloat(r.expected_value||r.value_done||1);
+        const actual   = parseFloat(r.value_done||0);
+        return acc + Math.min(1, actual/(expected||1));
+      }, 0) / total * 100
+    ) : 0;
     el.innerHTML = `
       <div class="rt-stat-box">
-        <div class="rt-stat-val" style="color:#5dcaa5">${asist}</div>
+        <div class="rt-stat-val" style="color:#5dcaa5">${done}</div>
         <div class="rt-stat-lbl">Reportes</div>
       </div>
       <div class="rt-stat-box">
-        <div class="rt-stat-val" style="color:#d8a05a">${total}</div>
+        <div class="rt-stat-val" style="color:#d8a05a;font-size:${total>9?'20px':'26px'}">${done}<span style="font-size:14px;color:rgba(255,255,255,0.3)"> / ${total}</span></div>
         <div class="rt-stat-lbl">Actividades</div>
       </div>
       <div class="rt-stat-box">
-        <div class="rt-stat-val" style="color:#9a88dd">${total?Math.round(asist/total*100):0}%</div>
+        <div class="rt-stat-val" style="color:#9a88dd">${realPct}%</div>
         <div class="rt-stat-lbl">Completado</div>
       </div>`;
 
