@@ -14661,7 +14661,7 @@ function rtRenderPlansList(){
     // ── Stats primero ──
     html += `<div class="rt-stat-grid" style="margin-bottom:12px">
       <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-asistencia">—</div><div class="rt-stat-lbl">Asistencia</div></div>
-      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-calenta">—</div><div class="rt-stat-lbl">Calenta.</div></div>
+      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-calenta">—</div><div class="rt-stat-lbl">Actividades</div></div>
       <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-tiros">—</div><div class="rt-stat-lbl">% Tiros</div></div>
     </div>`;
     // ── Filtros segundo ──
@@ -15606,33 +15606,52 @@ async function rtRenderCoachStats(plans){
     'Content-Type':'application/json'
   };
 
-  // Obtener reportes + scores en paralelo
-  const userIds = [...new Set(plans.map(p=>p.assigned_to))].join(',');
+  const userIds  = [...new Set(plans.map(p=>p.assigned_to))].join(',');
+  const planIdsQ = planIds.map(id=>`plan_id=eq.${id}`).join(',');
 
-  const [reportsRes, scoresRes] = await Promise.all([
+  // Cargar reportes + actividades de todos los planes en paralelo
+  const [reportsRes, actsRes, scoresRes] = await Promise.all([
     fetch(window._supabaseSUPA + `/rest/v1/training_reports?user_id=in.(${userIds})&report_date=gte.${dateFromStr}&select=*`, {headers:h}),
+    fetch(window._supabaseSUPA + `/rest/v1/training_activities?or=(${planIdsQ})&select=id,plan_id,type,value_target`, {headers:h}),
     fetch(window._supabaseSUPA + `/rest/v1/scores?user_id=in.(${userIds})&select=total,mode,label,avg_arrow,arrow_count&created_at=gte.${dateFromStr}T00:00:00Z`, {headers:h})
   ]);
 
-  const reports = reportsRes.ok ? (await reportsRes.json() || []) : [];
-  const scores  = scoresRes.ok  ? (await scoresRes.json()  || []) : [];
+  const reports  = reportsRes.ok ? (await reportsRes.json() || []) : [];
+  const allActs  = actsRes.ok    ? (await actsRes.json()    || []) : [];
+  const scores   = scoresRes.ok  ? (await scoresRes.json()  || []) : [];
 
-  // Stats de asistencia y calentamiento en %
-  const asistActs = reports.filter(r=>{
-    // actividades de asistencia completadas
-    return r.completed;
-  });
-  const total = reports.length;
-  const done  = asistActs.length;
-  const asistPct = total > 0 ? Math.round(done/total*100) : null;
+  // ── MACRO STATS (misma lógica que individual pero para todos los planes) ──
 
-  // Tiros: actividades con value_done > 0
-  const tirosReps = reports.filter(r=>r.value_done && r.value_done > 0);
-  const tirosPct  = total > 0 ? Math.round(tirosReps.length/total*100) : null;
+  // Reportes: actividades tocadas / total actividades (incluyendo asistencia)
+  const totalActsAll  = Array.isArray(allActs) ? allActs.length : 0;
+  const reportedAll   = Array.isArray(reports) ? reports.filter(r=>r.completed||parseFloat(r.value_done||0)>0).length : 0;
 
-  if(elAsist) elAsist.textContent = asistPct !== null ? asistPct+'%' : '—';
-  if(elCal)   elCal.textContent   = total || '0';
-  if(elTiros) elTiros.textContent = tirosPct !== null ? tirosPct+'%' : '—';
+  // Actividades de entrenamiento (excluyendo asistencia)
+  const nonAttActs  = Array.isArray(allActs) ? allActs.filter(a=>a.type!=='asistencia') : [];
+  const totalTrain  = nonAttActs.length;
+  const touchedAll  = Array.isArray(reports) ? reports.filter(r=>{
+    return nonAttActs.find(a=>a.id===r.activity_id) &&
+           (r.completed || parseFloat(r.value_done||0)>0);
+  }).length : 0;
+
+  // % completado real — promedio del progreso de cada actividad con target
+  let realPctAll = 0;
+  if(totalTrain > 0){
+    const totalProg = nonAttActs.reduce((acc,a)=>{
+      const rep = Array.isArray(reports) ? reports.find(r=>r.activity_id===a.id) : null;
+      if(!rep) return acc;
+      if(rep.completed) return acc + 1;
+      const target = parseFloat(a.value_target||0);
+      const actual = parseFloat(rep.value_done||0);
+      if(target>0) return acc + Math.min(1, actual/target);
+      return acc + (actual>0 ? 0.5 : 0);
+    }, 0);
+    realPctAll = Math.round(totalProg / totalTrain * 100);
+  }
+
+  if(elAsist) elAsist.innerHTML = `${reportedAll}<span style="font-size:0.55em;color:var(--muted);margin-left:2px">de ${totalActsAll}</span>`;
+  if(elCal)   elCal.innerHTML   = `${touchedAll}<span style="font-size:0.55em;color:var(--muted);margin-left:2px">de ${totalTrain}</span>`;
+  if(elTiros) elTiros.textContent = totalTrain > 0 ? realPctAll+'%' : '—';
 
   // PFA por disciplina
   const byDisc = {};
