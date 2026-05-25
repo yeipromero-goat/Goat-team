@@ -15380,11 +15380,15 @@ async function rtRenderWeekStats(plan){
 
     // Total actividades reales del plan (excluyendo asistencia)
     const allActs2 = Array.isArray(actsRaw) ? actsRaw : [];
-    const nonAttActs = allActs2.filter(a=>a.type!=='attendance');
+    const nonAttActs = allActs2.filter(a=>a.type!=='asistencia');
     const totalActs  = nonAttActs.length;
     const reports    = Array.isArray(rWeek) ? rWeek : [];
 
-    // "Tocada" = tiene value_done > 0 o completed=true
+    // Reportes = todas las actividades con cualquier reporte (incluyendo asistencia)
+    const reported = reports.filter(r=>r.completed || parseFloat(r.value_done||0) > 0).length;
+    const totalAllActs = allActs2.length; // incluyendo asistencia
+
+    // Actividades completadas = no-asistencia con value_done > 0 o completed
     const touched = reports.filter(r=>{
       const nonAtt = nonAttActs.find(a=>a.id===r.activity_id);
       return nonAtt && (r.completed || parseFloat(r.value_done||0) > 0);
@@ -15407,7 +15411,7 @@ async function rtRenderWeekStats(plan){
 
     el.innerHTML = `
       <div class="rt-stat-box">
-        <div class="rt-stat-val" style="color:#5dcaa5">${touched}</div>
+        <div class="rt-stat-val" style="color:#5dcaa5">${reported}<span style="font-size:14px;color:rgba(255,255,255,0.3)"> / ${totalAllActs}</span></div>
         <div class="rt-stat-lbl">Reportes</div>
       </div>
       <div class="rt-stat-box">
