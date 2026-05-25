@@ -15367,9 +15367,13 @@ async function rtRenderWeekStats(plan){
     const weekEnd   = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, 6);
 
     const planUserId = plan.assigned_to || rtUserId;
+    // Buscar reportes del atleta asignado O del usuario actual (por si el coach reportó)
+    const userFilter = planUserId !== rtUserId
+      ? `user_id=in.(${planUserId},${rtUserId})`
+      : `user_id=eq.${rtUserId}`;
 
     const [rWeek, actsRaw, rAll] = await Promise.all([
-      rtFetch(`training_reports?plan_id=eq.${plan.id}&user_id=eq.${planUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`).then(r=>r.json()),
+      rtFetch(`training_reports?plan_id=eq.${plan.id}&${userFilter}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`).then(r=>r.json()),
       rtFetch(`training_activities?plan_id=eq.${plan.id}&order=sort_order.asc`).then(r=>r.json()),
       rtFetch(`training_reports?user_id=eq.${planUserId}&value_done=gt.0&select=value_done,note`).then(r=>r.json())
     ]);
