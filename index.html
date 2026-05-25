@@ -15612,7 +15612,7 @@ async function rtRenderCoachStats(plans){
   // Cargar reportes + actividades de todos los planes en paralelo
   const [reportsRes, actsRes, scoresRes] = await Promise.all([
     fetch(window._supabaseSUPA + `/rest/v1/training_reports?user_id=in.(${userIds})&report_date=gte.${dateFromStr}&select=*`, {headers:h}),
-    fetch(window._supabaseSUPA + `/rest/v1/training_activities?or=(${planIdsQ})&select=id,plan_id,type,target_reps`, {headers:h}),
+    fetch(window._supabaseSUPA + `/rest/v1/training_activities?plan_id=in.(${planIds.join(',')})&select=id,plan_id,type,target_reps`, {headers:h}),
     fetch(window._supabaseSUPA + `/rest/v1/scores?user_id=in.(${userIds})&select=total,mode,label,avg_arrow,arrow_count&created_at=gte.${dateFromStr}T00:00:00Z`, {headers:h})
   ]);
 
