@@ -15621,6 +15621,9 @@ async function rtRenderCoachStats(plans){
   const reports  = reportsRes.ok ? (await reportsRes.json() || []) : [];
   const allActs  = actsRes.ok    ? (await actsRes.json()    || []) : [];
   const scores   = scoresRes.ok  ? (await scoresRes.json()  || []) : [];
+  console.log('🔍 CoachStats | plans:', plans.length, 'planIds:', planIds.slice(0,2), 'allUserIds:', allUserIds);
+  console.log('🔍 CoachStats | reports:', reports.length, 'allActs:', allActs.length, 'reportsOk:', reportsRes.ok, 'actsOk:', actsRes.ok);
+  console.log('🔍 CoachStats | reportsRes status:', reportsRes.status, 'actsRes status:', actsRes.status);
 
   // ── MACRO STATS (misma lógica que individual pero para todos los planes) ──
 
