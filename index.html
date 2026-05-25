@@ -15606,14 +15606,16 @@ async function rtRenderCoachStats(plans){
     'Content-Type':'application/json'
   };
 
-  const userIds  = [...new Set(plans.map(p=>p.assigned_to))].join(',');
-  const planIdsQ = planIds.map(id=>`plan_id=eq.${id}`).join(',');
+  const athleteIds = [...new Set(plans.map(p=>p.assigned_to))];
+  // Incluir también el coach (puede haber reportado en pruebas)
+  const allUserIds = [...new Set([...athleteIds, rtUserId])].join(',');
+  const planIdsQ   = planIds.map(id=>`plan_id=eq.${id}`).join(',');
 
   // Cargar reportes + actividades de todos los planes en paralelo
   const [reportsRes, actsRes, scoresRes] = await Promise.all([
-    fetch(window._supabaseSUPA + `/rest/v1/training_reports?user_id=in.(${userIds})&report_date=gte.${dateFromStr}&select=*`, {headers:h}),
+    fetch(window._supabaseSUPA + `/rest/v1/training_reports?user_id=in.(${allUserIds})&plan_id=in.(${planIds.join(',')})&report_date=gte.${dateFromStr}&select=*`, {headers:h}),
     fetch(window._supabaseSUPA + `/rest/v1/training_activities?plan_id=in.(${planIds.join(',')})&select=id,plan_id,type,target_reps`, {headers:h}),
-    fetch(window._supabaseSUPA + `/rest/v1/scores?user_id=in.(${userIds})&select=total,mode,label,avg_arrow,arrow_count&created_at=gte.${dateFromStr}T00:00:00Z`, {headers:h})
+    fetch(window._supabaseSUPA + `/rest/v1/scores?user_id=in.(${allUserIds})&select=total,mode,label,avg_arrow,arrow_count&created_at=gte.${dateFromStr}T00:00:00Z`, {headers:h})
   ]);
 
   const reports  = reportsRes.ok ? (await reportsRes.json() || []) : [];
