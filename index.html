@@ -15401,7 +15401,7 @@ async function rtRenderWeekStats(plan){
         const rep = reports.find(r=>r.activity_id===a.id);
         if(!rep) return acc;
         if(rep.completed) return acc + 1;
-        const target = parseFloat(a.value_target||a.target_value||0);
+        const target = parseFloat(a.target_reps||0);
         const actual = parseFloat(rep.value_done||0);
         if(target > 0) return acc + Math.min(1, actual/target);
         return acc + (actual > 0 ? 0.5 : 0); // sin target: 50% si algo hizo
@@ -15612,7 +15612,7 @@ async function rtRenderCoachStats(plans){
   // Cargar reportes + actividades de todos los planes en paralelo
   const [reportsRes, actsRes, scoresRes] = await Promise.all([
     fetch(window._supabaseSUPA + `/rest/v1/training_reports?user_id=in.(${userIds})&report_date=gte.${dateFromStr}&select=*`, {headers:h}),
-    fetch(window._supabaseSUPA + `/rest/v1/training_activities?or=(${planIdsQ})&select=id,plan_id,type,value_target`, {headers:h}),
+    fetch(window._supabaseSUPA + `/rest/v1/training_activities?or=(${planIdsQ})&select=id,plan_id,type,target_reps`, {headers:h}),
     fetch(window._supabaseSUPA + `/rest/v1/scores?user_id=in.(${userIds})&select=total,mode,label,avg_arrow,arrow_count&created_at=gte.${dateFromStr}T00:00:00Z`, {headers:h})
   ]);
 
@@ -15641,7 +15641,7 @@ async function rtRenderCoachStats(plans){
       const rep = Array.isArray(reports) ? reports.find(r=>r.activity_id===a.id) : null;
       if(!rep) return acc;
       if(rep.completed) return acc + 1;
-      const target = parseFloat(a.value_target||0);
+      const target = parseFloat(a.target_reps||0);
       const actual = parseFloat(rep.value_done||0);
       if(target>0) return acc + Math.min(1, actual/target);
       return acc + (actual>0 ? 0.5 : 0);
