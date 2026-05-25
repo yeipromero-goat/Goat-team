@@ -15380,31 +15380,38 @@ async function rtRenderWeekStats(plan){
 
     // Total actividades reales del plan (excluyendo asistencia)
     const allActs2 = Array.isArray(actsRaw) ? actsRaw : [];
-    const totalActs = allActs2.filter(a=>a.type!=='attendance').length;
-    const reports   = Array.isArray(rWeek) ? rWeek : [];
-    const done      = reports.filter(r=>r.completed).length;
+    const nonAttActs = allActs2.filter(a=>a.type!=='attendance');
+    const totalActs  = nonAttActs.length;
+    const reports    = Array.isArray(rWeek) ? rWeek : [];
 
-    // % real — basado en value_done de cada actividad que tiene objetivo
-    const actsWithGoal = allActs2.filter(a=>a.type!=='attendance' && a.value_target>0);
+    // "Tocada" = tiene value_done > 0 o completed=true
+    const touched = reports.filter(r=>{
+      const nonAtt = nonAttActs.find(a=>a.id===r.activity_id);
+      return nonAtt && (r.completed || parseFloat(r.value_done||0) > 0);
+    }).length;
+
+    // % real — suma del progreso de cada actividad con objetivo
     let realPct = 0;
-    if(actsWithGoal.length > 0){
-      const totalProgress = actsWithGoal.reduce((acc,a)=>{
+    if(totalActs > 0){
+      const totalProgress = nonAttActs.reduce((acc,a)=>{
         const rep = reports.find(r=>r.activity_id===a.id);
-        const actual = parseFloat(rep?.value_done||0);
-        return acc + Math.min(1, actual/(a.value_target||1));
+        if(!rep) return acc;
+        if(rep.completed) return acc + 1;
+        const target = parseFloat(a.value_target||a.target_value||0);
+        const actual = parseFloat(rep.value_done||0);
+        if(target > 0) return acc + Math.min(1, actual/target);
+        return acc + (actual > 0 ? 0.5 : 0); // sin target: 50% si algo hizo
       }, 0);
-      realPct = Math.round(totalProgress / actsWithGoal.length * 100);
-    } else if(totalActs > 0){
-      realPct = Math.round(done / totalActs * 100);
+      realPct = Math.round(totalProgress / totalActs * 100);
     }
 
     el.innerHTML = `
       <div class="rt-stat-box">
-        <div class="rt-stat-val" style="color:#5dcaa5">${done}</div>
+        <div class="rt-stat-val" style="color:#5dcaa5">${touched}</div>
         <div class="rt-stat-lbl">Reportes</div>
       </div>
       <div class="rt-stat-box">
-        <div class="rt-stat-val" style="color:#d8a05a">${done}<span style="font-size:14px;color:rgba(255,255,255,0.3)"> / ${totalActs}</span></div>
+        <div class="rt-stat-val" style="color:#d8a05a">${touched}<span style="font-size:14px;color:rgba(255,255,255,0.3)"> / ${totalActs}</span></div>
         <div class="rt-stat-lbl">Actividades</div>
       </div>
       <div class="rt-stat-box">
