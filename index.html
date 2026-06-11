@@ -7326,7 +7326,7 @@ if(window._supabaseUserId && window._supabaseToken){
 </div><!-- end cp-app -->
 
 <script>
-(function(){
+(function(){ try {
 const SUPABASE_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
 const DISC_LABELS = {
   'indoor-15':'Indoor 15','indoor-30':'Indoor 30','indoor-60':'Indoor 60',
@@ -10109,7 +10109,7 @@ if(window._supabaseUserId){
   window.addEventListener('supabase-user-ready', cpInit);
 }
 
-})();
+} catch(e){ console.error('COMPETENCIAS IIFE ERROR:', e.message, '\n', e.stack); } })();
 </script>
 </div>
 
