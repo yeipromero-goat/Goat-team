@@ -10224,8 +10224,8 @@ if(window._supabaseUserId){
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
       <div style="font-size:11px;color:rgba(255,255,255,0.4)">Cámara:</div>
       <select id="bm-cam-select" class="bm-btn" style="flex:1;font-family:'DM Sans',sans-serif;font-size:12px;padding:8px 10px">
-        <option value="user">Frontal</option>
-        <option value="environment" selected>Trasera</option>
+        <option value="user" selected>Frontal</option>
+        <option value="environment">Trasera</option>
       </select>
     </div>
 
@@ -10587,6 +10587,21 @@ window.bmPlayReplay = function(){
     font-weight: 600; cursor: pointer;
   `;
   
+  const speedSelect = document.createElement('select');
+  speedSelect.id = 'bm-replay-speed';
+  speedSelect.style.cssText = `
+    flex: 1; padding: 8px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid rgba(216,209,90,0.3);
+    border-radius: 8px;
+    font-size: 12px;
+  `;
+  speedSelect.innerHTML = `
+    <option value="0.5">0.5x (lento)</option>
+    <option value="1" selected>1x (normal)</option>
+  `;
+  
   const closeBtn = document.createElement('button');
   closeBtn.textContent = '✕ Cerrar';
   closeBtn.style.cssText = `
@@ -10599,6 +10614,7 @@ window.bmPlayReplay = function(){
   `;
   
   controls.appendChild(playBtn);
+  controls.appendChild(speedSelect);
   controls.appendChild(closeBtn);
   
   const timer = document.createElement('div');
@@ -10634,23 +10650,31 @@ window.bmPlayReplay = function(){
   }
   
   function playSequence(){
-    // Siempre a 30fps (tiempo real, ~33ms por frame)
-    const delayMs = 1000 / BM_REPLAY_FPS;
+    const speed = parseFloat(document.getElementById('bm-replay-speed')?.value || 1);
+    const delayMs = (1000 / BM_REPLAY_FPS) / speed; // ms between frames
+    let lastFrameTime = Date.now();
     
-    function nextFrame(){
-      drawFrame(currentFrame);
-      currentFrame++;
+    function nextFrameRAF(){
+      const now = Date.now();
+      const elapsed = now - lastFrameTime;
       
-      if(currentFrame >= bmReplayFrames.length){
-        currentFrame = 0; // loop
+      // Solo avanzar frame si pasó el tiempo necesario
+      if(elapsed >= delayMs){
+        drawFrame(currentFrame);
+        currentFrame++;
+        lastFrameTime = now;
+        
+        if(currentFrame >= bmReplayFrames.length){
+          currentFrame = 0; // loop
+        }
       }
       
       if(isPlaying){
-        animFrame = setTimeout(nextFrame, delayMs);
+        animFrame = requestAnimationFrame(nextFrameRAF);
       }
     }
     
-    nextFrame();
+    nextFrameRAF();
   }
   
   playBtn.onclick = () => {
