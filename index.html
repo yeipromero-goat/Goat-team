@@ -10656,8 +10656,25 @@ window.bmCaptureReplayFrame = function(){
   bmReplayLastCapture = now;
   
   try {
-    const canvas = document.getElementById('bm-canvas');
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // JPEG para ahorrar memoria
+    // Crear canvas temporal que composite VIDEO + SKELETON
+    const video = document.getElementById('bm-video');
+    const skeletonCanvas = document.getElementById('bm-canvas');
+    
+    if(!video.videoWidth) return;
+    
+    const compositeCanvas = document.createElement('canvas');
+    compositeCanvas.width = video.videoWidth;
+    compositeCanvas.height = video.videoHeight;
+    const ctx = compositeCanvas.getContext('2d');
+    
+    // Dibujar video
+    ctx.drawImage(video, 0, 0);
+    
+    // Dibujar skeleton encima
+    ctx.drawImage(skeletonCanvas, 0, 0);
+    
+    // Convertir a JPEG
+    const dataUrl = compositeCanvas.toDataURL('image/jpeg', 0.6);
     
     if(bmReplayFrames.length < BM_REPLAY_CAPACITY){
       bmReplayFrames.push({image: dataUrl, t: now});
@@ -10739,22 +10756,6 @@ window.bmPlayReplay = function(){
     font-weight: 600; cursor: pointer;
   `;
   
-  const speedSelect = document.createElement('select');
-  speedSelect.id = 'bm-replay-speed';
-  speedSelect.style.cssText = `
-    flex: 1; padding: 8px;
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-    border: 1px solid rgba(216,209,90,0.3);
-    border-radius: 8px;
-    font-size: 12px;
-  `;
-  speedSelect.innerHTML = `
-    <option value="0.5">0.5x (lento)</option>
-    <option value="1" selected>1x (normal)</option>
-    <option value="2">2x (rápido)</option>
-  `;
-  
   const closeBtn = document.createElement('button');
   closeBtn.textContent = '✕ Cerrar';
   closeBtn.style.cssText = `
@@ -10767,7 +10768,6 @@ window.bmPlayReplay = function(){
   `;
   
   controls.appendChild(playBtn);
-  controls.appendChild(speedSelect);
   controls.appendChild(closeBtn);
   
   const timer = document.createElement('div');
@@ -10803,8 +10803,8 @@ window.bmPlayReplay = function(){
   }
   
   function playSequence(){
-    const speed = parseFloat(document.getElementById('bm-replay-speed')?.value || 1);
-    const delayMs = (1000 / BM_REPLAY_FPS) / speed;
+    // Siempre a 30fps (tiempo real, ~33ms por frame)
+    const delayMs = 1000 / BM_REPLAY_FPS;
     
     function nextFrame(){
       drawFrame(currentFrame);
