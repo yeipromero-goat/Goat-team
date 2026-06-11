@@ -7327,6 +7327,7 @@ if(window._supabaseUserId && window._supabaseToken){
 
 <script>
 (function(){ try {
+console.log('🟢 CP IIFE started');
 const SUPABASE_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
 const DISC_LABELS = {
   'indoor-15':'Indoor 15','indoor-30':'Indoor 30','indoor-60':'Indoor 60',
@@ -7362,6 +7363,7 @@ function cpInit(){
 }
 
 // ── NAVEGACIÓN ────────────────────────────────────────────────────
+console.log('🟡 CP: about to define cpShowTab');
 window.cpShowTab = function(tab){
   ['lobby','mis','create','room','admin'].forEach(t=>{
     const el=document.getElementById('cp-tab-'+t);
