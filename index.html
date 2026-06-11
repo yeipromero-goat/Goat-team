@@ -1559,11 +1559,13 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('sb-user-email').textContent = email;
     document.getElementById('sb-avatar-initials').textContent = initials;
 
-    // Mostrar tab Coach solo si is_coach = true en user_metadata
-    if(u.user_metadata?.is_coach === true){
+    // Mostrar tab Coach — verificar app_metadata primero (seguro), luego user_metadata (legacy)
+    const isCoach = u.app_metadata?.is_coach === true || u.user_metadata?.is_coach === true;
+    if(isCoach){
       const coachItem = document.getElementById('sb-coach');
       if(coachItem) coachItem.style.display = 'flex';
       window._supabaseIsCoach = true;
+      window._supabaseCoachClubs = u.app_metadata?.coach_clubs || u.user_metadata?.coach_clubs || [];
     }
   });
   // Título inicial
