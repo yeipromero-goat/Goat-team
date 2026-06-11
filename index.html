@@ -7235,23 +7235,17 @@ if(window._supabaseUserId && window._supabaseToken){
         <optgroup label="3D"><option value="3d">3D</option></optgroup>
       </select>
       <label class="cp-label">Formato final</label>
-      <select class="cp-select" id="cp-adm-fmt" onchange="cpAdmFmtChange(this.value)">
+      <select class="cp-select" id="cp-adm-fmt">
         <option value="score">Solo score — podium directo</option>
         <option value="bracket">Score + llaves de eliminación</option>
-        <option value="round_robin">Score + Round Robin (3-8 arqueros)</option>
       </select>
-      <label class="cp-label" id="cp-adm-mfmt-label">Formato de matches (si hay llaves)</label>
+      <label class="cp-label">Formato de matches (si hay llaves)</label>
       <select class="cp-select" id="cp-adm-mfmt">
         <option value="score">15 flechas sumatoria</option>
         <option value="sets">Sets a 6 puntos</option>
       </select>
       <label class="cp-label">Cupo máximo</label>
       <select class="cp-select" id="cp-adm-cupo">
-        <option value="3">3 arqueros</option>
-        <option value="4">4 arqueros</option>
-        <option value="5">5 arqueros</option>
-        <option value="6">6 arqueros</option>
-        <option value="7">7 arqueros</option>
         <option value="8">8 arqueros</option>
         <option value="16" selected>16 arqueros</option>
         <option value="24">24 arqueros</option>
@@ -7839,7 +7833,7 @@ window.cpOpenRoom = async function(tournamentId){
 
 function cpRenderRoom(t, players){
   document.getElementById('cp-room-title').textContent=t.title;
-  document.getElementById('cp-room-sub').textContent=`${DISC_LABELS[t.discipline]||t.discipline} · ${t.match_format==='round_robin'?'Round Robin':t.has_bracket?'Score + llaves':'Solo score'}`;
+  document.getElementById('cp-room-sub').textContent=`${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}`;
   document.getElementById('cp-room-status-badge').className='cp-pill '+STATUS_CLASS[t.status];
   document.getElementById('cp-room-status-badge').textContent=STATUS_LABELS[t.status];
   // Código solo para torneos de amigos
@@ -7880,19 +7874,9 @@ function cpRenderRoom(t, players){
     </div>`;
   }).join('');
   // Acción del usuario
-  // Round Robin detection
-  const hcfg = typeof t.handicap_config==='string' ? JSON.parse(t.handicap_config||'{}') : (t.handicap_config||{});
-  const isRR = t.match_format==='round_robin' || hcfg.round_robin===true;
-  cpRenderRoomAction(t, players, isRR);
-  // Bracket / RR si aplica
-  if(isRR && (t.status==='playing'||t.status==='closed')){
-    bracketSection.style.display='block';
-    const rrRes = await cpFetch(`/rest/v1/brackets?tournament_id=eq.${t.id}&round=eq.rr_1&order=match_number.asc`);
-    const rrMatches = await rrRes.json();
-    const players2 = await cpFetch(`/rest/v1/tournament_players?tournament_id=eq.${t.id}&select=user_id,display_name,qualifying_score`).then(r=>r.json());
-    const nameMap2 = {}; players2.forEach(p=>nameMap2[p.user_id]=p.display_name||p.user_id.slice(0,8));
-    cpRenderRoundRobin(rrMatches, nameMap2, t.id);
-  } else if(t.has_bracket&&t.status==='playing'){
+  cpRenderRoomAction(t, players);
+  // Bracket si aplica
+  if(t.has_bracket&&t.status==='playing'){
     document.getElementById('cp-bracket-section').style.display='block';
     cpLoadBracket(t.id);
     // Polling cada 5s para actualizar bracket en tiempo real
@@ -7906,7 +7890,7 @@ function cpRenderRoom(t, players){
   }
 }
 
-function cpRenderRoomAction(t, players, isRR=false){
+function cpRenderRoomAction(t, players){
   const me=players.find(p=>p.user_id===cpUserId);
   const el=document.getElementById('cp-room-action-content');
   if(!me){
@@ -7939,10 +7923,10 @@ function cpRenderRoomAction(t, players, isRR=false){
           <div><span class="cp-muted" style="font-size:11px">pts en torneo</span>${me.validated?'<div style="font-size:11px;color:#5dcaa5;margin-top:2px">✓ Validado</div>':'<div class="cp-muted" style="font-size:11px;margin-top:2px">Pendiente validación</div>'}</div>
         </div>
         ${hVal?`<div style="font-size:11px;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);margin-bottom:8px">Handicap: <span style="color:${hVal>0?'#5dcaa5':'#e05555'}">${hVal>0?'+':''}${hVal} pts/end</span> aplicado</div>`:''}
-        ${(t.has_bracket||isRR)&&t.status==='open'&&withScore.length>=2?`
+        ${t.has_bracket&&t.status==='open'&&withScore.length>=2?`
         <div style="border-top:0.5px solid rgba(255,255,255,0.08);padding-top:10px;margin-top:4px">
           ${pending.length?`<div style="font-size:11px;color:#d8d15a;margin-bottom:8px">⚠️ ${pending.length} arquero${pending.length>1?'s':''} sin score — se excluirán de las llaves</div>`:'<div style="font-size:11px;color:#5dcaa5;margin-bottom:8px">✓ Todos listos para las llaves</div>'}
-          <button class="cp-btn cp-btn-y" onclick="cpIniciarTorneo('${t.id}',${pending.length},${isRR})">🏆 Iniciar →</button>
+          <button class="cp-btn cp-btn-y" onclick="cpIniciarLlaves('${t.id}',${pending.length})">🏆 Iniciar llaves →</button>
         </div>`:''}`;
     }
   } else if(t.status==='closed'){
@@ -9183,17 +9167,14 @@ window.cpAdminCreateTournament = async function(){
   const mfmt=document.getElementById('cp-adm-mfmt').value;
   const cupo=parseInt(document.getElementById('cp-adm-cupo').value);
   const hcap=document.getElementById('cp-adm-hcap').value;
-  const isRRfmt = fmt==='round_robin';
-  if(isRRfmt && (cupo<3||cupo>8)) return cpToast('Round Robin requiere entre 3 y 8 arqueros');
   const payload={
     created_by:cpUserId, type:'club', title, discipline:disc,
     disc_group:disc.split('-')[0]==='3d'?'3d':disc.split('-')[0],
-    has_bracket:fmt==='bracket', match_format:isRRfmt?'round_robin':mfmt,
+    has_bracket:fmt==='bracket', match_format:mfmt,
     max_players:cupo, max_players_club:cupo,
     handicap_enabled:hcap!=='none',
     handicap_rules:hcap!=='none'?[{type:hcap}]:[],
-    status:'open', admin_only:true, visible:true,
-    handicap_config:isRRfmt?JSON.stringify({round_robin:true}):null
+    status:'open', admin_only:true, visible:true
   };
   try{
     const res=await cpFetch('/rest/v1/tournaments',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(payload)});
@@ -9817,162 +9798,6 @@ if(window._supabaseUserId){
   window.addEventListener('supabase-user-ready', cpInit);
 }
 
-
-// ── WRAPPER: INICIAR TORNEO (bracket o round robin) ─────────────
-window.cpIniciarTorneo = function(tournamentId, pendingCount, isRR){
-  if(isRR) cpIniciarRoundRobin(tournamentId, pendingCount);
-  else cpIniciarLlaves(tournamentId, pendingCount);
-};
-
-// ── ROUND ROBIN: FORMAT CHANGE ────────────────────────────────────
-window.cpAdmFmtChange = function(val){
-  const mfmtRow = document.getElementById('cp-adm-mfmt-label');
-  const mfmtSel = document.getElementById('cp-adm-mfmt');
-  const cupoSel = document.getElementById('cp-adm-cupo');
-  const isRR = val==='round_robin';
-  if(mfmtRow) mfmtRow.style.display = isRR ? 'none' : 'block';
-  if(mfmtSel) mfmtSel.style.display = isRR ? 'none' : 'block';
-  if(isRR && cupoSel){
-    [...cupoSel.options].forEach(o=>{ o.style.display=(parseInt(o.value)>=3&&parseInt(o.value)<=8)?'':'none'; });
-    if(parseInt(cupoSel.value)>8||parseInt(cupoSel.value)<3) cupoSel.value='6';
-  } else if(cupoSel){
-    [...cupoSel.options].forEach(o=>{ o.style.display=''; });
-  }
-};
-
-// ── ROUND ROBIN: INICIAR ──────────────────────────────────────────
-window.cpIniciarRoundRobin = async function(tournamentId, pendingCount){
-  if(pendingCount>0){
-    if(!confirm(pendingCount+' arquero'+(pendingCount>1?'s':'')+' sin score seran excluidos. Iniciar?')) return;
-  }
-  try{
-    const pRes = await cpFetch('/rest/v1/tournament_players?tournament_id=eq.'+tournamentId+'&qualifying_score=not.is.null&order=qualifying_score.desc');
-    const players = await pRes.json();
-    if(players.length<3) return cpToast('Round Robin requiere minimo 3 arqueros con score');
-    if(players.length>8) return cpToast('Round Robin maximo 8 arqueros');
-    const matches = [];
-    let matchNum = 1;
-    for(let i=0;i<players.length;i++){
-      for(let j=i+1;j<players.length;j++){
-        matches.push({tournament_id:tournamentId, round:'rr_1', match_number:matchNum++,
-          player1_id:players[i].user_id, player2_id:players[j].user_id,
-          is_bye:false, status:'pending', winner_id:null});
-      }
-    }
-    const bRes = await cpFetch('/rest/v1/brackets',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(matches)});
-    if(!bRes.ok&&bRes.status!==201&&bRes.status!==204){const err=await bRes.text();return cpToast('Error: '+err.slice(0,60));}
-    await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({status:'playing'})});
-    cpToast('Round Robin iniciado - '+matches.length+' partidos');
-    cpOpenRoom(tournamentId);
-  }catch(e){console.error(e);cpToast('Error: '+e.message);}
-};
-
-// ── ROUND ROBIN: RESOLVER MATCH ───────────────────────────────────
-window.cpResolveRRMatch = async function(matchId, tournamentId, result, s1, s2){
-  const mRes = await cpFetch('/rest/v1/brackets?id=eq.'+matchId);
-  const mArr = await mRes.json();
-  const m = mArr[0]; if(!m) return;
-  const finalWinner = result==='p1' ? m.player1_id : result==='p2' ? m.player2_id : null;
-  await cpFetch('/rest/v1/brackets?id=eq.'+matchId,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({status:'done',score1:s1||null,score2:s2||null,winner_id:finalWinner})});
-  const allRes = await cpFetch('/rest/v1/brackets?tournament_id=eq.'+tournamentId+'&round=eq.rr_1');
-  const allMatches = await allRes.json();
-  if(allMatches.every(function(m){return m.status==='done';})) await cpFinishRoundRobin(tournamentId, allMatches);
-  cpOpenRoom(tournamentId);
-};
-
-// ── ROUND ROBIN: STANDINGS ────────────────────────────────────────
-window.cpFinishRoundRobin = async function(tournamentId, matches){
-  const pts={},wins={},draws={},losses={},scored={},against={};
-  matches.forEach(function(m){
-    [m.player1_id,m.player2_id].forEach(function(uid){
-      if(!pts[uid]){pts[uid]=0;wins[uid]=0;draws[uid]=0;losses[uid]=0;scored[uid]=0;against[uid]=0;}
-    });
-    var s1=m.score1||0,s2=m.score2||0;
-    scored[m.player1_id]=(scored[m.player1_id]||0)+s1;
-    scored[m.player2_id]=(scored[m.player2_id]||0)+s2;
-    against[m.player1_id]=(against[m.player1_id]||0)+s2;
-    against[m.player2_id]=(against[m.player2_id]||0)+s1;
-    if(m.winner_id===m.player1_id){pts[m.player1_id]+=2;wins[m.player1_id]++;losses[m.player2_id]++;}
-    else if(m.winner_id===m.player2_id){pts[m.player2_id]+=2;wins[m.player2_id]++;losses[m.player1_id]++;}
-    else{pts[m.player1_id]+=1;draws[m.player1_id]++;pts[m.player2_id]+=1;draws[m.player2_id]++;}
-  });
-  var sorted=Object.keys(pts).sort(function(a,b){
-    if(pts[b]!==pts[a]) return pts[b]-pts[a];
-    if(wins[b]!==wins[a]) return wins[b]-wins[a];
-    return (scored[b]-against[b])-(scored[a]-against[a]);
-  });
-  for(var i=0;i<sorted.length;i++){
-    await cpFetch('/rest/v1/tournament_players?tournament_id=eq.'+tournamentId+'&user_id=eq.'+sorted[i],{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({final_position:i+1})});
-  }
-  await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({status:'closed'})});
-  cpToast('Round Robin finalizado');
-};
-
-// ── ROUND ROBIN: RENDER ───────────────────────────────────────────
-window.cpRenderRoundRobin = function(matches, nameMap, tournamentId){
-  var pts={},wins={},draws={},losses={},played={};
-  matches.forEach(function(m){
-    [m.player1_id,m.player2_id].forEach(function(uid){
-      if(!pts[uid]){pts[uid]=0;wins[uid]=0;draws[uid]=0;losses[uid]=0;played[uid]=0;}
-    });
-    if(m.status!=='done') return;
-    played[m.player1_id]++;played[m.player2_id]++;
-    if(m.winner_id===m.player1_id){pts[m.player1_id]+=2;wins[m.player1_id]++;losses[m.player2_id]++;}
-    else if(m.winner_id===m.player2_id){pts[m.player2_id]+=2;wins[m.player2_id]++;losses[m.player1_id]++;}
-    else{pts[m.player1_id]+=1;draws[m.player1_id]++;pts[m.player2_id]+=1;draws[m.player2_id]++;}
-  });
-  var sorted=Object.keys(pts).sort(function(a,b){return pts[b]-pts[a];});
-  var colors=['#FFD700','#C0C0C0','#CD7F32'];
-  var done=matches.filter(function(m){return m.status==='done';}).length;
-  var pending=matches.filter(function(m){return m.status==='pending';});
-
-  var tableHTML='<div style="margin-bottom:16px"><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Tabla · '+done+'/'+matches.length+' partidos</div><table style="width:100%;border-collapse:collapse"><thead><tr style="font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase"><th style="text-align:left;padding:4px 6px">#</th><th style="text-align:left;padding:4px 6px">Arquero</th><th style="text-align:center;padding:4px 6px">PJ</th><th style="text-align:center;padding:4px 6px">G</th><th style="text-align:center;padding:4px 6px">E</th><th style="text-align:center;padding:4px 6px">P</th><th style="text-align:center;padding:4px 6px;color:#d8d15a">Pts</th></tr></thead><tbody>';
-  sorted.forEach(function(uid,i){
-    tableHTML+='<tr style="border-top:0.5px solid rgba(255,255,255,0.06)'+(uid===cpUserId?';background:rgba(216,209,90,0.05)':'')+'"><td style="padding:8px 6px;font-size:13px">'+(colors[i]?'<span style="color:'+colors[i]+'">●</span>':(i+1))+'</td><td style="padding:8px 6px;font-size:12px;font-weight:600;color:#fff;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(nameMap[uid]||'—')+'</td><td style="padding:8px 6px;text-align:center;font-size:12px;color:rgba(255,255,255,0.5)">'+(played[uid]||0)+'</td><td style="padding:8px 6px;text-align:center;font-size:12px;color:#5dcaa5">'+(wins[uid]||0)+'</td><td style="padding:8px 6px;text-align:center;font-size:12px;color:#d8d15a">'+(draws[uid]||0)+'</td><td style="padding:8px 6px;text-align:center;font-size:12px;color:#e05555">'+(losses[uid]||0)+'</td><td style="padding:8px 6px;text-align:center;font-size:14px;font-weight:700;color:#d8d15a">'+(pts[uid]||0)+'</td></tr>';
-  });
-  tableHTML+='</tbody></table></div>';
-
-  var pendingHTML='<div style="margin-bottom:12px"><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Partidos pendientes</div>';
-  if(pending.length){
-    pending.forEach(function(m){
-      var isMine=m.player1_id===cpUserId||m.player2_id===cpUserId;
-      pendingHTML+='<div style="border:'+(isMine?'1.5px solid rgba(216,209,90,0.4)':'0.5px solid rgba(255,255,255,0.08)')+';border-radius:10px;padding:10px 12px;margin-bottom:6px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:12px;font-weight:600;color:#fff">'+(nameMap[m.player1_id]||'—')+'</div><div style="font-size:11px;color:rgba(255,255,255,0.3)">vs</div><div style="font-size:12px;font-weight:600;color:#fff">'+(nameMap[m.player2_id]||'—')+'</div></div>';
-      if(window._supabaseIsAdmin){
-        pendingHTML+='<button onclick="cpOpenRRMatchResult(''+m.id+'',''+tournamentId+'')" class="cp-btn cp-btn-y" style="width:100%;font-size:12px;padding:7px">Registrar resultado</button>';
-      }
-      pendingHTML+='</div>';
-    });
-  } else {
-    pendingHTML+='<div style="font-size:12px;color:rgba(255,255,255,0.3);padding:8px 0">Todos los partidos completados</div>';
-  }
-  pendingHTML+='</div>';
-
-  document.getElementById('cp-bracket-cols').innerHTML=tableHTML+pendingHTML;
-};
-
-// ── ROUND ROBIN: MODAL RESULTADO ─────────────────────────────────
-window.cpOpenRRMatchResult = async function(matchId, tournamentId){
-  var mRes=await cpFetch('/rest/v1/brackets?id=eq.'+matchId);
-  var mArr=await mRes.json();
-  var m=mArr[0]; if(!m) return;
-  var pRes=await cpFetch('/rest/v1/tournament_players?tournament_id=eq.'+tournamentId+'&select=user_id,display_name');
-  var players=await pRes.json();
-  var nm={}; players.forEach(function(p){nm[p.user_id]=p.display_name||p.user_id.slice(0,8);});
-  var p1=nm[m.player1_id]||'Jugador 1';
-  var p2=nm[m.player2_id]||'Jugador 2';
-  var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
-  overlay.id='rr-overlay';
-  overlay.innerHTML='<div style="background:#1a1a1a;border-radius:16px;padding:20px;width:100%;max-width:340px;border:0.5px solid rgba(255,255,255,0.1)"><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#fff;margin-bottom:16px;text-align:center">RESULTADO</div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div style="text-align:center;flex:1"><div style="font-size:13px;font-weight:600;color:#fff">'+p1+'</div></div><div style="color:rgba(255,255,255,0.3);padding:0 8px">vs</div><div style="text-align:center;flex:1"><div style="font-size:13px;font-weight:600;color:#fff">'+p2+'</div></div></div><div style="display:flex;gap:8px;margin-bottom:12px"><input id="rr-s1" type="number" min="0" placeholder="Score '+p1.split(" ")[0]+'" style="flex:1;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.2);background:#111;color:#fff;font-size:14px;text-align:center"><input id="rr-s2" type="number" min="0" placeholder="Score '+p2.split(" ")[0]+'" style="flex:1;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.2);background:#111;color:#fff;font-size:14px;text-align:center"></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px"><button onclick="cpConfirmRRResult(''+matchId+'',''+tournamentId+'','p1')" style="padding:10px;border-radius:8px;border:none;background:rgba(93,202,165,0.15);color:#5dcaa5;font-weight:600;cursor:pointer;font-size:12px">Gana '+p1.split(" ")[0]+'</button><button onclick="cpConfirmRRResult(''+matchId+'',''+tournamentId+'','draw')" style="padding:10px;border-radius:8px;border:none;background:rgba(216,209,90,0.15);color:#d8d15a;font-weight:600;cursor:pointer;font-size:12px">Empate</button><button onclick="cpConfirmRRResult(''+matchId+'',''+tournamentId+'','p2')" style="padding:10px;border-radius:8px;border:none;background:rgba(93,202,165,0.15);color:#5dcaa5;font-weight:600;cursor:pointer;font-size:12px">Gana '+p2.split(" ")[0]+'</button></div><button onclick="document.getElementById('rr-overlay').remove()" style="width:100%;padding:9px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.4);cursor:pointer;font-size:12px">Cancelar</button></div>';
-  document.body.appendChild(overlay);
-};
-
-window.cpConfirmRRResult = async function(matchId, tournamentId, result){
-  document.getElementById('rr-overlay')?.remove();
-  var s1=parseInt(document.getElementById('rr-s1')?.value)||null;
-  var s2=parseInt(document.getElementById('rr-s2')?.value)||null;
-  await cpResolveRRMatch(matchId, tournamentId, result, s1, s2);
-};
 })();
 </script>
 </div>
