@@ -10132,7 +10132,7 @@ if(window._supabaseUserId){
       <!-- HUD top -->
       <div class="bm-hud">
         <div>
-          <div class="bm-hud-score" id="bm-posture-score">—</div>
+          <div class="bm-hud-score" id="bm-posture-score" data-mode="compete">—</div>
           <div class="bm-hud-label">Postura</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
@@ -10195,8 +10195,8 @@ if(window._supabaseUserId){
       <button onclick="bmDiscardVideo()" style="padding:7px 10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.3);cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif">✕</button>
     </div>
 
-    <!-- Live feedback -->
-    <div class="bm-feedback-card" id="bm-feedback-card">
+    <!-- Live feedback (solo en modo CALIFICAR) -->
+    <div class="bm-feedback-card" id="bm-feedback-card" data-mode="compete">
       <div class="bm-top-bar" style="background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
       <div class="bm-feedback-title">Análisis en vivo</div>
       <div id="bm-feedback-list">
@@ -10761,41 +10761,48 @@ window.bmStartCamera = async function(){
       bmStartLagBuffer();
     }
 
-    // Auto-iniciar grabación de scores en modo CALIFICAR
+// ── Preguntar si grabar pantalla (para ambos modos) ────────
+window.bmAskScreenRecording = async function(){
+  // Crear diálogo
+  const wantScreen = await new Promise(resolve => {
+    const dlg = document.createElement('div');
+    dlg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000';
+    const msgTexto = bmMode === 'observe' 
+      ? '¿Grabar pantalla con skeleton?<br><span style="font-size:12px;color:rgba(255,255,255,0.6)">Verás todo el análisis de postura</span>'
+      : '¿Grabar pantalla completa?<br><span style="font-size:12px;color:rgba(255,255,255,0.6)">Incluirá tu score en vivo y el skeleton</span>';
+    dlg.innerHTML = `
+      <div style="background:rgba(20,20,20,0.95);border:1px solid rgba(216,209,90,0.2);border-radius:12px;padding:20px;max-width:300px;text-align:center">
+        <div style="font-size:14px;color:#fff;margin-bottom:16px;line-height:1.6">${msgTexto}</div>
+        <div style="display:flex;gap:10px">
+          <button style="flex:1;padding:10px;background:#d8d15a;color:#000;border:none;border-radius:8px;font-weight:600;cursor:pointer">Sí, grabar</button>
+          <button style="flex:1;padding:10px;background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:8px;cursor:pointer">Solo análisis</button>
+        </div>
+      </div>
+    `;
+    const buttons = dlg.querySelectorAll('button');
+    buttons[0].onclick = () => { dlg.remove(); resolve(true); };
+    buttons[1].onclick = () => { dlg.remove(); resolve(false); };
+    document.body.appendChild(dlg);
+  });
+  
+  if(wantScreen){
+    const screenOk = await bmAskScreenCapture();
+    if(!screenOk){
+      if(typeof showToast === 'function') showToast('📹 Usando grabación de canvas en su lugar');
+      bmUseScreenCapture = false;
+    }
+  }
+};
+
+    // Auto-iniciar grabación de scores en modo CALIFICAR y opción de pantalla en ambos
     if(bmMode === 'compete'){
       bmSessionMaxScore = null;
       document.getElementById('bm-session-best').textContent = '—';
-      
-      // Preguntar si quiere grabar pantalla
-      const wantScreen = await new Promise(resolve => {
-        const dlg = document.createElement('div');
-        dlg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000';
-        dlg.innerHTML = `
-          <div style="background:rgba(20,20,20,0.95);border:1px solid rgba(216,209,90,0.2);border-radius:12px;padding:20px;max-width:300px;text-align:center">
-            <div style="font-size:14px;color:#fff;margin-bottom:16px;line-height:1.6">¿Grabar pantalla completa?<br><span style="font-size:12px;color:rgba(255,255,255,0.6)">Incluirá tu score en vivo y el skeleton</span></div>
-            <div style="display:flex;gap:10px">
-              <button onclick="this.parentElement.parentElement.remove();arguments.callee.bmResolve(true)" style="flex:1;padding:10px;background:#d8d15a;color:#000;border:none;border-radius:8px;font-weight:600;cursor:pointer">Sí, grabar</button>
-              <button onclick="this.parentElement.parentElement.remove();arguments.callee.bmResolve(false)" style="flex:1;padding:10px;background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:8px;cursor:pointer">Solo análisis</button>
-            </div>
-          </div>
-        `;
-        // Hack para pasar el resolve
-        const buttons = dlg.querySelectorAll('button');
-        const resolveFunc = resolve;
-        buttons[0].onclick = () => { dlg.remove(); resolve(true); };
-        buttons[1].onclick = () => { dlg.remove(); resolve(false); };
-        document.body.appendChild(dlg);
-      });
-      
-      if(wantScreen){
-        const screenOk = await bmAskScreenCapture();
-        if(!screenOk){
-          if(typeof showToast === 'function') showToast('📹 Usando grabación de canvas en su lugar');
-          bmUseScreenCapture = false;
-        }
-      }
-      
+      await bmAskScreenRecording();
       bmToggleRecord(); // iniciar grabación de ángulos
+    } else if(bmMode === 'observe'){
+      // En OBSERVAR, solo preguntar por pantalla, sin grabación de ángulos
+      await bmAskScreenRecording();
     }
 
   } catch(e){
@@ -11008,6 +11015,12 @@ function bmAngle3(a, b, c){
 
 // ── Indicador de anclaje ─────────────────────────────────
 function bmShowAnchorIndicator(on){
+  // En modo OBSERVAR, nunca mostrar el estado de anclaje
+  if(bmMode === 'observe'){
+    document.getElementById('bm-status-text').textContent = 'En vivo';
+    return;
+  }
+
   const pill = document.getElementById('bm-status-pill');
   const scoreEl = document.getElementById('bm-posture-score');
   if(!pill) return;
