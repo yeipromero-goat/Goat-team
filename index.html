@@ -9823,12 +9823,12 @@ if(window._supabaseUserId){
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
-  transform: scaleX(-1); /* mirror */
+  /* mirror applied dynamically via JS depending on camera facing mode */
 }
 #bm-canvas {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-  transform: scaleX(-1);
+  /* mirror applied dynamically via JS depending on camera facing mode */
 }
 
 /* HUD overlay */
@@ -10157,6 +10157,11 @@ if(window._supabaseUserId){
       <button class="bm-btn danger" id="bm-btn-stop" onclick="bmStopCamera()" disabled>⏹ Detener</button>
       <button class="bm-btn green" id="bm-btn-rec" onclick="bmToggleRecord()" disabled>⏺ Grabar</button>
     </div>
+    <!-- Botón lag video separado (más prominente) -->
+    <button id="bm-btn-lag" onclick="bmCaptureLagClip()" disabled
+      style="width:100%;padding:11px 8px;margin-bottom:10px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;cursor:pointer;border:1.5px solid rgba(154,136,221,0.4);background:rgba(154,136,221,0.1);color:#9a88dd;transition:all .15s;">
+      📼 Guardar últimos 10s (con skeleton)
+    </button>
     <!-- Video download banner -->
     <div id="bm-video-banner" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:10px;background:rgba(154,136,221,0.08);border:0.5px solid rgba(154,136,221,0.3);display:none;align-items:center;gap:10px">
       <div style="flex:1">
@@ -10369,11 +10374,126 @@ const BM_ANCHOR_DELTA = 3;         // grados de variación para "estable"
 const BM_RELEASE_DELTA = 15;       // cambio brusco = soltura
 const BM_ANCHOR_BUFFER_MS = 600;   // buffer de frames antes de soltura // 'recurvo' | 'compuesto'
 
-// Video recording
-let bmMediaRecorder = null;
-let bmVideoChunks = [];
-let bmVideoBlob = null;
-let bmVideoRecording = false;
+// ── VIDEO LAG BUFFER (10 segundos, video real + skeleton) ────────────────
+// Problema original: grabar solo el canvas da skeleton en fondo negro.
+// Solución: composite canvas (video + skeleton) → offscreen canvas → MediaRecorder
+// El lag buffer mantiene los últimos 10s en un segmento circular de MediaRecorder.
+
+let bmLagRecorder = null;       // MediaRecorder siempre activo en background
+let bmLagChunks = [];           // buffer circular de chunks
+let bmLagCompositeCanvas = null; // canvas offscreen con video+skeleton
+let bmLagCompositeCtx = null;
+let bmLagCompositeStream = null;
+let bmLagAnimFrame = null;
+let bmLagActive = false;
+let bmVideoBlob = null;         // blob del clip listo para descarga
+const BM_LAG_SECONDS = 10;
+
+// Arrancar el buffer de lag en cuanto la cámara está activa
+window.bmStartLagBuffer = function(){
+  if(bmLagActive) return;
+  bmLagActive = true;
+  bmLagChunks = [];
+
+  const video = document.getElementById('bm-video');
+  const skeletonCanvas = document.getElementById('bm-canvas');
+
+  // Canvas offscreen que combina video + skeleton
+  bmLagCompositeCanvas = document.createElement('canvas');
+  bmLagCompositeCanvas.width  = video.videoWidth  || 640;
+  bmLagCompositeCanvas.height = video.videoHeight || 480;
+  bmLagCompositeCtx = bmLagCompositeCanvas.getContext('2d');
+
+  // Dibujar cada frame: primero el video, luego el skeleton encima
+  function drawComposite(){
+    if(!bmLagActive) return;
+    const W = bmLagCompositeCanvas.width;
+    const H = bmLagCompositeCanvas.height;
+    const ctx = bmLagCompositeCtx;
+
+    // Si la cámara es trasera NO hay mirror; si es frontal sí
+    if(window._bmMirror){
+      ctx.save();
+      ctx.translate(W, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, W, H);
+      ctx.restore();
+      // skeleton canvas también está en mirror vía CSS, dibujarlo normal
+      ctx.drawImage(skeletonCanvas, 0, 0, W, H);
+    } else {
+      ctx.drawImage(video, 0, 0, W, H);
+      ctx.drawImage(skeletonCanvas, 0, 0, W, H);
+    }
+    bmLagAnimFrame = requestAnimationFrame(drawComposite);
+  }
+  drawComposite();
+
+  // Stream del canvas composite
+  bmLagCompositeStream = bmLagCompositeCanvas.captureStream(30);
+
+  // Tipos soportados — preferir mp4 si disponible
+  const types = [
+    'video/mp4;codecs=h264,aac','video/mp4',
+    'video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm',''
+  ];
+  const mime = types.find(m=>{ try{ return m===''||MediaRecorder.isTypeSupported(m); }catch(e){return false;} });
+
+  try {
+    bmLagRecorder = mime
+      ? new MediaRecorder(bmLagCompositeStream, {mimeType: mime, videoBitsPerSecond: 2500000})
+      : new MediaRecorder(bmLagCompositeStream);
+
+    bmLagRecorder.ondataavailable = e => {
+      if(e.data && e.data.size > 0){
+        const now = Date.now();
+        bmLagChunks.push({blob: e.data, t: now});
+        // Mantener solo los últimos BM_LAG_SECONDS segundos
+        const cutoff = now - (BM_LAG_SECONDS * 1000);
+        bmLagChunks = bmLagChunks.filter(c => c.t >= cutoff);
+      }
+    };
+
+    // chunk cada 500ms para que el buffer circular funcione bien
+    bmLagRecorder.start(500);
+  } catch(e){
+    console.warn('bmLagBuffer MediaRecorder error:', e);
+    bmLagActive = false;
+  }
+};
+
+// Detener buffer de lag
+window.bmStopLagBuffer = function(){
+  bmLagActive = false;
+  if(bmLagAnimFrame){ cancelAnimationFrame(bmLagAnimFrame); bmLagAnimFrame = null; }
+  if(bmLagRecorder && bmLagRecorder.state !== 'inactive'){
+    try{ bmLagRecorder.stop(); } catch(e){}
+  }
+  bmLagRecorder = null;
+  bmLagChunks = [];
+  bmLagCompositeCanvas = null;
+  bmLagCompositeCtx = null;
+  bmLagCompositeStream = null;
+};
+
+// Capturar los últimos N segundos del buffer y ofrecer descarga
+window.bmCaptureLagClip = function(){
+  if(!bmLagChunks.length){
+    if(typeof showToast === 'function') showToast('⚠️ Buffer vacío — activa la cámara primero');
+    return;
+  }
+
+  // Tomar todos los chunks acumulados (ya son los últimos 10s)
+  const blobs = bmLagChunks.map(c => c.blob);
+  const mimeType = bmLagRecorder?.mimeType || 'video/webm';
+  const finalBlob = new Blob(blobs, {type: mimeType});
+  bmVideoBlob = finalBlob;
+
+  const banner = document.getElementById('bm-video-banner');
+  if(banner) banner.style.display = 'flex';
+  if(typeof showToast === 'function') showToast('🎬 Clip de los últimos 10s listo — descárgalo ahora');
+};
+
+
 
 const SUPABASE_URL = 'https://axaiyaflubssaghvhefe.supabase.co';
 
@@ -10484,6 +10604,13 @@ window.bmStartCamera = async function(){
     video.srcObject = bmStream;
     await new Promise(r => video.onloadedmetadata = r);
 
+    // Mirror solo en cámara frontal (selfie), NO en trasera (tripié)
+    const isFront = facingMode === 'user';
+    const mirrorVal = isFront ? 'scaleX(-1)' : 'none';
+    video.style.transform = mirrorVal;
+    document.getElementById('bm-canvas').style.transform = mirrorVal;
+    window._bmMirror = isFront; // flag para usarlo en canvas drawing
+
     // Resize canvas to match video
     const canvas = document.getElementById('bm-canvas');
     canvas.width  = video.videoWidth;
@@ -10494,10 +10621,16 @@ window.bmStartCamera = async function(){
 
     document.getElementById('bm-btn-stop').disabled  = false;
     document.getElementById('bm-btn-rec').disabled   = false;
+    document.getElementById('bm-btn-lag').disabled   = false;
     
     btn.disabled = true;
 
     bmStartDetection(video, canvas);
+
+    // Arrancar el buffer de lag (video+skeleton últimos 10s)
+    if(typeof MediaRecorder !== 'undefined'){
+      bmStartLagBuffer();
+    }
 
   } catch(e){
     console.error('bmStartCamera error:', e);
@@ -10773,11 +10906,14 @@ function bmCalcAngles(lm){
   // Hombro: cadera–hombro–codo
   const shoulder = hip && sh && el ? bmAngle3(hip, sh, el) : null;
 
-  // Muñeca: codo–muñeca (alineación, usamos punto virtual)
-  // Aproximamos con el vector codo→muñeca vs muñeca→punta (estimado)
-  const wrist = el && wr ? Math.round(180 - Math.abs(
-    Math.atan2(wr.y-el.y, wr.x-el.x) * 180/Math.PI
-  )) : null;
+  // Muñeca: ángulo real de quiebre usando vector del antebrazo
+  // Usamos un punto virtual en la dirección codo→muñeca más allá de la muñeca
+  // para medir cuánto se dobla la muñeca respecto al antebrazo.
+  // 180° = muñeca completamente recta, <160° = doblada.
+  const wrist = (el && wr) ? bmAngle3(el, wr, {
+    x: wr.x + (wr.x - el.x) * 0.5,
+    y: wr.y + (wr.y - el.y) * 0.5
+  }) : null;
 
   // Columna: ángulo hombros vs vertical
   const spine = sh && oppSh && hip ? bmAngle3(
@@ -10888,18 +11024,20 @@ window.bmStopCamera = function(){
   const canvas = document.getElementById('bm-canvas');
   canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
 
+  // Detener lag buffer
+  bmStopLagBuffer();
+
   bmSetOverlay(true,'📷','Toca "Iniciar cámara" para comenzar el análisis de postura');
   bmSetStatus('','Inactivo');
   document.getElementById('bm-btn-start').disabled = false;
   document.getElementById('bm-btn-stop').disabled  = true;
   document.getElementById('bm-btn-rec').disabled   = true;
-  
-  // Parar video si estaba grabando
-  if(bmVideoRecording){ bmMediaRecorder?.stop(); bmVideoRecording = false; }
+  document.getElementById('bm-btn-lag').disabled   = true;
   bmSetFeedbackEmpty();
 };
 
-// ── Grabar sesión + video ─────────────────────────────────
+// ── Grabar sesión (ángulos/score) ─────────────────────────
+// El video ya no se graba aquí — usa el botón "📼 Últimos 10s"
 window.bmToggleRecord = function(){
   const btn = document.getElementById('bm-btn-rec');
   const recInd = document.getElementById('bm-rec-indicator');
@@ -10908,40 +11046,6 @@ window.bmToggleRecord = function(){
     bmRecording = true;
     bmRecordStart = Date.now();
     bmFrameData = [];
-
-    // Iniciar grabación de video (cache local, compatible iOS)
-    bmVideoChunks = [];
-    bmVideoBlob = null;
-    const banner = document.getElementById('bm-video-banner');
-    if(banner) banner.style.display = 'none';
-    if(typeof MediaRecorder !== 'undefined'){
-      try{
-        // Grabar desde canvas (incluye ángulos y skeleton dibujados)
-        const canvas = document.getElementById('bm-canvas');
-        const canvasStream = canvas.captureStream(30);
-        // Agregar audio del micrófono si está disponible
-        const audioTracks = bmStream ? bmStream.getAudioTracks() : [];
-        audioTracks.forEach(t => canvasStream.addTrack(t));
-
-        const types = [
-          'video/mp4;codecs=h264,aac','video/mp4',
-          'video/webm;codecs=h264','video/webm;codecs=vp9',
-          'video/webm;codecs=vp8','video/webm',''
-        ];
-        const mime = types.find(m=>{ try{ return m===''||MediaRecorder.isTypeSupported(m); }catch(e){return false;} });
-        bmMediaRecorder = mime ? new MediaRecorder(canvasStream,{mimeType:mime}) : new MediaRecorder(canvasStream);
-        bmMediaRecorder.ondataavailable = e=>{ if(e.data.size>0) bmVideoChunks.push(e.data); };
-        bmMediaRecorder.onstop = ()=>{
-          const t = bmMediaRecorder.mimeType||'video/webm';
-          bmVideoBlob = new Blob(bmVideoChunks,{type:t});
-          const b = document.getElementById('bm-video-banner');
-          if(b) b.style.display='flex';
-        };
-        bmMediaRecorder.start(500);
-        bmVideoRecording = true;
-      } catch(e){ console.warn('MediaRecorder canvas:', e); }
-    }
-
     btn.textContent = '⏹ Guardar';
     btn.className = 'bm-btn danger';
     recInd.style.display = 'flex';
@@ -10950,7 +11054,6 @@ window.bmToggleRecord = function(){
     btn.textContent = '⏺ Grabar';
     btn.className = 'bm-btn green';
     recInd.style.display = 'none';
-    if(bmVideoRecording && bmMediaRecorder){ bmMediaRecorder.stop(); bmVideoRecording = false; }
     bmSaveSession();
   }
 };
@@ -11008,15 +11111,12 @@ async function bmSaveSession(){
   localStorage.setItem('goat_biomec_sessions', JSON.stringify(stored.slice(0,50)));
   bmSessions = stored;
 
-  // Intentar guardar en Supabase si hay usuario
+  // Guardar en Supabase SOLO el score (liviano, sin blobs de datos)
   if(window._supabaseClient && window._supabaseUserId){
     try{
       await window._supabaseClient.from('biomec_sessions').insert({
         user_id: window._supabaseUserId,
-        avg_score: avgScore,
-        avg_angles: avgAngles,
-        duration_ms: duration,
-        frames: bmFrameData.length
+        avg_score: avgScore
       });
     }catch(e){ console.log('biomec supabase save (optional):', e.message); }
   }
@@ -11125,7 +11225,6 @@ window.bmDownloadVideo = function(){
 
 window.bmDiscardVideo = function(){
   bmVideoBlob = null;
-  bmVideoChunks = [];
   const banner = document.getElementById('bm-video-banner');
   if(banner) banner.style.display = 'none';
 };
