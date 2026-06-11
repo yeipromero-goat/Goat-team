@@ -10083,7 +10083,29 @@ if(window._supabaseUserId){
 }
 </style>
 
-<div class="bm-wrap">
+<!-- ══ MODAL: ELEGIR MODO ════════════════════════════════════ -->
+<div id="bm-mode-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px">
+  <div style="background:linear-gradient(135deg,rgba(20,20,20,0.95),rgba(30,30,30,0.95));border:1px solid rgba(216,209,90,0.2);border-radius:16px;padding:32px 24px;max-width:340px;text-align:center">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#d8d15a;margin-bottom:8px;letter-spacing:.08em">MODO DE SESIÓN</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:24px;line-height:1.6">¿Qué quieres hacer hoy?</div>
+    
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <!-- Modo 1: Observación -->
+      <div onclick="bmSetMode('observe')" style="padding:16px;border-radius:12px;background:rgba(93,202,165,0.08);border:1.5px solid rgba(93,202,165,0.3);cursor:pointer;transition:all .2s">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#5dcaa5;margin-bottom:4px">👁️ OBSERVAR</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.5">Ver tu postura con lag de 10s. Sin puntuación, solo análisis en vivo.</div>
+      </div>
+      
+      <!-- Modo 2: Calificar -->
+      <div onclick="bmSetMode('compete')" style="padding:16px;border-radius:12px;background:rgba(216,209,90,0.08);border:1.5px solid rgba(216,209,90,0.3);cursor:pointer;transition:all .2s">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#d8d15a;margin-bottom:4px">🔍 CALIFICAR</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.5">Grabar y guardar tu mejor score. Opcionalmente graba la pantalla con tu análisis.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bm-wrap" style="display:none" id="bm-wrap-main">
 
   <!-- Sub-tabs -->
   <div class="bm-subtabs">
@@ -10155,13 +10177,14 @@ if(window._supabaseUserId){
     <div class="bm-controls">
       <button class="bm-btn primary" id="bm-btn-start" onclick="bmStartCamera()">▶ Iniciar cámara</button>
       <button class="bm-btn danger" id="bm-btn-stop" onclick="bmStopCamera()" disabled>⏹ Detener</button>
-      <button class="bm-btn green" id="bm-btn-rec" onclick="bmToggleRecord()" disabled>⏺ Grabar</button>
     </div>
-    <!-- Botón lag video separado (más prominente) -->
-    <button id="bm-btn-lag" onclick="bmCaptureLagClip()" disabled
-      style="width:100%;padding:11px 8px;margin-bottom:10px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;cursor:pointer;border:1.5px solid rgba(154,136,221,0.4);background:rgba(154,136,221,0.1);color:#9a88dd;transition:all .15s;">
-      📼 Guardar últimos 10s (con skeleton)
-    </button>
+    
+    <!-- Modo Competencia: Display del mejor score -->
+    <div id="bm-best-score-display" data-mode="compete" style="display:none;margin-bottom:12px;padding:16px;border-radius:12px;background:linear-gradient(135deg,rgba(216,209,90,0.12),rgba(93,202,165,0.08));border:1.5px solid rgba(216,209,90,0.3)">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.4);margin-bottom:6px">Mejor score de la sesión</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:#d8d15a;line-height:1" id="bm-session-best">—</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px">Se actualiza en tiempo real</div>
+    </div>
     <!-- Video download banner -->
     <div id="bm-video-banner" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:10px;background:rgba(154,136,221,0.08);border:0.5px solid rgba(154,136,221,0.3);display:none;align-items:center;gap:10px">
       <div style="flex:1">
@@ -10344,12 +10367,37 @@ if(window._supabaseUserId){
 
   </div>
 
-</div><!-- end bm-wrap -->
+</div><!-- end bm-wrap-main -->
 
 <script>
 (function(){
 
 // ── Estado ──────────────────────────────────────────────
+let bmMode = null; // 'observe' o 'compete'
+let bmBestScore = null; // mejor score de la sesión actual (modo compete)
+let bmSessionMaxScore = null; // almacenar el max durante la sesión
+
+// ── Cambiar modo ────────────────────────────────────────
+window.bmSetMode = function(mode){
+  bmMode = mode;
+  bmSessionMaxScore = null;
+  document.getElementById('bm-mode-modal').style.display = 'none';
+  document.getElementById('bm-wrap-main').style.display = 'block';
+  
+  // Mostrar/ocultar UI según modo
+  const obsOnly = document.querySelectorAll('[data-mode="observe"]');
+  const compOnly = document.querySelectorAll('[data-mode="compete"]');
+  obsOnly.forEach(el => el.style.display = mode === 'observe' ? 'block' : 'none');
+  compOnly.forEach(el => el.style.display = mode === 'compete' ? 'block' : 'none');
+  
+  if(typeof showToast === 'function'){
+    const msg = mode === 'observe' 
+      ? '👁️ Modo OBSERVAR — sin calificación'
+      : '🔍 Modo CALIFICAR — guardando tu mejor score';
+    showToast(msg);
+  }
+};
+
 let bmStream = null;
 let bmPose = null;
 let bmCamera = null;
@@ -10389,7 +10437,87 @@ let bmLagActive = false;
 let bmVideoBlob = null;         // blob del clip listo para descarga
 const BM_LAG_SECONDS = 10;
 
-// Arrancar el buffer de lag en cuanto la cámara está activa
+// ── SCREEN CAPTURE (alternativa a lag buffer si el usuario lo elige) ────────
+let bmScreenStream = null;      // stream de la pantalla
+let bmScreenRecorder = null;    // MediaRecorder de pantalla
+let bmScreenChunks = [];        // chunks del video de pantalla
+let bmScreenActive = false;     // si está grabando pantalla
+let bmUseScreenCapture = false; // flag para saber si usar pantalla o canvas lag
+
+// Solicitar permiso para grabar pantalla
+window.bmAskScreenCapture = async function(){
+  if(!navigator.mediaDevices?.getDisplayMedia){
+    if(typeof showToast === 'function') showToast('⚠️ Grabar pantalla no soportado en este dispositivo');
+    return false;
+  }
+
+  try {
+    bmScreenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { mediaSource: 'screen', cursor: 'always' },
+      audio: false
+    });
+    
+    if(!bmScreenStream) return false;
+    
+    bmUseScreenCapture = true;
+    bmScreenActive = true;
+    bmScreenChunks = [];
+    
+    // Iniciar grabación
+    const types = ['video/webm;codecs=vp8,opus', 'video/webm', ''];
+    const mime = types.find(m=>{ try{ return m===''||MediaRecorder.isTypeSupported(m); }catch(e){return false;} });
+    
+    try {
+      const recordOpts = mime && mime !== '' ? {mimeType: mime} : undefined;
+      bmScreenRecorder = new MediaRecorder(bmScreenStream, recordOpts);
+      
+      bmScreenRecorder.ondataavailable = e => {
+        if(e.data && e.data.size > 0) bmScreenChunks.push(e.data);
+      };
+      
+      bmScreenRecorder.onstop = () => {
+        const mimeType = bmScreenRecorder.mimeType || 'video/webm';
+        bmVideoBlob = new Blob(bmScreenChunks, {type: mimeType});
+        const banner = document.getElementById('bm-video-banner');
+        if(banner) banner.style.display = 'flex';
+      };
+      
+      bmScreenRecorder.start();
+      if(typeof showToast === 'function') showToast('🎬 Grabando pantalla con tu análisis');
+      return true;
+    } catch(e){
+      console.warn('Screen MediaRecorder error:', e);
+      bmScreenActive = false;
+      return false;
+    }
+  } catch(e){
+    // Usuario rechazó el permiso o no está soportado
+    if(e.name !== 'NotAllowedError') console.warn('getDisplayMedia error:', e);
+    return false;
+  }
+};
+
+// Detener grabación de pantalla
+window.bmStopScreenCapture = function(){
+  if(bmScreenRecorder && bmScreenRecorder.state !== 'inactive'){
+    try { bmScreenRecorder.stop(); } catch(e){}
+  }
+  if(bmScreenStream){
+    bmScreenStream.getTracks().forEach(t => t.stop());
+    bmScreenStream = null;
+  }
+  bmScreenActive = false;
+};
+
+// Limpiar screen capture al detener cámara
+window.bmCleanupScreenCapture = function(){
+  bmStopScreenCapture();
+  bmUseScreenCapture = false;
+  bmScreenChunks = [];
+  bmScreenRecorder = null;
+};
+
+// ── Arrancar el buffer de lag en cuanto la cámara está activa
 window.bmStartLagBuffer = function(){
   if(bmLagActive) return;
   bmLagActive = true;
@@ -10431,17 +10559,20 @@ window.bmStartLagBuffer = function(){
   // Stream del canvas composite
   bmLagCompositeStream = bmLagCompositeCanvas.captureStream(30);
 
-  // Tipos soportados — preferir mp4 si disponible
+  // Tipos soportados — preferir mp4 si disponible, fallback a webm
   const types = [
-    'video/mp4;codecs=h264,aac','video/mp4',
-    'video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm',''
+    'video/mp4;codecs=h264,aac',  // Android compatível
+    'video/mp4',
+    'video/webm;codecs=vp8,opus', // fallback webm
+    'video/webm',
+    ''  // default, let browser decide
   ];
   const mime = types.find(m=>{ try{ return m===''||MediaRecorder.isTypeSupported(m); }catch(e){return false;} });
 
   try {
-    bmLagRecorder = mime
-      ? new MediaRecorder(bmLagCompositeStream, {mimeType: mime, videoBitsPerSecond: 2500000})
-      : new MediaRecorder(bmLagCompositeStream);
+    // Bitrate más bajo para móviles, mejor compatibilidad Android
+    const recordOpts = mime && mime !== '' ? {mimeType: mime, videoBitsPerSecond: 1500000} : undefined;
+    bmLagRecorder = new MediaRecorder(bmLagCompositeStream, recordOpts);
 
     bmLagRecorder.ondataavailable = e => {
       if(e.data && e.data.size > 0){
@@ -10620,8 +10751,6 @@ window.bmStartCamera = async function(){
     bmSetStatus('active','En vivo');
 
     document.getElementById('bm-btn-stop').disabled  = false;
-    document.getElementById('bm-btn-rec').disabled   = false;
-    document.getElementById('bm-btn-lag').disabled   = false;
     
     btn.disabled = true;
 
@@ -10630,6 +10759,43 @@ window.bmStartCamera = async function(){
     // Arrancar el buffer de lag (video+skeleton últimos 10s)
     if(typeof MediaRecorder !== 'undefined'){
       bmStartLagBuffer();
+    }
+
+    // Auto-iniciar grabación de scores en modo CALIFICAR
+    if(bmMode === 'compete'){
+      bmSessionMaxScore = null;
+      document.getElementById('bm-session-best').textContent = '—';
+      
+      // Preguntar si quiere grabar pantalla
+      const wantScreen = await new Promise(resolve => {
+        const dlg = document.createElement('div');
+        dlg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000';
+        dlg.innerHTML = `
+          <div style="background:rgba(20,20,20,0.95);border:1px solid rgba(216,209,90,0.2);border-radius:12px;padding:20px;max-width:300px;text-align:center">
+            <div style="font-size:14px;color:#fff;margin-bottom:16px;line-height:1.6">¿Grabar pantalla completa?<br><span style="font-size:12px;color:rgba(255,255,255,0.6)">Incluirá tu score en vivo y el skeleton</span></div>
+            <div style="display:flex;gap:10px">
+              <button onclick="this.parentElement.parentElement.remove();arguments.callee.bmResolve(true)" style="flex:1;padding:10px;background:#d8d15a;color:#000;border:none;border-radius:8px;font-weight:600;cursor:pointer">Sí, grabar</button>
+              <button onclick="this.parentElement.parentElement.remove();arguments.callee.bmResolve(false)" style="flex:1;padding:10px;background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:8px;cursor:pointer">Solo análisis</button>
+            </div>
+          </div>
+        `;
+        // Hack para pasar el resolve
+        const buttons = dlg.querySelectorAll('button');
+        const resolveFunc = resolve;
+        buttons[0].onclick = () => { dlg.remove(); resolve(true); };
+        buttons[1].onclick = () => { dlg.remove(); resolve(false); };
+        document.body.appendChild(dlg);
+      });
+      
+      if(wantScreen){
+        const screenOk = await bmAskScreenCapture();
+        if(!screenOk){
+          if(typeof showToast === 'function') showToast('📹 Usando grabación de canvas en su lugar');
+          bmUseScreenCapture = false;
+        }
+      }
+      
+      bmToggleRecord(); // iniciar grabación de ángulos
     }
 
   } catch(e){
@@ -10778,6 +10944,15 @@ function bmOnResults(results){
     if(scoreEl){
       scoreEl.textContent = score ?? '—';
       scoreEl.style.color = score >= 80 ? '#5dcaa5' : score >= 60 ? '#d8d15a' : '#e05555';
+      
+      // En modo compete, trackear el máximo score de la sesión
+      if(bmMode === 'compete' && score !== null){
+        if(bmSessionMaxScore === null || score > bmSessionMaxScore){
+          bmSessionMaxScore = score;
+          const displayEl = document.getElementById('bm-session-best');
+          if(displayEl) displayEl.textContent = score;
+        }
+      }
     }
     // Indicador de anclaje
     if(bmAnchorState !== 'anchored') bmShowAnchorIndicator(false);
@@ -11024,36 +11199,54 @@ window.bmStopCamera = function(){
   const canvas = document.getElementById('bm-canvas');
   canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
 
+  // Detener screen capture si estaba grabando pantalla
+  if(bmScreenActive) bmStopScreenCapture();
+  
   // Detener lag buffer
   bmStopLagBuffer();
+
+  // Mostrar resultado en modo CALIFICAR
+  if(bmMode === 'compete' && bmSessionMaxScore !== null){
+    const msg = `🔍 Sesión terminada — Tu mejor score: ${bmSessionMaxScore}`;
+    if(typeof showToast === 'function') showToast(msg);
+    
+    // Auto-capturar el video (de pantalla O canvas lag)
+    setTimeout(()=>{
+      if(bmUseScreenCapture && bmVideoBlob){
+        // Ya está listo del screen recorder
+        const banner = document.getElementById('bm-video-banner');
+        if(banner) banner.style.display = 'flex';
+        if(typeof showToast === 'function') showToast('🎬 Video de pantalla listo para descargar');
+      } else if(bmLagChunks.length > 0){
+        // Fallback: usar canvas lag buffer
+        const blobs = bmLagChunks.map(c => c.blob);
+        const mimeType = bmLagRecorder?.mimeType || 'video/webm';
+        const finalBlob = new Blob(blobs, {type: mimeType});
+        bmVideoBlob = finalBlob;
+        
+        const banner = document.getElementById('bm-video-banner');
+        if(banner) banner.style.display = 'flex';
+        if(typeof showToast === 'function') showToast('🎬 Video con skeleton listo para descargar');
+      }
+    }, 500);
+  }
 
   bmSetOverlay(true,'📷','Toca "Iniciar cámara" para comenzar el análisis de postura');
   bmSetStatus('','Inactivo');
   document.getElementById('bm-btn-start').disabled = false;
   document.getElementById('bm-btn-stop').disabled  = true;
-  document.getElementById('bm-btn-rec').disabled   = true;
-  document.getElementById('bm-btn-lag').disabled   = true;
   bmSetFeedbackEmpty();
 };
 
-// ── Grabar sesión (ángulos/score) ─────────────────────────
-// El video ya no se graba aquí — usa el botón "📼 Últimos 10s"
+// ── Grabar sesión (ángulos/score en tiempo real) ──────────
+// Inicializa/detiene el registro de frames para calcular el máximo
 window.bmToggleRecord = function(){
-  const btn = document.getElementById('bm-btn-rec');
-  const recInd = document.getElementById('bm-rec-indicator');
-
   if(!bmRecording){
     bmRecording = true;
     bmRecordStart = Date.now();
     bmFrameData = [];
-    btn.textContent = '⏹ Guardar';
-    btn.className = 'bm-btn danger';
-    recInd.style.display = 'flex';
   } else {
     bmRecording = false;
-    btn.textContent = '⏺ Grabar';
-    btn.className = 'bm-btn green';
-    recInd.style.display = 'none';
     bmSaveSession();
   }
 };
