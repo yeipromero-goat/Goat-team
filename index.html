@@ -7942,7 +7942,7 @@ function cpRenderRoomAction(t, players, isRR=false){
         ${(t.has_bracket||isRR)&&t.status==='open'&&withScore.length>=2?`
         <div style="border-top:0.5px solid rgba(255,255,255,0.08);padding-top:10px;margin-top:4px">
           ${pending.length?`<div style="font-size:11px;color:#d8d15a;margin-bottom:8px">⚠️ ${pending.length} arquero${pending.length>1?'s':''} sin score — se excluirán de las llaves</div>`:'<div style="font-size:11px;color:#5dcaa5;margin-bottom:8px">✓ Todos listos para las llaves</div>'}
-          <button class="cp-btn cp-btn-y" onclick="${isRR?'cpIniciarRoundRobin':'cpIniciarLlaves'}('${t.id}',${pending.length})">🏆 ${isRR?'Iniciar Round Robin':'Iniciar llaves'} →</button>
+          <button class="cp-btn cp-btn-y" onclick="cpIniciarTorneo('${t.id}',${pending.length},${isRR})">🏆 Iniciar →</button>
         </div>`:''}`;
     }
   } else if(t.status==='closed'){
@@ -9817,6 +9817,12 @@ if(window._supabaseUserId){
   window.addEventListener('supabase-user-ready', cpInit);
 }
 
+
+// ── WRAPPER: INICIAR TORNEO (bracket o round robin) ─────────────
+window.cpIniciarTorneo = function(tournamentId, pendingCount, isRR){
+  if(isRR) cpIniciarRoundRobin(tournamentId, pendingCount);
+  else cpIniciarLlaves(tournamentId, pendingCount);
+};
 
 // ── ROUND ROBIN: FORMAT CHANGE ────────────────────────────────────
 window.cpAdmFmtChange = function(val){
