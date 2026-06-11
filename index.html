@@ -10498,6 +10498,18 @@ if(window._supabaseUserId){
       <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:#d8d15a;line-height:1" id="bm-session-best">—</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px">Se actualiza en tiempo real</div>
     </div>
+
+    <!-- Botón de grabar pantalla (ambos modos) -->
+    <button id="bm-btn-screen" onclick="bmToggleScreenRecord()" disabled
+      style="width:100%;padding:11px 8px;margin-bottom:10px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;cursor:pointer;border:1.5px solid rgba(216,209,90,0.4);background:rgba(216,209,90,0.1);color:#d8d15a;transition:all .15s;font-weight:600">
+      📱 Grabar pantalla
+    </button>
+
+    <!-- Botón "Ver último tiro" (solo modo OBSERVAR) -->
+    <button id="bm-btn-replay" onclick="bmPlayReplay()" disabled data-mode="observe"
+      style="width:100%;padding:11px 8px;margin-bottom:10px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;cursor:pointer;border:1.5px solid rgba(93,202,165,0.4);background:rgba(93,202,165,0.1);color:#5dcaa5;transition:all .15s;font-weight:600">
+      ▶ Ver último tiro (10s)
+    </button>
     <!-- Video download banner -->
     <div id="bm-video-banner" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:10px;background:rgba(154,136,221,0.08);border:0.5px solid rgba(154,136,221,0.3);display:none;align-items:center;gap:10px">
       <div style="flex:1">
@@ -10757,7 +10769,222 @@ let bmScreenChunks = [];        // chunks del video de pantalla
 let bmScreenActive = false;     // si está grabando pantalla
 let bmUseScreenCapture = false; // flag para saber si usar pantalla o canvas lag
 
-// Solicitar permiso para grabar pantalla
+// ── INSTANT REPLAY (para modo OBSERVAR) ────────────────────
+// Buffer circular de frames de los últimos 10 segundos
+let bmReplayFrames = [];        // array de {image: canvas.toDataURL(), t: timestamp}
+let bmReplayIndex = 0;          // índice de escritura circular
+let bmReplayActive = false;     // si está grabando replay
+const BM_REPLAY_FPS = 30;       // frames por segundo
+const BM_REPLAY_SECS = 10;      // segundos de buffer
+const BM_REPLAY_CAPACITY = BM_REPLAY_FPS * BM_REPLAY_SECS; // 300 frames
+let bmReplayLastCapture = 0;    // timestamp del último frame capturado
+
+// Iniciar grabación de replay (cuando arranca cámara en OBSERVAR)
+window.bmStartReplay = function(){
+  if(bmMode !== 'observe') return;
+  bmReplayFrames = [];
+  bmReplayIndex = 0;
+  bmReplayActive = true;
+  bmReplayLastCapture = 0;
+};
+
+// Capturar frame para el buffer replay (llamado en cada frame de pose)
+window.bmCaptureReplayFrame = function(){
+  if(!bmReplayActive || bmMode !== 'observe') return;
+  
+  const now = Date.now();
+  // Capturar 1 frame cada ~33ms (30fps)
+  if(now - bmReplayLastCapture < 33) return;
+  bmReplayLastCapture = now;
+  
+  try {
+    const canvas = document.getElementById('bm-canvas');
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // JPEG para ahorrar memoria
+    
+    if(bmReplayFrames.length < BM_REPLAY_CAPACITY){
+      bmReplayFrames.push({image: dataUrl, t: now});
+    } else {
+      // Buffer circular: sobrescribir frame más antiguo
+      bmReplayFrames[bmReplayIndex] = {image: dataUrl, t: now};
+      bmReplayIndex = (bmReplayIndex + 1) % BM_REPLAY_CAPACITY;
+    }
+  } catch(e){
+    console.warn('Replay capture error:', e);
+  }
+};
+
+// Detener replay (cuando cámara se detiene)
+window.bmStopReplay = function(){
+  bmReplayActive = false;
+};
+
+// Reproducir últimos 10 segundos
+window.bmPlayReplay = function(){
+  if(bmReplayFrames.length === 0){
+    if(typeof showToast === 'function') showToast('⚠️ No hay frames grabados');
+    return;
+  }
+  
+  // Crear overlay con player
+  const overlay = document.createElement('div');
+  overlay.id = 'bm-replay-overlay';
+  overlay.style.cssText = `
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.95);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 5000;
+  `;
+  
+  const container = document.createElement('div');
+  container.style.cssText = `
+    width: 90%; max-width: 480px;
+    background: rgba(20,20,20,0.98);
+    border: 1px solid rgba(216,209,90,0.3);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  `;
+  
+  const title = document.createElement('div');
+  title.style.cssText = `
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: #d8d15a;
+    margin-bottom: 12px;
+    letter-spacing: .06em;
+  `;
+  title.textContent = '▶ ÚLTIMO TIRO';
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = 320;
+  canvas.height = 240;
+  canvas.style.cssText = `
+    width: 100%;
+    border-radius: 8px;
+    background: #000;
+    margin-bottom: 12px;
+    border: 1px solid rgba(216,209,90,0.2);
+  `;
+  
+  const controls = document.createElement('div');
+  controls.style.cssText = `
+    display: flex; gap: 8px; margin-bottom: 12px;
+  `;
+  
+  const playBtn = document.createElement('button');
+  playBtn.id = 'bm-replay-play-btn';
+  playBtn.textContent = '⏯ Reproducir';
+  playBtn.style.cssText = `
+    flex: 1; padding: 8px;
+    background: #d8d15a; color: #000;
+    border: none; border-radius: 8px;
+    font-weight: 600; cursor: pointer;
+  `;
+  
+  const speedSelect = document.createElement('select');
+  speedSelect.id = 'bm-replay-speed';
+  speedSelect.style.cssText = `
+    flex: 1; padding: 8px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid rgba(216,209,90,0.3);
+    border-radius: 8px;
+    font-size: 12px;
+  `;
+  speedSelect.innerHTML = `
+    <option value="0.5">0.5x (lento)</option>
+    <option value="1" selected>1x (normal)</option>
+    <option value="2">2x (rápido)</option>
+  `;
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕ Cerrar';
+  closeBtn.style.cssText = `
+    flex: 1; padding: 8px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    cursor: pointer;
+  `;
+  
+  controls.appendChild(playBtn);
+  controls.appendChild(speedSelect);
+  controls.appendChild(closeBtn);
+  
+  const timer = document.createElement('div');
+  timer.id = 'bm-replay-timer';
+  timer.style.cssText = `
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  `;
+  timer.textContent = '0.0 / 10.0 s';
+  
+  container.appendChild(title);
+  container.appendChild(canvas);
+  container.appendChild(controls);
+  container.appendChild(timer);
+  overlay.appendChild(container);
+  document.body.appendChild(overlay);
+  
+  // Lógica de reproducción
+  let isPlaying = false;
+  let currentFrame = 0;
+  let animFrame = null;
+  
+  function drawFrame(frameIndex){
+    if(frameIndex >= bmReplayFrames.length) frameIndex = bmReplayFrames.length - 1;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const time = (frameIndex / BM_REPLAY_FPS).toFixed(1);
+      document.getElementById('bm-replay-timer').textContent = `${time} / ${(BM_REPLAY_CAPACITY / BM_REPLAY_FPS).toFixed(1)} s`;
+    };
+    img.src = bmReplayFrames[frameIndex].image;
+  }
+  
+  function playSequence(){
+    const speed = parseFloat(document.getElementById('bm-replay-speed')?.value || 1);
+    const delayMs = (1000 / BM_REPLAY_FPS) / speed;
+    
+    function nextFrame(){
+      drawFrame(currentFrame);
+      currentFrame++;
+      
+      if(currentFrame >= bmReplayFrames.length){
+        currentFrame = 0; // loop
+      }
+      
+      if(isPlaying){
+        animFrame = setTimeout(nextFrame, delayMs);
+      }
+    }
+    
+    nextFrame();
+  }
+  
+  playBtn.onclick = () => {
+    isPlaying = !isPlaying;
+    playBtn.textContent = isPlaying ? '⏸ Pausa' : '⏯ Reproducir';
+    if(isPlaying){
+      playSequence();
+    } else {
+      if(animFrame) clearTimeout(animFrame);
+    }
+  };
+  
+  closeBtn.onclick = () => {
+    isPlaying = false;
+    if(animFrame) clearTimeout(animFrame);
+    overlay.remove();
+  };
+  
+  // Dibujar el primer frame
+  drawFrame(0);
+};
+
+
 window.bmAskScreenCapture = async function(){
   if(!navigator.mediaDevices?.getDisplayMedia){
     if(typeof showToast === 'function') showToast('⚠️ Grabar pantalla no soportado en este dispositivo');
@@ -11064,6 +11291,13 @@ window.bmStartCamera = async function(){
     bmSetStatus('active','En vivo');
 
     document.getElementById('bm-btn-stop').disabled  = false;
+    document.getElementById('bm-btn-screen').disabled  = false;
+    
+    // Habilitar botón de replay solo en modo OBSERVAR
+    if(bmMode === 'observe'){
+      document.getElementById('bm-btn-replay').disabled = false;
+      bmStartReplay();
+    }
     
     btn.disabled = true;
 
@@ -11073,6 +11307,37 @@ window.bmStartCamera = async function(){
     if(typeof MediaRecorder !== 'undefined'){
       bmStartLagBuffer();
     }
+
+// ── Grabar/detener pantalla (botón manual) ────────────────
+window.bmToggleScreenRecord = async function(){
+  const btn = document.getElementById('bm-btn-screen');
+  
+  if(!bmScreenActive){
+    // Iniciar grabación de pantalla
+    const screenOk = await bmAskScreenCapture();
+    if(screenOk){
+      btn.textContent = '⏹ Detener grabación';
+      btn.style.background = 'rgba(224,85,85,0.15)';
+      btn.style.borderColor = 'rgba(224,85,85,0.4)';
+      if(typeof showToast === 'function') showToast('🎬 Grabando pantalla...');
+    } else {
+      btn.textContent = '📱 Grabar pantalla';
+      if(typeof showToast === 'function') showToast('⚠️ Permiso de pantalla denegado');
+    }
+  } else {
+    // Detener grabación de pantalla
+    bmStopScreenCapture();
+    btn.textContent = '📱 Grabar pantalla';
+    btn.style.background = 'rgba(216,209,90,0.1)';
+    btn.style.borderColor = 'rgba(216,209,90,0.4)';
+    
+    if(bmVideoBlob){
+      const banner = document.getElementById('bm-video-banner');
+      if(banner) banner.style.display = 'flex';
+      if(typeof showToast === 'function') showToast('🎬 Pantalla grabada — lista para descargar');
+    }
+  }
+};
 
 // ── Preguntar si grabar pantalla (para ambos modos) ────────
 window.bmAskScreenRecording = async function(){
@@ -11107,15 +11372,11 @@ window.bmAskScreenRecording = async function(){
   }
 };
 
-    // Auto-iniciar grabación de scores en modo CALIFICAR y opción de pantalla en ambos
+    // Auto-iniciar grabación de scores en modo CALIFICAR
     if(bmMode === 'compete'){
       bmSessionMaxScore = null;
       document.getElementById('bm-session-best').textContent = '—';
-      await bmAskScreenRecording();
-      bmToggleRecord(); // iniciar grabación de ángulos
-    } else if(bmMode === 'observe'){
-      // En OBSERVAR, solo preguntar por pantalla, sin grabación de ángulos
-      await bmAskScreenRecording();
+      bmToggleRecord(); // iniciar grabación de ángulos automáticamente
     }
 
   } catch(e){
@@ -11287,6 +11548,9 @@ function bmOnResults(results){
   if(bmRecording){
     bmFrameData.push({t: now - bmRecordStart, angles, score: bmPostureScore});
   }
+  
+  // Capturar frame para instant replay (modo OBSERVAR)
+  bmCaptureReplayFrame();
 }
 
 // ── Skeleton fallback (sin drawing_utils) ───────────────
@@ -11561,6 +11825,10 @@ window.bmStopCamera = function(){
   bmSetStatus('','Inactivo');
   document.getElementById('bm-btn-start').disabled = false;
   document.getElementById('bm-btn-stop').disabled  = true;
+  document.getElementById('bm-btn-screen').disabled  = true;
+  document.getElementById('bm-btn-replay').disabled  = true;
+  
+  bmStopReplay();
   bmSetFeedbackEmpty();
 };
 
