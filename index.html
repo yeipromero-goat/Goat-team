@@ -7035,6 +7035,10 @@ if(window._supabaseUserId && window._supabaseToken){
         <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">Clasificatorio → eliminación</div>
       </div>
     </div>
+    <div id="cp-fmt-rr" onclick="cpSetFmt('round_robin')" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.5)">Score + Round Robin</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">3–8 arqueros · todos contra todos</div>
+    </div>
 
     <div id="cp-match-fmt-section" style="display:none">
       <div class="cp-sec">Formato de matches (llaves)</div>
@@ -7103,7 +7107,7 @@ if(window._supabaseUserId && window._supabaseToken){
       </select>
       <span class="cp-muted">Máx.</span>
       <select class="cp-select" id="cp-new-max" style="margin-bottom:0;flex:1">
-        <option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6" selected>6</option>
+        <option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6" selected>6</option><option value="7">7</option><option value="8">8</option>
       </select>
     </div>
 
@@ -7235,17 +7239,23 @@ if(window._supabaseUserId && window._supabaseToken){
         <optgroup label="3D"><option value="3d">3D</option></optgroup>
       </select>
       <label class="cp-label">Formato final</label>
-      <select class="cp-select" id="cp-adm-fmt">
+      <select class="cp-select" id="cp-adm-fmt" onchange="cpAdmFmtChange()">
         <option value="score">Solo score — podium directo</option>
         <option value="bracket">Score + llaves de eliminación</option>
+        <option value="round_robin">Score + Round Robin (3–8 arqueros)</option>
       </select>
-      <label class="cp-label">Formato de matches (si hay llaves)</label>
+      <label class="cp-label">Formato de matches (llaves o round robin)</label>
       <select class="cp-select" id="cp-adm-mfmt">
         <option value="score">15 flechas sumatoria</option>
-        <option value="sets">Sets a 6 puntos</option>
+        <option value="sets">Sets (5 series de 3)</option>
       </select>
       <label class="cp-label">Cupo máximo</label>
       <select class="cp-select" id="cp-adm-cupo">
+        <option value="3">3 arqueros</option>
+        <option value="4">4 arqueros</option>
+        <option value="5">5 arqueros</option>
+        <option value="6">6 arqueros</option>
+        <option value="7">7 arqueros</option>
         <option value="8">8 arqueros</option>
         <option value="16" selected>16 arqueros</option>
         <option value="24">24 arqueros</option>
@@ -7398,13 +7408,23 @@ window.cpShowAdminLeague = function(){
 window.cpSetFmt = function(fmt){
   cpFmt=fmt;
   const isBracket=fmt==='bracket';
-  document.getElementById('cp-fmt-score').style.cssText=
-    !isBracket?'border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center':'border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
-  document.getElementById('cp-fmt-bracket').style.cssText=
-    isBracket?'border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center':'border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
-  document.getElementById('cp-fmt-score').querySelector('div').style.color=!isBracket?'#d8d15a':'rgba(255,255,255,0.5)';
+  const isRR=fmt==='round_robin';
+  const selStyle='border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
+  const unselStyle='border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
+  document.getElementById('cp-fmt-score').style.cssText=(!isBracket&&!isRR)?selStyle:unselStyle;
+  document.getElementById('cp-fmt-bracket').style.cssText=isBracket?selStyle:unselStyle;
+  document.getElementById('cp-fmt-rr').style.cssText=isRR?selStyle:unselStyle;
+  document.getElementById('cp-fmt-score').querySelector('div').style.color=(!isBracket&&!isRR)?'#d8d15a':'rgba(255,255,255,0.5)';
   document.getElementById('cp-fmt-bracket').querySelector('div').style.color=isBracket?'#d8d15a':'rgba(255,255,255,0.5)';
-  document.getElementById('cp-match-fmt-section').style.display=isBracket?'block':'none';
+  document.getElementById('cp-fmt-rr').querySelector('div').style.color=isRR?'#d8d15a':'rgba(255,255,255,0.5)';
+  document.getElementById('cp-match-fmt-section').style.display=(isBracket||isRR)?'block':'none';
+  // RR: forzar cupo mínimo 3
+  if(isRR){
+    const minSel=document.getElementById('cp-new-min');
+    const maxSel=document.getElementById('cp-new-max');
+    if(parseInt(minSel.value)<3) minSel.value='3';
+    if(parseInt(maxSel.value)<3) maxSel.value='3';
+  }
 }
 
 window.cpSetMatchFmt = function(fmt){
@@ -7721,6 +7741,11 @@ window.cpCreateTournament = async function(){
   const disc=document.getElementById('cp-new-disc').value;
   const discGroup=disc.split('-')[0]==='3d'?'3d':disc.split('-')[0];
   const hcapPayload=cpBuildHcapPayload();
+  const isRR=cpFmt==='round_robin';
+  const maxPlayers=parseInt(document.getElementById('cp-new-max').value);
+  if(isRR && maxPlayers>8) return cpToast('Round Robin: máximo 8 arqueros');
+  if(isRR && maxPlayers<3) return cpToast('Round Robin: mínimo 3 arqueros');
+  if(isRR) hcapPayload.handicap_config={...hcapPayload.handicap_config, rr_match_format:cpMatchFmt};
   const payload={
     created_by: cpUserId,
     type: 'friends',
@@ -7729,9 +7754,9 @@ window.cpCreateTournament = async function(){
     discipline: disc,
     disc_group: discGroup,
     has_bracket: cpFmt==='bracket',
-    match_format: cpMatchFmt,
+    match_format: isRR?'round_robin':cpMatchFmt,
     min_players: parseInt(document.getElementById('cp-new-min').value),
-    max_players: parseInt(document.getElementById('cp-new-max').value),
+    max_players: maxPlayers,
     status: 'open',
     admin_only: false,
     visible: true,
@@ -7833,7 +7858,8 @@ window.cpOpenRoom = async function(tournamentId){
 
 function cpRenderRoom(t, players){
   document.getElementById('cp-room-title').textContent=t.title;
-  document.getElementById('cp-room-sub').textContent=`${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}`;
+  const fmtLabel=t.match_format==='round_robin'?'Round Robin':t.has_bracket?'Score + llaves':'Solo score';
+  document.getElementById('cp-room-sub').textContent=`${DISC_LABELS[t.discipline]||t.discipline} · ${fmtLabel}`;
   document.getElementById('cp-room-status-badge').className='cp-pill '+STATUS_CLASS[t.status];
   document.getElementById('cp-room-status-badge').textContent=STATUS_LABELS[t.status];
   // Código solo para torneos de amigos
@@ -7893,6 +7919,7 @@ function cpRenderRoom(t, players){
 function cpRenderRoomAction(t, players){
   const me=players.find(p=>p.user_id===cpUserId);
   const el=document.getElementById('cp-room-action-content');
+  if(t.match_format==='round_robin'){ cpRenderRRAction(t,players,me,el); return; }
   if(!me){
     el.innerHTML=`<div style="font-size:13px;color:#fff;margin-bottom:10px">¿Quieres participar?</div>
       <button class="cp-btn cp-btn-y" onclick="cpJoinAndReload('${t.id}')">Unirse al torneo</button>`;
@@ -9167,13 +9194,19 @@ window.cpAdminCreateTournament = async function(){
   const mfmt=document.getElementById('cp-adm-mfmt').value;
   const cupo=parseInt(document.getElementById('cp-adm-cupo').value);
   const hcap=document.getElementById('cp-adm-hcap').value;
+  const isRR=fmt==='round_robin';
+  if(isRR && cupo>8) return cpToast('Round Robin: máximo 8 arqueros');
+  if(isRR && cupo<3) return cpToast('Round Robin: mínimo 3 arqueros');
+  const hcapConfig=isRR?{rr_match_format:mfmt}:{};
   const payload={
     created_by:cpUserId, type:'club', title, discipline:disc,
     disc_group:disc.split('-')[0]==='3d'?'3d':disc.split('-')[0],
-    has_bracket:fmt==='bracket', match_format:mfmt,
+    has_bracket:fmt==='bracket',
+    match_format:isRR?'round_robin':mfmt,
     max_players:cupo, max_players_club:cupo,
     handicap_enabled:hcap!=='none',
     handicap_rules:hcap!=='none'?[{type:hcap}]:[],
+    handicap_config:hcapConfig,
     status:'open', admin_only:true, visible:true
   };
   try{
@@ -9787,6 +9820,276 @@ window.cpClearActiveTournament = function(){
   if(banner) banner.style.display='none';
   cpToast('Torneo desactivado');
   cpLoadMisPartidas();
+}
+
+// ── ADMIN: CAMBIO DE FORMATO ──────────────────────────────────────
+window.cpAdmFmtChange = function(){
+  const fmt=document.getElementById('cp-adm-fmt').value;
+  const mfmtSection=document.getElementById('cp-adm-mfmt');
+  const mfmtLabel=mfmtSection?mfmtSection.previousElementSibling:null;
+  if(fmt==='score'){
+    if(mfmtSection) mfmtSection.style.display='none';
+    if(mfmtLabel) mfmtLabel.style.display='none';
+  } else {
+    if(mfmtSection) mfmtSection.style.display='block';
+    if(mfmtLabel) mfmtLabel.style.display='block';
+  }
+}
+
+// ── ROUND ROBIN: RENDER DE ACCIÓN ────────────────────────────────
+async function cpRenderRRAction(t, players, me, el){
+  if(!me){
+    el.innerHTML='<div style="font-size:13px;color:#fff;margin-bottom:10px">¿Quieres participar?</div><button class="cp-btn cp-btn-y" onclick="cpJoinAndReload(\''+t.id+'\')">Unirse al torneo</button>';
+    return;
+  }
+  if(t.status==='open'){
+    if(me.qualifying_score==null){
+      el.innerHTML='<div class="cp-sec">Mi clasificatorio</div><div class="cp-muted" style="font-size:12px;margin-bottom:10px">Sube tu score de <strong style="color:#fff">'+( DISC_LABELS[t.discipline]||t.discipline)+'</strong> para clasificar.</div><button class="cp-btn cp-btn-y" onclick="cpGoScore(\''+t.id+'\',\''+t.discipline+'\')">Ir a registrar score →</button>';
+    } else {
+      const withScore=players.filter(p=>p.qualifying_score!=null);
+      const pending=players.filter(p=>p.qualifying_score==null);
+      const canStart=withScore.length>=3;
+      let html='<div class="cp-sec">Mi score clasificatorio</div>';
+      html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><span class="cp-num" style="font-size:36px;color:#5dcaa5">'+me.qualifying_score+'</span><span class="cp-muted" style="font-size:11px">pts en '+(DISC_LABELS[t.discipline]||t.discipline)+'</span></div>';
+      html+='<div style="border-top:0.5px solid rgba(255,255,255,0.08);padding-top:10px">';
+      if(pending.length) html+='<div style="font-size:11px;color:#d8d15a;margin-bottom:8px">⚠️ '+pending.length+' arquero'+(pending.length>1?'s':'')+' sin clasificar — se excluirán del RR</div>';
+      else html+='<div style="font-size:11px;color:#5dcaa5;margin-bottom:8px">✓ '+withScore.length+' arqueros listos</div>';
+      if(canStart) html+='<button class="cp-btn cp-btn-y" onclick="cpIniciarTorneo(\''+t.id+'\','+pending.length+',true)">🏆 Iniciar Round Robin →</button>';
+      else html+='<div class="cp-muted" style="font-size:11px">Se necesitan al menos 3 arqueros clasificados para iniciar.</div>';
+      html+='</div>';
+      el.innerHTML=html;
+    }
+  } else if(t.status==='playing'){
+    el.innerHTML='<div class="cp-muted" style="font-size:12px;padding:8px 0">Cargando Round Robin...</div>';
+    await cpRenderRoundRobin(t,players,me,el);
+  } else if(t.status==='closed'){
+    try{
+      const brackets=await cpFetch('/rest/v1/brackets?tournament_id=eq.'+t.id+'&round=eq.rr_1&order=match_number.asc').then(r=>r.json());
+      const standings=cpCalcRRStandings(brackets,players);
+      el.innerHTML=cpRenderRRStandingsHTML(standings,players,true);
+    } catch(e){ el.innerHTML='<div class="cp-muted">Error cargando resultados</div>'; }
+  }
+}
+
+// ── ROUND ROBIN: INICIAR ─────────────────────────────────────────
+window.cpIniciarTorneo = function(id, pending, isRR){
+  if(isRR) cpIniciarRoundRobin(id, pending);
+  else cpIniciarLlaves(id, pending);
+}
+
+window.cpIniciarRoundRobin = async function(tournamentId, pendingCount){
+  if(pendingCount>0){
+    if(!confirm(pendingCount+' arquero'+(pendingCount>1?'s':'')+' sin score serán excluidos. ¿Iniciar de todas formas?')) return;
+  }
+  try{
+    const pRes=await cpFetch('/rest/v1/tournament_players?tournament_id=eq.'+tournamentId+'&qualifying_score=not.is.null&order=qualifying_score.desc');
+    const players=await pRes.json();
+    if(players.length<3) return cpToast('Se necesitan al menos 3 arqueros clasificados');
+    const matches=[];
+    let matchNum=1;
+    for(let i=0;i<players.length;i++){
+      for(let j=i+1;j<players.length;j++){
+        matches.push({tournament_id:tournamentId,round:'rr_1',match_number:matchNum++,player1_id:players[i].user_id,player2_id:players[j].user_id,is_bye:false,status:'pending'});
+      }
+    }
+    const bRes=await cpFetch('/rest/v1/brackets',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify(matches)});
+    if(!bRes.ok&&bRes.status!==201&&bRes.status!==204){const err=await bRes.text();throw new Error(err.slice(0,80));}
+    await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({status:'playing'})});
+    cpToast('✓ Round Robin iniciado — '+matches.length+' partidos generados');
+    cpOpenRoom(tournamentId);
+  } catch(e){ console.error(e); cpToast('Error iniciando Round Robin'); }
+}
+
+// ── ROUND ROBIN: CALCULAR STANDINGS ──────────────────────────────
+function cpCalcRRStandings(brackets, players){
+  const stats={};
+  players.forEach(p=>{stats[p.user_id]={user_id:p.user_id,name:p.archer_name||p.display_name||'Arquero',G:0,E:0,P:0,pts:0,played:0};});
+  brackets.forEach(m=>{
+    if(m.status!=='done') return;
+    const p1=stats[m.player1_id]; const p2=stats[m.player2_id];
+    if(!p1||!p2) return;
+    p1.played++; p2.played++;
+    if(m.winner_id===m.player1_id){p1.G++;p1.pts+=2;p2.P++;}
+    else if(m.winner_id===m.player2_id){p2.G++;p2.pts+=2;p1.P++;}
+    else{p1.E++;p1.pts+=1;p2.E++;p2.pts+=1;}
+  });
+  return Object.values(stats).sort((a,b)=>b.pts-a.pts||b.G-a.G);
+}
+
+// ── ROUND ROBIN: RENDER TABLA ─────────────────────────────────────
+function cpRenderRRStandingsHTML(standings, players, isFinal){
+  const medals=['🥇','🥈','🥉'];
+  let html='<div class="cp-sec">'+(isFinal?'Resultados finales':'Tabla de posiciones')+'</div>';
+  html+='<div style="border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;margin-bottom:12px">';
+  html+='<div style="display:grid;grid-template-columns:1fr 28px 28px 28px 36px;padding:6px 10px;background:rgba(255,255,255,0.04);font-size:10px;color:rgba(255,255,255,0.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em"><span>Arquero</span><span style="text-align:center">G</span><span style="text-align:center">E</span><span style="text-align:center">P</span><span style="text-align:right">Pts</span></div>';
+  standings.forEach((s,i)=>{
+    const isMe=s.user_id===cpUserId;
+    html+='<div style="display:grid;grid-template-columns:1fr 28px 28px 28px 36px;padding:8px 10px;border-top:0.5px solid rgba(255,255,255,0.06);background:'+(isMe?'rgba(216,209,90,0.04)':'transparent')+'"><span style="font-size:12px;font-weight:'+(isMe?'600':'400')+';color:'+(isMe?'#d8d15a':'#fff')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(medals[i]||'')+(i>2?(i+1)+'° ':' ')+s.name+(isMe?' (tú)':'')+'</span><span style="font-size:12px;color:#5dcaa5;text-align:center">'+s.G+'</span><span style="font-size:12px;color:rgba(255,255,255,0.5);text-align:center">'+s.E+'</span><span style="font-size:12px;color:#e05555;text-align:center">'+s.P+'</span><span style="font-family:\'Bebas Neue\';font-size:16px;color:'+(isMe?'#d8d15a':'#fff')+';text-align:right">'+s.pts+'</span></div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+// ── ROUND ROBIN: RENDER SALA JUGANDO ─────────────────────────────
+async function cpRenderRoundRobin(t, players, me, el){
+  try{
+    const brackets=await cpFetch('/rest/v1/brackets?tournament_id=eq.'+t.id+'&round=eq.rr_1&order=match_number.asc').then(r=>r.json());
+    const standings=cpCalcRRStandings(brackets,players);
+    let html=cpRenderRRStandingsHTML(standings,players,false);
+    const getPlayerName=uid=>{const p=players.find(x=>x.user_id===uid);return p?.archer_name||p?.display_name||'Arquero';};
+    const myPending=brackets.filter(m=>(m.player1_id===cpUserId||m.player2_id===cpUserId)&&m.status!=='done');
+    const doneCount=brackets.filter(m=>m.status==='done').length;
+    const rrFmt=t.handicap_config?.rr_match_format||'score';
+    if(myPending.length){
+      html+='<div class="cp-sec">Mis partidos pendientes</div>';
+      myPending.forEach(m=>{
+        const rivalId=m.player1_id===cpUserId?m.player2_id:m.player1_id;
+        const rivalName=getPlayerName(rivalId);
+        const iAmP1=m.player1_id===cpUserId;
+        const iSubmitted=iAmP1?m.p1_confirmed:m.p2_confirmed;
+        const rivalSubmitted=iAmP1?m.p2_confirmed:m.p1_confirmed;
+        html+='<div style="border:1px solid rgba(216,209,90,0.25);border-radius:10px;padding:12px 14px;margin-bottom:8px;background:rgba(216,209,90,0.03)">';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:13px;font-weight:600;color:#fff">vs '+rivalName+'</div><span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(216,209,90,0.12);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3)">Partido '+m.match_number+'</span></div>';
+        html+='<div style="display:flex;gap:12px;margin-bottom:10px"><div style="font-size:10px;color:'+(iSubmitted?'#5dcaa5':'rgba(255,255,255,0.35)')+'">✓ Tú '+(iSubmitted?'registrado':'pendiente')+'</div><div style="font-size:10px;color:'+(rivalSubmitted?'#5dcaa5':'rgba(255,255,255,0.35)')+'">· '+rivalName+' '+(rivalSubmitted?'registrado':'pendiente')+'</div></div>';
+        if(!iSubmitted) html+='<button class="cp-btn cp-btn-y" onclick="cpOpenRRMatch(\''+m.id+'\',\''+t.id+'\',\''+rivalName+'\',\''+rrFmt+'\')">🏹 Registrar mi score →</button>';
+        else html+='<div style="font-size:11px;color:#5dcaa5;padding:8px;border-radius:6px;background:rgba(93,202,165,0.08);border:0.5px solid rgba(93,202,165,0.2)">✓ Score registrado — esperando a '+rivalName+'</div>';
+        html+='</div>';
+      });
+    } else if(doneCount<brackets.length){
+      html+='<div class="cp-muted" style="font-size:12px;padding:8px 0;text-align:center">✓ Todos tus partidos registrados — esperando a los demás</div>';
+    }
+    html+='<details style="margin-top:4px"><summary style="font-size:10px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,0.35);cursor:pointer;padding:6px 0;list-style:none;text-transform:uppercase;user-select:none">▶ TODOS LOS PARTIDOS ('+doneCount+'/'+brackets.length+')</summary><div style="margin-top:8px">';
+    brackets.forEach(m=>{
+      const p1n=getPlayerName(m.player1_id);const p2n=getPlayerName(m.player2_id);
+      const isDone=m.status==='done';
+      let res='Pendiente';
+      if(isDone){if(m.winner_id===m.player1_id)res=p1n+' ganó';else if(m.winner_id===m.player2_id)res=p2n+' ganó';else res='Empate';}
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,0.06)"><span style="font-size:11px;color:'+(isDone?'rgba(255,255,255,0.5)':'#fff')+'">'+p1n+' vs '+p2n+'</span><span style="font-size:11px;color:'+(isDone?'#5dcaa5':'#d8d15a')+'">'+res+'</span></div>';
+    });
+    html+='</div></details>';
+    el.innerHTML=html;
+  } catch(e){ console.error(e); el.innerHTML='<div class="cp-muted">Error cargando Round Robin</div>'; }
+}
+
+// ── ROUND ROBIN: MODAL DE SCORE ───────────────────────────────────
+window.cpOpenRRMatch = function(matchId, tournamentId, rivalName, rrFmt){
+  const existing=document.getElementById('cp-rr-match-overlay');
+  if(existing) existing.remove();
+  window._cpRRState={matchId,tournamentId,rivalName,rrFmt,ends:[]};
+  cpRRRenderModal();
+}
+
+function cpRRRenderModal(){
+  const s=window._cpRRState;
+  const existing=document.getElementById('cp-rr-match-overlay');
+  if(existing) existing.remove();
+  const endNum=s.ends.length+1;
+  const totalScore=s.ends.reduce((sum,end)=>sum+end.reduce((a,b)=>a+b,0),0);
+  const overlay=document.createElement('div');
+  overlay.id='cp-rr-match-overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.95);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box';
+  if(endNum>5){
+    const endScores=s.ends.map(end=>end.reduce((a,b)=>a+b,0));
+    overlay.innerHTML='<div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:340px"><div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:4px">✓ Series completadas</div><div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">vs '+s.rivalName+'</div><div style="display:flex;justify-content:space-between;gap:4px;margin-bottom:16px">'+endScores.map((sc,i)=>'<div style="text-align:center;flex:1"><div style="font-size:10px;color:rgba(255,255,255,0.35)">S'+(i+1)+'</div><div style="font-family:\'Bebas Neue\';font-size:20px;color:#fff">'+sc+'</div></div>').join('')+'</div><div style="text-align:center;margin-bottom:16px"><div style="font-size:11px;color:rgba(255,255,255,0.4)">Total</div><div style="font-family:\'Bebas Neue\';font-size:48px;color:#5dcaa5;line-height:1">'+totalScore+'</div></div><button class="cp-btn cp-btn-g" onclick="cpRRSubmitScore()">✓ Enviar score →</button><button class="cp-btn" style="margin-top:8px;color:rgba(255,255,255,0.4);font-size:12px" onclick="document.getElementById(\'cp-rr-match-overlay\').remove()">Cancelar</button></div>';
+  } else {
+    const dots=Array.from({length:5},(_,i)=>'<div style="width:8px;height:8px;border-radius:50%;background:'+(i<s.ends.length?'#5dcaa5':i===s.ends.length?'#d8d15a':'rgba(255,255,255,0.15)')+'"></div>').join('');
+    const fmtLabel=s.rrFmt==='sets'?'Sets':'Score';
+    overlay.innerHTML='<div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:340px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-size:15px;font-weight:600;color:#fff">vs '+s.rivalName+'</div><button onclick="document.getElementById(\'cp-rr-match-overlay\').remove()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:0;line-height:1">×</button></div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px">'+fmtLabel+' · Serie '+endNum+' de 5</div><div style="display:flex;gap:6px;margin-bottom:16px">'+dots+'</div><div style="display:flex;gap:8px;margin-bottom:16px"><div style="flex:1;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px">Flecha 1</div><input id="cp-rr-a1" type="number" min="0" max="10" placeholder="—" style="width:100%;padding:12px 4px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:22px;font-family:\'Bebas Neue\';text-align:center" onkeydown="if(event.key===\'Enter\')document.getElementById(\'cp-rr-a2\').focus()"></div><div style="flex:1;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px">Flecha 2</div><input id="cp-rr-a2" type="number" min="0" max="10" placeholder="—" style="width:100%;padding:12px 4px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:22px;font-family:\'Bebas Neue\';text-align:center" onkeydown="if(event.key===\'Enter\')document.getElementById(\'cp-rr-a3\').focus()"></div><div style="flex:1;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px">Flecha 3</div><input id="cp-rr-a3" type="number" min="0" max="10" placeholder="—" style="width:100%;padding:12px 4px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:22px;font-family:\'Bebas Neue\';text-align:center" onkeydown="if(event.key===\'Enter\')cpRRConfirmEnd()"></div></div>'+(totalScore>0?'<div style="text-align:center;margin-bottom:12px"><span style="font-size:11px;color:rgba(255,255,255,0.4)">Acumulado: </span><span style="font-family:\'Bebas Neue\';font-size:18px;color:#5dcaa5">'+totalScore+'</span></div>':'')+'<button class="cp-btn cp-btn-y" onclick="cpRRConfirmEnd()">Confirmar serie →</button></div>';
+  }
+  document.body.appendChild(overlay);
+  setTimeout(()=>document.getElementById('cp-rr-a1')?.focus(),100);
+}
+
+window.cpRRConfirmEnd = function(){
+  ['cp-rr-a1','cp-rr-a2','cp-rr-a3'].forEach(id=>{const el=document.getElementById(id);if(el)el.blur();});
+  setTimeout(()=>{
+    const a1=Math.min(10,Math.max(0,parseInt(document.getElementById('cp-rr-a1')?.value)||0));
+    const a2=Math.min(10,Math.max(0,parseInt(document.getElementById('cp-rr-a2')?.value)||0));
+    const a3=Math.min(10,Math.max(0,parseInt(document.getElementById('cp-rr-a3')?.value)||0));
+    window._cpRRState.ends.push([a1,a2,a3]);
+    cpRRRenderModal();
+  },50);
+}
+
+window.cpRRSubmitScore = async function(){
+  const s=window._cpRRState;
+  if(!s) return;
+  const totalScore=s.ends.reduce((sum,end)=>sum+end.reduce((a,b)=>a+b,0),0);
+  const endScores=s.ends.map(end=>end.reduce((a,b)=>a+b,0));
+  try{
+    const mRes=await cpFetch('/rest/v1/brackets?id=eq.'+s.matchId);
+    const mData=await mRes.json();
+    const match=mData[0];
+    if(!match) return cpToast('Error: partido no encontrado');
+    const iAmP1=match.player1_id===cpUserId;
+    if(!iAmP1&&match.player2_id!==cpUserId) return cpToast('No eres parte de este partido');
+    const currentSS=match.set_scores||{};
+    const myKey=iAmP1?'p1':'p2';
+    currentSS[myKey+'_ends']=endScores;
+    const patch={set_scores:currentSS,status:'playing'};
+    if(iAmP1){patch.score1=totalScore;patch.p1_confirmed=true;}
+    else{patch.score2=totalScore;patch.p2_confirmed=true;}
+    const pRes=await cpFetch('/rest/v1/brackets?id=eq.'+s.matchId,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify(patch)});
+    if(!pRes.ok&&pRes.status!==204){const err=await pRes.text();throw new Error(err.slice(0,80));}
+    document.getElementById('cp-rr-match-overlay')?.remove();
+    cpToast('✓ Score registrado');
+    await cpRRCheckAndResolve(s.matchId,s.tournamentId,s.rrFmt);
+    cpOpenRoom(s.tournamentId);
+  } catch(e){ console.error(e); cpToast('Error guardando score'); }
+}
+
+// ── ROUND ROBIN: RESOLVER MATCH ───────────────────────────────────
+async function cpRRCheckAndResolve(matchId, tournamentId, rrFmt){
+  try{
+    const mRes=await cpFetch('/rest/v1/brackets?id=eq.'+matchId);
+    const mData=await mRes.json();
+    const m=mData[0];
+    if(!m||m.status==='done') return;
+    if(!m.p1_confirmed||!m.p2_confirmed) return;
+    let winnerId=null;
+    let sets1=null,sets2=null;
+    const ss=m.set_scores;
+    if(rrFmt==='sets'&&ss&&ss.p1_ends&&ss.p2_ends){
+      sets1=0;sets2=0;
+      for(let i=0;i<5;i++){
+        const s1=ss.p1_ends[i]||0;const s2=ss.p2_ends[i]||0;
+        if(s1>s2){sets1+=2;}else if(s2>s1){sets2+=2;}else{sets1+=1;sets2+=1;}
+      }
+      if(sets1>sets2) winnerId=m.player1_id;
+      else if(sets2>sets1) winnerId=m.player2_id;
+    } else {
+      const sc1=m.score1||0;const sc2=m.score2||0;
+      if(sc1>sc2) winnerId=m.player1_id;
+      else if(sc2>sc1) winnerId=m.player2_id;
+    }
+    const resolvePatch={status:'done',winner_id:winnerId};
+    if(sets1!==null){resolvePatch.sets1=sets1;resolvePatch.sets2=sets2;}
+    await cpFetch('/rest/v1/brackets?id=eq.'+matchId,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify(resolvePatch)});
+    await cpCheckRRComplete(tournamentId,rrFmt);
+  } catch(e){ console.error('Error resolviendo match RR:',e); }
+}
+
+async function cpCheckRRComplete(tournamentId, rrFmt){
+  try{
+    const bRes=await cpFetch('/rest/v1/brackets?tournament_id=eq.'+tournamentId+'&round=eq.rr_1');
+    const brackets=await bRes.json();
+    if(brackets.length>0&&brackets.every(m=>m.status==='done')){
+      await cpFinishRoundRobin(tournamentId,brackets);
+    }
+  } catch(e){ console.error(e); }
+}
+
+async function cpFinishRoundRobin(tournamentId, brackets){
+  try{
+    const pRes=await cpFetch('/rest/v1/tournament_players?tournament_id=eq.'+tournamentId);
+    const players=await pRes.json();
+    const standings=cpCalcRRStandings(brackets,players);
+    await Promise.all(standings.map((s,i)=>
+      cpFetch('/rest/v1/tournament_players?tournament_id=eq.'+tournamentId+'&user_id=eq.'+s.user_id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({final_position:i+1})})
+    ));
+    await cpFetch('/rest/v1/tournaments?id=eq.'+tournamentId,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({status:'closed'})});
+    cpToast('🏆 Round Robin completado — resultados finales disponibles');
+  } catch(e){ console.error('Error cerrando RR:',e); }
 }
 
 // ── AUTO-INIT ─────────────────────────────────────────────────────
