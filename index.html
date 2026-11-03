@@ -5825,6 +5825,11 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
     <summary>Sesiones (<span id="bt-sc">0</span>)</summary>
     <div id="bt-hl"></div>
   </details>
+  <details class="bt-sess" id="bt-legacy" style="display:none">
+    <summary>De Competencias, sin sesión (<span id="bt-legacy-n">0</span>)</summary>
+    <div class="bt-muted" style="font-size:10px;margin:4px 0 8px">Resultados que solo existen en Competencias. No cuentan en promedios, gráfica ni récords.</div>
+    <div id="bt-legacy-l"></div>
+  </details>
 </div>
 </div>
 
@@ -5845,7 +5850,7 @@ const BT_MODES={
 };
 function btSpLabel(g){return{outdoor:"X's",indoor:"X's",field:"6's",'3d':"12/11's"}[g]||"X's";}
 
-let btSessions=[], btFDays=7, btFRange=null, btFMod='all', btFSrc='all', btBow='all', btBowTouched=false, btBows=[], btLastFs=[], btCurMode=null, btState={};
+let btSessions=[], btFDays=7, btFRange=null, btFMod='all', btFSrc='all', btBow='all', btBowTouched=false, btBows=[], btLastFs=[], btLegacy=[], btCurMode=null, btState={};
 window._btDebug = ()=>({ sessions:btSessions, filt:btFilt(), mod:btFMod, src:btFSrc });
 let btUsingDemo=false;
 
@@ -5902,14 +5907,10 @@ function btLoadSessions(){
 
     Promise.all([
       window.supabaseLoadScores({ownOnly:true}),
-      userId ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&select=submitted_at&order=submitted_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([]),
-      userId ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_at&order=qualifying_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([])
+      userId ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&select=submitted_at,score&order=submitted_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([]),
+      userId ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_at,qualifying_score,tournaments(title)&order=qualifying_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([])
     ]).then(function([daily, liga, torneo]){
       let all = [];
-      // Fechas de liga y torneo: sirven solo para ETIQUETAR la sesión correspondiente de scores
-      const stamp = function(rows,key){ return Array.isArray(rows) ? rows.map(function(r){ return new Date(r[key]).getTime(); }).filter(isFinite) : []; };
-      const ligaT = stamp(liga,'submitted_at'), torneoT = stamp(torneo,'qualifying_at');
-      const near = function(arr,t){ return arr.some(function(x){ return Math.abs(x-t) < 1000; }); };
       // Práctica diaria
       if(Array.isArray(daily) && daily.length){
         const MAX_MAP = {
@@ -5926,25 +5927,46 @@ function btLoadSessions(){
           if(!s.max)  s.max  = MAX_MAP[s.mode] || null;
           if(!s.sp)   s.sp   = s.specials    || 0;
           if(!s.date) s.date = s.session_date || s.created_at || new Date().toISOString();
-          // Fuente: la sesión es la de scores (valor crudo y modalidad real). Si coincide con una fila de liga o torneo
-          // (misma fecha: se guardan con el mismo timestamp) solo se etiqueta; no se suma una segunda vez.
-          const t = new Date(s.date).getTime();
-          if(s.setup_note === 'torneo-externo') s.src = 'torneo';
-          else if(near(ligaT, t)) s.src = 'liga';
-          else if(near(torneoT, t)) s.src = 'torneo';
-          else s.src = 'practica';
+          // Fuente: el emparejamiento con liga/torneo se hace abajo, con todas las sesiones ya normalizadas
+          s.src = (s.setup_note === 'torneo-externo') ? 'torneo' : 'practica';
         });
         all = all.concat(daily);
       }
-      // Las filas que existen SOLO en league_round_scores o tournament_players ya no se suman. Tenían modalidad fija
-      // (liga = indoor 30, torneo = outdoor 36), el torneo traía el handicap incluido, y toda sesión jugada en la app
-      // ya está en scores, así que sumarlas la contaba dos veces.
+      // Emparejar cada fila de liga/torneo con SU sesión de scores. Primero por fecha exacta (<1 s, lo normal hoy);
+      // las filas antiguas, guardadas con minutos de diferencia, con la sesión más cercana a ≤30 min.
+      // Cada fila y cada sesión se usan una sola vez, y las exactas tienen prioridad (nadie les quita su sesión).
+      const items = [];
+      if(Array.isArray(liga))   liga.forEach(function(r){ items.push({kind:'liga',   t:r.submitted_at ? new Date(r.submitted_at).getTime() : NaN, row:r}); });
+      if(Array.isArray(torneo)) torneo.forEach(function(r){ items.push({kind:'torneo', t:r.qualifying_at ? new Date(r.qualifying_at).getTime() : NaN, row:r}); });
+      const pool = all.filter(function(s){ return s.setup_note !== 'torneo-externo'; });
+      const cand = [];
+      items.forEach(function(it,ii){
+        if(!isFinite(it.t)) return;
+        pool.forEach(function(s,si){ const d = Math.abs(new Date(s.date).getTime() - it.t); if(d <= 1800000) cand.push({ii:ii, si:si, d:d, exact:d<1000}); });
+      });
+      cand.sort(function(a,b){ return (b.exact - a.exact) || (a.d - b.d); });
+      const usedI = new Set(), usedS = new Set();
+      cand.forEach(function(c){ if(usedI.has(c.ii) || usedS.has(c.si)) return; usedI.add(c.ii); usedS.add(c.si); pool[c.si].src = items[c.ii].kind; });
+      // Lo que NO tiene sesión en scores no se suma a promedios, gráfica ni récords: tenía modalidad fija (liga = indoor 30,
+      // torneo = outdoor 36), el torneo trae el handicap incluido, y las sesiones de la app contaban doble.
+      // Se muestra aparte en "De Competencias". Sin fecha no se puede ubicar en el tiempo, así que se omite
+      // (antes se mostraba como si fuera de HOY).
+      const legacy = [];
+      items.forEach(function(it,ii){
+        if(usedI.has(ii) || !isFinite(it.t)) return;
+        const r = it.row;
+        if(it.kind === 'liga'){ if(r.score != null) legacy.push({date:r.submitted_at, name:'Liga', score:r.score, handicap:false}); }
+        else if(r.qualifying_score != null){ legacy.push({date:r.qualifying_at, name:(r.tournaments && r.tournaments.title) || 'Torneo', score:r.qualifying_score, handicap:true}); }
+      });
+      legacy.sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
       if(all.length > 0){
         btSessions = all;
         btUsingDemo = false;
+        btLegacy = legacy;
       } else {
         btSessions = btMakeDemoSessions();
         btUsingDemo = true;
+        btLegacy = [];
       }
       btRenderH();
     });
@@ -6595,6 +6617,7 @@ function btRenderH(){
   btRenderAdjNotes();
   btRenderRecords();
 
+  btRenderLegacy();
   document.getElementById('bt-sc').textContent=fs.length;
   const hl=document.getElementById('bt-hl');
   if(!fs.length){
@@ -6912,6 +6935,20 @@ function btDrawProgress(fs){
     const wrap=document.getElementById('bt-prog-wrap');
     if(wrap){ let lastW=0; window._btRO=new ResizeObserver(()=>{ const w=wrap.clientWidth; if(w&&w!==lastW){ lastW=w; btDrawProgress(btLastFs); } }); window._btRO.observe(wrap); }
   }
+}
+
+function btRenderLegacy(){
+  var box=document.getElementById('bt-legacy'); if(!box) return;
+  var rows=btLegacy||[];
+  if(!rows.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  document.getElementById('bt-legacy-n').textContent=rows.length;
+  document.getElementById('bt-legacy-l').innerHTML=rows.map(function(r){
+    var d=new Date(r.date).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'2-digit'});
+    return '<div class="bt-srow"><span class="bt-muted" style="font-size:11px;min-width:64px">'+btEsc(d)+'</span>'+
+           '<span style="font-size:12px;color:var(--bt-ink);flex:1;padding:0 8px">'+btEsc(r.name)+(r.handicap?' <span style="font-size:10px;color:var(--bt-ink-3)">· con handicap</span>':'')+'</span>'+
+           '<span class="bt-num" style="font-size:16px;color:var(--bt-ink)">'+btEsc(r.score)+'</span></div>';
+  }).join('');
 }
 
 // Récords: siempre históricos (ignoran el lapso); respetan modalidad, categoría y arco.
