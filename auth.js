@@ -16,12 +16,12 @@ window.showTab = function(t){
 window.loginEmail = async function(){
   const email    = document.getElementById('login-email').value;
   const password = document.getElementById('login-password').value;
-  const { error } = await window._supabaseClient.auth.signInWithPassword({ email, password });
+  const { data, error } = await window._supabaseClient.auth.signInWithPassword({ email, password });
   if (error) {
     document.getElementById('auth-msg').textContent = error.message;
   } else {
     document.getElementById('auth-screen').style.display = 'none';
-    await _onUserReady();
+    await _onUserReadyOnce(data && data.session);
   }
 };
 
@@ -76,11 +76,32 @@ async function _onUserReady() {
   history.pushState({tab:'score'}, '', window.location.pathname + '#score');
 }
 
+// ── Inicialización una sola vez por sesión ─────────────────────────
+// Antes, _onUserReady corría en CADA evento de autenticación: al iniciar, en cada renovación de token
+// (cada hora) y dos veces al iniciar sesión con email. Cada corrida recargaba el lineup, reenviaba la
+// actividad, redisparaba 'supabase-user-ready' y movía el historial del navegador a #score.
+let _readyPromise = null;
+let _readyUserId  = null;
+function _onUserReadyOnce(session) {
+  const uid = session && session.user && session.user.id;
+  if (_readyPromise && _readyUserId === uid) return _readyPromise;
+  _readyUserId  = uid;
+  _readyPromise = _onUserReady().catch(function(e){
+    console.error('❌ _onUserReady:', e);
+    _readyPromise = null; _readyUserId = null;   // si falla, el siguiente evento lo reintenta
+  });
+  return _readyPromise;
+}
+
 document.addEventListener('DOMContentLoaded', function(){
-  window._supabaseClient.auth.onAuthStateChange(async (event, session) => {
-    if (session) {
-      document.getElementById('auth-screen').style.display = 'none';
-      await _onUserReady();
-    }
+  window._supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') { _readyPromise = null; _readyUserId = null; return; }
+    if (!session) return;
+    // El token global (Bitácora, Competencias, etc.) se mantiene al día en cada renovación.
+    window._supabaseToken = session.access_token;
+    document.getElementById('auth-screen').style.display = 'none';
+    // Se difiere con setTimeout para no esperar llamadas de Supabase dentro de este callback:
+    // hacerlo ahí es la causa documentada de promesas que se quedan colgadas.
+    setTimeout(function(){ _onUserReadyOnce(session); }, 0);
   });
 });
