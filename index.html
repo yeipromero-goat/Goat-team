@@ -5869,7 +5869,7 @@ function btLoadSessions(){
     const userId = window._supabaseUserId;
 
     Promise.all([
-      window.supabaseLoadScores(),
+      window.supabaseLoadScores({ownOnly:true}),
       userId ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&select=score,submitted_at,round_id,league_id&order=submitted_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([]),
       userId ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_score,qualifying_at,tournament_id&order=qualifying_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([])
     ]).then(function([daily, liga, torneo]){
@@ -6126,7 +6126,7 @@ window.btSaveSession=function(){
   const m=BT_MODES[btState.mode];
   const setupId = window._activeSetupId || null;
   const setupNote = document.getElementById('bt-setup-note')?.value.trim() || null;
-  const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,setup_id:setupId,setup_note:setupNote,ends:btState.ends.map(e=>[...e])};
+  const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,setup_id:setupId,setup_note:setupNote,ends:btState.ends.map(e=>[...e]),face:btState.face||null,impacts:btState.impacts||null};
   if(btUsingDemo){ btSessions=[]; btUsingDemo=false; }
   btSessions.unshift(s);
 
@@ -6148,7 +6148,16 @@ window.btSaveSession=function(){
   }
 
   // Inyectar setup_id en el objeto para que supabaseSaveScore lo reciba
-  if(typeof window.supabaseSaveScore==='function') window.supabaseSaveScore(s);
+  if(typeof window.supabaseSaveScore==='function'){
+    const savePromise = window.supabaseSaveScore(s);
+    if(savePromise && typeof savePromise.then==='function'){
+      savePromise.then(function(ok){
+        if(ok) return;
+        const msg = '⚠️ No se pudo guardar la sesión en la nube. Sigue en pantalla pero no quedó guardada: revisa tu conexión.';
+        if(typeof showToast==='function') showToast(msg); else alert(msg);
+      });
+    }
+  }
 
   // Si hay LIGA pendiente — guardar score en league_rounds y actualizar standings
   const pendingLeague = window._cpPendingLeague;

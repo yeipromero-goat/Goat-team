@@ -321,13 +321,53 @@ window.setCoachInLineup        = setCoachInLineup;
 //  BITÁCORA DE PUNTUACIONES — guardar y cargar sesiones reales
 // ══════════════════════════════════════════════════════════════════
 
-window.supabaseSaveScore = function(session) {
-  const token  = window._supabaseToken;
-  const key    = window._supabaseAnonKey;
-  const userId = window._supabaseUserId;
-  if(!token || !userId) { console.warn('supabaseSaveScore: sin token/userId'); return; }
+// ── Token vigente ─────────────────────────────────────────────────
+// window._supabaseToken se asigna una sola vez al iniciar sesión y el JWT caduca (1 h por defecto en Supabase).
+// Antes de guardar o cargar se pide la sesión actual: supabase-js renueva el token si hace falta.
+// Cadena .then() con tope de 2.5 s: si getSession() se cuelga o falla, se usa el token que ya había
+// (el comportamiento anterior), así que esto nunca puede dejar el guardado peor que antes.
+function _freshToken() {
+  var fallback = window._supabaseToken;
+  var c = window._supabaseClient;
+  if (!c || !c.auth || typeof c.auth.getSession !== 'function') return Promise.resolve(fallback);
+  var timeout = new Promise(function(res){ setTimeout(function(){ res(null); }, 2500); });
+  var fresh = c.auth.getSession().then(function(r){
+    var t = r && r.data && r.data.session && r.data.session.access_token;
+    if (t) window._supabaseToken = t;
+    return t || null;
+  }).catch(function(){ return null; });
+  return Promise.race([fresh, timeout]).then(function(t){ return t || fallback; });
+}
 
-  const payload = {
+// ── Limpieza de lo que va a la base ───────────────────────────────
+// La tabla rechaza la FILA ENTERA si face no es 'A'/'B' o impacts no es un arreglo. Como el guardado
+// es una sola inserción (scores no permite UPDATE por RLS), un dato malformado perdería toda la sesión.
+// Por eso se limpia aquí y, si algo no es válido, se omite ese campo en vez de arriesgar la sesión.
+function _cleanFace(f) { return (f === 'A' || f === 'B') ? f : null; }
+function _cleanImpacts(arr) {
+  if (!Array.isArray(arr)) return null;
+  var out = [];
+  for (var k = 0; k < arr.length && out.length < 300; k++) {
+    var p = arr[k];
+    if (!p || typeof p !== 'object') continue;
+    if (typeof p.x !== 'number' || typeof p.y !== 'number') continue;
+    if (!isFinite(p.x) || !isFinite(p.y) || Math.abs(p.x) > 3 || Math.abs(p.y) > 3) continue;
+    var o = { x: Math.round(p.x * 10000) / 10000, y: Math.round(p.y * 10000) / 10000 };
+    if (Number.isInteger(p.e) && p.e >= 0) o.e = p.e;   // índice de serie
+    if (Number.isInteger(p.i) && p.i >= 0) o.i = p.i;   // índice de flecha dentro de la serie
+    out.push(o);
+  }
+  return out.length ? out : null;
+}
+
+// Devuelve una promesa que resuelve true si se guardó y false si no (antes no devolvía nada).
+// Los llamadores anteriores que ignoran el valor de retorno siguen funcionando igual.
+window.supabaseSaveScore = function(session) {
+  var key    = window._supabaseAnonKey;
+  var userId = window._supabaseUserId;
+  if(!window._supabaseToken || !userId) { console.warn('supabaseSaveScore: sin token/userId'); return Promise.resolve(false); }
+
+  var payload = {
     id:           session.id,
     user_id:      userId,
     mode:         session.mode,
@@ -345,23 +385,40 @@ window.supabaseSaveScore = function(session) {
     setup_note:   session.setup_note || null,
   };
 
-  fetch(SUPABASE_URL + '/rest/v1/scores', {
-    method: 'POST',
-    headers: { apikey: key, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify(payload)
+  // Diana e impactos solo viajan si son válidos. Sin ellos el payload es idéntico al de siempre,
+  // así que las sesiones normales no dependen de que existan las columnas nuevas.
+  var face = _cleanFace(session.face);
+  var impacts = _cleanImpacts(session.impacts);
+  if (impacts && !face) { console.warn('supabaseSaveScore: impactos sin diana válida, se omiten'); impacts = null; }
+  if (face)    payload.face    = face;
+  if (impacts) payload.impacts = impacts;
+
+  return _freshToken().then(function(token){
+    return fetch(SUPABASE_URL + '/rest/v1/scores', {
+      method: 'POST',
+      headers: { apikey: key, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(payload)
+    });
   }).then(function(r){
-    if(r.ok || r.status===201 || r.status===204){ console.log('✅ Puntuación guardada'); }
-    else { r.text().then(function(t){ console.error('❌ Error guardando:', t); }); }
-  }).catch(function(e){ console.error('❌ supabaseSaveScore error:', e); });
+    if(r.ok || r.status===201 || r.status===204){ console.log('✅ Puntuación guardada'); return true; }
+    return r.text().then(function(t){ console.error('❌ Error guardando:', r.status, t); return false; });
+  }).catch(function(e){ console.error('❌ supabaseSaveScore error:', e); return false; });
 };
 
-window.supabaseLoadScores = function() {
-  const token = window._supabaseToken;
-  const key   = window._supabaseAnonKey;
-  if(!token || !key) return Promise.resolve([]);
+// opts.ownOnly = true: trae solo las sesiones del usuario. Sin esa opción el comportamiento es el de siempre.
+// Hace falta porque la política de coach deja leer TODAS las sesiones: sin filtro, la Bitácora de un coach
+// se llenaría con las de otros atletas (y el límite de 200 se repartiría entre todos).
+window.supabaseLoadScores = function(opts) {
+  var key = window._supabaseAnonKey;
+  if(!window._supabaseToken || !key) return Promise.resolve([]);
+  var own = !!(opts && opts.ownOnly);
+  if (own && !window._supabaseUserId) return Promise.resolve([]);
+  var url = SUPABASE_URL + '/rest/v1/scores?' +
+            (own ? 'user_id=eq.' + encodeURIComponent(window._supabaseUserId) + '&' : '') +
+            'order=session_date.desc&limit=200';
 
-  return fetch(SUPABASE_URL + '/rest/v1/scores?order=session_date.desc&limit=200', {
-    headers: { apikey: key, Authorization: 'Bearer ' + token }
+  return _freshToken().then(function(token){
+    return fetch(url, { headers: { apikey: key, Authorization: 'Bearer ' + token } });
   }).then(function(r){ return r.json(); }).then(function(rows){
     if(!Array.isArray(rows)) return [];
     return rows.map(function(r){
@@ -371,8 +428,9 @@ window.supabaseLoadScores = function() {
         avg: parseFloat(r.avg_arrow), sp: r.specials, max: r.max_possible,
         ends: r.ends || [], notes: r.notes || '',
         setup_id: r.setup_id || null, setup_note: r.setup_note || null,
+        impacts: Array.isArray(r.impacts) ? r.impacts : null,
+        face: r.face || null,
       };
     });
   }).catch(function(e){ console.error('❌ supabaseLoadScores error:', e); return []; });
 };
-
