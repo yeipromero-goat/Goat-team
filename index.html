@@ -5476,11 +5476,12 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 .bt-rec-grid>div:empty{display:none}
 .bt-rec{display:flex;align-items:center;gap:8px;min-height:46px;margin-bottom:6px}
 .bt-rec-chip{flex:0 0 66px;padding:8px 4px;border-radius:16px;color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:1.15}
-.bt-rec-chip small{display:block;font-size:8px;font-weight:500;opacity:.9}
+.bt-rec-chip small{display:block;font-size:8px;font-weight:500}
 .bt-rec-bar{flex:1;min-width:0}
 .bt-rec-track{height:16px;border-radius:9px;background:var(--bt-navy);overflow:hidden}
 .bt-rec-fill{height:100%;border-radius:9px;background:var(--bt-amber)}
 .bt-rec-lbl{font-size:9px;color:var(--bt-ink-2);text-align:right;margin-top:2px}
+.bt-rec-lbl b{font-weight:700;color:var(--bt-ink)}
 /* Input por diana */
 .bt-facewrap{position:relative;max-width:340px;margin:0 auto}
 .bt-facewrap svg{display:block;width:100%;height:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:crosshair}
@@ -6583,15 +6584,19 @@ function btFilt(opts){
   });
 }
 
-const BT_MAX_BY_MODE={'outdoor-15':150,'outdoor-36':360,'outdoor-72':720,'indoor-15':150,'indoor-30':300,'indoor-60':600,'field-c':288,'field-d':288,'field-48':576,'3d':null};
-// Récords: PENDIENTE de confirmar la definición de cada fila (ver notas de la fase 2).
-// kind 'total' = mejor puntaje de ese formato; 'avg' = mejor promedio por flecha.
+// Récords. Cada barra se mide contra el tope de SU formato (360 en 36 tiros o 150 en 15 = barra llena).
+// kind 'total' = mejor puntaje del formato; 'avg' = mejor promedio por flecha (3D: el perfecto es promediar 11).
+// 'all' marca las filas de la vista Todas; al elegir una modalidad se ven todos sus formatos.
 const BT_RECORDS=[
-  {col:'l', chip:'Outdoor',  g:'outdoor', mode:'outdoor-36', kind:'total'},
-  {col:'l', chip:'Indoor 10',g:'indoor',  mode:'indoor-30',  kind:'total'},
-  {col:'r', chip:'Field', sub:'Conocidas',    g:'field', mode:'field-c', kind:'total'},
-  {col:'r', chip:'Field', sub:'Desconocidas', g:'field', mode:'field-d', kind:'total'},
-  {col:'r', chip:'3D',    g:'3d',    mode:'3d',   kind:'avg', scale:12}
+  {col:'l', chip:'Outdoor', sub:'72 tiros', g:'outdoor', mode:'outdoor-72', kind:'total', max:720, all:true},
+  {col:'l', chip:'Outdoor', sub:'36 tiros', g:'outdoor', mode:'outdoor-36', kind:'total', max:360},
+  {col:'l', chip:'Outdoor', sub:'15 tiros', g:'outdoor', mode:'outdoor-15', kind:'total', max:150},
+  {col:'l', chip:'Indoor',  sub:'60 tiros', g:'indoor',  mode:'indoor-60',  kind:'total', max:600, all:true},
+  {col:'l', chip:'Indoor',  sub:'30 tiros', g:'indoor',  mode:'indoor-30',  kind:'total', max:300},
+  {col:'l', chip:'Indoor',  sub:'15 tiros', g:'indoor',  mode:'indoor-15',  kind:'total', max:150},
+  {col:'r', chip:'Field', sub:'Conocidas',    g:'field', mode:'field-c', kind:'total', max:432, all:true},
+  {col:'r', chip:'Field', sub:'Desconocidas', g:'field', mode:'field-d', kind:'total', max:432, all:true},
+  {col:'r', chip:'3D', g:'3d', mode:'3d', kind:'avg', perfect:11, all:true}
 ];
 
 function btRenderH(){
@@ -6952,17 +6957,24 @@ function btRenderLegacy(){
 }
 
 // Récords: siempre históricos (ignoran el lapso); respetan modalidad, categoría y arco.
+// Si ya llegaste al tope de un formato, cuenta cuántas veces lo has logrado (el reto pasa a ser cuántos tiras).
 function btRenderRecords(){
   const fs=btFilt({noWindow:true});
-  const rows=BT_RECORDS.filter(r=>btFMod==='all'||r.g===btFMod);
+  const rows=BT_RECORDS.filter(r=> btFMod==='all' ? r.all : r.g===btFMod);
   const rowHtml=r=>{
     const mine=fs.filter(s=> r.kind==='avg' ? (s.mode===r.mode||s.g===r.g) : s.mode===r.mode);
-    let best=null;
-    mine.forEach(s=>{ const v = r.kind==='avg' ? Number(s.avg) : Number(s.total); if(isFinite(v)&&(best===null||v>best)) best=v; });
-    let pct=0, lbl;
-    if(r.kind==='avg'){ pct = best===null?0:Math.min(100,best/r.scale*100); lbl = best===null?'—':best.toFixed(1)+' p/f'; }
-    else { const mx=BT_MAX_BY_MODE[r.mode]; pct = (best===null||!mx)?0:Math.min(100,best/mx*100); lbl = (best===null?'—':best)+'/'+(mx||'—'); }
-    const chip = r.sub ? btEsc(r.chip)+'<small>'+btEsc(r.sub)+'</small>' : btEsc(r.chip);
+    let best=null, topes=0;
+    mine.forEach(s=>{
+      const v = r.kind==='avg' ? Number(s.avg) : Number(s.total);
+      if(isFinite(v) && (best===null||v>best)) best=v;
+      if(r.kind==='avg'){ if(Number(s.n)>0 && Number(s.total) >= r.perfect*Number(s.n)) topes++; }
+      else if(Number(s.total) >= r.max) topes++;
+    });
+    const top = r.kind==='avg' ? r.perfect : r.max;
+    const pct = best===null ? 0 : Math.min(100, best/top*100);
+    let lbl = best===null ? '—' : (r.kind==='avg' ? best.toFixed(1)+' p/f' : best+'/'+r.max);
+    if(topes>0) lbl += ' · <b>'+topes+(topes===1?' vez':' veces')+'</b>'+(r.kind==='avg'?' con prom. '+r.perfect:'');
+    const chip = btEsc(r.chip)+(r.sub?'<small>'+btEsc(r.sub)+'</small>':'');
     return '<div class="bt-rec"><div class="bt-rec-chip" style="background:'+BT_COLORS[r.g]+'">'+chip+'</div>'+
            '<div class="bt-rec-bar"><div class="bt-rec-track"><div class="bt-rec-fill" style="width:'+pct.toFixed(1)+'%"></div></div><div class="bt-rec-lbl">'+lbl+'</div></div></div>';
   };
