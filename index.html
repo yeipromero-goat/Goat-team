@@ -5481,6 +5481,15 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 .bt-rec-track{height:16px;border-radius:9px;background:var(--bt-navy);overflow:hidden}
 .bt-rec-fill{height:100%;border-radius:9px;background:var(--bt-amber)}
 .bt-rec-lbl{font-size:9px;color:var(--bt-ink-2);text-align:right;margin-top:2px}
+/* Input por diana */
+.bt-facewrap{position:relative;max-width:340px;margin:0 auto}
+.bt-facewrap svg{display:block;width:100%;height:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:crosshair}
+.bt-loupe{position:absolute;top:6px;width:108px;height:108px;border-radius:50%;border:2px solid #fffffc;box-shadow:0 2px 12px rgba(0,0,0,0.55);overflow:hidden;background:#222;pointer-events:none;z-index:5}
+.bt-loupe svg{display:block;width:100%;height:100%}
+.bt-loupe-x{position:absolute;top:0;left:0;right:0;bottom:0}
+.bt-loupe-x::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(0,0,0,0.7)}
+.bt-loupe-x::after{content:"";position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(0,0,0,0.7)}
+.bt-loupe-v{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);padding:1px 8px;border-radius:10px;background:rgba(24,36,64,0.92);color:#fff;font-size:13px;font-weight:700}
 .bt-sess{margin-top:6px;border-top:1px solid var(--bt-line-soft);padding-top:8px}
 .bt-sess summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--bt-ink-2);padding:4px 0}
 </style>
@@ -5671,6 +5680,17 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
     <div class="bt-card">
       <div class="bt-sec" id="bt-end-lbl"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="bt-slots"></div>
+      <div id="bt-face-box" style="display:none;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--bt-ink-3)">Toca la diana donde cayó la flecha</span>
+          <div id="bt-face-toggle" style="display:flex;gap:6px"></div>
+        </div>
+        <div class="bt-facewrap">
+          <svg id="bt-face-svg" viewBox="0 0 300 300" role="img" aria-label="Diana: toca donde cayó la flecha"></svg>
+          <div id="bt-loupe" class="bt-loupe" style="display:none"></div>
+        </div>
+        <div style="font-size:10px;color:var(--bt-ink-3);text-align:center;margin-top:4px">El valor se calcula por la posición; corrígelo con el teclado si hace falta.</div>
+      </div>
       <div style="display:grid;gap:6px" id="bt-keys"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
         <span style="font-size:12px;color:var(--bt-ink-3)" id="bt-end-sum"></span>
@@ -6058,7 +6078,7 @@ window.btStartSession=function(){
   if(!btCurMode)return alert('Elige una opción primero');
   const m=BT_MODES[btCurMode];
   const rondas=btCurMode==='3d'?parseInt(document.getElementById('bt-anim-sl')?.value||20):m.rondas;
-  btState={active:true,mode:btCurMode,g:m.g,rondas,apR:m.apR,vals:m.vals,sp:m.sp,ends:Array.from({length:rondas},()=>[]),cur:0,slot:0,max:btCurMode==='3d'?rondas*12:m.max};
+  btState={active:true,mode:btCurMode,g:m.g,rondas,apR:m.apR,vals:m.vals,sp:m.sp,ends:Array.from({length:rondas},()=>[]),cur:0,slot:0,max:btCurMode==='3d'?rondas*12:m.max,face:btSessionFace(btCurMode),impacts:[]};
   btShowS('bt-s-sesion');btRenderEnd();
 }
 
@@ -6081,6 +6101,7 @@ function btRenderEnd(){
   const kg=document.getElementById('bt-keys');
   kg.style.gridTemplateColumns=`repeat(${cols},1fr)`;
   kg.innerHTML=vals.map(v=>`<button class="bt-kbtn" onclick="btPressK('${v}')">${v}</button>`).join('');
+  btRenderFace();
   btUpdSum();btUpdTot();
 }
 
@@ -6088,9 +6109,10 @@ window.btSetSlt=function(i){btState.slot=i;btRenderEnd();}
 window.btPressK=function(v){
   const{ends,cur,apR}=btState,s=btState.slot;
   if(s>=apR)return;
+  if(v==='M') btDropImpact(cur,s);
   ends[cur][s]=v;if(s<apR-1)btState.slot=s+1;btRenderEnd();
 }
-window.btClrLast=function(){const{ends,cur}=btState,c=ends[cur];if(c.length){c.splice(c.length-1,1);btState.slot=c.length;btRenderEnd();}}
+window.btClrLast=function(){const{ends,cur}=btState,c=ends[cur];if(c.length){c.splice(c.length-1,1);btDropImpact(cur,c.length);btState.slot=c.length;btRenderEnd();}}
 
 function btAv(v){if(!v||v==='M')return 0;if(v==='X')return 10;return parseInt(v)||0;}
 function btUpdSum(){const c=btState.ends[btState.cur]||[];document.getElementById('bt-end-sum').textContent=c.length?`End: ${c.reduce((a,v)=>a+btAv(v),0)} pts`:'';}
@@ -6126,7 +6148,7 @@ window.btSaveSession=function(){
   const m=BT_MODES[btState.mode];
   const setupId = window._activeSetupId || null;
   const setupNote = document.getElementById('bt-setup-note')?.value.trim() || null;
-  const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,setup_id:setupId,setup_note:setupNote,ends:btState.ends.map(e=>[...e]),face:btState.face||null,impacts:btState.impacts||null};
+  const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,setup_id:setupId,setup_note:setupNote,ends:btState.ends.map(e=>[...e]),face:(btState.impacts&&btState.impacts.length)?btState.face:null,impacts:(btState.impacts&&btState.impacts.length)?btState.impacts.map(function(p){return {e:p.e,i:p.i,x:p.x,y:p.y};}):null};
   if(btUsingDemo){ btSessions=[]; btUsingDemo=false; }
   btSessions.unshift(s);
 
@@ -6149,6 +6171,10 @@ window.btSaveSession=function(){
 
   // Inyectar setup_id en el objeto para que supabaseSaveScore lo reciba
   if(typeof window.supabaseSaveScore==='function'){
+    if(s.impacts && !window.supabaseSaveScore.supportsImpacts){
+      const warn = '⚠️ Falta actualizar supabase-persistence.js en el sitio: los impactos de esta sesión no se guardarán en la nube.';
+      if(typeof showToast==='function') showToast(warn); else alert(warn);
+    }
     const savePromise = window.supabaseSaveScore(s);
     if(savePromise && typeof savePromise.then==='function'){
       savePromise.then(function(ok){
@@ -6579,6 +6605,22 @@ function btFaceKey(){
   return (type==='recurvo'||type==='barebow') ? 'B' : 'A';
 }
 
+// Geometría de la diana (anillos, marca interior, cruz y números), compartida por la dispersión y el input.
+function btFaceMarkup(key){
+  const R=140, cx=150, cy=150, face=BT_FACES[key], n=face.n;
+  let h='';
+  face.rings.forEach(([k,c])=>{   // del anillo más grande al más chico
+    const dark=c==='black';
+    h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R*(11-k)/n).toFixed(1)+'" fill="'+BT_FACE_COL[c]+'" stroke="'+(dark?'#ffffff':'#1b2743')+'" stroke-opacity="'+(dark?0.8:0.55)+'" stroke-width="0.8"/>';
+  });
+  h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R/(2*n)).toFixed(1)+'" fill="none" stroke="#1b2743" stroke-opacity="0.45" stroke-width="0.6"/>';
+  h+='<path d="M'+(cx-4)+' '+cy+'h8M'+cx+' '+(cy-4)+'v8" stroke="#1b2743" stroke-opacity="0.6" stroke-width="0.8"/>';
+  face.rings.forEach(([k,c])=>{
+    h+='<text x="'+(cx+R*((11-k)/n-1/(2*n))).toFixed(1)+'" y="'+(cy+3)+'" font-size="'+(n===10?7.5:9)+'" text-anchor="middle" fill="'+(c==='black'?'#ffffff':'#1b2743')+'" fill-opacity="0.85" font-family="DM Sans,sans-serif">'+k+'</text>';
+  });
+  return h;
+}
+
 // Dispersión de impactos.
 // Contrato propuesto para la fase de datos: s.impacts = [{x,y}] normalizado al radio exterior de la diana usada
 // (A: borde del anillo 5; B: borde del anillo 1), (0,0) = centro, x hacia la derecha, y hacia arriba.
@@ -6596,17 +6638,7 @@ function btRenderScatter(fs){
     if((s.face||'A')===key) imp=imp.concat(pts); else other+=pts.length;
   });
   const faceOp = (is3d && !imp.length) ? 0.25 : 1;
-  let h='<g opacity="'+faceOp+'">';
-  face.rings.forEach(([k,c])=>{   // del anillo más grande al más chico
-    const dark=c==='black';
-    h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R*(11-k)/n).toFixed(1)+'" fill="'+BT_FACE_COL[c]+'" stroke="'+(dark?'#ffffff':'#1b2743')+'" stroke-opacity="'+(dark?0.8:0.55)+'" stroke-width="0.8"/>';
-  });
-  h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R/(2*n)).toFixed(1)+'" fill="none" stroke="#1b2743" stroke-opacity="0.45" stroke-width="0.6"/>';
-  h+='<path d="M'+(cx-4)+' '+cy+'h8M'+cx+' '+(cy-4)+'v8" stroke="#1b2743" stroke-opacity="0.6" stroke-width="0.8"/>';
-  face.rings.forEach(([k,c])=>{
-    h+='<text x="'+(cx+R*((11-k)/n-1/(2*n))).toFixed(1)+'" y="'+(cy+3)+'" font-size="'+(n===10?7.5:9)+'" text-anchor="middle" fill="'+(c==='black'?'#ffffff':'#1b2743')+'" fill-opacity="0.85" font-family="DM Sans,sans-serif">'+k+'</text>';
-  });
-  h+='</g>';
+  let h='<g opacity="'+faceOp+'">'+btFaceMarkup(key)+'</g>';
   imp.forEach(p=>{ h+='<circle cx="'+(cx+p.x*R).toFixed(1)+'" cy="'+(cy-p.y*R).toFixed(1)+'" r="3.2" fill="#182440" stroke="#fffffc" stroke-width="1"/>'; });
   svg.innerHTML=h;
   const emp=document.getElementById('bt-scatter-empty'), nEl=document.getElementById('bt-scatter-n');
@@ -6620,6 +6652,136 @@ function btRenderScatter(fs){
   }
   else { emp.style.display='none'; nEl.textContent=imp.length+' impactos'+(other?' · '+other+' de otra diana no se muestran':''); }
 }
+
+// ══════════ Input por diana: tocar donde cayó la flecha ══════════
+// La posición propone el valor de la flecha, pero NO es definitiva: el teclado sigue pudiendo corregirlo
+// (línea cortada, etc.) y el total se calcula siempre a partir de los valores, como antes.
+// Solo outdoor e indoor. Field y 3D no usan las dianas A/B y se quedan con el teclado.
+function btSessionFace(mode){
+  if(!mode || (mode.indexOf('outdoor-')!==0 && mode.indexOf('indoor-')!==0)) return null;
+  var t=window._activeSetupType||null;
+  return (mode.indexOf('outdoor-')===0 && (t==='recurvo'||t==='barebow')) ? 'B' : 'A';
+}
+function btDropImpact(e,i){
+  var a=btState.impacts; if(!Array.isArray(a)) return;
+  for(var k=a.length-1;k>=0;k--){ if(a[k].e===e && a[k].i===i) a.splice(k,1); }
+}
+// Anillo según la distancia al centro. X = mitad del anillo 10; fuera del borde exterior = M.
+function btValueFromXY(x,y,key){
+  var n=BT_FACES[key].n, r=Math.hypot(x,y);
+  if(r>1) return 'M';
+  var u=r*n;
+  if(u<=0.5) return 'X';
+  return String(11-Math.ceil(u));
+}
+function btPlaceImpact(x,y){
+  var st=btState;
+  if(!st.active || !st.face) return;
+  var s=st.slot; if(s>=st.apR) return;
+  var v=btValueFromXY(x,y,st.face);
+  if(st.vals.indexOf(v)<0) return;
+  btDropImpact(st.cur,s);
+  if(v!=='M') st.impacts.push({e:st.cur,i:s,x:Math.round(x*10000)/10000,y:Math.round(y*10000)/10000});
+  btPressK(v);   // misma vía que el teclado: guarda el valor, avanza de flecha y repinta
+}
+// Cambiar de diana solo antes de colocar la primera flecha (las coordenadas dependen de la diana)
+window.btSetFace=function(k){
+  if(!btState.active || !BT_FACES[k] || (btState.impacts && btState.impacts.length)) return;
+  btState.face=k; btRenderEnd();
+}
+function btRenderFace(){
+  var box=document.getElementById('bt-face-box'), svg=document.getElementById('bt-face-svg');
+  if(!box||!svg) return;
+  var st=btState;
+  if(!st.active || !st.face){ box.style.display='none'; return; }
+  box.style.display='block';
+  var key=st.face, imps=st.impacts||[], R=140, cx=150, cy=150;
+  svg.setAttribute('data-face',key);
+  var tg=document.getElementById('bt-face-toggle');
+  if(tg){
+    if(st.mode.indexOf('outdoor-')!==0){ tg.innerHTML=''; }
+    else {
+      var locked=imps.length>0;
+      tg.innerHTML=['A','B'].map(function(k){
+        return '<button type="button" class="bt-fp'+(k===key?' act':'')+'"'+(locked?' disabled':'')+
+               ' style="padding:4px 10px;font-size:10px'+(locked?';opacity:0.55':'')+'" onclick="btSetFace(\''+k+'\')">'+(k==='A'?'6 anillos':'10 anillos')+'</button>';
+      }).join('');
+    }
+  }
+  var h='<g>'+btFaceMarkup(key)+'</g>';
+  imps.forEach(function(p){            // series anteriores: puntos discretos
+    if(p.e===st.cur) return;
+    h+='<circle cx="'+(cx+p.x*R).toFixed(1)+'" cy="'+(cy-p.y*R).toFixed(1)+'" r="2.4" fill="#182440" stroke="#fffffc" stroke-width="0.7" opacity="0.75"/>';
+  });
+  imps.forEach(function(p){            // serie actual: numeradas por flecha, la activa resaltada
+    if(p.e!==st.cur) return;
+    var act=(p.i===st.slot), X=(cx+p.x*R).toFixed(1), Y=(cy-p.y*R);
+    h+='<circle cx="'+X+'" cy="'+Y.toFixed(1)+'" r="'+(act?6.5:5.5)+'" fill="#182440" stroke="'+(act?'#f5c06a':'#fffffc')+'" stroke-width="'+(act?1.8:1.1)+'"/>'+
+       '<text x="'+X+'" y="'+(Y+2.4).toFixed(1)+'" font-size="6.8" font-weight="700" text-anchor="middle" fill="#ffffff" font-family="DM Sans,sans-serif">'+(p.i+1)+'</text>';
+  });
+  h+='<g id="bt-face-aim" pointer-events="none"></g>';
+  svg.innerHTML=h;
+}
+var btDrag=null;
+function btFaceToXY(svg,e){
+  var m=svg.getScreenCTM(); if(!m) return null;
+  var pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY;
+  var p=pt.matrixTransform(m.inverse());
+  return {sx:p.x, sy:p.y, x:(p.x-150)/140, y:(150-p.y)/140};
+}
+// Mira + lupa mientras el dedo está presionado: la lupa va en la esquina opuesta para que el dedo no la tape
+function btFaceAim(q,first){
+  var st=btState, key=st.face;
+  var aim=document.getElementById('bt-face-aim');
+  if(aim){
+    var X=q.sx.toFixed(1), Y=q.sy.toFixed(1);
+    aim.innerHTML='<circle cx="'+X+'" cy="'+Y+'" r="5" fill="none" stroke="#ffffff" stroke-width="1.6"/><circle cx="'+X+'" cy="'+Y+'" r="5" fill="none" stroke="#000000" stroke-width="0.5"/>'+
+      '<path d="M'+(q.sx-8).toFixed(1)+' '+Y+'h16M'+X+' '+(q.sy-8).toFixed(1)+'v16" stroke="#000000" stroke-width="0.6"/>';
+  }
+  var lp=document.getElementById('bt-loupe'); if(!lp) return;
+  if(first){
+    var c=btFaceMarkup(key);
+    (st.impacts||[]).forEach(function(p){ c+='<circle cx="'+(150+p.x*140).toFixed(1)+'" cy="'+(150-p.y*140).toFixed(1)+'" r="1.5" fill="#182440" stroke="#fffffc" stroke-width="0.4"/>'; });
+    lp.innerHTML='<svg id="bt-loupe-svg" viewBox="0 0 28 28">'+c+'</svg><div class="bt-loupe-x"></div><div class="bt-loupe-v" id="bt-loupe-v"></div>';
+  }
+  lp.style.display='block';
+  lp.style.left  = q.sx<150 ? 'auto' : '6px';
+  lp.style.right = q.sx<150 ? '6px'  : 'auto';
+  var ls=document.getElementById('bt-loupe-svg');
+  if(ls) ls.setAttribute('viewBox',(q.sx-14).toFixed(2)+' '+(q.sy-14).toFixed(2)+' 28 28');
+  var lv=document.getElementById('bt-loupe-v');
+  if(lv){ var v=btValueFromXY(q.x,q.y,key); lv.textContent = v==='M' ? 'Fuera' : v; }
+}
+function btFaceAimClear(){
+  var aim=document.getElementById('bt-face-aim'); if(aim) aim.innerHTML='';
+  var lp=document.getElementById('bt-loupe'); if(lp) lp.style.display='none';
+}
+function btFaceDown(e){
+  if(!btState.active || !btState.face) return;
+  if(e.pointerType==='mouse' && e.button!==0) return;
+  var svg=e.currentTarget, q=btFaceToXY(svg,e); if(!q) return;
+  e.preventDefault();
+  try{ svg.setPointerCapture(e.pointerId); }catch(_){}
+  btDrag={id:e.pointerId}; btFaceAim(q,true);
+}
+function btFaceMove(e){
+  if(!btDrag || e.pointerId!==btDrag.id) return;
+  var q=btFaceToXY(e.currentTarget,e); if(q) btFaceAim(q,false);
+}
+function btFaceUp(e){
+  if(!btDrag || e.pointerId!==btDrag.id) return;
+  var q=btFaceToXY(e.currentTarget,e); btDrag=null; btFaceAimClear();
+  if(q) btPlaceImpact(q.x,q.y);          // se coloca donde se SUELTA el dedo
+}
+function btFaceCancel(){ btDrag=null; btFaceAimClear(); }
+(function btInitFaceInput(){
+  var svg=document.getElementById('bt-face-svg');
+  if(!svg || svg._btBound) return; svg._btBound=true;
+  svg.addEventListener('pointerdown',btFaceDown);
+  svg.addEventListener('pointermove',btFaceMove);
+  svg.addEventListener('pointerup',btFaceUp);
+  svg.addEventListener('pointercancel',btFaceCancel);
+})();
 
 // Progreso: promedio por flecha de cada sesión, una línea por modalidad, sobre eje de tiempo real.
 function btDrawProgress(fs){

@@ -405,6 +405,9 @@ window.supabaseSaveScore = function(session) {
   }).catch(function(e){ console.error('❌ supabaseSaveScore error:', e); return false; });
 };
 
+// Marca de versión: la Bitácora la consulta para avisar si este archivo es una versión anterior que descartaría los impactos.
+window.supabaseSaveScore.supportsImpacts = true;
+
 // opts.ownOnly = true: trae solo las sesiones del usuario. Sin esa opción el comportamiento es el de siempre.
 // Hace falta porque la política de coach deja leer TODAS las sesiones: sin filtro, la Bitácora de un coach
 // se llenaría con las de otros atletas (y el límite de 200 se repartiría entre todos).
