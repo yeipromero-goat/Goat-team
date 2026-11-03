@@ -1374,15 +1374,29 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
     top:52px;
     height:calc(100vh - 52px);
     transform:translateX(-100%);
-    transition:transform .28s cubic-bezier(.4,0,.2,1);
+    box-shadow:none; /* cerrado: sin sombra (sobre fondo claro se asomaba por el borde izquierdo) */
+    transition:transform .28s cubic-bezier(.4,0,.2,1), box-shadow .28s;
   }
-  .sidebar.open{transform:translateX(0)}
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 32px rgba(0,0,0,0.35)}
   .sb-overlay.open{display:block;top:52px}
   .main-content{
     margin-left:0;
     padding:1rem .85rem 4rem;
     padding-top:calc(52px + 1rem);
   }
+}
+/* ── TEMA CLARO (se activa por tab desde switchTab) ──
+   Solo afecta a .main-content: sidebar y header móvil siguen oscuros.
+   Redefine las variables globales dentro de ese alcance. */
+body.theme-light .main-content{
+  background:#fffffc;
+  color:#1b2743;
+  min-height:100vh;
+  box-sizing:border-box;
+  --text:#1b2743;
+  --muted:rgba(27,39,67,0.6);
+  --hint:rgba(27,39,67,0.45);
+  --border:rgba(27,39,67,0.14);
 }
 </style>
 
@@ -1511,6 +1525,9 @@ function closeSidebar(){
   document.getElementById('sb-overlay').classList.remove('open');
 }
 
+// Tabs que se muestran con tema claro (el resto sigue oscuro)
+const LIGHT_TABS = ['bitacora'];
+
 // ── switchTab: actualiza tabs Y sidebar ──
 const TAB_META = {
   'score':       { icon:'🎯', label:'Tablero',       sub:'Puntuación y partidas' },
@@ -1544,6 +1561,7 @@ window.switchTab = function(name, el){
   const sbItem = document.getElementById('sb-' + name);
   if(sbItem) sbItem.classList.add('active');
   updatePageTitle(name);
+  document.body.classList.toggle('theme-light', LIGHT_TABS.includes(name));
   closeSidebar();
 };
 
@@ -5337,53 +5355,120 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 
 <div id="tab-bitacora" class="tab-panel">
 <style>
+/* ── TEMA CLARO · Bitácora ─────────────────────────────────────────
+   Superficies y textos salen de estas variables.
+   Los colores de categoría (--bt-c-*) deben mantenerse sincronizados
+   con BT_COLORS en el script de abajo. */
+#tab-bitacora{
+  --bt-bg:#fffffc;
+  --bt-ink:#1b2743;
+  --bt-ink-2:rgba(27,39,67,0.75);
+  --bt-ink-3:rgba(27,39,67,0.58);
+  --bt-ink-4:rgba(27,39,67,0.45);
+  --bt-line:rgba(27,39,67,0.16);
+  --bt-line-soft:rgba(27,39,67,0.09);
+  --bt-fill:rgba(27,39,67,0.035);
+  --bt-fill-2:rgba(27,39,67,0.07);
+  --bt-field:#ffffff;
+  --bt-navy:#182440;
+  --bt-amber:#f5c06a;
+  --bt-dotted:#4eabc6;
+  --bt-grad:linear-gradient(90deg,#466192,#6b7ac1);
+  --bt-up:#1c8564;
+  --bt-down:#e05555;
+  --bt-c-outdoor:#b33c29;
+  --bt-c-indoor:#48878e;
+  --bt-c-field:#182440;
+  --bt-c-3d:#b89563;
+  color:var(--bt-ink);
+  color-scheme:light;
+}
+#tab-bitacora input::placeholder,#tab-bitacora textarea::placeholder{color:var(--bt-ink-4)}
 .bt-app{max-width:460px;margin:0 auto;padding:14px;font-family:'DM Sans',sans-serif}
-.bt-fp{padding:5px 12px;border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;font-size:11px;background:transparent;color:rgba(255,255,255,0.45);cursor:pointer;font-family:'DM Sans',sans-serif}
-.bt-fp.act{background:rgba(216,209,90,0.15);color:#d8d15a;border-color:rgba(216,209,90,0.4)}
-.bt-frow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.bt-sec{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:8px}
-.bt-card{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden}
+/* Botones de filtro: azul marino + texto blanco. Activo: blanco con borde negro. */
+.bt-fp{padding:6px 14px;border:2px solid var(--bt-navy);border-radius:20px;font-size:11px;font-weight:600;background:var(--bt-navy);color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif}
+.bt-fp.act{background:var(--bt-bg);color:var(--bt-ink);border-color:#000}
+/* Botones de color: solo por categoría */
+.bt-fp[data-cat="outdoor"]{background:var(--bt-c-outdoor);border-color:var(--bt-c-outdoor)}
+.bt-fp[data-cat="indoor"]{background:var(--bt-c-indoor);border-color:var(--bt-c-indoor)}
+.bt-fp[data-cat="field"]{background:var(--bt-c-field);border-color:var(--bt-c-field)}
+.bt-fp[data-cat="3d"]{background:var(--bt-c-3d);border-color:var(--bt-c-3d)}
+.bt-fp[data-cat].act{color:#fff;border-color:#000}
+.bt-frow,.bt-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.bt-cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.bt-sec{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--bt-ink-3);margin-bottom:8px}
+.bt-card{background:var(--bt-fill);border:0.5px solid var(--bt-line);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden}
 .bt-ca{position:absolute;top:0;left:0;right:0;height:2px}
 .bt-num{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em}
-.bt-metric{background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;text-align:center}
+.bt-metric{background:var(--bt-grad);border-radius:16px;padding:10px;text-align:center}
 .bt-metric .v{font-family:'Bebas Neue',sans-serif;font-size:24px;color:#fff}
-.bt-metric .l{font-size:10px;color:rgba(255,255,255,0.4);margin-top:1px;letter-spacing:.06em;text-transform:uppercase}
-.bt-srow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid rgba(255,255,255,0.07)}
+.bt-metric .l{font-size:10px;color:rgba(255,255,255,0.85);margin-top:1px;letter-spacing:.06em;text-transform:uppercase}
+.bt-srow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--bt-line-soft)}
 .bt-srow:last-child{border-bottom:none}
-.bt-muted{color:rgba(255,255,255,0.4);font-size:12px}
-.bt-pb{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:4px;overflow:hidden}
+.bt-muted{color:var(--bt-ink-3);font-size:12px}
+.bt-pb{height:3px;background:var(--bt-line);border-radius:2px;margin-top:4px;overflow:hidden}
 .bt-pbf{height:100%;border-radius:2px}
 .bt-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;letter-spacing:.04em}
-.bt-tup{color:#5dcaa5}.bt-tdn{color:#e05555}
+.bt-tup{color:var(--bt-up)}.bt-tdn{color:var(--bt-down)}
 .bt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:2px}
-.bt-sub-trend{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;margin-bottom:6px}
-.bt-tab-bar{display:flex;border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;overflow:hidden;margin-bottom:16px}
-.bt-tab-bar button{flex:1;padding:9px;border:none;background:transparent;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif}
-.bt-tab-bar button.act{background:rgba(216,209,90,0.12);color:#d8d15a}
-.bt-disc-card{border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all .15s;background:rgba(255,255,255,0.03)}
-.bt-disc-card:hover,.bt-disc-card.sel{border-color:#d8d15a;background:rgba(216,209,90,0.06)}
-.bt-disc-card .dname{font-size:13px;font-weight:600;color:#fff;margin-top:8px}
-.bt-disc-card .dsub{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px}
-.bt-sub-card{border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;background:rgba(255,255,255,0.03)}
-.bt-sub-card:hover,.bt-sub-card.sel{border-color:#d8d15a;background:rgba(216,209,90,0.06)}
-.bt-btn{width:100%;padding:11px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:transparent;color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px}
-.bt-btn-p{background:rgba(216,209,90,0.15);color:#d8d15a;border-color:rgba(216,209,90,0.4)}
-.bt-btn-d{background:rgba(255,80,80,0.1);color:#e05555;border-color:rgba(255,80,80,0.3)}
+.bt-sub-trend{background:var(--bt-fill);border:0.5px solid var(--bt-line-soft);border-radius:8px;padding:10px;margin-bottom:6px}
+.bt-tab-bar{display:flex;gap:10px;margin-bottom:16px}
+.bt-tab-bar button{flex:1;padding:10px;border:2px solid var(--bt-navy);border-radius:14px;background:var(--bt-navy);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.bt-tab-bar button.act{background:var(--bt-bg);color:var(--bt-ink);border-color:#000}
+.bt-disc-card{border:1px solid var(--bt-line);border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all .15s;background:var(--bt-field)}
+.bt-disc-card:hover,.bt-disc-card.sel{border-color:var(--bt-navy);background:var(--bt-fill-2)}
+.bt-disc-card .dname{font-size:13px;font-weight:600;color:var(--bt-ink);margin-top:8px}
+.bt-disc-card .dsub{font-size:11px;color:var(--bt-ink-3);margin-top:2px}
+.bt-sub-card{border:1px solid var(--bt-line);border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;background:var(--bt-field)}
+.bt-sub-card:hover,.bt-sub-card.sel{border-color:var(--bt-navy);background:var(--bt-fill-2)}
+.bt-btn{width:100%;padding:11px;border:1.5px solid var(--bt-navy);border-radius:12px;background:var(--bt-bg);color:var(--bt-ink);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px}
+.bt-btn-p{background:var(--bt-navy);color:#fff;border-color:var(--bt-navy)}
+.bt-btn-d{background:var(--bt-bg);color:var(--bt-down);border-color:var(--bt-down)}
 .bt-btn-sm{padding:7px 14px;width:auto;font-size:12px}
-.bt-kbtn{padding:9px 4px;border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;background:transparent;color:#fff;text-align:center;font-family:'DM Sans',sans-serif}
-.bt-kbtn:hover{background:rgba(255,255,255,0.06)}
-.bt-slot{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;font-size:18px;font-weight:500;cursor:pointer;color:#fff;font-family:'Bebas Neue',sans-serif}
-.bt-slot.act{border-color:#d8d15a;border-width:1.5px;color:#d8d15a}
-.bt-slot.filled{background:rgba(255,255,255,0.06)}
-.bt-prog{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-top:4px}
-.bt-prog-f{height:100%;border-radius:2px;background:#d8d15a;transition:width .3s}
-.bt-abtn{width:34px;height:34px;border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;background:transparent;cursor:pointer;font-size:15px;color:#fff}
+.bt-kbtn{padding:9px 4px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;background:var(--bt-navy);color:#fff;text-align:center;font-family:'DM Sans',sans-serif}
+.bt-kbtn:hover,.bt-kbtn:active{filter:brightness(1.35)}
+.bt-slot{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:1.5px solid var(--bt-line);border-radius:8px;font-size:18px;font-weight:500;cursor:pointer;color:var(--bt-ink);background:var(--bt-field);font-family:'Bebas Neue',sans-serif}
+.bt-slot.act{border-color:var(--bt-navy);border-width:2px;color:var(--bt-navy)}
+.bt-slot.filled{background:var(--bt-fill-2)}
+.bt-prog{height:4px;background:var(--bt-line);border-radius:2px;overflow:hidden;margin-top:4px}
+.bt-prog-f{height:100%;border-radius:2px;background:var(--bt-amber);transition:width .3s}
+.bt-abtn{width:34px;height:34px;border:none;border-radius:10px;background:var(--bt-navy);cursor:pointer;font-size:15px;color:#fff}
+/* ── Historial (diseño de la captura) ── */
+.bt-bow-wrap{display:flex;justify-content:center;margin-bottom:12px}
+.bt-bow{max-width:100%;padding:7px 38px 7px 18px;border:2px solid #000;border-radius:20px;background-color:var(--bt-bg);color:var(--bt-ink);font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;text-align:center;text-align-last:center;-webkit-appearance:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%231b2743' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.bt-hint{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:rgba(245,192,106,0.22);border:0.5px solid rgba(245,192,106,0.65);font-size:12px;color:var(--bt-ink);display:flex;align-items:center;gap:10px;justify-content:space-between}
+.bt-hint button{flex:0 0 auto;padding:6px 12px;border-radius:14px;border:none;background:var(--bt-navy);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.bt-scatter{position:relative;max-width:320px;margin:0 auto 14px}
+.bt-scatter svg{display:block;width:100%;height:auto}
+.bt-scatter-empty{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:78%;text-align:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,252,0.93);border:1px solid var(--bt-line);font-size:12px;color:var(--bt-ink);display:none}
+.bt-stats{display:flex;gap:10px;justify-content:center;margin-bottom:6px}
+.bt-stat{flex:1;padding:9px 6px;border-radius:18px;background:var(--bt-grad);color:#fff;font-size:13px;font-weight:700;text-align:center;white-space:nowrap}
+.bt-dots{border-top:3px dotted var(--bt-dotted);margin:14px 0 10px}
+.bt-flabel{font-size:20px;font-style:italic;color:var(--bt-ink);margin:0 0 8px}
+.bt-hd{font-size:22px;font-style:italic;font-weight:700;color:var(--bt-ink);margin:0 0 10px}
+.bt-range{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin:4px 0 10px;padding:10px;border:1px solid var(--bt-line);border-radius:12px}
+.bt-range label{font-size:11px;color:var(--bt-ink-3);display:flex;flex-direction:column;gap:3px}
+.bt-range input{padding:6px 8px;border:1px solid var(--bt-line);border-radius:8px;background:var(--bt-field);color:var(--bt-ink);font-size:16px;font-family:'DM Sans',sans-serif}
+.bt-rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-bottom:12px}
+.bt-rec{display:flex;align-items:center;gap:8px;min-height:46px;margin-bottom:6px}
+.bt-rec-chip{flex:0 0 66px;padding:8px 4px;border-radius:16px;color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:1.15}
+.bt-rec-chip small{display:block;font-size:8px;font-weight:500;opacity:.9}
+.bt-rec-bar{flex:1;min-width:0}
+.bt-rec-track{height:16px;border-radius:9px;background:var(--bt-navy);overflow:hidden}
+.bt-rec-fill{height:100%;border-radius:9px;background:var(--bt-amber)}
+.bt-rec-lbl{font-size:9px;color:var(--bt-ink-2);text-align:right;margin-top:2px}
+.bt-sess{margin-top:6px;border-top:1px solid var(--bt-line-soft);padding-top:8px}
+.bt-sess summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--bt-ink-2);padding:4px 0}
+/* El banner de torneo/liga lo rellena 11-competencias con colores del tema oscuro.
+   Se corrige aquí hasta que ese partial tenga su propio tema claro. */
+#bt-tournament-banner [style*="rgba(255,255,255"]{color:var(--bt-ink-3)!important}
+#bt-tournament-banner [style*="#5dcaa5"]{color:var(--bt-up)!important}
 </style>
 
 <div class="bt-app">
 <div class="bt-tab-bar" id="bt-tab-bar">
-  <button onclick="btShowMain('nueva')">Nueva sesión</button>
   <button class="act" onclick="btShowMain('historial')">Historial</button>
+  <button onclick="btShowMain('nueva')">Nueva sesión</button>
 </div>
 
 <!-- NUEVA SESIÓN -->
@@ -5391,12 +5476,12 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 
   <div id="bt-s-inicio">
     <!-- Banner torneo activo (activado solo desde Ver sala en Competencias) -->
-    <div id="bt-tournament-banner" style="display:none;background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);border-radius:10px;padding:10px 14px;margin-bottom:14px">
+    <div id="bt-tournament-banner" style="display:none;background:rgba(245,192,106,0.22);border:0.5px solid rgba(245,192,106,0.65);border-radius:10px;padding:10px 14px;margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:10px">
         <span style="font-size:18px">🏆</span>
         <div style="flex:1">
-          <div style="font-size:12px;font-weight:600;color:#d8d15a">✓ Esta sesión se enviará al torneo</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px">Tira y guarda — el score se registra automáticamente.</div>
+          <div style="font-size:12px;font-weight:600;color:var(--bt-navy)">✓ Esta sesión se enviará al torneo</div>
+          <div style="font-size:11px;color:var(--bt-ink-3);margin-top:1px">Tira y guarda — el score se registra automáticamente.</div>
         </div>
       </div>
     </div>
@@ -5406,9 +5491,9 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
         <span style="font-size:18px">📅</span>
         <div style="flex:1">
           <div style="font-size:12px;font-weight:600;color:#9a88dd">Conteo del plan semanal</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px" id="bt-plan-banner-mode">Modalidad preconfigurada</div>
+          <div style="font-size:11px;color:var(--bt-ink-3);margin-top:1px" id="bt-plan-banner-mode">Modalidad preconfigurada</div>
         </div>
-        <button onclick="btCancelPlanConteo()" style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:16px">✕</button>
+        <button onclick="btCancelPlanConteo()" style="background:none;border:none;color:var(--bt-ink-4);cursor:pointer;font-size:16px">✕</button>
       </div>
     </div>
     <div class="bt-sec">Elige modalidad</div>
@@ -5448,20 +5533,20 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
   <div id="bt-s-torneo-ext" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <button class="bt-abtn" onclick="btShowS('bt-s-inicio')">←</button>
-      <div style="font-size:13px;font-weight:600;color:var(--text)">Torneo externo</div>
+      <div style="font-size:13px;font-weight:600;color:var(--bt-ink)">Torneo externo</div>
       <div style="width:32px"></div>
     </div>
 
     <!-- Nombre del torneo -->
     <div class="bt-sec">Nombre del torneo</div>
     <input id="bt-te-nombre" type="text" placeholder="Ej: Nacional Juvenil 2026"
-      style="width:100%;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:14px">
+      style="width:100%;padding:10px;border-radius:8px;border:0.5px solid var(--bt-line);background:var(--bt-field);color:var(--bt-ink);font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:14px">
 
     <!-- Formato -->
     <div class="bt-sec">Formato</div>
     <div id="bt-te-formats" style="margin-bottom:14px">
       <!-- Outdoor -->
-      <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:6px">🔵 Outdoor</div>
+      <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--bt-ink-4);margin-bottom:6px"><span class="bt-cdot" style="background:var(--bt-c-outdoor)"></span>Outdoor</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
         <div class="bt-disc-card" data-fmt="outdoor-15" data-arrows="15" onclick="btTeSelFmt(this)">
           <div class="dname" style="margin-top:4px;font-size:12px">15</div><div class="dsub">15 flechas</div>
@@ -5474,7 +5559,7 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
         </div>
       </div>
       <!-- Indoor -->
-      <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:6px">🔴 Indoor</div>
+      <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--bt-ink-4);margin-bottom:6px"><span class="bt-cdot" style="background:var(--bt-c-indoor)"></span>Indoor</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
         <div class="bt-disc-card" data-fmt="indoor-15" data-arrows="15" onclick="btTeSelFmt(this)">
           <div class="dname" style="margin-top:4px;font-size:12px">15</div><div class="dsub">15 flechas</div>
@@ -5487,7 +5572,7 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
         </div>
       </div>
       <!-- Field -->
-      <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:6px">🟡 Field</div>
+      <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--bt-ink-4);margin-bottom:6px"><span class="bt-cdot" style="background:var(--bt-c-field)"></span>Field</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
         <div class="bt-disc-card" data-fmt="field-c" data-arrows="24" onclick="btTeSelFmt(this)">
           <div class="dname" style="margin-top:4px;font-size:12px">24</div><div class="dsub">Conocidas</div>
@@ -5500,7 +5585,7 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
         </div>
       </div>
       <!-- 3D -->
-      <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:6px">🟤 3D</div>
+      <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--bt-ink-4);margin-bottom:6px"><span class="bt-cdot" style="background:var(--bt-c-3d)"></span>3D</div>
       <div style="display:grid;grid-template-columns:1fr;gap:6px">
         <div class="bt-disc-card" data-fmt="3d" data-arrows="0" onclick="btTeSelFmt(this)" id="bt-te-3d-card" style="display:flex;align-items:center;gap:10px;text-align:left;padding:10px 14px">
           <div><div class="dname" style="margin-top:0;font-size:12px">3D</div><div class="dsub">Elige número de animales</div></div>
@@ -5512,37 +5597,37 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
     <div id="bt-te-3d-wrap" style="display:none;margin-bottom:14px">
       <div class="bt-sec">Número de animales</div>
       <input id="bt-te-animales" type="number" min="1" max="60" placeholder="Ej: 20"
-        style="width:100%;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;text-align:center;box-sizing:border-box"
+        style="width:100%;padding:10px;border-radius:8px;border:0.5px solid var(--bt-line);background:var(--bt-field);color:var(--bt-ink);font-family:'DM Sans',sans-serif;font-size:13px;text-align:center;box-sizing:border-box"
         oninput="btTeUpdate3DArrows()">
     </div>
 
     <!-- Total -->
     <div class="bt-sec">Total obtenido</div>
     <input id="bt-te-total" type="number" min="0" max="720" placeholder="Ej: 310"
-      style="width:100%;padding:12px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:28px;text-align:center;box-sizing:border-box;margin-bottom:8px">
-    <div id="bt-te-avg" style="text-align:center;font-size:11px;color:var(--muted);margin-bottom:14px">— pts/flecha</div>
+      style="width:100%;padding:12px;border-radius:8px;border:0.5px solid var(--bt-line);background:var(--bt-field);color:var(--bt-ink);font-family:'Bebas Neue',sans-serif;font-size:28px;text-align:center;box-sizing:border-box;margin-bottom:8px">
+    <div id="bt-te-avg" style="text-align:center;font-size:11px;color:var(--bt-ink-3);margin-bottom:14px">— pts/flecha</div>
 
     <!-- Fecha -->
     <div class="bt-sec">Fecha</div>
     <input id="bt-te-fecha" type="date"
-      style="width:100%;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:14px">
+      style="width:100%;padding:10px;border-radius:8px;border:0.5px solid var(--bt-line);background:var(--bt-field);color:var(--bt-ink);font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:14px">
 
     <!-- Notas opcionales -->
-    <div class="bt-sec">Notas <span style="font-size:10px;color:var(--muted)">(opcional)</span></div>
+    <div class="bt-sec">Notas <span style="font-size:10px;color:var(--bt-ink-3)">(opcional)</span></div>
     <input id="bt-te-notas" type="text" placeholder="Ej: Viento fuerte, 18m"
-      style="width:100%;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:20px">
+      style="width:100%;padding:10px;border-radius:8px;border:0.5px solid var(--bt-line);background:var(--bt-field);color:var(--bt-ink);font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:20px">
 
     <button onclick="btGuardarTorneoExterno()"
-      style="width:100%;padding:12px;background:#d8d15a;border:none;border-radius:10px;color:#0e0e0e;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.05em;cursor:pointer">
+      style="width:100%;padding:12px;background:var(--bt-navy);border:none;border-radius:14px;color:#ffffff;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.05em;cursor:pointer">
       REGISTRAR RESULTADO
     </button>
-    <div id="bt-te-msg" style="text-align:center;font-size:12px;margin-top:10px;color:#5dcaa5"></div>
+    <div id="bt-te-msg" style="text-align:center;font-size:12px;margin-top:10px;color:var(--bt-up)"></div>
   </div>
 
   <div id="bt-s-config" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <button class="bt-abtn" onclick="btShowS('bt-s-inicio')">←</button>
-      <span id="bt-cfg-title" style="font-size:15px;font-weight:600;color:#fff"></span>
+      <span id="bt-cfg-title" style="font-size:15px;font-weight:600;color:var(--bt-ink)"></span>
       <div style="width:34px"></div>
     </div>
     <div id="bt-cfg-opts"></div>
@@ -5552,15 +5637,15 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
   <div id="bt-s-sesion" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.4)" id="bt-ses-sub"></div>
-        <div style="font-size:15px;font-weight:600;color:#fff" id="bt-ses-title"></div>
+        <div style="font-size:11px;color:var(--bt-ink-3)" id="bt-ses-sub"></div>
+        <div style="font-size:15px;font-weight:600;color:var(--bt-ink)" id="bt-ses-title"></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <div style="text-align:right">
-          <div style="font-size:11px;color:rgba(255,255,255,0.4)" id="bt-ses-plbl"></div>
+          <div style="font-size:11px;color:var(--bt-ink-3)" id="bt-ses-plbl"></div>
           <div class="bt-prog" style="width:70px"><div class="bt-prog-f" id="bt-ses-pf" style="width:0%"></div></div>
         </div>
-        <button class="bt-abtn" onclick="btConfirmCancel()" style="color:#e05555;border-color:rgba(255,80,80,0.3);font-size:13px">✕</button>
+        <button class="bt-abtn" onclick="btConfirmCancel()" style="background:var(--bt-bg);color:var(--bt-down);border:1.5px solid var(--bt-down);font-size:13px">✕</button>
       </div>
     </div>
     <div class="bt-card">
@@ -5568,14 +5653,14 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="bt-slots"></div>
       <div style="display:grid;gap:6px" id="bt-keys"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
-        <span style="font-size:12px;color:rgba(255,255,255,0.4)" id="bt-end-sum"></span>
+        <span style="font-size:12px;color:var(--bt-ink-3)" id="bt-end-sum"></span>
         <button class="bt-btn bt-btn-sm" onclick="btClrLast()">← Borrar</button>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
       <div class="bt-metric"><div class="v" id="bt-st">0</div><div class="l">Total</div></div>
       <div class="bt-metric"><div class="v" id="bt-sa">—</div><div class="l">P/Flecha</div></div>
-      <div class="bt-metric"><div class="v" id="bt-sx" style="color:#d8d15a">0</div><div class="l" id="bt-sp-lbl">X's</div></div>
+      <div class="bt-metric"><div class="v" id="bt-sx" style="color:#ffffff">0</div><div class="l" id="bt-sp-lbl">X's</div></div>
     </div>
     <div style="display:flex;gap:8px">
       <button class="bt-btn bt-btn-sm" onclick="btPrevE()">← Ant.</button>
@@ -5585,31 +5670,31 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 
   <div id="bt-s-resumen" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:16px;font-weight:600;color:#fff">Resumen</div>
+      <div style="font-size:16px;font-weight:600;color:var(--bt-ink)">Resumen</div>
       <span id="bt-res-badge" class="bt-pill"></span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
       <div class="bt-metric"><div class="v" id="bt-rt">—</div><div class="l">Total</div></div>
       <div class="bt-metric"><div class="v" id="bt-ra">—</div><div class="l">P/Flecha</div></div>
-      <div class="bt-metric"><div class="v" id="bt-rx" style="color:#d8d15a">—</div><div class="l" id="bt-rsp-lbl">X's</div></div>
+      <div class="bt-metric"><div class="v" id="bt-rx" style="color:#ffffff">—</div><div class="l" id="bt-rsp-lbl">X's</div></div>
     </div>
     <div class="bt-card">
       <div class="bt-sec">Por end</div>
       <div id="bt-res-ends"></div>
     </div>
     <div style="margin-top:4px">
-      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px">Notas</div>
-      <textarea id="bt-notes" style="width:100%;padding:10px;border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:13px;resize:none;height:60px;font-family:'DM Sans',sans-serif"></textarea>
+      <div style="font-size:12px;color:var(--bt-ink-3);margin-bottom:6px">Notas</div>
+      <textarea id="bt-notes" style="width:100%;padding:10px;border:0.5px solid var(--bt-line);border-radius:8px;background:var(--bt-fill);color:var(--bt-ink);font-size:13px;resize:none;height:60px;font-family:'DM Sans',sans-serif"></textarea>
     </div>
 
     <!-- Setup activo + nota de ajuste -->
-    <div id="bt-setup-banner" style="margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08)">
+    <div id="bt-setup-banner" style="margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--bt-fill);border:0.5px solid var(--bt-line-soft)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.06em">Equipo activo</div>
-        <div style="font-size:11px;font-weight:600;color:#5dcaa5" id="bt-setup-name">—</div>
+        <div style="font-size:10px;color:var(--bt-ink-4);text-transform:uppercase;letter-spacing:.06em">Equipo activo</div>
+        <div style="font-size:11px;font-weight:600;color:var(--bt-up)" id="bt-setup-name">—</div>
       </div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-bottom:6px">¿Hiciste algún ajuste hoy? (opcional)</div>
-      <input id="bt-setup-note" class="bt-input" style="width:100%;padding:7px 10px;border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:12px;font-family:'DM Sans',sans-serif;box-sizing:border-box" placeholder="Ej: +1oz en central, cambié punta a 100gr">
+      <div style="font-size:10px;color:var(--bt-ink-4);margin-bottom:6px">¿Hiciste algún ajuste hoy? (opcional)</div>
+      <input id="bt-setup-note" class="bt-input" style="width:100%;padding:7px 10px;border:0.5px solid var(--bt-line);border-radius:8px;background:var(--bt-fill);color:var(--bt-ink);font-size:12px;font-family:'DM Sans',sans-serif;box-sizing:border-box" placeholder="Ej: +1oz en central, cambié punta a 100gr">
     </div>
 
     <div style="display:flex;gap:8px;margin-top:12px">
@@ -5621,68 +5706,79 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 
 <!-- HISTORIAL -->
 <div id="bt-main-historial">
-  <div class="bt-frow" id="bt-fd">
-    <button class="bt-fp" onclick="btSf(15,this,'bt-fd')">15d</button>
-    <button class="bt-fp" onclick="btSf(30,this,'bt-fd')">30d</button>
-    <button class="bt-fp" onclick="btSf(60,this,'bt-fd')">60d</button>
-    <button class="bt-fp act" onclick="btSf(90,this,'bt-fd')">90d</button>
-    <button class="bt-fp" onclick="btSf(180,this,'bt-fd')">180d</button>
-    <button class="bt-fp" onclick="btSf(360,this,'bt-fd')">360d</button>
-    <button class="bt-fp" onclick="btSf(0,this,'bt-fd')">Max</button>
+  <div class="bt-bow-wrap">
+    <select id="bt-bow-sel" class="bt-bow" onchange="btBowChange(this.value)"><option value="all">Todos los arcos</option></select>
   </div>
-  <div class="bt-frow" id="bt-fm" style="margin-bottom:16px">
+  <div id="bt-bow-hint" class="bt-hint" style="display:none"></div>
+
+  <!-- Dispersión de impactos (se llena cuando el nuevo input guarde coordenadas) -->
+  <div class="bt-scatter">
+    <svg id="bt-scatter-svg" viewBox="0 0 300 300" role="img" aria-label="Dispersión de impactos"></svg>
+    <div id="bt-scatter-empty" class="bt-scatter-empty"></div>
+  </div>
+  <div id="bt-scatter-n" class="bt-muted" style="text-align:center;font-size:11px;margin:-8px 0 10px"></div>
+
+  <div class="bt-stats" id="bt-stats">
+    <div class="bt-stat">Promedio: <span id="bt-st-avg">—</span></div>
+    <div class="bt-stat">Mínimo: <span id="bt-st-min">—</span></div>
+    <div class="bt-stat">Máximo: <span id="bt-st-max">—</span></div>
+  </div>
+
+  <div class="bt-dots"></div>
+  <div class="bt-flabel">Modalidad</div>
+  <div class="bt-frow" id="bt-fm">
     <button class="bt-fp act" onclick="btSf('all',this,'bt-fm')">Todas</button>
-    <button class="bt-fp" onclick="btSf('outdoor',this,'bt-fm')">Outdoor</button>
-    <button class="bt-fp" onclick="btSf('indoor',this,'bt-fm')">Indoor</button>
-    <button class="bt-fp" onclick="btSf('field',this,'bt-fm')">Field</button>
-    <button class="bt-fp" onclick="btSf('3d',this,'bt-fm')">3D</button>
+    <button class="bt-fp" data-cat="outdoor" onclick="btSf('outdoor',this,'bt-fm')">Outdoor</button>
+    <button class="bt-fp" data-cat="indoor" onclick="btSf('indoor',this,'bt-fm')">Indoor</button>
+    <button class="bt-fp" data-cat="3d" onclick="btSf('3d',this,'bt-fm')">3D</button>
+    <button class="bt-fp" data-cat="field" onclick="btSf('field',this,'bt-fm')">Field</button>
   </div>
+
+  <div class="bt-dots"></div>
+  <div class="bt-flabel">Categoría</div>
   <div class="bt-filters" id="bt-fs">
-    <button class="bt-fp act" onclick="btSfSrc('all',this)">🏹 Todas</button>
-    <button class="bt-fp" onclick="btSfSrc('practica',this)">Práctica</button>
+    <button class="bt-fp act" onclick="btSfSrc('all',this)">Todas</button>
+    <button class="bt-fp" onclick="btSfSrc('practica',this)">Sesión</button>
     <button class="bt-fp" onclick="btSfSrc('liga',this)">Liga</button>
     <button class="bt-fp" onclick="btSfSrc('torneo',this)">Torneo</button>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-    <div class="bt-metric"><div class="v" id="bt-ms">0</div><div class="l">Sesiones</div></div>
-    <div class="bt-metric"><div class="v" id="bt-ma">—</div><div class="l">P/Flecha</div></div>
-    <div class="bt-metric"><div class="v" id="bt-mb">—</div><div class="l">Mejor</div></div>
-    <div class="bt-metric"><div class="v" id="bt-mx" style="color:#d8d15a">—</div><div class="l" id="bt-xs-lbl">Especiales</div></div>
+
+  <div class="bt-dots"></div>
+  <div class="bt-flabel">Lapso</div>
+  <div class="bt-frow" id="bt-fd" style="margin-bottom:6px">
+    <button class="bt-fp act" onclick="btSf(7,this,'bt-fd')">7d</button>
+    <button class="bt-fp" onclick="btSf(15,this,'bt-fd')">15d</button>
+    <button class="bt-fp" onclick="btSf(30,this,'bt-fd')">30d</button>
+    <button class="bt-fp" onclick="btSf(60,this,'bt-fd')">60d</button>
+    <button class="bt-fp" onclick="btSf(90,this,'bt-fd')">90d</button>
+    <button class="bt-fp" id="bt-cal-btn" aria-label="Elegir rango de fechas" onclick="btOpenRange()">📅</button>
   </div>
-  <div class="bt-card">
-    <div class="bt-ca" style="background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="bt-sec" style="margin-bottom:0">Tendencia p/flecha</div>
-      <span id="bt-tr" style="font-size:13px;font-weight:600"></span>
-    </div>
-    <canvas id="bt-spark" height="90" style="width:100%;display:block"></canvas>
-    <div id="bt-spark-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;justify-content:center"></div>
-    <div id="bt-sub-trends" style="margin-top:12px"></div>
+  <div id="bt-range" class="bt-range" style="display:none">
+    <label>Desde<input type="date" id="bt-r-from"></label>
+    <label>Hasta<input type="date" id="bt-r-to"></label>
+    <button class="bt-btn bt-btn-p bt-btn-sm" style="margin-top:0" onclick="btApplyRange()">Aplicar</button>
+    <div id="bt-r-msg" style="width:100%;font-size:11px;color:var(--bt-down)"></div>
   </div>
-  <div class="bt-card">
-    <div class="bt-ca" style="background:linear-gradient(90deg,#5ab4d6,#9a88dd)"></div>
-    <div class="bt-sec">Por modalidad</div>
-    <div id="bt-mods"></div>
-  </div>
-  <div class="bt-card">
-    <div class="bt-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
-    <div class="bt-sec">Récords personales</div>
-    <div id="bt-pbs"></div>
-  </div>
-  <div class="bt-card">
-    <div class="bt-ca" style="background:rgba(255,255,255,0.08)"></div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-      <div class="bt-sec" style="margin-bottom:0">Sesiones</div>
-      <span id="bt-sc" class="bt-muted" style="font-size:11px"></span>
-    </div>
+
+  <div class="bt-dots"></div>
+  <div class="bt-hd">Progreso</div>
+  <div id="bt-prog-wrap"><canvas id="bt-prog" height="230" style="width:100%;height:230px;display:block"></canvas></div>
+  <div id="bt-adj-notes"></div>
+
+  <div class="bt-dots"></div>
+  <div class="bt-hd">Récords</div>
+  <div class="bt-rec-grid"><div id="bt-rec-l"></div><div id="bt-rec-r"></div></div>
+
+  <details class="bt-sess">
+    <summary>Sesiones (<span id="bt-sc">0</span>)</summary>
     <div id="bt-hl"></div>
-  </div>
+  </details>
 </div>
 </div>
 
 <script>
 (function(){
-const BT_COLORS={outdoor:'#5ab4d6',indoor:'#e03030',field:'#e8c800','3d':'#b8864e'};
+const BT_COLORS={outdoor:'#b33c29',indoor:'#48878e',field:'#182440','3d':'#b89563'}; // sincronizado con --bt-c-* del CSS
 const BT_GLABELS={outdoor:'Outdoor',indoor:'Indoor',field:'Field','3d':'3D'};
 const BT_MODES={
   'outdoor-15':{lbl:'15 tiros',g:'outdoor',rondas:5, apR:3,vals:['X','10','9','8','7','6','5','4','3','2','1','M'],sp:'X',max:150},
@@ -5697,7 +5793,7 @@ const BT_MODES={
 };
 function btSpLabel(g){return{outdoor:"X's",indoor:"X's",field:"6's",'3d':"12/11's"}[g]||"X's";}
 
-let btSessions=[], btFDays=90, btFMod='all', btFSrc='all', btCurMode=null, btState={};
+let btSessions=[], btFDays=7, btFRange=null, btFMod='all', btFSrc='all', btBow='all', btBowTouched=false, btBows=[], btLastFs=[], btCurMode=null, btState={};
 window._btDebug = ()=>({ sessions:btSessions, filt:btFilt(), mod:btFMod, src:btFSrc });
 let btUsingDemo=false;
 
@@ -5827,7 +5923,7 @@ window.btShowMain=function(tab){
   }
   document.getElementById('bt-main-nueva').style.display=tab==='nueva'?'block':'none';
   document.getElementById('bt-main-historial').style.display=tab==='historial'?'block':'none';
-  document.querySelectorAll('#bt-tab-bar button').forEach((b,i)=>b.classList.toggle('act',(tab==='nueva'&&i===0)||(tab==='historial'&&i===1)));
+  document.querySelectorAll('#bt-tab-bar button').forEach((b,i)=>b.classList.toggle('act',(tab==='historial'&&i===0)||(tab==='nueva'&&i===1)));
   if(tab==='nueva'){
     btShowS('bt-s-inicio');
     // Si viene de plan conteo, auto-configurar modalidad
@@ -5836,7 +5932,7 @@ window.btShowMain=function(tab){
       setTimeout(window.btActivatePlanConteo, 150);
     }
   }
-  if(tab==='historial')btRenderH();
+  if(tab==='historial'){ if(!btBowTouched) btLoadActiveSetup(); btRenderH(); }
 }
 
 // ── Activar conteo de plan — salta directo a la modalidad ─
@@ -5911,24 +6007,24 @@ window.btSelGroup=function(g,el){
   const c=document.getElementById('bt-cfg-opts');
   if(g==='outdoor'){
     c.innerHTML=`<div class="bt-sec">Número de tiros</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-      ${[['outdoor-15','15 tiros','5×3'],['outdoor-36','36 tiros','6×6'],['outdoor-72','72 tiros','12×6']].map(([k,n,r])=>`<div class="bt-sub-card" onclick="btSetCM('${k}',this)"><div style="font-size:16px;font-weight:600;color:#fff">${n}</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">${r}</div></div>`).join('')}</div>
-      <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,0.35)">Valores: X, 10→1, M</div>`;
+      ${[['outdoor-15','15 tiros','5×3'],['outdoor-36','36 tiros','6×6'],['outdoor-72','72 tiros','12×6']].map(([k,n,r])=>`<div class="bt-sub-card" onclick="btSetCM('${k}',this)"><div style="font-size:16px;font-weight:600;color:var(--bt-ink)">${n}</div><div style="font-size:10px;color:var(--bt-ink-3)">${r}</div></div>`).join('')}</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--bt-ink-4)">Valores: X, 10→1, M</div>`;
   } else if(g==='indoor'){
     c.innerHTML=`<div class="bt-sec">Número de tiros</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-      ${[['indoor-15','15 tiros','5×3'],['indoor-30','30 tiros','10×3'],['indoor-60','60 tiros','20×2']].map(([k,n,r])=>`<div class="bt-sub-card" onclick="btSetCM('${k}',this)"><div style="font-size:16px;font-weight:600;color:#fff">${n}</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">${r}</div></div>`).join('')}</div>
-      <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,0.35)">Valores: X, 10→5, M</div>`;
+      ${[['indoor-15','15 tiros','5×3'],['indoor-30','30 tiros','10×3'],['indoor-60','60 tiros','20×2']].map(([k,n,r])=>`<div class="bt-sub-card" onclick="btSetCM('${k}',this)"><div style="font-size:16px;font-weight:600;color:var(--bt-ink)">${n}</div><div style="font-size:10px;color:var(--bt-ink-3)">${r}</div></div>`).join('')}</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--bt-ink-4)">Valores: X, 10→5, M</div>`;
   } else if(g==='field'){
     c.innerHTML=`<div class="bt-sec">Tipo de ronda</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div class="bt-sub-card" onclick="btSetCM('field-c',this)"><div style="font-size:14px;font-weight:600;color:#fff">Conocidas</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">14 rondas × 3</div></div>
-      <div class="bt-sub-card" onclick="btSetCM('field-d',this)"><div style="font-size:14px;font-weight:600;color:#fff">Desconocidas</div><div style="font-size:10px;color:rgba(255,255,255,0.4)">14 rondas × 3</div></div>
-    </div><div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,0.35)">Valores: 6, 5, 4, 3, 2, 1, M</div>`;
+      <div class="bt-sub-card" onclick="btSetCM('field-c',this)"><div style="font-size:14px;font-weight:600;color:var(--bt-ink)">Conocidas</div><div style="font-size:10px;color:var(--bt-ink-3)">14 rondas × 3</div></div>
+      <div class="bt-sub-card" onclick="btSetCM('field-d',this)"><div style="font-size:14px;font-weight:600;color:var(--bt-ink)">Desconocidas</div><div style="font-size:10px;color:var(--bt-ink-3)">14 rondas × 3</div></div>
+    </div><div style="margin-top:10px;font-size:11px;color:var(--bt-ink-4)">Valores: 6, 5, 4, 3, 2, 1, M</div>`;
   } else {
     c.innerHTML=`<div class="bt-sec">Número de animales</div>
       <div style="display:flex;align-items:center;gap:14px;margin:8px 0">
         <input type="range" min="5" max="40" step="5" value="20" id="bt-anim-sl" oninput="document.getElementById('bt-anim-v').textContent=this.value+' animales'" style="flex:1">
-        <span id="bt-anim-v" style="font-size:16px;font-weight:600;color:#fff;min-width:80px">20 animales</span>
+        <span id="bt-anim-v" style="font-size:16px;font-weight:600;color:var(--bt-ink);min-width:80px">20 animales</span>
       </div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.35)">1 flecha por animal · Valores: 12, 11, 10, 8, 5, M</div>`;
+      <div style="font-size:11px;color:var(--bt-ink-4)">1 flecha por animal · Valores: 12, 11, 10, 8, 5, M</div>`;
     btSetCM('3d',null);
   }
 }
@@ -6002,7 +6098,7 @@ function btShowResumen(){
     if(!e.length)return'';
     const s=e.reduce((a,v)=>a+btAv(v),0);
     const sp=e.filter(v=>v==='X'||v==='6'||v==='12'||v==='11').length;
-    return`<div class="bt-srow"><span class="bt-muted" style="font-size:11px">End ${i+1}</span><span style="font-size:11px;color:rgba(255,255,255,0.4)">${e.join('  ')}</span><span class="bt-num" style="font-size:16px;color:#fff">${s}${sp?`<span style="font-size:10px;color:#d8d15a"> ${sp}${btState.sp}</span>`:''}</span></div>`;
+    return`<div class="bt-srow"><span class="bt-muted" style="font-size:11px">End ${i+1}</span><span style="font-size:11px;color:var(--bt-ink-3)">${e.join('  ')}</span><span class="bt-num" style="font-size:16px;color:var(--bt-ink)">${s}${sp?`<span style="font-size:10px;color:var(--bt-navy)"> ${sp}${btState.sp}</span>`:''}</span></div>`;
   }).filter(Boolean).join('');
 }
 
@@ -6200,10 +6296,10 @@ window.btTeUpdateAvg = function(){
   const avgEl = document.getElementById('bt-te-avg');
   if(total > 0 && btTeArrows > 0){
     avgEl.textContent = (total/btTeArrows).toFixed(2) + ' pts/flecha';
-    avgEl.style.color = '#5dcaa5';
+    avgEl.style.color = 'var(--bt-up)';
   } else {
     avgEl.textContent = '— pts/flecha';
-    avgEl.style.color = 'var(--muted)';
+    avgEl.style.color = 'var(--bt-ink-3)';
   }
 };
 
@@ -6262,7 +6358,7 @@ window.btGuardarTorneoExterno = async function(){
       method: 'POST', headers, body: JSON.stringify(payload)
     });
     if(res.ok || res.status===201){
-      msgEl.style.color = '#5dcaa5';
+      msgEl.style.color = 'var(--bt-up)';
       msgEl.textContent = '✓ Resultado registrado';
       setTimeout(()=>{
         btLoadSessions();
@@ -6288,43 +6384,93 @@ window.btSfSrc=function(v,el){
 }
 
 window.btSf=function(v,el,id){
-  if(id==='bt-fd')btFDays=v;else btFMod=v;
+  if(id==='bt-fd'){
+    btFDays=v; btFRange=null;
+    const rp=document.getElementById('bt-range'); if(rp) rp.style.display='none';
+  } else btFMod=v;
   document.getElementById(id).querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
   el.classList.add('act');btRenderH();
 }
 
-function btFilt(){
+// Calendario: rango personalizado de fechas
+window.btOpenRange=function(){
+  const rp=document.getElementById('bt-range'); if(!rp) return;
+  rp.style.display = rp.style.display==='none' ? 'flex' : 'none';
+}
+window.btApplyRange=function(){
+  const f=document.getElementById('bt-r-from'), t=document.getElementById('bt-r-to'), msg=document.getElementById('bt-r-msg');
+  if(f) f.blur(); if(t) t.blur();
+  const parse=v=>{ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||''); return m ? new Date(+m[1],+m[2]-1,+m[3]) : null; };
+  const d0=parse(f&&f.value), d1=parse(t&&t.value);
+  if(!d0||!d1){ if(msg) msg.textContent='Elige las dos fechas'; return; }
+  if(d0>d1){ if(msg) msg.textContent='La fecha inicial es posterior a la final'; return; }
+  if(msg) msg.textContent='';
+  btFRange={from:d0.getTime(), to:new Date(d1.getFullYear(),d1.getMonth(),d1.getDate(),23,59,59,999).getTime()};
+  document.getElementById('bt-fd').querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
+  document.getElementById('bt-cal-btn').classList.add('act');
+  document.getElementById('bt-range').style.display='none';
+  btRenderH();
+}
+
+// Arco: selector y filtro
+window.btBowChange=function(v){ btBow=v; btBowTouched=true; btRenderH(); }
+function btEsc(x){ return String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function btBuildBowSelect(){
+  const sel=document.getElementById('bt-bow-sel'); if(!sel) return;
+  const act=window._activeSetupId?String(window._activeSetupId):null;
+  const items=btBows.map(b=>({v:String(b.id), act:!!act&&String(b.id)===act, name:b.name||b.bow_type||'Sin nombre'}));
+  items.sort((a,b)=>(b.act?1:0)-(a.act?1:0));
+  const opts=items.map(o=>({v:o.v, t:(o.act?'Arco Activo: ':'Arco: ')+o.name}));
+  opts.push({v:'all',t:'Todos los arcos'},{v:'none',t:'Sin arco asignado'});
+  sel.innerHTML=opts.map(o=>`<option value="${btEsc(o.v)}">${btEsc(o.t)}</option>`).join('');
+  sel.value=btBow;
+  if(sel.value!==btBow){ btBow='all'; sel.value='all'; }
+}
+// Mensaje cuando el arco elegido no tiene sesiones pero sí hay datos sin filtrar por arco
+function btRenderBowHint(fs){
+  const box=document.getElementById('bt-bow-hint'); if(!box) return;
+  box.innerHTML=''; box.style.display='none';
+  if(btBow==='all'||btBow==='none'||fs.length) return;
+  const keep=btBow; btBow='all'; const nAll=btFilt().length; btBow=keep;
+  if(!nAll) return;
+  const msg=document.createElement('span');
+  msg.textContent='No hay sesiones con este arco con los filtros actuales ('+nAll+' sin filtrar por arco).';
+  const b=document.createElement('button'); b.type='button'; b.textContent='Ver todos los arcos';
+  b.addEventListener('click',()=>{ const sel=document.getElementById('bt-bow-sel'); if(sel) sel.value='all'; window.btBowChange('all'); });
+  box.appendChild(msg); box.appendChild(b); box.style.display='flex';
+}
+
+// opts.noWindow=true ignora el lapso (los récords son siempre históricos)
+function btFilt(opts){
+  const noWin = !!(opts && opts.noWindow);
   const now=Date.now();
   return btSessions.filter(s=>{
-    const age=(now-new Date(s.date).getTime())/86400000;
+    const t=new Date(s.date).getTime();
+    const age=(now-t)/86400000;
     // Detectar src: torneo-externo guardado en setup_note
     const src = s.src || (s.setup_note==='torneo-externo' ? 'torneo' : 'practica');
     const srcOk = btFSrc==='all' || src===btFSrc;
-    return(btFDays===0||age<=btFDays)&&(btFMod==='all'||s.g===btFMod)&&srcOk;
+    let winOk = true;
+    if(!noWin) winOk = btFRange ? (t>=btFRange.from && t<=btFRange.to) : (btFDays===0 || age<=btFDays);
+    const bowOk = btBow==='all' || (btBow==='none' ? !s.setup_id : String(s.setup_id)===String(btBow));
+    return winOk && bowOk && srcOk && (btFMod==='all'||s.g===btFMod);
   });
 }
 
-function btRenderH(){
-  const fs=btFilt();const now=Date.now();
+const BT_MAX_BY_MODE={'outdoor-15':150,'outdoor-36':360,'outdoor-72':720,'indoor-15':150,'indoor-30':300,'indoor-60':600,'field-c':288,'field-d':288,'field-48':576,'3d':null};
+// Récords: PENDIENTE de confirmar la definición de cada fila (ver notas de la fase 2).
+// kind 'total' = mejor puntaje de ese formato; 'avg' = mejor promedio por flecha.
+const BT_RECORDS=[
+  {col:'l', chip:'Outdoor',  g:'outdoor', mode:'outdoor-36', kind:'total'},
+  {col:'l', chip:'Indoor 10',g:'indoor',  mode:'indoor-30',  kind:'total'},
+  {col:'r', chip:'Field', sub:'Conocidas',    g:'field', mode:'field-c', kind:'total'},
+  {col:'r', chip:'Field', sub:'Desconocidas', g:'field', mode:'field-d', kind:'total'},
+  {col:'r', chip:'3D',    g:'3d',    mode:'3d',   kind:'avg', scale:12}
+];
 
-  // ── Constantes de modos — disponibles en todo btRenderH ──
-  const MODE_GROUPS = {
-    outdoor:['outdoor-15','outdoor-36','outdoor-72'],
-    indoor: ['indoor-15','indoor-30','indoor-60'],
-    field:  ['field-c','field-d','field-48'],
-    '3d':   ['3d']
-  };
-  const MODE_LABELS = {
-    'outdoor-15':'15 tiros','outdoor-36':'36 tiros','outdoor-72':'72 tiros',
-    'indoor-15':'15 tiros','indoor-30':'30 tiros','indoor-60':'60 tiros',
-    'field-c':'Field conocidas','field-d':'Field desconocidas','field-48':'Field 48',
-    '3d':'3D'
-  };
-  const MAX_BY_MODE = {
-    'outdoor-15':150,'outdoor-36':360,'outdoor-72':720,
-    'indoor-15':150,'indoor-30':300,'indoor-60':600,
-    'field-c':288,'field-d':288,'field-48':576,'3d':null
-  };
+function btRenderH(){
+  const fs=btFilt();
+  btLastFs=fs;
 
   // Banner demo
   const existingBanner=document.getElementById('bt-demo-banner');
@@ -6332,225 +6478,25 @@ function btRenderH(){
   if(btUsingDemo){
     const banner=document.createElement('div');
     banner.id='bt-demo-banner';
-    banner.style.cssText='background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.25);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px';
-    banner.innerHTML=`<span style="font-size:16px">✨</span><div><div style="font-size:12px;font-weight:600;color:#d8d15a">Datos de ejemplo</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px">Graba tu primera sesión para ver tus estadísticas reales aquí.</div></div>`;
-    document.getElementById('bt-main-historial').insertBefore(banner, document.getElementById('bt-fd'));
+    banner.style.cssText='background:rgba(245,192,106,0.22);border:0.5px solid rgba(245,192,106,0.65);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px';
+    banner.innerHTML='<span style="font-size:16px">✨</span><div><div style="font-size:12px;font-weight:600;color:var(--bt-navy)">Datos de ejemplo</div><div style="font-size:11px;color:var(--bt-ink-3);margin-top:1px">Graba tu primera sesión para ver tus estadísticas reales aquí.</div></div>';
+    const host=document.getElementById('bt-main-historial');
+    host.insertBefore(banner, host.firstChild);
   }
-  document.getElementById('bt-ms').textContent=fs.length;
-  document.getElementById('bt-sc').textContent=fs.length+' sesiones';
-  const spLbl=btFMod!=='all'?btSpLabel(btFMod):"X/6/11's";
-  document.getElementById('bt-xs-lbl').textContent=spLbl;
+
+  btRenderBowHint(fs);
+  btRenderStats(fs);
+  btRenderScatter(fs);
+  btDrawProgress(fs);
+  btRenderAdjNotes();
+  btRenderRecords();
+
+  document.getElementById('bt-sc').textContent=fs.length;
+  const hl=document.getElementById('bt-hl');
   if(!fs.length){
-    ['bt-ma','bt-mb','bt-mx'].forEach(id=>document.getElementById(id).textContent='—');
-    document.getElementById('bt-hl').innerHTML='<div class="bt-muted" style="padding:16px 0;text-align:center">Sin sesiones en este período</div>';
-    document.getElementById('bt-mods').innerHTML='';document.getElementById('bt-pbs').innerHTML='';
-    document.getElementById('bt-tr').textContent='';document.getElementById('bt-sub-trends').innerHTML='';
-    btDrawSpark([]);return;
-  }
-  const tA=fs.reduce((a,s)=>a+s.n,0),tP=fs.reduce((a,s)=>a+s.total,0);
-  document.getElementById('bt-ma').textContent=(tP/tA).toFixed(1);
-  document.getElementById('bt-mb').textContent=Math.max(...fs.map(s=>s.total));
-  document.getElementById('bt-mx').textContent=fs.reduce((a,s)=>a+s.sp,0);
-  const sorted=[...fs].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const avgs=sorted.map(s=>s.avg);
-  const diff=avgs[avgs.length-1]-avgs[0];
-  const tr=document.getElementById('bt-tr');
-  tr.textContent=diff>0?`↑ +${diff.toFixed(2)} p/f`:diff<0?`↓ ${diff.toFixed(2)} p/f`:'→ estable';
-  tr.className=diff>0?'bt-tup':diff<0?'bt-tdn':'bt-muted';
-
-  if(btFMod==='all'){
-    // Multi-línea: una por disciplina
-    const groups={};
-    fs.forEach(s=>{if(!groups[s.g])groups[s.g]=[];groups[s.g].push(s);});
-    const lines=Object.entries(groups).map(([g,v])=>({
-      g, color:BT_COLORS[g],
-      label:BT_GLABELS[g],
-      avgs:[...v].sort((a,b)=>new Date(a.date)-new Date(b.date)).map(s=>s.avg)
-    })).filter(l=>l.avgs.length>=1);
-    btDrawSparkMulti(lines);
+    hl.innerHTML='<div class="bt-muted" style="padding:16px 0;text-align:center">Sin sesiones en este período</div>';
   } else {
-    const legendEl=document.getElementById('bt-spark-legend');
-    if(legendEl) legendEl.innerHTML='';
-    btDrawSpark(avgs, sorted);
-  }
-  const subEl=document.getElementById('bt-sub-trends');
-  if(btFMod!=='all'){
-    const byMode={};fs.forEach(s=>{if(!byMode[s.mode])byMode[s.mode]=[];byMode[s.mode].push(s);});
-    // Filtrar modos válidos (excluir 'torneo' y similares)
-    const VALID_MODES_FOR_DISC = {
-      outdoor:['outdoor-15','outdoor-36','outdoor-72'],
-      indoor: ['indoor-15','indoor-30','indoor-60'],
-      field:  ['field-c','field-d','field-48'],
-      '3d':   ['3d']
-    };
-    const validModes = VALID_MODES_FOR_DISC[btFMod]||[];
-    const entries=Object.entries(byMode)
-      .filter(([m,v])=>validModes.includes(m) && v.length>=1)
-      .sort(([a],[b])=>validModes.indexOf(a)-validModes.indexOf(b));
-    if(entries.length){
-      const is3d = btFMod==='3d';
-      subEl.innerHTML=`<div class="bt-sec" style="margin-bottom:8px;margin-top:4px">Por formato</div>`+
-      entries.map(([mode,v])=>{
-        const sv=[...v].sort((a,b)=>new Date(a.date)-new Date(b.date));
-        const d=sv.length>=2 ? sv[sv.length-1].avg-sv[0].avg : 0;
-        const avgT=(v.reduce((a,s)=>a+s.total,0)/v.reduce((a,s)=>a+s.n,0)).toFixed(1);
-        const bestT=Math.max(...v.map(s=>s.total));
-        const mxT=MAX_BY_MODE[mode];
-        const mLabel=MODE_LABELS[mode]||mode;
-        return`<div class="bt-sub-trend">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div style="font-size:12px;font-weight:600;color:#fff">${mLabel}</div>
-            ${d!==0?`<span style="font-size:12px;font-weight:600" class="${d>0?'bt-tup':'bt-tdn'}">${d>0?'↑ +':''}${d.toFixed(2)} p/f</span>`:''}
-          </div>
-          <div style="display:flex;gap:14px">
-            <div><div class="bt-num" style="font-size:20px;color:${BT_COLORS[btFMod]}">${avgT}</div><div class="bt-muted" style="font-size:9px;text-transform:uppercase">P/Flecha</div></div>
-            ${is3d?'':`<div><div class="bt-num" style="font-size:20px;color:#fff">${bestT}${mxT?`<span class="bt-muted" style="font-size:11px"> /${mxT}</span>`:''}</div><div class="bt-muted" style="font-size:9px;text-transform:uppercase">Mejor</div></div>`}
-            <div><div class="bt-num" style="font-size:20px;color:rgba(255,255,255,0.5)">${v.length}</div><div class="bt-muted" style="font-size:9px;text-transform:uppercase">Sesiones</div></div>
-          </div>
-        </div>`;
-      }).join('');
-    } else subEl.innerHTML='';
-  } else subEl.innerHTML='';
-  // ── POR MODALIDAD ──────────────────────────────────────────────
-
-  if(btFMod==='all'){
-    // Vista global: avg p/flecha por disciplina
-    const grps={};fs.forEach(s=>{if(!grps[s.g])grps[s.g]=[];grps[s.g].push(s);});
-    document.getElementById('bt-mods').innerHTML=Object.entries(grps).map(([g,v])=>{
-      const tA2=v.reduce((a,s)=>a+s.n,0),tP2=v.reduce((a,s)=>a+s.total,0);
-      return`<div class="bt-srow">
-        <div style="display:flex;align-items:flex-start;gap:8px;min-width:90px">
-          <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
-          <div><div style="font-size:12px;font-weight:600;color:#fff">${BT_GLABELS[g]}</div><div class="bt-muted" style="font-size:10px">${v.length} sesiones</div></div>
-        </div>
-        <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:#fff">${(tP2/tA2).toFixed(1)}</div><div class="bt-muted" style="font-size:9px">P/FLECHA</div></div>
-        <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:${BT_COLORS[g]}">${Math.max(...v.map(s=>s.total))}</div><div class="bt-muted" style="font-size:9px">MEJOR</div></div>
-        <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:#d8d15a">${v.reduce((a,s)=>a+s.sp,0)}</div><div class="bt-muted" style="font-size:9px">${btSpLabel(g).toUpperCase()}</div></div>
-      </div>`;
-    }).join('');
-
-    // Récords globales: mejor por formato clave de cada disciplina
-    // Outdoor: mejor 72 (sumatoria) | Indoor: mejor 60 (sumatoria)
-    // 3D: mejor avg | Field-c y Field-d: mejores sumatorias
-    const KEY_MODES = ['outdoor-72','indoor-60','field-c','field-d','3d'];
-    const pbAll={};
-    btSessions.forEach(s=>{
-      if(!s.mode) return;
-      const km = KEY_MODES.includes(s.mode) ? s.mode : null;
-      if(!km) return;
-      if(km==='3d'){
-        const avg=s.avg||(s.n>0?s.total/s.n:0);
-        if(!pbAll[km]||avg>(pbAll[km].avg||pbAll[km].total/pbAll[km].n||0)) pbAll[km]=s;
-      } else {
-        if(!pbAll[km]||s.total>pbAll[km].total) pbAll[km]=s;
-      }
-    });
-    document.getElementById('bt-pbs').innerHTML=KEY_MODES.filter(m=>pbAll[m]).map(m=>{
-      const s=pbAll[m], g=s.g||m.split('-')[0], mx=MAX_BY_MODE[m];
-      const is3d=m==='3d';
-      if(is3d){
-        const avg=s.avg||(s.n>0?+(s.total/s.n).toFixed(2):0);
-        return`<div style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-            <div style="display:flex;align-items:center;gap:7px">
-              <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
-              <span style="font-size:12px;font-weight:600;color:#fff">3D</span>
-              <span class="bt-pill" style="background:${BT_COLORS[g]}22;color:${BT_COLORS[g]};border:0.5px solid ${BT_COLORS[g]}44">Mejor avg</span>
-            </div>
-            <div><span class="bt-num" style="font-size:20px;color:#fff">${avg}</span><span class="bt-muted" style="font-size:11px"> p/f</span></div>
-          </div>
-          <div class="bt-muted" style="font-size:10px;margin-top:3px">${new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric',year:'numeric'})}</div>
-        </div>`;
-      }
-      const pct=mx?Math.round(s.total/mx*100):null;
-      return`<div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-          <div style="display:flex;align-items:center;gap:7px">
-            <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
-            <span style="font-size:12px;font-weight:600;color:#fff">${BT_GLABELS[g]}</span>
-            <span class="bt-pill" style="background:${BT_COLORS[g]}22;color:${BT_COLORS[g]};border:0.5px solid ${BT_COLORS[g]}44">${MODE_LABELS[m]||m}</span>
-          </div>
-          <div><span class="bt-num" style="font-size:20px;color:#fff">${s.total}</span>${mx?`<span class="bt-muted" style="font-size:11px"> / ${mx}</span>`:''}</div>
-        </div>
-        ${pct?`<div class="bt-pb"><div class="bt-pbf" style="width:${pct}%;background:${BT_COLORS[g]}"></div></div>
-        <div class="bt-muted" style="font-size:10px;margin-top:3px">${pct}% del máximo · ${new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric',year:'numeric'})}</div>`:''}
-      </div>`;
-    }).join('');
-
-  } else {
-    // Vista por disciplina: avg p/flecha por cada formato
-    const modes = MODE_GROUPS[btFMod]||[];
-    const byMode={};
-    fs.forEach(s=>{ const m=s.mode; if(modes.includes(m)||(!modes.length&&s.g===btFMod)){ if(!byMode[m])byMode[m]=[]; byMode[m].push(s); }});
-    // También incluir sesiones de 3D sin modo específico
-    if(btFMod==='3d') fs.forEach(s=>{ if(s.g==='3d'){ if(!byMode['3d'])byMode['3d']=[]; if(!byMode['3d'].includes(s)) byMode['3d'].push(s); }});
-
-    const orderedModes = (MODE_GROUPS[btFMod]||[]).filter(m=>byMode[m]);
-    document.getElementById('bt-mods').innerHTML=orderedModes.map(m=>{
-      const v=byMode[m];
-      const tA2=v.reduce((a,s)=>a+s.n,0),tP2=v.reduce((a,s)=>a+s.total,0);
-      const is3d=m==='3d';
-      const mxT=MAX_BY_MODE[m];
-      const bestT=Math.max(...v.map(s=>s.total));
-      const bestAvg=(tP2/tA2).toFixed(1);
-      return`<div class="bt-srow">
-        <div style="display:flex;align-items:flex-start;gap:8px;min-width:90px">
-          <div class="bt-dot" style="background:${BT_COLORS[btFMod]}"></div>
-          <div><div style="font-size:12px;font-weight:600;color:#fff">${MODE_LABELS[m]||m}</div><div class="bt-muted" style="font-size:10px">${v.length} sesión${v.length!==1?'es':''}</div></div>
-        </div>
-        <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:#fff">${bestAvg}</div><div class="bt-muted" style="font-size:9px">P/FLECHA</div></div>
-        <div style="text-align:center">
-          <div class="bt-num" style="font-size:20px;color:${BT_COLORS[btFMod]}">${is3d?bestAvg:bestT}${!is3d&&mxT?`<span style="font-size:11px;color:rgba(255,255,255,0.3)"> /${mxT}</span>`:''}</div>
-          <div class="bt-muted" style="font-size:9px">${is3d?'MEJOR P/F':'MEJOR'}</div>
-        </div>
-        <div style="text-align:center"><div class="bt-num" style="font-size:20px;color:#d8d15a">${v.reduce((a,s)=>a+s.sp,0)}</div><div class="bt-muted" style="font-size:9px">${btSpLabel(btFMod).toUpperCase()}</div></div>
-      </div>`;
-    }).join('') || `<div class="bt-muted" style="padding:8px 0">Sin sesiones en este período</div>`;
-
-    // Récords por formato
-    const pbM={};
-    fs.forEach(s=>{
-      if(!s.mode) return;
-      const m=s.mode;
-      if(!modes.includes(m)&&btFMod!=='3d') return;
-      if(btFMod==='3d'){
-        const avg=s.avg||(s.n>0?s.total/s.n:0);
-        if(!pbM[m]||avg>(pbM[m].avg||pbM[m].total/pbM[m].n||0)) pbM[m]=s;
-      } else {
-        if(!pbM[m]||s.total>pbM[m].total) pbM[m]=s;
-      }
-    });
-    document.getElementById('bt-pbs').innerHTML=modes.filter(m=>pbM[m]).map(m=>{
-      const s=pbM[m], g=btFMod, mx=MAX_BY_MODE[m];
-      const is3d=g==='3d';
-      if(is3d){
-        const avg=s.avg||(s.n>0?+(s.total/s.n).toFixed(2):0);
-        return`<div style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-            <div style="display:flex;align-items:center;gap:7px">
-              <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
-              <span style="font-size:12px;font-weight:600;color:#fff">Mejor promedio</span>
-            </div>
-            <div><span class="bt-num" style="font-size:20px;color:#fff">${avg}</span><span class="bt-muted" style="font-size:11px"> p/f</span></div>
-          </div>
-          <div class="bt-muted" style="font-size:10px;margin-top:3px">${new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric',year:'numeric'})}</div>
-        </div>`;
-      }
-      const pct=mx?Math.round(s.total/mx*100):null;
-      return`<div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-          <div style="display:flex;align-items:center;gap:7px">
-            <div class="bt-dot" style="background:${BT_COLORS[g]}"></div>
-            <span style="font-size:12px;font-weight:600;color:#fff">${MODE_LABELS[m]||m}</span>
-          </div>
-          <div><span class="bt-num" style="font-size:20px;color:#fff">${s.total}</span>${mx?`<span class="bt-muted" style="font-size:11px"> / ${mx}</span>`:''}</div>
-        </div>
-        ${pct?`<div class="bt-pb"><div class="bt-pbf" style="width:${pct}%;background:${BT_COLORS[g]}"></div></div>
-        <div class="bt-muted" style="font-size:10px;margin-top:3px">${pct}% del máximo · ${new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric',year:'numeric'})}</div>`:''}
-      </div>`;
-    }).join('') || `<div class="bt-muted" style="padding:8px 0">Sin récords en este período</div>`;
-  }
-  document.getElementById('bt-hl').innerHTML=fs.map(s=>{
+    hl.innerHTML=fs.map(s=>{
     const d=new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric'});
     const pct=s.max?Math.round(s.total/s.max*100):null;
     return`<div class="bt-srow">
@@ -6558,104 +6504,194 @@ function btRenderH(){
         <div class="bt-dot" style="background:${BT_COLORS[s.g]};margin-top:3px"></div>
         <div style="min-width:0">
           <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:12px;font-weight:600;color:#fff">${BT_GLABELS[s.g]}</span>
+            <span style="font-size:12px;font-weight:600;color:var(--bt-ink)">${BT_GLABELS[s.g]}</span>
             <span class="bt-pill" style="background:${BT_COLORS[s.g]}22;color:${BT_COLORS[s.g]};border:0.5px solid ${BT_COLORS[s.g]}44;font-size:9px">${s.lbl}</span>
           </div>
           <div class="bt-muted" style="font-size:10px">${d}${s.notes?' · '+s.notes:''}</div>
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0;padding-left:8px">
-        <div class="bt-num" style="font-size:18px;color:#fff">${s.total}${pct?`<span class="bt-muted" style="font-size:10px"> (${pct}%)</span>`:'  '}</div>
+        <div class="bt-num" style="font-size:18px;color:var(--bt-ink)">${s.total}${pct?`<span class="bt-muted" style="font-size:10px"> (${pct}%)</span>`:'  '}</div>
         <div class="bt-muted" style="font-size:10px">${s.avg.toFixed(1)} p/f${s.sp?` · ${s.sp} ${btSpLabel(s.g)}`:''}</div>
       </div>
     </div>`;
   }).join('');
-  // Notas de ajuste
-  btRenderAdjNotes();
+  }
 }
 
-function btDrawSpark(data, sessions){
-  const c=document.getElementById('bt-spark');if(!c)return;
-  document.getElementById('bt-spark-legend').innerHTML='';
-  const ctx=c.getContext('2d'),W=c.offsetWidth||400,H=90;
-  c.width=W;c.height=H;ctx.clearRect(0,0,W,H);
-  if(data.length<2){ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();}
+// Promedio = puntos totales / flechas totales del filtro. Mínimo y Máximo = extremos del promedio por flecha de cada sesión.
+function btRenderStats(fs){
+  // Con "Todas" las modalidades tienen escalas distintas (Field llega a 6, 3D a 12): el resumen no es un dato certero
+  const box=document.getElementById('bt-stats');
+  if(box) box.style.display = btFMod==='all' ? 'none' : 'flex';
+  const set=(id,t)=>{ const e=document.getElementById(id); if(e) e.textContent=t; };
+  const withN=fs.filter(s=>s.n>0);
+  const avgs=withN.map(s=>Number(s.avg)).filter(v=>isFinite(v));
+  if(!withN.length||!avgs.length){ set('bt-st-avg','—'); set('bt-st-min','—'); set('bt-st-max','—'); return; }
+  const tP=withN.reduce((a,s)=>a+s.total,0), tA=withN.reduce((a,s)=>a+s.n,0);
+  set('bt-st-avg',(tP/tA).toFixed(1));
+  set('bt-st-min',Math.min(...avgs).toFixed(1));
+  set('bt-st-max',Math.max(...avgs).toFixed(1));
+}
 
-  // Calcular rango de fechas total (sesiones + ajustes standalone)
-  const adjs = (window._btAdjustments||[]);
-  let allDates = sessions ? sessions.map(s=>new Date(s.date)) : [];
-  adjs.forEach(a=>{ if(a.adjusted_at) allDates.push(new Date(a.adjusted_at)); });
-  const minDate = allDates.length ? Math.min(...allDates.map(d=>d.getTime())) : 0;
-  const maxDate = allDates.length ? Math.max(...allDates.map(d=>d.getTime())) : 1;
-  const dateRange = maxDate - minDate || 1;
+// Dianas. A = 6 anillos (5 a 10): compuesto outdoor e indoor. B = 10 anillos (1 a 10): recurvo y barebow outdoor.
+// Proporciones medidas de la diana de referencia: anillos de ancho igual; el anillo k termina en (11-k)/n del radio exterior.
+const BT_FACE_COL={blue:'#5ab4d6',red:'#e03030',gold:'#e8c800',black:'#323232',white:'#ffffff'};
+const BT_FACES={
+  A:{n:6,  rings:[[5,'blue'],[6,'blue'],[7,'red'],[8,'red'],[9,'gold'],[10,'gold']]},
+  B:{n:10, rings:[[1,'white'],[2,'white'],[3,'black'],[4,'black'],[5,'blue'],[6,'blue'],[7,'red'],[8,'red'],[9,'gold'],[10,'gold']]}
+};
+// B solo para outdoor con arco recurvo o barebow. Con "Todos los arcos" o "Sin arco asignado" se usa el tipo del arco activo.
+function btFaceKey(){
+  if(btFMod!=='outdoor') return 'A';
+  let type=null;
+  if(btBow!=='all' && btBow!=='none'){ const b=btBows.find(x=>String(x.id)===String(btBow)); type=b?b.bow_type:null; }
+  else type=window._activeSetupType||null;
+  return (type==='recurvo'||type==='barebow') ? 'B' : 'A';
+}
 
-  let pts = [];
-  if(data.length>=2){
-    const mn=Math.min(...data)*0.97,mx=Math.max(...data)*1.03,r=mx-mn||1;
-    if(sessions && sessions.length===data.length){
-      pts = sessions.map((s,i)=>({
-        x: 8 + (new Date(s.date).getTime()-minDate)/dateRange*(W-16),
-        y: H-8-(data[i]-mn)/r*(H-20)
-      }));
-    } else {
-      pts = data.map((v,i)=>({x:i/(data.length-1)*(W-16)+8,y:H-8-(v-mn)/r*(H-20)}));
+// Dispersión de impactos.
+// Contrato propuesto para la fase de datos: s.impacts = [{x,y}] normalizado al radio exterior de la diana usada
+// (A: borde del anillo 5; B: borde del anillo 1), (0,0) = centro, x hacia la derecha, y hacia arriba.
+// s.face = 'A' | 'B' (si falta se asume 'A'). Solo se grafican impactos de la diana que se está mostrando.
+function btRenderScatter(fs){
+  const svg=document.getElementById('bt-scatter-svg'); if(!svg) return;
+  const R=140, cx=150, cy=150;
+  const key=btFaceKey(), face=BT_FACES[key], n=face.n;
+  svg.setAttribute('data-face',key);
+  const is3d=btFMod==='3d';
+  let imp=[], other=0;
+  if(!is3d) fs.forEach(s=>{
+    if(s.g==='3d'||!Array.isArray(s.impacts)) return;
+    const pts=s.impacts.filter(p=>p&&isFinite(p.x)&&isFinite(p.y));
+    if((s.face||'A')===key) imp=imp.concat(pts); else other+=pts.length;
+  });
+  const faceOp = imp.length ? 1 : (is3d ? 0.25 : 0.8);
+  let h='<g opacity="'+faceOp+'">';
+  face.rings.forEach(([k,c])=>{   // del anillo más grande al más chico
+    const dark=c==='black';
+    h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R*(11-k)/n).toFixed(1)+'" fill="'+BT_FACE_COL[c]+'" stroke="'+(dark?'#ffffff':'#1b2743')+'" stroke-opacity="'+(dark?0.8:0.55)+'" stroke-width="0.8"/>';
+  });
+  h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R/(2*n)).toFixed(1)+'" fill="none" stroke="#1b2743" stroke-opacity="0.45" stroke-width="0.6"/>';
+  h+='<path d="M'+(cx-4)+' '+cy+'h8M'+cx+' '+(cy-4)+'v8" stroke="#1b2743" stroke-opacity="0.6" stroke-width="0.8"/>';
+  face.rings.forEach(([k,c])=>{
+    h+='<text x="'+(cx+R*((11-k)/n-1/(2*n))).toFixed(1)+'" y="'+(cy+3)+'" font-size="'+(n===10?7.5:9)+'" text-anchor="middle" fill="'+(c==='black'?'#ffffff':'#1b2743')+'" fill-opacity="0.85" font-family="DM Sans,sans-serif">'+k+'</text>';
+  });
+  h+='</g>';
+  imp.forEach(p=>{ h+='<circle cx="'+(cx+p.x*R).toFixed(1)+'" cy="'+(cy-p.y*R).toFixed(1)+'" r="3.2" fill="#182440" stroke="#fffffc" stroke-width="1"/>'; });
+  svg.innerHTML=h;
+  const emp=document.getElementById('bt-scatter-empty'), nEl=document.getElementById('bt-scatter-n');
+  if(is3d){ emp.style.display='block'; emp.textContent='La dispersión no aplica a 3D.'; nEl.textContent=''; }
+  else if(!imp.length){
+    emp.style.display='block';
+    emp.innerHTML = other
+      ? '<b>Sin impactos en esta diana</b><br><span style="color:var(--bt-ink-3)">Hay '+other+' de otra diana con estos filtros.</span>'
+      : '<b>Sin impactos registrados todavía</b><br><span style="color:var(--bt-ink-3)">Aparecerán aquí cuando el nuevo input los guarde.</span>';
+    nEl.textContent='';
+  }
+  else { emp.style.display='none'; nEl.textContent=imp.length+' impactos'+(other?' · '+other+' de otra diana no se muestran':''); }
+}
+
+// Progreso: promedio por flecha de cada sesión, una línea por modalidad, sobre eje de tiempo real.
+function btDrawProgress(fs){
+  const c=document.getElementById('bt-prog'); if(!c) return;
+  const dpr=window.devicePixelRatio||1;
+  const W=c.clientWidth||340, H=230;
+  c.width=Math.round(W*dpr); c.height=Math.round(H*dpr);
+  const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  const L=36, Rm=12, T=10, B=26, pw=W-L-Rm, ph=H-T-B;
+  const INK='rgba(27,39,67,0.6)', GRID='rgba(27,39,67,0.12)';
+  c._adjHitboxes=[];
+
+  const groups={};
+  fs.forEach(s=>{ const v=Number(s.avg); if(!isFinite(v)||!(s.n>0)) return; (groups[s.g]=groups[s.g]||[]).push({t:new Date(s.date).getTime(), v}); });
+  const keys=Object.keys(groups);
+
+  const now=Date.now(); let x0,x1;
+  if(btFRange){ x0=btFRange.from; x1=btFRange.to; }
+  else if(btFDays>0){ x0=now-btFDays*86400000; x1=now; }
+  else { const ts=keys.flatMap(k=>groups[k].map(p=>p.t)); x0=ts.length?Math.min(...ts):now-86400000; x1=ts.length?Math.max(...ts):now; }
+  if(x1<=x0) x1=x0+86400000;
+
+  const vals=keys.flatMap(k=>groups[k].map(p=>p.v));
+  let lo=8, hi=11;
+  if(vals.length){ lo=Math.floor((Math.min(...vals)-0.05)*2)/2; hi=Math.ceil((Math.max(...vals)+0.05)*2)/2; if(hi-lo<1) hi=lo+1; }
+  const step=(hi-lo)>4?1:0.5;
+  const px=t=>L+(t-x0)/(x1-x0)*pw, py=v=>T+ph-(v-lo)/(hi-lo)*ph;
+
+  ctx.font='10px "DM Sans",sans-serif'; ctx.textBaseline='middle'; ctx.textAlign='right';
+  for(let v=lo; v<=hi+1e-9; v+=step){
+    const y=py(v); ctx.strokeStyle=GRID; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(W-Rm,y); ctx.stroke();
+    ctx.fillStyle=INK; ctx.fillText(v.toFixed(1), L-6, y);
+  }
+  const spanDays=(x1-x0)/86400000;
+  const fmt=spanDays>400 ? {month:'short',year:'2-digit'} : {day:'numeric',month:'short'};
+  ctx.textBaseline='alphabetic';
+  for(let i=0;i<=4;i++){
+    const t=x0+i/4*(x1-x0);
+    ctx.textAlign = i===0?'left':(i===4?'right':'center'); ctx.fillStyle=INK;
+    ctx.fillText(new Date(t).toLocaleDateString('es-MX',fmt), px(t), H-8);
+  }
+
+  keys.forEach(k=>{
+    const pts=groups[k].sort((a,b)=>a.t-b.t).map(p=>({x:px(p.t), y:py(p.v)}));
+    const col=BT_COLORS[k]||'#182440';
+    if(pts.length>1){
+      ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+      for(let i=1;i<pts.length;i++){ const mx=(pts[i-1].x+pts[i].x)/2, my=(pts[i-1].y+pts[i].y)/2; ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,mx,my); }
+      ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
+      ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.stroke();
     }
-    ctx.beginPath();ctx.moveTo(pts[0].x,H-2);pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(pts[pts.length-1].x,H-2);ctx.closePath();
-    ctx.fillStyle='rgba(216,209,90,0.06)';ctx.fill();
-    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
-    for(let i=1;i<pts.length;i++){const mx2=(pts[i-1].x+pts[i].x)/2,my=(pts[i-1].y+pts[i].y)/2;ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,mx2,my);}
-    ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
-    ctx.strokeStyle='#d8d15a';ctx.lineWidth=2;ctx.stroke();
-    [pts[0],pts[pts.length-1]].forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle='#d8d15a';ctx.fill();});
+    pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,3.5,0,Math.PI*2); ctx.fillStyle=col; ctx.fill(); });
+  });
+
+  if(!keys.length){
+    ctx.fillStyle=INK; ctx.font='12px "DM Sans",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Sin sesiones en este período', L+pw/2, T+ph/2);
   }
 
-  // Markers de ajuste — uno por fecha única, independientes de si hay sesión
-  const adjByDate = {};
-  adjs.forEach(a=>{
-    if(!a.adjusted_at) return;
-    const d = a.adjusted_at.slice(0,10);
-    if(!adjByDate[d]) adjByDate[d] = [];
-    adjByDate[d].push(a.note);
+  // Marcadores de ajuste de equipo (del arco seleccionado) sobre el eje de tiempo
+  const byDate={};
+  btAdjList().forEach(a=>{ if(!a.adjusted_at) return; const d=String(a.adjusted_at).slice(0,10); (byDate[d]=byDate[d]||[]).push(a.note); });
+  Object.entries(byDate).forEach(([d,notes])=>{
+    const t=new Date(d+'T12:00:00').getTime();
+    if(t<x0||t>x1) return;
+    const x=px(t);
+    ctx.setLineDash([2,3]); ctx.strokeStyle='rgba(154,136,221,0.55)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x,T); ctx.lineTo(x,T+ph-8); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#9a88dd'; ctx.beginPath(); ctx.arc(x,T+ph-6,5,0,Math.PI*2); ctx.fill();
+    c._adjHitboxes.push({x, y:T+ph-6, r:10, date:d, notes});
   });
-
-  // Guardar hitboxes para click
-  c._adjHitboxes = [];
-
-  Object.entries(adjByDate).forEach(([dateStr, notes])=>{
-    const t = new Date(dateStr).getTime();
-    const px = allDates.length>1 ? 8 + (t-minDate)/dateRange*(W-16) : W/2;
-    // Línea vertical punteada
-    ctx.setLineDash([2,3]);
-    ctx.strokeStyle='rgba(154,136,221,0.55)';ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,H-14);ctx.stroke();
-    ctx.setLineDash([]);
-    // Punto morado en la base
-    ctx.fillStyle='#9a88dd';
-    ctx.beginPath();ctx.arc(px, H-8, 5, 0, Math.PI*2);ctx.fill();
-    ctx.strokeStyle='rgba(0,0,0,0.4)';ctx.lineWidth=1;
-    ctx.beginPath();ctx.arc(px, H-8, 5, 0, Math.PI*2);ctx.stroke();
-    // Guardar hitbox
-    c._adjHitboxes.push({x:px, y:H-8, r:10, date:dateStr, notes});
-  });
-
-  // Listener de click (se registra una sola vez)
   if(!c._adjClickBound){
-    c._adjClickBound = true;
-    c.style.cursor = 'default';
-    c.addEventListener('mousemove', function(e){
-      const rect=c.getBoundingClientRect();
-      const mx=e.clientX-rect.left, my=e.clientY-rect.top;
-      const hit = (c._adjHitboxes||[]).some(h=>Math.hypot(mx-h.x,my-h.y)<=h.r);
-      c.style.cursor = hit ? 'pointer' : 'default';
-    });
-    c.addEventListener('click', function(e){
-      const rect=c.getBoundingClientRect();
-      const mx=(e.clientX-rect.left)*(c.width/rect.width);
-      const my=(e.clientY-rect.top)*(c.height/rect.height);
-      const hit = (c._adjHitboxes||[]).find(h=>Math.hypot(mx-h.x,my-h.y)<=h.r*1.5);
-      if(hit) btShowAdjTooltip(hit, e.clientX, e.clientY);
-    });
+    c._adjClickBound=true;
+    c.addEventListener('mousemove',e=>{ const r=c.getBoundingClientRect(); const mx=e.clientX-r.left, my=e.clientY-r.top; c.style.cursor=(c._adjHitboxes||[]).some(h=>Math.hypot(mx-h.x,my-h.y)<=h.r)?'pointer':'default'; });
+    c.addEventListener('click',e=>{ const r=c.getBoundingClientRect(); const mx=e.clientX-r.left, my=e.clientY-r.top; const hit=(c._adjHitboxes||[]).find(h=>Math.hypot(mx-h.x,my-h.y)<=h.r*1.5); if(hit) btShowAdjTooltip(hit,e.clientX,e.clientY); });
   }
+  // Si el tab estaba oculto al pintar (ancho 0), repintar cuando tenga ancho real
+  if(window.ResizeObserver && !window._btRO){
+    const wrap=document.getElementById('bt-prog-wrap');
+    if(wrap){ let lastW=0; window._btRO=new ResizeObserver(()=>{ const w=wrap.clientWidth; if(w&&w!==lastW){ lastW=w; btDrawProgress(btLastFs); } }); window._btRO.observe(wrap); }
+  }
+}
+
+// Récords: siempre históricos (ignoran el lapso); respetan modalidad, categoría y arco.
+function btRenderRecords(){
+  const fs=btFilt({noWindow:true});
+  const rows=BT_RECORDS.filter(r=>btFMod==='all'||r.g===btFMod);
+  const rowHtml=r=>{
+    const mine=fs.filter(s=> r.kind==='avg' ? (s.mode===r.mode||s.g===r.g) : s.mode===r.mode);
+    let best=null;
+    mine.forEach(s=>{ const v = r.kind==='avg' ? Number(s.avg) : Number(s.total); if(isFinite(v)&&(best===null||v>best)) best=v; });
+    let pct=0, lbl;
+    if(r.kind==='avg'){ pct = best===null?0:Math.min(100,best/r.scale*100); lbl = best===null?'—':best.toFixed(1)+' p/f'; }
+    else { const mx=BT_MAX_BY_MODE[r.mode]; pct = (best===null||!mx)?0:Math.min(100,best/mx*100); lbl = (best===null?'—':best)+'/'+(mx||'—'); }
+    const chip = r.sub ? btEsc(r.chip)+'<small>'+btEsc(r.sub)+'</small>' : btEsc(r.chip);
+    return '<div class="bt-rec"><div class="bt-rec-chip" style="background:'+BT_COLORS[r.g]+'">'+chip+'</div>'+
+           '<div class="bt-rec-bar"><div class="bt-rec-track"><div class="bt-rec-fill" style="width:'+pct.toFixed(1)+'%"></div></div><div class="bt-rec-lbl">'+lbl+'</div></div></div>';
+  };
+  const L=document.getElementById('bt-rec-l'), Rr=document.getElementById('bt-rec-r');
+  if(L) L.innerHTML=rows.filter(r=>r.col==='l').map(rowHtml).join('');
+  if(Rr) Rr.innerHTML=rows.filter(r=>r.col==='r').map(rowHtml).join('');
 }
 
 // ── Tooltip de nota de ajuste ───────────────────────────
@@ -6690,108 +6726,30 @@ function btShowAdjTooltip(hit, clientX, clientY){
 }
 
 // ── Renderizar notas recientes bajo la gráfica ───────────
+function btAdjList(){
+  const adjs = window._btAdjustments;
+  if(!Array.isArray(adjs)) return [];
+  return adjs.filter(a=> btBow==='all' || (btBow==='none' ? !a.setup_id : String(a.setup_id)===String(btBow)));
+}
 function btRenderAdjNotes(){
-  let el = document.getElementById('bt-adj-notes');
-  if(!el){
-    const sub = document.getElementById('bt-sub-trends');
-    if(!sub) return;
-    el = document.createElement('div');
-    el.id = 'bt-adj-notes';
-    sub.parentNode.insertBefore(el, sub.nextSibling);
-  }
-  const adjs = (window._btAdjustments||[]).slice(0,5);
+  const el = document.getElementById('bt-adj-notes');
+  if(!el) return;
+  const adjs = btAdjList().slice(0,5);
   if(!adjs.length){ el.innerHTML=''; return; }
   el.innerHTML = `
     <div style="margin-top:14px">
-      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:8px">Notas de equipo recientes</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--bt-ink-4);margin-bottom:8px">Notas de equipo recientes</div>
       ${adjs.map(a=>{
         const d = a.adjusted_at ? new Date(a.adjusted_at+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'}) : '—';
-        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:0.5px solid rgba(255,255,255,0.06)">
+        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--bt-line-soft)">
           <div style="width:8px;height:8px;border-radius:50%;background:#9a88dd;flex-shrink:0;margin-top:3px"></div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:2px">${d}</div>
-            <div style="font-size:12px;color:rgba(255,255,255,0.75);line-height:1.4">${a.note||''}</div>
+            <div style="font-size:10px;color:var(--bt-ink-4);margin-bottom:2px">${d}</div>
+            <div style="font-size:12px;color:var(--bt-ink-2);line-height:1.4">${a.note||''}</div>
           </div>
         </div>`;
       }).join('')}
     </div>`;
-}
-
-function btDrawSparkMulti(lines){
-  const c=document.getElementById('bt-spark');if(!c)return;
-  const legendEl=document.getElementById('bt-spark-legend');
-  const ctx=c.getContext('2d'),W=c.offsetWidth||400,H=90;
-  c.width=W;c.height=H;ctx.clearRect(0,0,W,H);
-
-  if(!lines.length){
-    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
-    if(legendEl) legendEl.innerHTML='';
-    return;
-  }
-
-  // Escala global entre todas las líneas
-  const allVals=lines.flatMap(l=>l.avgs);
-  const mn=Math.min(...allVals)*0.97,mx=Math.max(...allVals)*1.03,r=mx-mn||1;
-
-  lines.forEach(line=>{
-    if(line.avgs.length<1) return;
-    const data=line.avgs;
-    const pts=data.length===1
-      ? [{x:W/2,y:H-8-(data[0]-mn)/r*(H-20)}]
-      : data.map((v,i)=>({x:i/(data.length-1)*(W-16)+8,y:H-8-(v-mn)/r*(H-20)}));
-
-    if(pts.length===1){
-      ctx.beginPath();ctx.arc(pts[0].x,pts[0].y,4,0,Math.PI*2);
-      ctx.fillStyle=line.color;ctx.fill();return;
-    }
-
-    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
-    for(let i=1;i<pts.length;i++){
-      const mx2=(pts[i-1].x+pts[i].x)/2,my=(pts[i-1].y+pts[i].y)/2;
-      ctx.quadraticCurveTo(pts[i-1].x,pts[i-1].y,mx2,my);
-    }
-    ctx.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
-    ctx.strokeStyle=line.color;ctx.lineWidth=2;ctx.globalAlpha=0.85;ctx.stroke();ctx.globalAlpha=1;
-
-    // Punto final
-    const last=pts[pts.length-1];
-    ctx.beginPath();ctx.arc(last.x,last.y,3.5,0,Math.PI*2);
-    ctx.fillStyle=line.color;ctx.fill();
-  });
-
-  // Leyenda
-  if(legendEl){
-    legendEl.innerHTML=lines.map(l=>{
-      const last=l.avgs[l.avgs.length-1];
-      return`<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:rgba(255,255,255,0.6)">
-        <span style="width:12px;height:3px;border-radius:2px;background:${l.color};display:inline-block"></span>
-        <span style="color:${l.color};font-weight:600">${l.label}</span>
-        <span>${last.toFixed(1)} p/f</span>
-      </span>`
-    }).join('');
-  }
-
-  // Markers de ajuste en modo multi-línea
-  const adjs2 = (window._btAdjustments||[]);
-  if(adjs2.length){
-    const adjByDate2 = {};
-    adjs2.forEach(a=>{ if(!a.adjusted_at) return; const d=a.adjusted_at.slice(0,10); if(!adjByDate2[d]) adjByDate2[d]=[]; adjByDate2[d].push(a.note); });
-    // Rango de fechas: usar todos los puntos de todas las líneas
-    const nLines = lines.filter(l=>l.avgs.length>0);
-    if(nLines.length){
-      // Aproximar posición X basada en índice promedio de la línea más larga
-      Object.entries(adjByDate2).forEach(([dateStr, notes])=>{
-        // Dibujar marcador en posición proporcional al rango de datos
-        const approxX = W * 0.85; // fallback: marcar al final
-        ctx.setLineDash([2,3]);
-        ctx.strokeStyle='rgba(154,136,221,0.4)';ctx.lineWidth=1;
-        ctx.beginPath();ctx.moveTo(approxX,0);ctx.lineTo(approxX,H-14);ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle='#9a88dd';
-        ctx.beginPath();ctx.arc(approxX,H-8,5,0,Math.PI*2);ctx.fill();
-      });
-    }
-  }
 }
 
 // ── Cargar setup activo para el banner ───────────────────
@@ -6806,7 +6764,12 @@ async function btLoadActiveSetup(){
     const pRes = await fetch(`${SUPA}/rest/v1/archer_profiles?user_id=eq.${userId}&select=active_setup_id`, {headers});
     const pData = await pRes.json();
     const setupId = pData[0]?.active_setup_id;
-    if(!setupId){ document.getElementById('bt-setup-name').textContent = 'Sin setup activo'; return; }
+    if(!setupId){
+      document.getElementById('bt-setup-name').textContent = 'Sin setup activo';
+      window._activeSetupId = null; window._activeSetupName = null; window._activeSetupType = null;
+      await btLoadBows(headers);
+      return;
+    }
 
     window._activeSetupId = setupId;
 
@@ -6818,8 +6781,28 @@ async function btLoadActiveSetup(){
       const BOW_ICONS = {recurvo:'🏹',compuesto:'🎯',barebow:'🪃',tradicional:'🪵'};
       const nameEl = document.getElementById('bt-setup-name');
       if(nameEl) nameEl.textContent = (BOW_ICONS[setup.bow_type]||'🏹') + ' ' + (setup.name||setup.bow_type);
+      window._activeSetupName = setup.name||setup.bow_type;
+      window._activeSetupType = setup.bow_type||null;
     }
+    await btLoadBows(headers);
   }catch(e){ console.log('btLoadActiveSetup:', e.message); }
+}
+
+// Lista de arcos del arquero para el selector. Si la consulta falla, queda solo el arco activo.
+async function btLoadBows(headers){
+  const SUPA='https://axaiyaflubssaghvhefe.supabase.co';
+  const userId=window._supabaseUserId;
+  let list=[];
+  try{
+    const r=await fetch(`${SUPA}/rest/v1/archer_setups?user_id=eq.${userId}&select=id,name,bow_type`,{headers});
+    if(r.ok){ const d=await r.json(); if(Array.isArray(d)) list=d; }
+  }catch(e){}
+  const act=window._activeSetupId;
+  if(act && !list.some(x=>String(x.id)===String(act))) list.push({id:act,name:window._activeSetupName||'Arco activo',bow_type:window._activeSetupType||null});
+  btBows=list;
+  if(!btBowTouched) btBow = act ? String(act) : 'all';
+  btBuildBowSelect();
+  btRenderH();
 }
 
 // ── Cargar ajustes de setup ───────────────────────────────
@@ -6834,6 +6817,7 @@ async function btLoadAdjustments(){
     const res = await fetch(`${SUPA}/rest/v1/setup_adjustments?user_id=eq.${userId}&order=adjusted_at.desc&limit=200`,{headers});
     window._btAdjustments = await res.json();
   }catch(e){ window._btAdjustments = []; }
+  btRenderH(); // repintar: las notas y marcadores pueden llegar después de las sesiones
 }
 
 // Escuchar guardado de notas desde tab-perfil
