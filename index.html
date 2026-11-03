@@ -5566,6 +5566,14 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
       <div style="width:32px"></div>
     </div>
 
+    <!-- Cómo se registra -->
+    <div class="bt-sec">¿Cómo lo registras?</div>
+    <div id="bt-te-mode" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+      <button type="button" class="bt-fp act" data-mode="total" onclick="btTeSetMode('total')">Solo total</button>
+      <button type="button" class="bt-fp" data-mode="arrows" onclick="btTeSetMode('arrows')">Tiro por tiro</button>
+    </div>
+    <div id="bt-te-mode-hint" style="font-size:11px;color:var(--bt-ink-3);margin-bottom:14px">Escribes el resultado final del torneo.</div>
+
     <!-- Nombre del torneo -->
     <div class="bt-sec">Nombre del torneo</div>
     <input id="bt-te-nombre" type="text" placeholder="Ej: Nacional Juvenil 2026"
@@ -5630,23 +5638,27 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
         oninput="btTeUpdate3DArrows()">
     </div>
 
+    <div id="bt-te-total-wrap">
     <!-- Total -->
     <div class="bt-sec">Total obtenido</div>
     <input id="bt-te-total" type="number" min="0" max="720" placeholder="Ej: 310"
       style="width:100%;padding:12px;border-radius:8px;border:0.5px solid var(--bt-line);background:var(--bt-field);color:var(--bt-ink);font-family:'Bebas Neue',sans-serif;font-size:28px;text-align:center;box-sizing:border-box;margin-bottom:8px">
     <div id="bt-te-avg" style="text-align:center;font-size:11px;color:var(--bt-ink-3);margin-bottom:14px">— pts/flecha</div>
+    </div>
 
     <!-- Fecha -->
     <div class="bt-sec">Fecha</div>
     <input id="bt-te-fecha" type="date"
       style="width:100%;padding:10px;border-radius:8px;border:0.5px solid var(--bt-line);background:var(--bt-field);color:var(--bt-ink);font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:14px">
 
+    <div id="bt-te-notes-wrap">
     <!-- Notas opcionales -->
     <div class="bt-sec">Notas <span style="font-size:10px;color:var(--bt-ink-3)">(opcional)</span></div>
     <input id="bt-te-notas" type="text" placeholder="Ej: Viento fuerte, 18m"
       style="width:100%;padding:10px;border-radius:8px;border:0.5px solid var(--bt-line);background:var(--bt-field);color:var(--bt-ink);font-family:'DM Sans',sans-serif;font-size:13px;box-sizing:border-box;margin-bottom:20px">
+    </div>
 
-    <button onclick="btGuardarTorneoExterno()"
+    <button id="bt-te-submit" onclick="btGuardarTorneoExterno()"
       style="width:100%;padding:12px;background:var(--bt-navy);border:none;border-radius:14px;color:#ffffff;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.05em;cursor:pointer">
       REGISTRAR RESULTADO
     </button>
@@ -5890,10 +5902,14 @@ function btLoadSessions(){
 
     Promise.all([
       window.supabaseLoadScores({ownOnly:true}),
-      userId ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&select=score,submitted_at,round_id,league_id&order=submitted_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([]),
-      userId ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_score,qualifying_at,tournament_id&order=qualifying_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([])
+      userId ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&select=submitted_at&order=submitted_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([]),
+      userId ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_at&order=qualifying_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([])
     ]).then(function([daily, liga, torneo]){
       let all = [];
+      // Fechas de liga y torneo: sirven solo para ETIQUETAR la sesión correspondiente de scores
+      const stamp = function(rows,key){ return Array.isArray(rows) ? rows.map(function(r){ return new Date(r[key]).getTime(); }).filter(isFinite) : []; };
+      const ligaT = stamp(liga,'submitted_at'), torneoT = stamp(torneo,'qualifying_at');
+      const near = function(arr,t){ return arr.some(function(x){ return Math.abs(x-t) < 1000; }); };
       // Práctica diaria
       if(Array.isArray(daily) && daily.length){
         const MAX_MAP = {
@@ -5910,36 +5926,19 @@ function btLoadSessions(){
           if(!s.max)  s.max  = MAX_MAP[s.mode] || null;
           if(!s.sp)   s.sp   = s.specials    || 0;
           if(!s.date) s.date = s.session_date || s.created_at || new Date().toISOString();
-          // Fuente
+          // Fuente: la sesión es la de scores (valor crudo y modalidad real). Si coincide con una fila de liga o torneo
+          // (misma fecha: se guardan con el mismo timestamp) solo se etiqueta; no se suma una segunda vez.
+          const t = new Date(s.date).getTime();
           if(s.setup_note === 'torneo-externo') s.src = 'torneo';
-          else s.src = s.src || 'practica';
+          else if(near(ligaT, t)) s.src = 'liga';
+          else if(near(torneoT, t)) s.src = 'torneo';
+          else s.src = 'practica';
         });
         all = all.concat(daily);
       }
-      // Liga
-      if(Array.isArray(liga)){
-        liga.forEach(s=>{
-          if(!s.score) return;
-          all.push({
-            src:'liga', g:'indoor', mode:'liga', lbl:'Liga',
-            total:s.score, n:30, avg:+(s.score/30).toFixed(2), sp:0,
-            date:s.submitted_at||new Date().toISOString(),
-            label:'Liga Ronda '+(s.round_id||'—')
-          });
-        });
-      }
-      // Torneo
-      if(Array.isArray(torneo)){
-        torneo.forEach(s=>{
-          if(!s.qualifying_score) return;
-          all.push({
-            src:'torneo', g:'outdoor', mode:'torneo', lbl:'Torneo',
-            total:s.qualifying_score, n:36, avg:+(s.qualifying_score/36).toFixed(2), sp:0,
-            date:s.qualifying_at||new Date().toISOString(),
-            label:'Torneo Clasificatorio'
-          });
-        });
-      }
+      // Las filas que existen SOLO en league_round_scores o tournament_players ya no se suman. Tenían modalidad fija
+      // (liga = indoor 30, torneo = outdoor 36), el torneo traía el handicap incluido, y toda sesión jugada en la app
+      // ya está en scores, así que sumarlas la contaba dos veces.
       if(all.length > 0){
         btSessions = all;
         btUsingDemo = false;
@@ -6086,7 +6085,7 @@ function btRenderEnd(){
   const{mode,rondas,apR,vals,sp,ends,cur,g}=btState;
   const m=BT_MODES[mode];
   document.getElementById('bt-ses-title').textContent=`${BT_GLABELS[g]} · ${m.lbl}`;
-  document.getElementById('bt-ses-sub').textContent=`End ${cur+1} de ${rondas}`;
+  document.getElementById('bt-ses-sub').textContent=(btState.ext ? btState.ext.name+' · ' : '')+`End ${cur+1} de ${rondas}`;
   document.getElementById('bt-ses-plbl').textContent=`${cur}/${rondas}`;
   document.getElementById('bt-ses-pf').style.width=Math.round(cur/rondas*100)+'%';
   document.getElementById('bt-end-lbl').textContent=apR===1?'Valor de flecha':`Flechas del end ${cur+1}`;
@@ -6149,6 +6148,16 @@ window.btSaveSession=function(){
   const setupId = window._activeSetupId || null;
   const setupNote = document.getElementById('bt-setup-note')?.value.trim() || null;
   const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,setup_id:setupId,setup_note:setupNote,ends:btState.ends.map(e=>[...e]),face:(btState.impacts&&btState.impacts.length)?btState.face:null,impacts:(btState.impacts&&btState.impacts.length)?btState.impacts.map(function(p){return {e:p.e,i:p.i,x:p.x,y:p.y};}):null};
+  // Sesión de torneo externo capturada tiro por tiro: lleva el nombre y la marca de torneo externo
+  const isExt = !!btState.ext;
+  if(isExt){
+    s.lbl = btState.ext.name;
+    s.setup_note = 'torneo-externo';
+    if(btState.ext.date !== btLocalDate(new Date())){          // capturada después: fecha local del torneo y su arco por fecha
+      s.date = btDateNoon(btState.ext.date);
+      s.setup_id = btBowForDate(btState.ext.date);
+    }
+  }
   if(btUsingDemo){ btSessions=[]; btUsingDemo=false; }
   btSessions.unshift(s);
 
@@ -6186,7 +6195,7 @@ window.btSaveSession=function(){
   }
 
   // Si hay LIGA pendiente — guardar score en league_rounds y actualizar standings
-  const pendingLeague = window._cpPendingLeague;
+  const pendingLeague = isExt ? null : window._cpPendingLeague;
   if(pendingLeague && userId){
     const {leagueId, roundId} = pendingLeague;
 
@@ -6206,7 +6215,7 @@ window.btSaveSession=function(){
   }
 
   // Si hay TORNEO pendiente — subir score automáticamente
-  const pendingTournament = window._cpPendingTournament;
+  const pendingTournament = isExt ? null : window._cpPendingTournament;
   if(pendingTournament && userId){
     console.log('💾 Guardando score torneo:', pendingTournament, 'score:', s.total);
     Promise.all([
@@ -6317,8 +6326,9 @@ window.window.btTeArrows = null;
 
 window.btShowTorneoExterno = function(){
   window.btTeFormat = null; window.btTeArrows = null;
-  // Set today's date
-  document.getElementById('bt-te-fecha').value = new Date().toISOString().slice(0,10);
+  btTeSetMode('total');
+  // Fecha de hoy (local, no UTC: de noche UTC ya es mañana)
+  document.getElementById('bt-te-fecha').value = btLocalDate(new Date());
   document.getElementById('bt-te-total').value = '';
   document.getElementById('bt-te-nombre').value = '';
   document.getElementById('bt-te-notas').value = '';
@@ -6328,6 +6338,20 @@ window.btShowTorneoExterno = function(){
   btShowS('bt-s-torneo-ext');
 };
 
+// Dos formas de registrar un torneo externo: solo el total, o tiro por tiro (misma captura que una sesión normal)
+window.btTeMode = 'total';
+window.btTeSetMode = function(m){
+  window.btTeMode = m;
+  document.querySelectorAll('#bt-te-mode .bt-fp').forEach(function(x){ x.classList.toggle('act', x.dataset.mode===m); });
+  var arrows = (m==='arrows');
+  document.getElementById('bt-te-total-wrap').style.display = arrows ? 'none' : 'block';
+  document.getElementById('bt-te-notes-wrap').style.display = arrows ? 'none' : 'block';
+  document.getElementById('bt-te-mode-hint').textContent = arrows
+    ? 'Capturas cada flecha con el teclado o tocando la diana, como una sesión normal. Disponible en Outdoor e Indoor.'
+    : 'Escribes el resultado final del torneo.';
+  var btn = document.getElementById('bt-te-submit'); if(btn) btn.textContent = arrows ? 'EMPEZAR CAPTURA →' : 'REGISTRAR RESULTADO';
+  var msg = document.getElementById('bt-te-msg'); if(msg) msg.textContent = '';
+};
 window.btTeSelFmt = function(el){
   document.querySelectorAll('#bt-te-formats .bt-disc-card').forEach(c=>c.classList.remove('sel'));
   el.classList.add('sel');
@@ -6364,6 +6388,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 
 window.btGuardarTorneoExterno = async function(){
+  if(window.btTeMode === 'arrows') return btTeStartArrows();
   const nombre = document.getElementById('bt-te-nombre').value.trim();
   const total  = parseInt(document.getElementById('bt-te-total').value);
   const fecha  = document.getElementById('bt-te-fecha').value;
@@ -6398,7 +6423,8 @@ window.btGuardarTorneoExterno = async function(){
     total:        total,
     arrow_count:  btTeArrows,
     avg_arrow:    avg,
-    session_date: fecha,
+    session_date: btDateNoon(fecha),
+    setup_id:     (fecha === btLocalDate(new Date())) ? (window._activeSetupId || null) : btBowForDate(fecha),
     notes:        notas || null,
     // Tag como torneo externo
     setup_note:   'torneo-externo'
@@ -6430,6 +6456,21 @@ window.btGuardarTorneoExterno = async function(){
     msgEl.textContent = 'Error de conexión';
   }
 };
+
+// Tiro por tiro: abre la captura normal marcada como torneo externo (nombre y fecha del torneo)
+function btTeStartArrows(){
+  var nombre = document.getElementById('bt-te-nombre').value.trim();
+  var fecha  = document.getElementById('bt-te-fecha').value;
+  var msgEl  = document.getElementById('bt-te-msg');
+  var fail = function(t){ msgEl.style.color='#e05555'; msgEl.textContent=t; };
+  if(!window.btTeFormat) return fail('Elige un formato');
+  if(!/^(outdoor|indoor)-/.test(window.btTeFormat)) return fail('Tiro por tiro está disponible en Outdoor e Indoor. Para Field y 3D usa "Solo total"');
+  if(!fecha) return fail('Ingresa la fecha');
+  btCurMode = window.btTeFormat;      // modo de sesión (existe en BT_MODES)
+  btStartSession();                   // crea el estado y abre la pantalla de captura
+  btState.ext = { name: nombre || 'Torneo', date: fecha };
+  btRenderEnd();
+}
 
 window.btSfSrc=function(v,el){
   btFSrc=v;
@@ -6469,6 +6510,14 @@ window.btApplyRange=function(){
 
 // Arco: selector y filtro
 window.btBowChange=function(v){ btBow=v; btBowTouched=true; btRenderH(); }
+// Fechas locales: la base interpreta 'YYYY-MM-DD' como medianoche UTC, que en México es el día anterior.
+function btLocalDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function btDateNoon(s){ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||''); return m ? new Date(+m[1],+m[2]-1,+m[3],12,0,0).toISOString() : new Date().toISOString(); }
+// Arco que cubre una fecha según sus periodos; solo si hay exactamente uno (si no, no se adivina)
+function btBowForDate(d){
+  var hits=btBows.filter(function(x){ return x.active_from && x.active_from<=d && (!x.active_until || d<=x.active_until); });
+  return hits.length===1 ? String(hits[0].id) : null;
+}
 function btEsc(x){ return String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function btBuildBowSelect(){
   const sel=document.getElementById('bt-bow-sel'); if(!sel) return;
@@ -6987,7 +7036,7 @@ async function btLoadBows(headers){
   const userId=window._supabaseUserId;
   let list=[];
   try{
-    const r=await fetch(`${SUPA}/rest/v1/archer_setups?user_id=eq.${userId}&select=id,name,bow_type`,{headers});
+    const r=await fetch(`${SUPA}/rest/v1/archer_setups?user_id=eq.${userId}&select=id,name,bow_type,active_from,active_until`,{headers});
     if(r.ok){ const d=await r.json(); if(Array.isArray(d)) list=d; }
   }catch(e){}
   const act=window._activeSetupId;
