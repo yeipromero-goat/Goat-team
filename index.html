@@ -12347,235 +12347,117 @@ window.bmDiscardVideo = function(){
 
 <div id="tab-perfil" class="tab-panel">
 <style>
-.pf-wrap{ max-width:480px; margin:0 auto; }
+/* ═══ Perfil · mismo lenguaje de diseño que Bitácora y Competencias ═══
+   Tarjetas oscuras para formularios; BLANCAS para los arcos y los recuadros de selección (texto marino).
+   Color por categoría = los de la Bitácora. Los tokens viven en :root. */
+:root{
+  --pf-ink:#f2f2f2; --pf-ink-2:rgba(255,255,255,0.75); --pf-ink-3:rgba(255,255,255,0.58); --pf-ink-4:rgba(255,255,255,0.45);
+  --pf-line:rgba(255,255,255,0.18); --pf-line-soft:rgba(255,255,255,0.09); --pf-fill:rgba(255,255,255,0.05);
+  --pf-field:#1a1a1a; --pf-white:#fffffc; --pf-on-white:#1b2743; --pf-on-white-2:rgba(27,39,67,0.78); --pf-on-white-3:rgba(27,39,67,0.68);
+  --pf-navy:#182440; --pf-amber:#f5c06a; --pf-up:#5dcaa5; --pf-up-on-white:#1c8564; --pf-down:#e05555;
+  --pf-c-outdoor:#b33c29; --pf-c-indoor:#48878e; --pf-c-field:#182440; --pf-c-3d:#b89563;
+}
+.pf-wrap{max-width:460px;margin:0 auto;font-family:'DM Sans',sans-serif;color:var(--pf-ink);color-scheme:dark}
 
-.pf-card{
-  background:var(--surface);
-  border:0.5px solid var(--border2);
-  border-radius:14px;
-  padding:18px;
-  margin-bottom:12px;
-  position:relative;
-  overflow:hidden;
-}
-.pf-card-bar{
-  position:absolute;top:0;left:0;right:0;height:2px;
-}
-.pf-section-title{
-  font-size:10px;font-weight:600;letter-spacing:.1em;
-  text-transform:uppercase;color:rgba(255,255,255,0.3);
-  margin-bottom:14px;
-}
-.pf-field{
-  margin-bottom:14px;
-}
-.pf-label{
-  font-size:11px;color:rgba(255,255,255,0.45);
-  margin-bottom:5px;display:block;
-}
-.pf-input{
-  width:100%;padding:10px 12px;
-  border:0.5px solid rgba(255,255,255,0.12);
-  border-radius:9px;
-  background:rgba(255,255,255,0.04);
-  color:var(--text);font-size:13px;
-  font-family:'DM Sans',sans-serif;
-  transition:border-color .15s;
-  box-sizing:border-box;
-}
-.pf-input:focus{
-  outline:none;
-  border-color:rgba(216,209,90,0.4);
-  background:rgba(216,209,90,0.04);
-}
-.pf-input:disabled{
-  opacity:.4;cursor:not-allowed;
-}
-.pf-select{
-  width:100%;padding:10px 12px;
-  border:0.5px solid rgba(255,255,255,0.12);
-  border-radius:9px;
-  background:#1a1a1a;
-  color:var(--text);font-size:13px;
-  font-family:'DM Sans',sans-serif;
-  box-sizing:border-box;
-}
-.pf-select:focus{
-  outline:none;border-color:rgba(216,209,90,0.4);
-}
+.pf-card{background:var(--pf-fill);border:0.5px solid var(--pf-line);border-radius:14px;padding:18px;margin-bottom:12px;position:relative;overflow:hidden}
+.pf-card-bar{display:none}
+.pf-section-title{font-size:20px;font-style:italic;font-weight:600;color:var(--pf-ink);margin-bottom:14px}
+.pf-field{margin-bottom:14px}
+.pf-label{font-size:12px;color:var(--pf-ink-2);margin-bottom:6px;display:block}
+.pf-input,.pf-select{width:100%;padding:10px 12px;border:1px solid var(--pf-line);border-radius:10px;background:var(--pf-field);color:var(--pf-ink);font-size:16px;font-family:'DM Sans',sans-serif;box-sizing:border-box;transition:border-color .15s}
+.pf-input:focus,.pf-select:focus{outline:none;border-color:var(--pf-amber)}
+.pf-input:disabled{opacity:.4;cursor:not-allowed}
+/* 00-head.html tiene una regla global input[type=number] (12px, relleno 4px, centrado) que le gana a .pf-input: se iguala aquí */
+.pf-wrap .pf-input[type="number"]{padding:10px 12px;font-size:16px;border-radius:10px;border:1px solid var(--pf-line);background:var(--pf-field);color:var(--pf-ink);text-align:left}
+.pf-wrap .pf-input[type="number"]:focus{border-color:var(--pf-amber)}
+.pf-wrap .pf-setup-item .pf-input[type="number"]{background:#fff;color:var(--pf-on-white);border:1px solid rgba(27,39,67,0.28)}
 
-/* Bow type selector */
-.pf-bow-grid{
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
-}
-.pf-bow-opt{
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:10px;padding:12px 8px;
-  text-align:center;cursor:pointer;
-  transition:all .15s;
-  background:transparent;
-}
-.pf-bow-opt:hover{ background:rgba(255,255,255,0.04); }
-.pf-bow-opt.sel{
-  border-color:rgba(216,209,90,0.5);
-  background:rgba(216,209,90,0.08);
-}
-.pf-bow-icon{ font-size:22px;margin-bottom:5px; }
-.pf-bow-name{
-  font-size:11px;font-weight:600;
-  color:rgba(255,255,255,0.6);
-}
-.pf-bow-opt.sel .pf-bow-name{ color:#d8d15a; }
+/* Insignia del tipo de arco: color por tipo (mismos colores que las categorías de tiro) con la inicial */
+.pf-bt{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.02em;color:#fff;flex-shrink:0;line-height:1}
+.pf-bt-sm{width:30px;height:30px;font-size:15px}
+.pf-bt-recurvo{background:var(--pf-c-outdoor)}
+.pf-bt-compuesto{background:var(--pf-c-field)}
+.pf-bt-barebow{background:var(--pf-c-indoor)}
+.pf-bt-tradicional{background:var(--pf-c-3d);color:#2a1d05}
+.pf-bt-x{background:#6b7280}
 
-/* Age badge */
-.pf-age-badge{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:5px 12px;border-radius:20px;
-  font-size:11px;font-weight:600;
-  background:rgba(93,202,165,0.12);
-  border:0.5px solid rgba(93,202,165,0.3);
-  color:#5dcaa5;
-  margin-top:6px;
-}
+/* Recuadros de selección: blancos, selección con borde marino */
+.pf-bow-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.pf-bow-opt,.pf-gender-opt{border:1px solid rgba(27,39,67,0.22);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;background:var(--pf-white)}
+.pf-bow-opt:hover,.pf-gender-opt:hover{border-color:var(--pf-navy)}
+.pf-bow-opt.sel,.pf-gender-opt.sel{border-color:var(--pf-navy);box-shadow:0 0 0 2px var(--pf-navy)}
+.pf-bow-opt .pf-bt{margin:0 auto 6px}
+.pf-bow-icon{margin-bottom:6px}
+.pf-bow-name,.pf-gender-name{font-size:11px;font-weight:700;color:var(--pf-on-white-2)}
+.pf-bow-opt.sel .pf-bow-name,.pf-gender-opt.sel .pf-gender-name{color:var(--pf-on-white)}
+.pf-gender-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pf-gender-icon{font-size:20px;margin-bottom:4px;color:var(--pf-on-white)}
 
-/* Save button */
-.pf-save-btn{
-  width:100%;padding:12px;
-  border-radius:10px;
-  font-family:'Bebas Neue',sans-serif;
-  font-size:17px;letter-spacing:.06em;
-  border:1.5px solid rgba(216,209,90,0.5);
-  background:rgba(216,209,90,0.1);
-  color:#d8d15a;cursor:pointer;
-  transition:all .15s;
-}
-.pf-save-btn:hover{
-  background:rgba(216,209,90,0.18);
-  border-color:rgba(216,209,90,0.7);
-}
-.pf-save-btn:disabled{
-  opacity:.4;cursor:not-allowed;
-}
+/* Categoría por edad */
+.pf-age-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:var(--pf-white);color:var(--pf-on-white);margin-top:6px}
 
-/* Status msg */
-.pf-msg{
-  text-align:center;font-size:12px;
-  padding:8px;border-radius:8px;
-  margin-top:10px;display:none;
-}
-.pf-msg.ok{
-  background:rgba(93,202,165,0.1);
-  color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3);
-}
-.pf-msg.err{
-  background:rgba(224,85,85,0.1);
-  color:#e05555;border:0.5px solid rgba(224,85,85,0.3);
-}
+/* Botones */
+.pf-save-btn{width:100%;padding:12px;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;border:1.5px solid var(--pf-navy);background:var(--pf-navy);color:#fff;cursor:pointer;transition:opacity .15s}
+.pf-save-btn:hover{opacity:.9}
+.pf-save-btn:disabled{opacity:.4;cursor:not-allowed}
+.pf-add-btn{width:100%;padding:11px;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;border:1.5px solid var(--pf-navy);background:var(--pf-white);color:var(--pf-on-white);cursor:pointer;transition:opacity .15s;margin-top:6px}
+.pf-add-btn:hover{opacity:.9}
+.pf-save-setup-btn{width:100%;padding:11px;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;border:1.5px solid var(--pf-navy);background:var(--pf-navy);color:#fff;cursor:pointer;transition:opacity .15s;margin-top:10px}
+.pf-save-setup-btn:hover{opacity:.9}
+.pf-mini{font-size:11px;font-weight:600;padding:5px 12px;border-radius:10px;border:1.5px solid var(--pf-navy);background:var(--pf-white);color:var(--pf-on-white);cursor:pointer;font-family:'DM Sans',sans-serif}
+.pf-mini-ok{background:var(--pf-navy);color:#fff}
 
-/* Gender selector */
-.pf-gender-grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:8px;
-}
-.pf-gender-opt{
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:10px;padding:10px 8px;
-  text-align:center;cursor:pointer;
-  transition:all .15s;background:transparent;
-}
-.pf-gender-opt:hover{ background:rgba(255,255,255,0.04); }
-.pf-gender-opt.sel{
-  border-color:rgba(216,209,90,0.5);
-  background:rgba(216,209,90,0.08);
-}
-.pf-gender-icon{ font-size:20px;margin-bottom:4px; }
-.pf-gender-name{ font-size:11px;font-weight:600;color:rgba(255,255,255,0.6); }
-.pf-gender-opt.sel .pf-gender-name{ color:#d8d15a; }
+/* Mensajes */
+.pf-msg{text-align:center;font-size:12px;padding:8px;border-radius:10px;margin-top:10px;display:none}
+.pf-msg.ok{background:rgba(93,202,165,0.14);color:var(--pf-up);border:1px solid rgba(93,202,165,0.4)}
+.pf-msg.err{background:rgba(224,85,85,0.12);color:#ff8a8a;border:1px solid rgba(224,85,85,0.45)}
 
-/* Setup history */
-.pf-setup-item{
-  border:0.5px solid rgba(255,255,255,0.08);
-  border-radius:10px;padding:12px;
-  margin-bottom:8px;
-  background:rgba(255,255,255,0.02);
-  position:relative;
-}
-.pf-setup-item.active-setup{
-  border-color:rgba(93,202,165,0.3);
-  background:rgba(93,202,165,0.04);
-}
-.pf-setup-header{
-  display:flex;justify-content:space-between;align-items:flex-start;
-  margin-bottom:8px;
-}
-.pf-setup-title{
-  font-size:13px;font-weight:600;color:#fff;
-}
-.pf-setup-dates{
-  font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;
-}
-.pf-setup-badge{
-  font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;
-  background:rgba(93,202,165,0.15);color:#5dcaa5;
-  border:0.5px solid rgba(93,202,165,0.3);
-  white-space:nowrap;
-}
-.pf-setup-fields{
-  display:grid;grid-template-columns:1fr 1fr;gap:6px;
-}
-.pf-setup-field{
-  font-size:11px;
-}
-.pf-setup-field-label{ color:rgba(255,255,255,0.35); }
-.pf-setup-field-val{ color:rgba(255,255,255,0.8);font-weight:500; }
+/* Tarjetas de arco: BLANCAS */
+.pf-setup-item{border:1px solid rgba(27,39,67,0.22);border-radius:12px;padding:14px;margin-bottom:10px;background:var(--pf-white);color:var(--pf-on-white);position:relative}
+.pf-setup-item.active-setup{border:2px solid var(--pf-up-on-white);padding:13px}
+.pf-setup-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
+.pf-setup-id{display:flex;align-items:center;gap:10px;min-width:0}
+.pf-setup-title{font-size:15px;font-weight:700;color:var(--pf-on-white)}
+.pf-setup-dates{font-size:11px;color:var(--pf-on-white-3);margin-top:2px}
+.pf-setup-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.pf-setup-badge{font-size:10px;padding:3px 10px;border-radius:12px;font-weight:700;background:var(--pf-up-on-white);color:#fff;white-space:nowrap}
+.pf-setup-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.pf-setup-field{font-size:12px}
+.pf-setup-field-label{color:var(--pf-on-white-3);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.pf-setup-field-val{color:var(--pf-on-white);font-weight:600}
+.pf-stab{font-size:12px;color:var(--pf-on-white-2);margin-top:10px;padding-top:10px;border-top:1px solid rgba(27,39,67,0.12)}
+.pf-stab-t,.pf-adj-t{font-size:10px;color:var(--pf-on-white-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.pf-notes{font-size:12px;color:var(--pf-on-white-2);margin-top:10px;font-style:italic}
+.pf-adj{margin-top:12px;padding-top:12px;border-top:1px solid rgba(27,39,67,0.12)}
+.pf-adj-row{display:flex;gap:6px}
+.pf-setup-item .pf-input{background:#fff;border:1px solid rgba(27,39,67,0.28);color:var(--pf-on-white)}
+.pf-setup-item .pf-input::placeholder{color:rgba(27,39,67,0.5)}
+.pf-setup-item .pf-input:focus{border-color:var(--pf-navy)}
+.pf-empty{text-align:center;padding:16px 0;font-size:13px;color:var(--pf-ink-3)}
 
-/* Setup form */
-.pf-setup-form{
-  border:1px solid rgba(216,209,90,0.2);
-  border-radius:12px;padding:14px;
-  background:rgba(216,209,90,0.03);
-  margin-top:10px;display:none;
-}
-.pf-setup-form.open{ display:block; }
-.pf-fields-grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:10px;
-}
-.pf-add-btn{
-  width:100%;padding:10px;border-radius:9px;
-  font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.06em;
-  border:0.5px solid rgba(216,209,90,0.3);
-  background:transparent;color:rgba(255,255,255,0.5);
-  cursor:pointer;transition:all .15s;margin-top:6px;
-}
-.pf-add-btn:hover{ border-color:rgba(216,209,90,0.6);color:#d8d15a; }
-.pf-save-setup-btn{
-  width:100%;padding:10px;border-radius:9px;
-  font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.06em;
-  border:1px solid rgba(93,202,165,0.4);
-  background:rgba(93,202,165,0.1);color:#5dcaa5;
-  cursor:pointer;transition:all .15s;margin-top:10px;
-}
-.pf-save-setup-btn:hover{ background:rgba(93,202,165,0.18); }
-.pf-avatar-big{
-  width:64px;height:64px;border-radius:50%;
-  background:rgba(216,209,90,0.15);
-  border:2px solid rgba(216,209,90,0.3);
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Bebas Neue',sans-serif;
-  font-size:28px;color:#d8d15a;
-  flex-shrink:0;
-}
+/* Radar de aptitud: blanco, colores por categoría de tiro */
+.pf-radar{background:var(--pf-white);border-radius:12px;padding:14px 16px;color:var(--pf-on-white)}
+.pf-radar-t{font-size:14px;font-weight:700;color:var(--pf-on-white);margin-bottom:12px}
+.pf-radar-tips{border-top:1px solid rgba(27,39,67,0.12);padding-top:10px}
+.pf-radar-tips div{font-size:12px;color:var(--pf-on-white-2);line-height:1.5;margin-bottom:3px}
+
+/* Formulario de setup */
+.pf-setup-form{border:1px solid var(--pf-line);border-radius:12px;padding:14px;background:var(--pf-fill);margin-top:10px;display:none}
+.pf-setup-form.open{display:block}
+.pf-fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pf-avatar-big{width:64px;height:64px;border-radius:50%;background:var(--pf-navy);border:2px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;flex-shrink:0}
 </style>
 
 <div class="pf-wrap">
 
   <!-- Header -->
   <div class="pf-card">
-    <div class="pf-card-bar" style="background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
+    <div class="pf-card-bar" style="background:linear-gradient(90deg,#f5c06a,#5dcaa5)"></div>
     <div style="display:flex;align-items:center;gap:14px">
       <div class="pf-avatar-big" id="pf-avatar-big">?</div>
       <div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text);letter-spacing:.04em" id="pf-header-name">Mi Perfil</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.4)" id="pf-header-email">—</div>
+        <div style="font-size:11px;color:var(--pf-ink-3)" id="pf-header-email">—</div>
         <div id="pf-age-badge-wrap"></div>
       </div>
     </div>
@@ -12594,7 +12476,7 @@ window.bmDiscardVideo = function(){
     <div class="pf-field">
       <label class="pf-label">Fecha de nacimiento</label>
       <input class="pf-input" id="pf-birth" type="date">
-      <div id="pf-age-calc" style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:4px"></div>
+      <div id="pf-age-calc" style="font-size:11px;color:var(--pf-ink-3);margin-top:4px"></div>
     </div>
 
     <div class="pf-field" style="margin-bottom:0">
@@ -12637,13 +12519,13 @@ window.bmDiscardVideo = function(){
 
   <!-- Club y categoría -->
   <div class="pf-card">
-    <div class="pf-card-bar" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+    <div class="pf-card-bar" style="background:linear-gradient(90deg,#f5c06a,#e05555)"></div>
     <div class="pf-section-title">Club y competencia</div>
 
     <div class="pf-field">
       <label class="pf-label">Club / Arquería</label>
       <input class="pf-input" id="pf-club" type="text" placeholder="Ej: Club Arco Norte" maxlength="60">
-      <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:4px">
+      <div style="font-size:10px;color:var(--pf-ink-3);margin-top:4px">
         Si cambias de club, actualiza aquí. Tu historial siempre es tuyo.
       </div>
     </div>
@@ -12652,19 +12534,19 @@ window.bmDiscardVideo = function(){
       <label class="pf-label">Tipo de arco</label>
       <div class="pf-bow-grid" style="grid-template-columns:1fr 1fr 1fr 1fr">
         <div class="pf-bow-opt" id="pf-bow-recurvo" onclick="pfSelBow('recurvo')">
-          <div class="pf-bow-icon">🏹</div>
+          <div class="pf-bow-icon pf-bt pf-bt-recurvo">R</div>
           <div class="pf-bow-name">Recurvo</div>
         </div>
         <div class="pf-bow-opt" id="pf-bow-compuesto" onclick="pfSelBow('compuesto')">
-          <div class="pf-bow-icon">🎯</div>
+          <div class="pf-bow-icon pf-bt pf-bt-compuesto">C</div>
           <div class="pf-bow-name">Compuesto</div>
         </div>
         <div class="pf-bow-opt" id="pf-bow-barebow" onclick="pfSelBow('barebow')">
-          <div class="pf-bow-icon">🪃</div>
+          <div class="pf-bow-icon pf-bt pf-bt-barebow">B</div>
           <div class="pf-bow-name">Bare bow</div>
         </div>
         <div class="pf-bow-opt" id="pf-bow-tradicional" onclick="pfSelBow('tradicional')">
-          <div class="pf-bow-icon">🪵</div>
+          <div class="pf-bow-icon pf-bt pf-bt-tradicional">T</div>
           <div class="pf-bow-name">Trad.</div>
         </div>
       </div>
@@ -12681,7 +12563,7 @@ window.bmDiscardVideo = function(){
   <div class="pf-card" style="margin-top:16px">
     <div class="pf-card-bar" style="background:linear-gradient(90deg,#9a88dd,#5dcaa5)"></div>
     <div class="pf-section-title">Historial de equipo</div>
-    <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:12px;line-height:1.5">
+    <div style="font-size:11px;color:var(--pf-ink-3);margin-bottom:12px;line-height:1.5">
       Registra el setup que usas en cada etapa. Al analizar tus puntuaciones podrás saber qué equipo traías en ese periodo.
     </div>
 
@@ -12702,8 +12584,8 @@ window.bmDiscardVideo = function(){
     <!-- Formulario nuevo setup -->
     <div class="pf-setup-form" id="pf-setup-form">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.08em" id="sf-form-title">Nuevo setup</div>
-        <button onclick="pfCancelSetupEdit()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer">✕</button>
+        <div style="font-size:11px;font-weight:600;color:var(--pf-ink-3);text-transform:uppercase;letter-spacing:.08em" id="sf-form-title">Nuevo setup</div>
+        <button onclick="pfCancelSetupEdit()" style="background:none;border:none;color:var(--pf-ink-3);font-size:18px;cursor:pointer">✕</button>
       </div>
       <input type="hidden" id="sf-edit-id" value="">
 
@@ -12766,7 +12648,7 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-rec-string-strands" type="number" min="8" max="24" placeholder="Ej: 14">
           </div>
         </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
+        <div style="font-size:10px;color:var(--pf-ink-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
         <div class="pf-fields-grid">
           <div class="pf-field">
             <label class="pf-label">Longitud central (in)</label>
@@ -12777,7 +12659,7 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-stab-center-oz" type="number" min="0" max="20" step="0.5" placeholder="Ej: 6">
           </div>
         </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 1</div>
+        <div style="font-size:10px;color:var(--pf-ink-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 1</div>
         <div class="pf-fields-grid">
           <div class="pf-field">
             <label class="pf-label">Longitud lateral 1 (in)</label>
@@ -12788,7 +12670,7 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-stab-lat1-oz" type="number" min="0" max="10" step="0.5" placeholder="Ej: 2">
           </div>
         </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 2</div>
+        <div style="font-size:10px;color:var(--pf-ink-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 2</div>
         <div class="pf-fields-grid">
           <div class="pf-field">
             <label class="pf-label">Longitud lateral 2 (in)</label>
@@ -12873,7 +12755,7 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-cp-string-strands" type="number" min="8" max="24" placeholder="Ej: 18">
           </div>
         </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
+        <div style="font-size:10px;color:var(--pf-ink-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Central</div>
         <div class="pf-fields-grid">
           <div class="pf-field">
             <label class="pf-label">Longitud central (in)</label>
@@ -12884,7 +12766,7 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-cp-stab-center-oz" type="number" min="0" max="20" step="0.5" placeholder="Ej: 4">
           </div>
         </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 1</div>
+        <div style="font-size:10px;color:var(--pf-ink-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 1</div>
         <div class="pf-fields-grid">
           <div class="pf-field">
             <label class="pf-label">Longitud lateral 1 (in)</label>
@@ -12895,7 +12777,7 @@ window.bmDiscardVideo = function(){
             <input class="pf-input" id="sf-cp-stab-lat1-oz" type="number" min="0" max="10" step="0.5" placeholder="Ej: 2">
           </div>
         </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 2</div>
+        <div style="font-size:10px;color:var(--pf-ink-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Lateral 2</div>
         <div class="pf-fields-grid">
           <div class="pf-field">
             <label class="pf-label">Longitud lateral 2 (in)</label>
@@ -13506,18 +13388,24 @@ function pfRenderSetupRadar(s){
   const scores = discs.map(d => scoreForDisc(d));
   const generalScore = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
 
+  // Colores por categoría de tiro: los mismos de la Bitácora. TXT = variante más oscura para texto sobre blanco.
+  const CAT_FILL = {indoor:'#48878e', outdoor:'#b33c29', field:'#182440', '3d':'#b89563'};
+  const CAT_TXT  = {indoor:'#356f77', outdoor:'#b33c29', field:'#182440', '3d':'#8a6a3c'};
+  const GEN_FILL = '#f5c06a', GEN_TXT = '#9a6700';
+  const catSpan  = (d,label) => `<span style="color:${CAT_TXT[d]};font-weight:700">${label}</span>`;
+
   // Tips basados en specs reales
   const tips = [];
   const bestDisc = discs[scores.indexOf(Math.max(...scores))];
   const bestLabel = labels[scores.indexOf(Math.max(...scores))];
-  tips.push(`Mejor configurado para <span style="color:var(--yellow)">${bestLabel}</span>`);
+  tips.push(`Mejor configurado para ${catSpan(bestDisc, bestLabel)}`);
 
   if(parseFloat(s.letoff) < 75)
-    tips.push(`⚡ Sube LetOff a 75%+ para ganar ventaja en <span style="color:#5dcaa5">3D</span> e <span style="color:#5ab4d6">Indoor</span>`);
+    tips.push(`⚡ Sube LetOff a 75%+ para ganar ventaja en ${catSpan('3d','3D')} e ${catSpan('indoor','Indoor')}`);
   if(parseFloat(s.ata) < 34)
-    tips.push(`⚡ ATA corto beneficia <span style="color:#5dcaa5">3D</span>, pero limita estabilidad en <span style="color:#5ab4d6">Indoor</span>`);
+    tips.push(`⚡ ATA corto beneficia ${catSpan('3d','3D')}, pero limita estabilidad en ${catSpan('indoor','Indoor')}`);
   if(parseFloat(s.ata) > 40)
-    tips.push(`⚡ ATA largo ideal para <span style="color:#5ab4d6">Indoor</span> y <span style="color:#d8a05a">Outdoor</span>`);
+    tips.push(`⚡ ATA largo ideal para ${catSpan('indoor','Indoor')} y ${catSpan('outdoor','Outdoor')}`);
 
   // SVG pentágono radar
   const size = 220;
@@ -13525,7 +13413,8 @@ function pfRenderSetupRadar(s){
   const r_max = 85;
   const allScores = [generalScore, ...scores];
   const allLabels = ['General', ...labels];
-  const colors = ['#d8d15a','#5ab4d6','#d8a05a','#e05555','#9a88dd'];
+  const colors    = [GEN_FILL, CAT_FILL.indoor, CAT_FILL.outdoor, CAT_FILL.field, CAT_FILL['3d']];
+  const txtColors = [GEN_TXT,  CAT_TXT.indoor,  CAT_TXT.outdoor,  CAT_TXT.field,  CAT_TXT['3d']];
 
   function polar(angle, radius, cx, cy){
     const rad = (angle - 90) * Math.PI / 180;
@@ -13539,14 +13428,14 @@ function pfRenderSetupRadar(s){
   let gridSVG = '';
   [25,50,75,100].forEach(pct=>{
     const pts = angles.map(a=>polar(a, r_max*pct/100, cx, cy));
-    gridSVG += `<polygon points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>`;
-    gridSVG += `<text x="${cx}" y="${cy - r_max*pct/100 + 3}" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.2)">${pct}</text>`;
+    gridSVG += `<polygon points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="rgba(27,39,67,0.16)" stroke-width="0.6"/>`;
+    gridSVG += `<text x="${cx}" y="${cy - r_max*pct/100 + 3}" text-anchor="middle" font-size="7" fill="rgba(27,39,67,0.55)">${pct}</text>`;
   });
 
   // Axis lines
   let axisSVG = angles.map(a=>{
     const [x,y] = polar(a, r_max, cx, cy);
-    return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>`;
+    return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(27,39,67,0.22)" stroke-width="0.6"/>`;
   }).join('');
 
   // Data polygon
@@ -13557,38 +13446,45 @@ function pfRenderSetupRadar(s){
   let dotsSVG = '', labelsSVG = '';
   angles.forEach((a,i)=>{
     const [dx,dy] = dataPoints[i];
-    dotsSVG += `<circle cx="${dx}" cy="${dy}" r="3.5" fill="${colors[i]}" stroke="rgba(0,0,0,0.5)" stroke-width="1"/>`;
+    dotsSVG += `<circle cx="${dx}" cy="${dy}" r="4" fill="${colors[i]}" stroke="#fffffc" stroke-width="1.5"/>`;
     const [lx,ly] = polar(a, r_max + 16, cx, cy);
     const anchor = lx < cx-5 ? 'end' : lx > cx+5 ? 'start' : 'middle';
-    labelsSVG += `<text x="${lx}" y="${ly+4}" text-anchor="${anchor}" font-size="10" font-weight="600" fill="${colors[i]}">${allLabels[i]}</text>`;
+    labelsSVG += `<text x="${lx}" y="${ly+4}" text-anchor="${anchor}" font-size="11" font-weight="700" fill="${txtColors[i]}">${allLabels[i]}</text>`;
   });
 
   const svgH = size + 20;
-  const radarSVG = `<svg viewBox="0 0 ${size} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:280px;display:block;margin:0 auto">
+  // El viewBox se ensancha 28 a cada lado: las etiquetas de los extremos (p. ej. "Indoor") se cortaban en el borde
+  const radarSVG = `<svg viewBox="-28 0 ${size+56} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:280px;display:block;margin:0 auto">
     ${gridSVG}${axisSVG}
-    <polygon points="${polyPoints}" fill="rgba(216,209,90,0.15)" stroke="#d8d15a" stroke-width="1.5"/>
+    <polygon points="${polyPoints}" fill="rgba(245,192,106,0.30)" stroke="${GEN_TXT}" stroke-width="1.5"/>
     ${dotsSVG}${labelsSVG}
   </svg>`;
 
   // Legend
   const legendHTML = allScores.map((sc,i)=>`
-    <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;white-space:nowrap">
-      <span style="width:8px;height:8px;border-radius:50%;background:${colors[i]};display:inline-block"></span>
-      <span style="color:rgba(255,255,255,0.5)">${allLabels[i]}</span>
-      <span style="color:${colors[i]};font-weight:700">${sc}</span>
+    <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap">
+      <span style="width:9px;height:9px;border-radius:50%;background:${colors[i]};display:inline-block"></span>
+      <span style="color:var(--pf-on-white-2)">${allLabels[i]}</span>
+      <span style="color:${txtColors[i]};font-weight:700">${sc}</span>
     </span>`).join('');
 
   wrap.style.display = 'block';
   wrap.innerHTML = `
-    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden">
-      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#d8d15a,#5dcaa5,#5ab4d6)"></div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.06em;color:var(--text);margin-bottom:12px">${(s.name||'Setup activo').toUpperCase()} — Aptitud por disciplina</div>
+    <div class="pf-radar">
+      <div class="pf-radar-t">${(s.name||'Setup activo').toUpperCase()} — Aptitud por disciplina</div>
       ${radarSVG}
-      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;margin-bottom:10px">${legendHTML}</div>
-      <div style="border-top:0.5px solid rgba(255,255,255,0.07);padding-top:10px">
-        ${tips.map(t=>`<div style="font-size:11px;color:rgba(255,255,255,0.55);line-height:1.5;margin-bottom:3px">${t}</div>`).join('')}
+      <div style="display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:center;margin-top:10px;margin-bottom:10px">${legendHTML}</div>
+      <div class="pf-radar-tips">
+        ${tips.map(t=>`<div>${t}</div>`).join('')}
       </div>
     </div>`;
+}
+
+// Insignia del tipo de arco: color por tipo (mismos colores que las categorías de tiro) con la inicial.
+function pfBowBadge(type, sm){
+  const known = {recurvo:'R', compuesto:'C', barebow:'B', tradicional:'T'};
+  const t = known[type] ? type : 'x';
+  return `<span class="pf-bt pf-bt-${t}${sm?' pf-bt-sm':''}" aria-hidden="true">${known[type]||'·'}</span>`;
 }
 
 async function pfLoadSetups(){
@@ -13614,12 +13510,11 @@ async function pfLoadSetups(){
   const setups = await res.json();
 
   if(!Array.isArray(setups)||!setups.length){
-    activeEl.innerHTML='<div style="text-align:center;padding:16px 0;font-size:12px;color:rgba(255,255,255,0.25)">Sin setups registrados aún</div>';
+    activeEl.innerHTML='<div class="pf-empty">Sin setups registrados aún</div>';
     othersEl.innerHTML='';
     return;
   }
 
-  const BOW_ICONS = {recurvo:'🏹',compuesto:'🎯',barebow:'🪃',tradicional:'🪵'};
   const BOW_NAMES = {recurvo:'Recurvo',compuesto:'Compuesto',barebow:'Bare bow',tradicional:'Tradicional'};
 
   // Render radar for active setup (between active card and others)
@@ -13659,8 +13554,8 @@ async function pfLoadSetups(){
         if(sc.lat1?.len||sc.lat1?.oz)     stabRows.push(`Lat 1: ${sc.lat1.len||'—'}" · ${sc.lat1.oz||'—'}oz`);
         if(sc.lat2?.len||sc.lat2?.oz)     stabRows.push(`Lat 2: ${sc.lat2.len||'—'}" · ${sc.lat2.oz||'—'}oz`);
         if(stabRows.length){
-          stabHtml = `<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:6px;padding-top:6px;border-top:0.5px solid rgba(255,255,255,0.06)">
-            <div style="font-size:9px;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Estabilizadores</div>
+          stabHtml = `<div class="pf-stab">
+            <div class="pf-stab-t">Estabilizadores</div>
             ${stabRows.map(r=>`<div>${r}</div>`).join('')}
           </div>`;
         }
@@ -13669,16 +13564,19 @@ async function pfLoadSetups(){
 
     return `<div class="pf-setup-item ${isActive?'active-setup':''}">
       <div class="pf-setup-header">
-        <div>
-          <div class="pf-setup-title">${BOW_ICONS[s.bow_type]||'🏹'} ${s.name || BOW_NAMES[s.bow_type]||s.bow_type}</div>
-          <div class="pf-setup-dates">${fromStr} → ${untilStr}</div>
+        <div class="pf-setup-id">
+          ${pfBowBadge(s.bow_type)}
+          <div style="min-width:0">
+            <div class="pf-setup-title">${s.name || BOW_NAMES[s.bow_type]||s.bow_type}</div>
+            <div class="pf-setup-dates">${BOW_NAMES[s.bow_type]||s.bow_type} · ${fromStr} → ${untilStr}</div>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px">
+        <div class="pf-setup-actions">
           ${isActive
             ? '<span class="pf-setup-badge">✓ Activo</span>'
-            : `<button onclick="pfSetActiveSetup('${s.id}')" style="font-size:11px;padding:3px 10px;border-radius:8px;border:0.5px solid rgba(93,202,165,0.3);background:rgba(93,202,165,0.08);color:#5dcaa5;cursor:pointer;font-family:'DM Sans',sans-serif">Activar</button>`
+            : `<button class="pf-mini pf-mini-ok" onclick="pfSetActiveSetup('${s.id}')">Activar</button>`
           }
-          <button onclick="pfEditSetup(${JSON.stringify(s).replace(/"/g,'&quot;')})" style="font-size:11px;padding:3px 10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer;font-family:'DM Sans',sans-serif">Editar</button>
+          <button class="pf-mini" onclick="pfEditSetup(${JSON.stringify(s).replace(/"/g,'&quot;')})">Editar</button>
         </div>
       </div>
       ${fields.length?`<div class="pf-setup-fields">
@@ -13688,13 +13586,13 @@ async function pfLoadSetups(){
         </div>`).join('')}
       </div>`:''}
       ${stabHtml}
-      ${s.notes?`<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:8px;font-style:italic">${s.notes}</div>`:''}
+      ${s.notes?`<div class="pf-notes">${s.notes}</div>`:''}
       ${isActive?`
-      <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid rgba(255,255,255,0.06)">
-        <div style="font-size:9px;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Registrar ajuste de hoy</div>
-        <div style="display:flex;gap:6px">
-          <input id="pf-adj-note-${s.id}" class="pf-input" style="flex:1;padding:7px 10px;font-size:12px" placeholder="Ej: Cambié central a 28in, +2oz en lateral">
-          <button onclick="pfSaveAdjustment('${s.id}')" style="padding:7px 14px;border-radius:8px;border:0.5px solid rgba(216,209,90,0.4);background:rgba(216,209,90,0.08);color:#d8d15a;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;white-space:nowrap">+ Nota</button>
+      <div class="pf-adj">
+        <div class="pf-adj-t">Registrar ajuste de hoy</div>
+        <div class="pf-adj-row">
+          <input id="pf-adj-note-${s.id}" class="pf-input" style="flex:1;padding:7px 10px;font-size:14px" placeholder="Ej: Cambié central a 28in, +2oz en lateral">
+          <button class="pf-mini pf-mini-ok" onclick="pfSaveAdjustment('${s.id}')" style="white-space:nowrap">+ Nota</button>
         </div>
       </div>`:''}
     </div>`;
@@ -13703,7 +13601,7 @@ async function pfLoadSetups(){
   // 1. Arco activo
   const activeCards = setups.filter(s => s.id === activeSetupId);
   activeEl.innerHTML = activeCards.map(renderCard).join('') ||
-    '<div style="text-align:center;padding:16px 0;font-size:12px;color:rgba(255,255,255,0.25)">Sin arco activo</div>';
+    '<div class="pf-empty">Sin arco activo</div>';
 
   // 2. Radar se renderiza entre los dos bloques (ya está en el DOM entre activeEl y othersEl)
 
