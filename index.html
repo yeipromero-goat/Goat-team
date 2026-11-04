@@ -1428,11 +1428,11 @@ body.theme-light .main-content{
 
   <!-- Nav items -->
   <nav class="sb-nav">
-    <div class="sb-item active" id="sb-competencias" onclick="switchTab('competencias',this)">
+    <div class="sb-item" id="sb-competencias" onclick="switchTab('competencias',this)">
       <span class="sb-item-icon">🏆</span>
       <span class="sb-item-label">Competencias</span>
     </div>
-    <div class="sb-item" id="sb-bitacora" onclick="switchTab('bitacora',this)">
+    <div class="sb-item active" id="sb-bitacora" onclick="switchTab('bitacora',this)">
       <span class="sb-item-icon">📊</span>
       <span class="sb-item-label">Puntuaciones</span>
     </div>
@@ -1449,6 +1449,8 @@ body.theme-light .main-content{
       <span class="sb-item-label">Plan semanal</span>
     </div>
 
+    <!-- JUEGO oculto por ahora. Para volver: quita el atributo hidden de este div y pon GAME_ENABLED = true en 08-foot.html -->
+    <div id="sb-juego" hidden>
     <div class="sb-divider"></div>
     <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:4px 12px 2px">Juego</div>
 
@@ -1463,6 +1465,7 @@ body.theme-light .main-content{
     <div class="sb-item" id="sb-mi-arco" onclick="switchTab('mi-arco',this)">
       <span class="sb-item-icon">🏹</span>
       <span class="sb-item-label">Mi Arco</span>
+    </div>
     </div>
   </nav>
 
@@ -1503,10 +1506,10 @@ body.theme-light .main-content{
 
 <!-- Título de página dinámico -->
 <div class="page-title" id="page-title">
-  <span class="page-title-icon">🏆</span>
+  <span class="page-title-icon">📊</span>
   <div>
-    <div class="page-title-text">Competencias</div>
-    <div class="page-title-sub">Torneos y ligas</div>
+    <div class="page-title-text">Puntuaciones</div>
+    <div class="page-title-sub">Bitácora y estadísticas</div>
   </div>
 </div>
 
@@ -1587,11 +1590,11 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   });
   // Título inicial
-  updatePageTitle('competencias');
+  updatePageTitle('bitacora');
 });
 </script>
 
-<div id="tab-score" class="tab-panel active" style="padding:0">
+<div id="tab-score" class="tab-panel" style="padding:0">
 
 <!-- ── INTRODUCCIÓN AL JUEGO ──────────────────────────── -->
 <div id="game-intro" style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rl);padding:18px 20px;margin-bottom:1.25rem;position:relative;overflow:hidden">
@@ -2408,9 +2411,16 @@ window._onGameFinished_guide = function(){
 
 
 <script>
+// ── JUEGO: oculto por ahora ───────────────────────────────────────────────
+// false = Tablero, Cartas y Mi Arco no se pueden abrir (ni por el menú ni escribiendo la URL).
+// Para volver: GAME_ENABLED = true y quitar el atributo hidden del bloque Juego en 02-nav.html.
+const GAME_ENABLED = false;
+const GAME_TABS    = ['score','cards','mi-arco'];
+function _gateTab(id){ return (!GAME_ENABLED && GAME_TABS.indexOf(id) !== -1) ? 'bitacora' : id; }
+
 // ── ROUTE MAP ──────────────────────────────────────────────────────────────
 const ROUTE_TO_TAB = {
-  '/':                        'competencias',
+  '/':                        'bitacora',
   '/competencias':            'competencias',
   '/puntuaciones':            'bitacora',
   '/perfil':                  'perfil',
@@ -2436,17 +2446,18 @@ const TAB_TO_ROUTE = {
 
 function getTabFromPath(pathname){
   // Exact match first
-  if(ROUTE_TO_TAB[pathname]) return ROUTE_TO_TAB[pathname];
+  if(ROUTE_TO_TAB[pathname]) return _gateTab(ROUTE_TO_TAB[pathname]);
   // Prefix match (e.g. /tablero/anything → score)
   const keys = Object.keys(ROUTE_TO_TAB).sort((a,b)=>b.length-a.length);
   for(const k of keys){
-    if(pathname.startsWith(k+'/') || pathname === k) return ROUTE_TO_TAB[k];
+    if(pathname.startsWith(k+'/') || pathname === k) return _gateTab(ROUTE_TO_TAB[k]);
   }
-  return 'competencias';
+  return 'bitacora';
 }
 
 // ── TAB SWITCHING ──────────────────────────────────────────────────────────
 function switchTab(id, el){
+  id = _gateTab(id);
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   const panel = document.getElementById('tab-'+id);
   if(panel) panel.classList.add('active');
@@ -2470,7 +2481,8 @@ function switchTab(id, el){
 window.addEventListener('popstate', function(e){
   let tab = e.state?.tab;
   if(!tab) tab = getTabFromPath(window.location.pathname);
-  if(!document.getElementById('tab-'+tab)) tab = 'competencias';
+  tab = _gateTab(tab);
+  if(!document.getElementById('tab-'+tab)) tab = 'bitacora';
   switchTab(tab, document.getElementById('sb-'+tab));
 });
 
@@ -3985,6 +3997,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 // Sirve como hook para cualquier módulo que necesite re-pintar
 // después de que BOWS / CARDS / selecciones del usuario estén listos.
 window.addEventListener('supabase-data-ready', function() {
+  // Activar la pestaña según la URL PRIMERO: si algún render del juego falla más abajo, la app ya quedó en su pestaña
+  if (typeof window._initTabFromUrl === 'function') window._initTabFromUrl();
   // Sincronizar selectedBow (tablero) con activeBow (Mi Arco) restaurado desde Supabase
   if (typeof activeBow !== 'undefined' && activeBow !== null) selectedBow = activeBow;
   if (typeof renderBowProfile       === 'function') renderBowProfile();
@@ -3998,8 +4012,6 @@ window.addEventListener('supabase-data-ready', function() {
   if (typeof renderItemGrid         === 'function') renderItemGrid();
   if (typeof updateDeckUI           === 'function') updateDeckUI();
   if (typeof updateSetupChecks      === 'function') updateSetupChecks();
-  // Activar tab según URL al cargar
-  if (typeof window._initTabFromUrl === 'function') window._initTabFromUrl();
   console.log('🔄 UI re-renderizada con datos de Supabase | CARDS:', window.CARDS?.length, '| item-grid:', !!document.getElementById('item-grid'));
 });
 
@@ -5353,7 +5365,7 @@ window.CARD_STAT_WEIGHTS     = CARD_STAT_WEIGHTS;
 window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 </script>
 
-<div id="tab-bitacora" class="tab-panel">
+<div id="tab-bitacora" class="tab-panel active">
 <style>
 /* ── Bitácora sobre el fondo oscuro de la app ─────────────────────────
    Por defecto: texto claro sobre fondo oscuro. Las superficies blancas

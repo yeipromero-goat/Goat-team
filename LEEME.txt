@@ -1,0 +1,30 @@
+OCULTAR EL JUEGO · qué copiar y dónde
+=====================================
+
+  partials/02-nav.html        ->  ~/Documents/Game/partials/02-nav.html
+  partials/03-tab-score.html  ->  ~/Documents/Game/partials/03-tab-score.html
+  partials/08-foot.html       ->  ~/Documents/Game/partials/08-foot.html
+  partials/10-bitacora.html   ->  ~/Documents/Game/partials/10-bitacora.html
+                                  (la Bitácora final de siempre; solo cambia class="tab-panel active")
+  auth.js                     ->  ~/Documents/Game/auth.js      (archivo suelto: NO se compila)
+
+PASOS
+  cd ~/Documents/Game
+  cp -R partials ../Game-partials-respaldo       # respaldo FUERA de la carpeta partials
+  cp auth.js ../Game-auth.js.respaldo
+  (copia los 5 archivos de arriba)
+  node build.js
+  git add index.html auth.js
+  git commit -m "Oculta el juego: Puntuaciones como pantalla inicial"
+  git push
+  recarga fuerte (Cmd+Shift+R)
+
+PARA VOLVER A MOSTRAR EL JUEGO
+  08-foot.html : const GAME_ENABLED = true;
+  02-nav.html  : quita el atributo hidden de  <div id="sb-juego" hidden>
+  (node build.js, git add index.html, commit, push)
+  Para deshacerlo todo: restaura los archivos del respaldo.
+
+QUÉ NO SE TOCA
+  Ninguna tabla de la base de datos. Ningún archivo del juego se borra.
+  supabase.js y supabase-persistence.js quedan exactamente como están.

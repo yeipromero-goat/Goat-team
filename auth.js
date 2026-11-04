@@ -72,8 +72,8 @@ async function _onUserReady() {
     refreshLineupUI();
   }
   // Ahora sí activar el historial para el botón regresar
-  history.replaceState({tab:'score'}, '', window.location.pathname);
-  history.pushState({tab:'score'}, '', window.location.pathname + '#score');
+  history.replaceState({tab:'bitacora'}, '', window.location.pathname);
+  history.pushState({tab:'bitacora'}, '', window.location.pathname + '#bitacora');
 }
 
 // ── Inicialización una sola vez por sesión ─────────────────────────
