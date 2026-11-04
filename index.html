@@ -7151,44 +7151,80 @@ if(window._supabaseUserId && window._supabaseToken){
 
 <div id="tab-competencias" class="tab-panel">
 <style>
-.cp{max-width:480px;margin:0 auto;font-family:'DM Sans',sans-serif}
-.cp-card{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden}
-.cp-ca{position:absolute;top:0;left:0;right:0;height:2px}
-.cp-btn{width:100%;padding:11px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:transparent;color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s}
-.cp-btn:hover{background:rgba(255,255,255,0.06)}
-.cp-btn-y{background:rgba(216,209,90,0.15);color:#d8d15a;border-color:rgba(216,209,90,0.4)}
-.cp-btn-y:hover{background:rgba(216,209,90,0.25)}
-.cp-btn-r{background:rgba(255,80,80,0.1);color:#e05555;border-color:rgba(255,80,80,0.3)}
-.cp-btn-g{background:rgba(93,202,165,0.1);color:#5dcaa5;border-color:rgba(93,202,165,0.3)}
+/* ═══ Competencias · mismo lenguaje de diseño que la Bitácora ═══
+   Marino #182440 con texto blanco; activo = blanco con borde negro; encabezados en cursiva con separador punteado;
+   acento ámbar; barras con pista marina. Los tokens viven en :root porque varios overlays se agregan a <body>. */
+:root{
+  --cp-ink:#f2f2f2; --cp-ink-2:rgba(255,255,255,0.75); --cp-ink-3:rgba(255,255,255,0.58); --cp-ink-4:rgba(255,255,255,0.45);
+  --cp-line:rgba(255,255,255,0.18); --cp-line-soft:rgba(255,255,255,0.09); --cp-fill:rgba(255,255,255,0.05);
+  --cp-field:#1a1a1a; --cp-white:#fffffc; --cp-on-white:#1b2743; --cp-navy:#182440;
+  --cp-amber:#f5c06a; --cp-dotted:#4eabc6; --cp-up:#5dcaa5; --cp-down:#e05555;
+}
+.cp{max-width:460px;margin:0 auto;font-family:'DM Sans',sans-serif;color:var(--cp-ink)}
+.cp-card{background:var(--cp-fill);border:0.5px solid var(--cp-line);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden}
+.cp-ca{display:none}
+.cp-btn{width:100%;padding:11px;border:1.5px solid var(--cp-navy);border-radius:12px;background:var(--cp-white);color:var(--cp-on-white);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s}
+.cp-btn:hover{opacity:.88}
+.cp-btn-y{background:var(--cp-navy);color:#fff;border-color:var(--cp-navy)}
+.cp-btn-r{background:var(--cp-white);color:var(--cp-down);border-color:var(--cp-down)}
+.cp-btn-g{background:var(--cp-navy);color:#fff;border-color:var(--cp-up)}
 .cp-btn-sm{padding:7px 14px;width:auto;font-size:12px}
-.cp-sec{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:8px}
+.cp-hd{font-size:20px;font-style:italic;font-weight:600;color:var(--cp-ink);margin:18px 0 10px;padding-top:12px;border-top:3px dotted var(--cp-dotted)}
+.cp-hd.first{margin-top:0;padding-top:0;border-top:none}
+.cp-sec{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-3);margin-bottom:8px}
 .cp-num{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em}
-.cp-pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:600}
-.cp-muted{color:rgba(255,255,255,0.4);font-size:12px}
-.cp-input{width:100%;padding:10px 12px;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:13px;font-family:'DM Sans',sans-serif;margin-bottom:8px}
-.cp-select{width:100%;padding:10px 12px;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;background:#1a1a1a;color:#fff;font-size:13px;font-family:'DM Sans',sans-serif;margin-bottom:8px}
-.cp-label{font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px;display:block}
-.cp-divider{border:none;border-top:0.5px solid rgba(255,255,255,0.07);margin:12px 0}
-.cp-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid rgba(255,255,255,0.07)}
+.cp-pill{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.03em;white-space:nowrap}
+.cp-muted{color:var(--cp-ink-3);font-size:12px}
+.cp-input,.cp-select{width:100%;padding:10px 12px;border:1px solid var(--cp-line);border-radius:10px;background:var(--cp-field);color:var(--cp-ink);font-size:16px;font-family:'DM Sans',sans-serif;margin-bottom:8px}
+.cp-label{font-size:12px;color:var(--cp-ink-2);margin-bottom:6px;display:block}
+.cp-divider{border:none;border-top:0.5px solid var(--cp-line-soft);margin:12px 0}
+.cp-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--cp-line-soft)}
 .cp-row:last-child{border-bottom:none}
-.cp-avatar{width:32px;height:32px;border-radius:50%;background:rgba(216,209,90,0.15);border:1.5px solid rgba(216,209,90,0.3);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#d8d15a;flex-shrink:0}
-.cp-tab-bar{display:flex;border:0.5px solid rgba(255,255,255,0.12);border-radius:10px;overflow:hidden;margin-bottom:16px}
-.cp-tab-bar button{flex:1;padding:9px;border:none;background:transparent;color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
-.cp-tab-bar button.act{background:rgba(216,209,90,0.12);color:#d8d15a}
-.cp-badge-open{background:rgba(93,202,165,0.15);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3)}
-.cp-badge-playing{background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3)}
-.cp-badge-validating{background:rgba(216,120,80,0.15);color:#d87850;border:0.5px solid rgba(216,120,80,0.3)}
-.cp-badge-closed{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.35)}
-.cp-check{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
-.cp-check.done{background:rgba(93,202,165,0.2);border-color:#5dcaa5;color:#5dcaa5}
+.cp-avatar{width:32px;height:32px;border-radius:50%;background:var(--cp-navy);border:1.5px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fff;flex-shrink:0}
+.cp-tab-bar{display:flex;gap:10px;margin-bottom:16px}
+.cp-tab-bar button{flex:1;padding:10px;border:2px solid var(--cp-navy);border-radius:14px;background:var(--cp-navy);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.cp-tab-bar button.act{background:var(--cp-white);color:var(--cp-on-white);border-color:#000}
+.cp-badge-open{background:var(--cp-up);color:#0f2a22}
+.cp-badge-playing{background:var(--cp-amber);color:#2a1d05}
+.cp-badge-validating{background:#e08a5a;color:#2a1206}
+.cp-badge-closed{background:rgba(255,255,255,0.14);color:var(--cp-ink-2)}
+.cp-check{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.cp-check.done{background:rgba(93,202,165,0.2);border-color:var(--cp-up);color:var(--cp-up)}
+/* Lobby y Mis partidas */
+.cp-hero{cursor:pointer;border-radius:16px;padding:20px;margin-bottom:12px;background:var(--cp-navy);border:1.5px solid rgba(255,255,255,0.28);transition:border-color .15s}
+.cp-hero:hover{border-color:rgba(255,255,255,0.6)}
+.cp-hero-t{font-size:24px;font-weight:700;font-style:italic;color:#fff;line-height:1.15;margin-bottom:6px}
+.cp-hero-s{font-size:13px;color:rgba(255,255,255,0.8);line-height:1.45;margin-bottom:16px}
+.cp-hero-cta{display:inline-block;padding:10px 18px;border-radius:12px;background:var(--cp-white);color:var(--cp-on-white);font-size:14px;font-weight:700}
+.cp-item{background:var(--cp-fill);border:0.5px solid var(--cp-line);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.cp-item:hover{border-color:rgba(255,255,255,0.45)}
+.cp-item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.cp-item-t{font-size:15px;font-weight:700;color:#fff;margin-bottom:2px}
+.cp-ellip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-item-s{font-size:12px;color:var(--cp-ink-3)}
+.cp-item-hint{font-size:12px;color:var(--cp-amber);font-weight:600;margin-top:8px}
+.cp-item-link{text-align:right;font-size:12px;font-weight:600;color:var(--cp-ink-2);margin-top:8px}
+.cp-tag{font-weight:700;color:var(--cp-amber)}
+.cp-bar{height:8px;border-radius:5px;background:var(--cp-navy);border:1px solid var(--cp-line);overflow:hidden;margin:10px 0}
+.cp-bar-f{height:100%;border-radius:4px;background:var(--cp-amber)}
+.cp-stats{display:flex;gap:22px}
+.cp-stat-n{font-size:26px;color:#fff;line-height:1}
+.cp-stat-l{font-size:11px;color:var(--cp-ink-3);margin-top:2px}
+.cp-up{color:var(--cp-up)}
+.cp-score-line{display:flex;align-items:baseline;gap:8px;margin:10px 0 2px}
+.cp-score-big{font-size:34px;color:#fff;line-height:1}
+.cp-pending{margin:10px 0 2px;padding:8px 12px;border-radius:10px;border:1px solid var(--cp-amber);color:var(--cp-amber);font-size:12px;font-weight:600}
+.cp-hist{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--cp-line-soft)}
+.cp-hist:last-child{border-bottom:none}
+.cp-hist-m{font-size:26px;flex-shrink:0;min-width:36px;text-align:center}
 /* Bracket */
 .cp-bracket{overflow-x:auto;padding-bottom:8px}
 .cp-round-col{display:flex;flex-direction:column;gap:8px;min-width:140px;flex-shrink:0}
-.cp-match{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px}
-.cp-match.winner-decided{border-color:rgba(216,209,90,0.3)}
+.cp-match{background:var(--cp-fill);border:0.5px solid var(--cp-line);border-radius:10px;padding:8px 10px}
+.cp-match.winner-decided{border-color:var(--cp-amber)}
 .cp-match-player{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px}
-.cp-match-player.winner{color:#d8d15a;font-weight:600}
-.cp-match-player.loser{color:rgba(255,255,255,0.35)}
+.cp-match-player.winner{color:var(--cp-amber);font-weight:700}
+.cp-match-player.loser{color:var(--cp-ink-3)}
 /* Podium */
 .cp-podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:20px 0}
 .cp-podium-step{display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -7213,59 +7249,32 @@ if(window._supabaseUserId && window._supabaseToken){
 <!-- ══ LOBBY ══════════════════════════════════════════════════ -->
 <div id="cp-tab-lobby">
 
-  <!-- Crear sala amigos — HERO CARD -->
-  <div onclick="cpShowCreate()" style="cursor:pointer;position:relative;overflow:hidden;border-radius:14px;padding:20px;margin-bottom:10px;background:linear-gradient(135deg,rgba(216,209,90,0.12) 0%,rgba(93,202,165,0.08) 100%);border:1.5px solid rgba(216,209,90,0.35);transition:all .2s;box-shadow:0 0 28px rgba(216,209,90,0.08)"
-    onmouseover="this.style.borderColor='rgba(216,209,90,0.6)';this.style.boxShadow='0 0 36px rgba(216,209,90,0.18)'"
-    onmouseout="this.style.borderColor='rgba(216,209,90,0.35)';this.style.boxShadow='0 0 28px rgba(216,209,90,0.08)'">
-
-    <!-- Fondo decorativo -->
-    <div style="position:absolute;top:-10px;right:-10px;width:110px;height:110px;opacity:0.08;pointer-events:none;transform:rotate(10deg)">
-      <img src="https://axaiyaflubssaghvhefe.supabase.co/storage/v1/object/public/assets/logo_-_Goat_.webp" style="width:100%;height:100%;object-fit:contain">
-    </div>
-
-    <!-- Badge -->
-    <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(216,209,90,0.15);border:0.5px solid rgba(216,209,90,0.4);border-radius:20px;padding:3px 10px;margin-bottom:12px">
-      <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#d8d15a">⚡ Acción principal</span>
-    </div>
-
-    <!-- Título -->
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.04em;color:#d8d15a;line-height:1;margin-bottom:6px">Crear torneo entre amigos</div>
-    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:16px;line-height:1.5">Invita a 2–6 arqueros · Asíncrono · Clasificatorio + llaves opcional</div>
-
-    <!-- Features -->
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
-      <span style="font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(93,202,165,0.12);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.25)">🏆 Llaves eliminatorias</span>
-      <span style="font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(90,159,214,0.12);color:#5ab4d6;border:0.5px solid rgba(90,159,214,0.25)">📅 A tu ritmo</span>
-      <span style="font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(154,136,221,0.12);color:#9a88dd;border:0.5px solid rgba(154,136,221,0.25)">⚖️ Handicap inteligente</span>
-    </div>
-
-    <!-- CTA -->
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;color:#d8d15a">Crear torneo →</div>
-      <div style="width:36px;height:36px;border-radius:50%;background:rgba(216,209,90,0.15);border:1.5px solid rgba(216,209,90,0.4);display:flex;align-items:center;justify-content:center;font-size:18px">🏹</div>
-    </div>
+  <!-- Crear torneo entre amigos -->
+  <div class="cp-hero" onclick="cpShowCreate()">
+    <div class="cp-hero-t">Crear torneo entre amigos</div>
+    <div class="cp-hero-s">Invita a 2 a 6 arqueros. Cada quien tira a su ritmo, con clasificatorio y llaves opcionales.</div>
+    <span class="cp-hero-cta">Crear torneo →</span>
   </div>
 
   <!-- Unirse con código -->
   <div class="cp-card">
-    <div class="cp-ca" style="background:linear-gradient(90deg,#5ab4d6,#9a88dd)"></div>
-    <div class="cp-label">Unirse con código — torneos o ligas</div>
+    <div class="cp-label">Unirse con código (torneos o ligas)</div>
     <div style="display:flex;gap:8px">
       <input class="cp-input" id="cp-join-code" placeholder="Ej: GOAT-3829" style="margin-bottom:0;flex:1;text-transform:uppercase" maxlength="9" oninput="this.value=this.value.toUpperCase()">
       <button class="cp-btn cp-btn-y cp-btn-sm" onclick="cpJoinByCode()" style="white-space:nowrap">Unirse →</button>
     </div>
-    <div class="cp-muted" style="font-size:10px;margin-top:4px">Tu coach o el creador del evento te da el código</div>
+    <div class="cp-muted" style="font-size:11px;margin-top:6px">Tu coach o el creador del evento te da el código</div>
   </div>
 
   <!-- Torneos de club activos -->
-  <div class="cp-sec" style="margin-top:4px">Torneos de club</div>
+  <div class="cp-hd">Torneos de club</div>
   <div id="cp-club-list">
     <div class="cp-muted" style="text-align:center;padding:20px 0">Cargando torneos...</div>
   </div>
 
   <!-- Mis ligas activas -->
   <div id="cp-my-leagues-section" style="display:none">
-    <div class="cp-sec" style="margin-top:8px">Mis ligas</div>
+    <div class="cp-hd">Mis ligas</div>
     <div id="cp-my-leagues-list"></div>
   </div>
 
@@ -7286,7 +7295,7 @@ if(window._supabaseUserId && window._supabaseToken){
   </div>
 
   <div class="cp-card">
-    <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
+    <div class="cp-ca" style="background:linear-gradient(90deg,#f5c06a,#5dcaa5)"></div>
     <div class="cp-sec">Nombre del torneo</div>
     <input class="cp-input" id="cp-new-title" placeholder="Ej: Domingo en el campo">
 
@@ -7313,8 +7322,8 @@ if(window._supabaseUserId && window._supabaseToken){
 
     <div class="cp-sec" style="margin-top:4px">Formato</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-      <div id="cp-fmt-score" onclick="cpSetFmt('score')" style="border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center">
-        <div style="font-size:13px;font-weight:600;color:#d8d15a">Solo score</div>
+      <div id="cp-fmt-score" onclick="cpSetFmt('score')" style="border:1.5px solid #f5c06a;background:rgba(245,192,106,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center">
+        <div style="font-size:13px;font-weight:600;color:#f5c06a">Solo score</div>
         <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">Clasificatorio → podium</div>
       </div>
       <div id="cp-fmt-bracket" onclick="cpSetFmt('bracket')" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center">
@@ -7330,8 +7339,8 @@ if(window._supabaseUserId && window._supabaseToken){
     <div id="cp-match-fmt-section" style="display:none">
       <div class="cp-sec">Formato de matches (llaves)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div id="cp-mfmt-score" onclick="cpSetMatchFmt('score')" style="border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center">
-          <div style="font-size:13px;font-weight:600;color:#d8d15a">15 flechas</div>
+        <div id="cp-mfmt-score" onclick="cpSetMatchFmt('score')" style="border:1.5px solid #f5c06a;background:rgba(245,192,106,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center">
+          <div style="font-size:13px;font-weight:600;color:#f5c06a">15 flechas</div>
           <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">Sumatoria total</div>
         </div>
         <div id="cp-mfmt-sets" onclick="cpSetMatchFmt('sets')" style="border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center">
@@ -7361,7 +7370,7 @@ if(window._supabaseUserId && window._supabaseToken){
         <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:6px">Sensibilidad</div>
         <input type="range" min="1" max="3" step="1" value="2" id="cp-auto-sens" oninput="document.getElementById('cp-auto-sens-lbl').textContent=['','Suave','Balanceado','Agresivo'][this.value]" style="width:100%;margin-bottom:4px">
         <div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.3)">
-          <span>Suave</span><span id="cp-auto-sens-lbl" style="color:#d8d15a">Balanceado</span><span>Agresivo</span>
+          <span>Suave</span><span id="cp-auto-sens-lbl" style="color:#f5c06a">Balanceado</span><span>Agresivo</span>
         </div>
         <div style="margin-top:8px;padding:7px 10px;border-radius:6px;background:rgba(170,160,236,0.08);border:0.5px solid rgba(170,160,236,0.2);font-size:11px;color:#afa9ec">🔒 Activo — las otras opciones están deshabilitadas</div>
       </div>
@@ -7416,7 +7425,7 @@ if(window._supabaseUserId && window._supabaseToken){
   <!-- Código de sala -->
   <div id="cp-room-code-section" class="cp-card" style="text-align:center">
     <div class="cp-sec">Código de sala</div>
-    <div class="cp-num" style="font-size:36px;color:#d8d15a;letter-spacing:.1em" id="cp-room-code">—</div>
+    <div class="cp-num" style="font-size:36px;color:#f5c06a;letter-spacing:.1em" id="cp-room-code">—</div>
     <div class="cp-muted" style="font-size:11px;margin-top:4px">Comparte este código con los arqueros</div>
     <button class="cp-btn cp-btn-sm cp-btn-y" style="margin-top:10px" onclick="cpCopyCode()">Copiar código</button>
   </div>
@@ -7433,17 +7442,17 @@ if(window._supabaseUserId && window._supabaseToken){
 
   <!-- Mi score / acción -->
   <div class="cp-card" id="cp-room-action">
-    <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
+    <div class="cp-ca" style="background:linear-gradient(90deg,#f5c06a,#5dcaa5)"></div>
     <div id="cp-room-action-content"></div>
   </div>
 
   <!-- Mi Match — card de acción cuando hay match pendiente -->
   <div id="cp-my-match-card" style="display:none;margin-bottom:12px">
-    <div class="cp-card" style="border:1.5px solid rgba(216,209,90,0.35);background:rgba(216,209,90,0.04);position:relative;overflow:hidden">
-      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#d8d15a,#5dcaa5)"></div>
+    <div class="cp-card" style="border:1.5px solid rgba(245,192,106,0.35);background:rgba(245,192,106,0.04);position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#f5c06a,#5dcaa5)"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.06em;color:#d8d15a;text-transform:uppercase">🎯 Mi Match Pendiente</div>
-        <span id="cp-my-match-round" style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(216,209,90,0.12);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3);font-weight:700;letter-spacing:.06em;text-transform:uppercase">—</span>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.06em;color:#f5c06a;text-transform:uppercase">🎯 Mi Match Pendiente</div>
+        <span id="cp-my-match-round" style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(245,192,106,0.12);color:#f5c06a;border:0.5px solid rgba(245,192,106,0.3);font-weight:700;letter-spacing:.06em;text-transform:uppercase">—</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
         <div id="cp-my-match-p1" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);text-align:center">
@@ -7515,7 +7524,7 @@ if(window._supabaseUserId && window._supabaseToken){
       <span style="font-size:14px;font-weight:600;color:#fff">Nuevo torneo de club</span>
     </div>
     <div class="cp-card">
-      <div class="cp-ca" style="background:linear-gradient(90deg,#9a88dd,#d8d15a)"></div>
+      <div class="cp-ca" style="background:linear-gradient(90deg,#9a88dd,#f5c06a)"></div>
       <label class="cp-label">Nombre del torneo</label>
       <input class="cp-input" id="cp-adm-title" placeholder="Ej: Torneo Mensual Enero">
       <label class="cp-label">Modalidad</label>
@@ -7575,7 +7584,7 @@ if(window._supabaseUserId && window._supabaseToken){
       <span style="font-size:14px;font-weight:600;color:#fff">Nueva liga</span>
     </div>
     <div class="cp-card">
-      <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+      <div class="cp-ca" style="background:linear-gradient(90deg,#f5c06a,#e05555)"></div>
       <label class="cp-label">Nombre de la liga</label>
       <input class="cp-input" id="cp-lg-title" placeholder="Ej: Liga Indoor Primavera 2026">
       <label class="cp-label">Modalidad de cada fecha</label>
@@ -7696,14 +7705,14 @@ window.cpSetFmt = function(fmt){
   cpFmt=fmt;
   const isBracket=fmt==='bracket';
   const isRR=fmt==='round_robin';
-  const selStyle='border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
+  const selStyle='border:1.5px solid #f5c06a;background:rgba(245,192,106,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
   const unselStyle='border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
   document.getElementById('cp-fmt-score').style.cssText=(!isBracket&&!isRR)?selStyle:unselStyle;
   document.getElementById('cp-fmt-bracket').style.cssText=isBracket?selStyle:unselStyle;
   document.getElementById('cp-fmt-rr').style.cssText=isRR?selStyle:unselStyle;
-  document.getElementById('cp-fmt-score').querySelector('div').style.color=(!isBracket&&!isRR)?'#d8d15a':'rgba(255,255,255,0.5)';
-  document.getElementById('cp-fmt-bracket').querySelector('div').style.color=isBracket?'#d8d15a':'rgba(255,255,255,0.5)';
-  document.getElementById('cp-fmt-rr').querySelector('div').style.color=isRR?'#d8d15a':'rgba(255,255,255,0.5)';
+  document.getElementById('cp-fmt-score').querySelector('div').style.color=(!isBracket&&!isRR)?'#f5c06a':'rgba(255,255,255,0.5)';
+  document.getElementById('cp-fmt-bracket').querySelector('div').style.color=isBracket?'#f5c06a':'rgba(255,255,255,0.5)';
+  document.getElementById('cp-fmt-rr').querySelector('div').style.color=isRR?'#f5c06a':'rgba(255,255,255,0.5)';
   document.getElementById('cp-match-fmt-section').style.display=(isBracket||isRR)?'block':'none';
   // RR: forzar cupo mínimo 3
   if(isRR){
@@ -7719,8 +7728,8 @@ window.cpSetMatchFmt = function(fmt){
   ['score','sets'].forEach(f=>{
     const el=document.getElementById('cp-mfmt-'+f);
     const sel=f===fmt;
-    el.style.cssText=sel?'border:1.5px solid #d8d15a;background:rgba(216,209,90,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center':'border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
-    el.querySelector('div').style.color=sel?'#d8d15a':'rgba(255,255,255,0.5)';
+    el.style.cssText=sel?'border:1.5px solid #f5c06a;background:rgba(245,192,106,0.08);border-radius:8px;padding:10px;cursor:pointer;text-align:center':'border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;cursor:pointer;text-align:center';
+    el.querySelector('div').style.color=sel?'#f5c06a':'rgba(255,255,255,0.5)';
   });
 }
 
@@ -7749,11 +7758,11 @@ function cpApplyToggle(key,on){
   const dot=document.getElementById('tog-'+key+'-dot');
   const detail=document.getElementById('cp-hcap-'+key+'-detail');
   const card=document.getElementById('cp-hcap-'+key);
-  if(tog) tog.style.background=on?'#d8d15a':'rgba(255,255,255,0.12)';
+  if(tog) tog.style.background=on?'#f5c06a':'rgba(255,255,255,0.12)';
   if(dot) dot.style.transform=on?'translateX(16px)':'translateX(0)';
   if(detail) detail.style.display=on?'block':'none';
-  if(card) card.style.borderColor=on?'rgba(216,209,90,0.5)':'rgba(255,255,255,0.12)';
-  if(card) card.style.background=on?'rgba(216,209,90,0.06)':'transparent';
+  if(card) card.style.borderColor=on?'rgba(245,192,106,0.5)':'rgba(255,255,255,0.12)';
+  if(card) card.style.background=on?'rgba(245,192,106,0.06)':'transparent';
 }
 
 window.cpStepHcap = function(key,delta){
@@ -7836,19 +7845,15 @@ async function cpLoadLobby(){
       listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:20px 0">Sin torneos de club activos</div>';
     } else {
       listEl.innerHTML=data.map(t=>`
-        <div class="cp-card" style="cursor:pointer;margin-bottom:8px" onclick="cpOpenRoom('${t.id}')">
-          <div class="cp-ca" style="background:linear-gradient(90deg,#9a88dd,#5ab4d6)"></div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div>
-              <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:3px">${t.title}</div>
-              <div class="cp-muted" style="font-size:11px">${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}</div>
+        <div class="cp-item" onclick="cpOpenRoom('${t.id}')">
+          <div class="cp-item-top">
+            <div style="min-width:0">
+              <div class="cp-item-t">${t.title}</div>
+              <div class="cp-item-s">${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}</div>
             </div>
             ${cpStatusBadge(t.status)}
           </div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            ${t.handicap_enabled?'<span class="cp-pill" style="background:rgba(216,209,90,0.1);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3);font-size:9px">Handicap activo</span>':''}
-            <span class="cp-muted" style="font-size:11px">Cupo: ${t.max_players_club||t.max_players} arqueros</span>
-          </div>
+          <div class="cp-item-s" style="margin-top:8px">Cupo: ${t.max_players_club||t.max_players} arqueros${t.handicap_enabled?' · <span class="cp-tag">Handicap activo</span>':''}</div>
         </div>`).join('');
     }
   } catch(e){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error cargando torneos</div>'; }
@@ -7874,24 +7879,21 @@ async function cpLoadLobby(){
         const msLeft=ar?new Date(ar.active_until)-Date.now():0;
         const hLeft=Math.floor(msLeft/3600000);
         const mLeft=Math.floor((msLeft%3600000)/60000);
-        return`<div class="cp-card" style="margin-bottom:8px;cursor:pointer" onclick="cpOpenLeague('${l.id}')">
-          <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div>
-              <div style="font-size:14px;font-weight:600;color:#fff">${l.title}</div>
-              <div class="cp-muted" style="font-size:11px">Fecha ${l.current_round||0} / ${l.rounds_total}</div>
+        return`<div class="cp-item" onclick="cpOpenLeague('${l.id}')">
+          <div class="cp-item-top">
+            <div style="min-width:0">
+              <div class="cp-item-t">${l.title}</div>
+              <div class="cp-item-s">Fecha ${l.current_round||0} / ${l.rounds_total}</div>
             </div>
             ${ar
-              ?`<span class="cp-pill" style="background:rgba(93,202,165,0.15);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3)">⏱ ${hLeft}h ${mLeft}m</span>`
+              ?`<span class="cp-pill cp-badge-open">⏱ ${hLeft}h ${mLeft}m</span>`
               :`<span class="cp-pill cp-badge-playing">Activa</span>`}
           </div>
-          ${ar?`<div style="font-size:11px;color:#5dcaa5;margin-bottom:6px;font-weight:500">🏹 Fecha ${ar.round_number} corriendo — toca para tirar</div>`:''}
-          <div style="height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:8px">
-            <div style="height:100%;background:#d8d15a;border-radius:2px;width:${pct}%"></div>
-          </div>
-          <div style="display:flex;gap:14px">
-            <div><span class="cp-num" style="font-size:20px;color:#d8d15a">${d.total_points}</span><span class="cp-muted" style="font-size:10px"> pts totales</span></div>
-            <div><span class="cp-num" style="font-size:20px;color:#5dcaa5">+${d.last_round_points||0}</span><span class="cp-muted" style="font-size:10px"> última fecha</span></div>
+          ${ar?`<div class="cp-item-hint">Fecha ${ar.round_number} corriendo: toca para tirar</div>`:''}
+          <div class="cp-bar"><div class="cp-bar-f" style="width:${pct}%"></div></div>
+          <div class="cp-stats">
+            <div><span class="cp-num cp-stat-n">${d.total_points}</span><span class="cp-item-s"> pts totales</span></div>
+            <div><span class="cp-num cp-stat-n cp-up">+${d.last_round_points||0}</span><span class="cp-item-s"> última fecha</span></div>
           </div>
         </div>`;
       }).join('');
@@ -7925,70 +7927,46 @@ async function cpLoadMisPartidas(){
 
     // Torneos activos
     if(active.length){
-      html+=`<div class="cp-sec" style="margin-bottom:10px">Torneos activos</div>`;
+      html+=`<div class="cp-hd first">Torneos activos</div>`;
       html+=active.map(d=>{
         const t=d.tournaments;
         const hasScore = d.qualifying_score != null;
-        const statusColor = {open:'#5dcaa5', playing:'#d8d15a', validating:'#d87850', closed:'rgba(255,255,255,0.35)'}[t.status]||'#fff';
-        const accentColor = hasScore ? '#5dcaa5' : 'rgba(255,255,255,0.2)';
-        return`<div style="position:relative;overflow:hidden;border-radius:12px;padding:14px 16px;margin-bottom:8px;background:rgba(255,255,255,0.03);border:1px solid ${hasScore?'rgba(93,202,165,0.25)':'rgba(255,255,255,0.08)'};transition:all .15s;cursor:pointer" onclick="cpOpenRoom('${t.id}')">
-          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,${accentColor},transparent)"></div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title}</div>
-              <div style="font-size:11px;color:rgba(255,255,255,0.4)">${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}</div>
+        return`<div class="cp-item" onclick="cpOpenRoom('${t.id}')">
+          <div class="cp-item-top">
+            <div style="min-width:0;flex:1">
+              <div class="cp-item-t cp-ellip">${t.title}</div>
+              <div class="cp-item-s">${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}</div>
             </div>
-            <span class="cp-pill ${STATUS_CLASS[t.status]||''}" style="flex-shrink:0;margin-left:8px">${STATUS_LABELS[t.status]||t.status}</span>
+            <span class="cp-pill ${STATUS_CLASS[t.status]||''}" style="flex-shrink:0">${STATUS_LABELS[t.status]||t.status}</span>
           </div>
           ${hasScore
-            ?`<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px">
-                <span style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#5dcaa5;line-height:1">${d.qualifying_score}</span>
-                <span style="font-size:11px;color:rgba(255,255,255,0.4)">pts clasificatorio</span>
-                <span style="font-size:13px;color:#5dcaa5">✓</span>
-              </div>`
-            :`<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 10px;border-radius:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.2)">
-                <span style="font-size:12px">🏹</span>
-                <span style="font-size:11px;color:#d8d15a;font-weight:500">Pendiente: sube tu score</span>
-              </div>`}
-          <div style="display:flex;justify-content:flex-end">
-            <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5)">Ver sala →</span>
-          </div>
+            ?`<div class="cp-score-line"><span class="cp-num cp-score-big">${d.qualifying_score}</span><span class="cp-item-s">pts clasificatorio</span><span class="cp-up">✓</span></div>`
+            :`<div class="cp-pending">Pendiente: sube tu score</div>`}
+          <div class="cp-item-link">Ver sala →</div>
         </div>`;
       }).join('');
     }
 
     // Mis fechas de liga
     if(allLeagues.length){
-      html+=`<div class="cp-sec" style="margin-top:${active.length?'16px':'0'};margin-bottom:10px">Mis ligas</div>`;
+      html+=`<div class="cp-hd${html?'':' first'}">Mis ligas</div>`;
       html+=allLeagues.map(d=>{
         const l=d.leagues;
         const pct=Math.round(((l.current_round||0)/l.rounds_total)*100);
         const isActive=l.status==='active';
-        return`<div style="position:relative;overflow:hidden;border-radius:12px;padding:14px 16px;margin-bottom:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(216,209,90,0.18);cursor:pointer" onclick="cpOpenLeague('${l.id}')">
-          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-            <div>
-              <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:2px">${l.title}</div>
-              <div style="font-size:11px;color:rgba(255,255,255,0.4)">Fecha ${l.current_round||0} / ${l.rounds_total}</div>
+        return`<div class="cp-item" onclick="cpOpenLeague('${l.id}')">
+          <div class="cp-item-top">
+            <div style="min-width:0">
+              <div class="cp-item-t">${l.title}</div>
+              <div class="cp-item-s">Fecha ${l.current_round||0} / ${l.rounds_total}</div>
             </div>
-            <span class="cp-pill" style="background:${isActive?'rgba(216,209,90,0.15)':'rgba(255,255,255,0.06)'};color:${isActive?'#d8d15a':'rgba(255,255,255,0.35)'};border:0.5px solid ${isActive?'rgba(216,209,90,0.3)':'rgba(255,255,255,0.1)'};flex-shrink:0;margin-left:8px">${isActive?'Activa':'Finalizada'}</span>
+            <span class="cp-pill ${isActive?'cp-badge-playing':'cp-badge-closed'}" style="flex-shrink:0">${isActive?'Activa':'Finalizada'}</span>
           </div>
-          <div style="display:flex;gap:20px;margin-bottom:10px">
-            <div>
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#d8d15a;line-height:1">${d.total_points}</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">pts totales</div>
-            </div>
-            <div>
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#5dcaa5;line-height:1">+${d.last_round_points||0}</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">última fecha</div>
-            </div>
-            <div>
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:rgba(255,255,255,0.5);line-height:1">${d.rounds_played||0}</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em">fechas jugadas</div>
-            </div>
-          </div>
-          <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">
-            <div style="height:100%;background:linear-gradient(90deg,#d8d15a,#e05555);border-radius:2px;width:${pct}%;transition:width .4s"></div>
+          <div class="cp-bar"><div class="cp-bar-f" style="width:${pct}%"></div></div>
+          <div class="cp-stats">
+            <div><div class="cp-num cp-stat-n">${d.total_points}</div><div class="cp-stat-l">pts totales</div></div>
+            <div><div class="cp-num cp-stat-n cp-up">+${d.last_round_points||0}</div><div class="cp-stat-l">última fecha</div></div>
+            <div><div class="cp-num cp-stat-n" style="color:rgba(255,255,255,0.7)">${d.rounds_played||0}</div><div class="cp-stat-l">fechas jugadas</div></div>
           </div>
         </div>`;
       }).join('');
@@ -7996,22 +7974,22 @@ async function cpLoadMisPartidas(){
 
     // Historial torneos
     if(past.length){
-      html+=`<div class="cp-sec" style="margin-top:16px;margin-bottom:10px">Historial</div>`;
+      html+=`<div class="cp-hd${html?'':' first'}">Historial</div>`;
       html+=past.map(d=>{
         const t=d.tournaments;
         const pos=d.final_position;
         const medal=pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
-        const posColor=pos===1?'#FFD700':pos===2?'#C0C0C0':pos===3?'#CD7F32':'rgba(255,255,255,0.4)';
+        const posColor=pos===1?'#FFD700':pos===2?'#C0C0C0':pos===3?'#CD7F32':'rgba(255,255,255,0.58)';
         const posLabel=pos===1?'Campeón':pos===2?'2° lugar':pos===3?'3° lugar':pos?pos+'° lugar':'—';
-        return`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.07)">
-          <div style="font-size:28px;flex-shrink:0;min-width:36px;text-align:center">${medal||'🏅'}</div>
+        return`<div class="cp-hist">
+          <div class="cp-hist-m">${medal||'🏅'}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title}</div>
-            <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px">${DISC_LABELS[t.discipline]||t.discipline}</div>
+            <div class="cp-item-t cp-ellip" style="font-size:14px">${t.title}</div>
+            <div class="cp-item-s">${DISC_LABELS[t.discipline]||t.discipline}</div>
           </div>
           <div style="text-align:right;flex-shrink:0">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${posColor}">${posLabel}</div>
-            ${d.points_earned?`<div style="font-size:10px;color:rgba(255,255,255,0.35)">+${d.points_earned} pts</div>`:''}
+            <div class="cp-num" style="font-size:18px;color:${posColor}">${posLabel}</div>
+            ${d.points_earned?`<div class="cp-item-s">+${d.points_earned} pts</div>`:''}
           </div>
         </div>`;
       }).join('');
@@ -8175,13 +8153,13 @@ function cpRenderRoom(t, players){
           <div style="font-size:12px;font-weight:600;color:#fff">${isMe?cpUserName+' (tú)':(p.archer_name||p.display_name||'Arquero')}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:2px;flex-wrap:wrap">
             ${hasSerie&&bowLabel?`<span style="font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:0.5px solid rgba(255,255,255,0.12)">${bowIcon} ${bowLabel}</span>`:''}
-            ${p.handicap_value?`<span style="font-size:10px;color:#d8d15a">+${p.handicap_value}/end</span>`:''}
+            ${p.handicap_value?`<span style="font-size:10px;color:#f5c06a">+${p.handicap_value}/end</span>`:''}
           </div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         ${hasScore?`<span class="cp-num" style="font-size:16px;color:#5dcaa5">${p.qualifying_score}</span>`:'<span class="cp-muted" style="font-size:11px">Pendiente</span>'}
-        ${hasSerie?`<button class="cp-btn cp-btn-sm" style="padding:4px 8px;font-size:10px;color:rgba(216,209,90,0.7);border-color:rgba(216,209,90,0.25)" onclick="cpEditHandicap('${t.id}','${p.user_id}','${p.archer_name||p.display_name||'Arquero'}',${p.handicap_value||0})">Handicap</button>`:''}
+        ${hasSerie?`<button class="cp-btn cp-btn-sm" style="padding:4px 8px;font-size:10px;color:rgba(245,192,106,0.7);border-color:rgba(245,192,106,0.25)" onclick="cpEditHandicap('${t.id}','${p.user_id}','${p.archer_name||p.display_name||'Arquero'}',${p.handicap_value||0})">Handicap</button>`:''}
         <div class="cp-check${validated?' done':''}">✓</div>
       </div>
     </div>`;
@@ -8239,7 +8217,7 @@ function cpRenderRoomAction(t, players){
         ${hVal?`<div style="font-size:11px;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);margin-bottom:8px">Handicap: <span style="color:${hVal>0?'#5dcaa5':'#e05555'}">${hVal>0?'+':''}${hVal} pts/end</span> aplicado</div>`:''}
         ${t.has_bracket&&t.status==='open'&&withScore.length>=2?`
         <div style="border-top:0.5px solid rgba(255,255,255,0.08);padding-top:10px;margin-top:4px">
-          ${pending.length?`<div style="font-size:11px;color:#d8d15a;margin-bottom:8px">⚠️ ${pending.length} arquero${pending.length>1?'s':''} sin score — se excluirán de las llaves</div>`:'<div style="font-size:11px;color:#5dcaa5;margin-bottom:8px">✓ Todos listos para las llaves</div>'}
+          ${pending.length?`<div style="font-size:11px;color:#f5c06a;margin-bottom:8px">⚠️ ${pending.length} arquero${pending.length>1?'s':''} sin score — se excluirán de las llaves</div>`:'<div style="font-size:11px;color:#5dcaa5;margin-bottom:8px">✓ Todos listos para las llaves</div>'}
           <button class="cp-btn cp-btn-y" onclick="cpIniciarLlaves('${t.id}',${pending.length})">🏆 Iniciar llaves →</button>
         </div>`:''}`;
     }
@@ -8284,7 +8262,7 @@ function cpRenderRoomAction(t, players){
           const isMe2 = p.user_id===cpUserId;
           const medals3=['🥇','🥈','🥉'];
           return`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid rgba(255,255,255,0.06)">
-            <span style="font-size:12px;color:${isMe2?'#d8d15a':'#fff'}">${medals3[i]} ${nm}${isMe2?' (tú)':''}</span>
+            <span style="font-size:12px;color:${isMe2?'#f5c06a':'#fff'}">${medals3[i]} ${nm}${isMe2?' (tú)':''}</span>
             <span style="font-family:'Bebas Neue';font-size:16px;color:${isMe2?'#5dcaa5':'rgba(255,255,255,0.6)'}">${p.qualifying_score}</span>
           </div>`;
         }).join('')}
@@ -8484,7 +8462,7 @@ window.cpEditHandicap = function(tournamentId, userId, name, currentVal){
 
       <div style="display:flex;gap:8px">
         <button onclick="document.getElementById('cp-hcap-edit-overlay').remove()" style="flex:1;padding:10px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
-        <button onclick="cpSaveHandicap('${tournamentId}','${userId}')" style="flex:2;padding:10px;border-radius:8px;border:0.5px solid rgba(216,209,90,0.4);background:rgba(216,209,90,0.12);color:#d8d15a;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif">Guardar handicap</button>
+        <button onclick="cpSaveHandicap('${tournamentId}','${userId}')" style="flex:2;padding:10px;border-radius:8px;border:0.5px solid rgba(245,192,106,0.4);background:rgba(245,192,106,0.12);color:#f5c06a;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif">Guardar handicap</button>
       </div>
     </div>`;
 
@@ -8650,10 +8628,10 @@ function cpRenderBracket(matches, nameMap, matchFmt, tournamentId){
     sf:    {label:'Semis',   accent:'#afa9ec',               icon:'', w:160},
     bronze:{label:'3er Lugar',accent:'#CD7F32',              icon:'🥉', w:175},
     final: {label:'FINAL',   accent:'#FFD700',               icon:'🏆', w:200},
-    elite_r64:    {label:'64avos',       accent:'#d8d15a', icon:'⭐', w:145},
-    elite_r32:    {label:'32avos',       accent:'#d8d15a', icon:'⭐', w:150},
-    elite_r16:    {label:'16avos',       accent:'#d8d15a', icon:'⭐', w:150},
-    elite_qf:     {label:'Cuartos',      accent:'#d8d15a', icon:'⭐', w:155},
+    elite_r64:    {label:'64avos',       accent:'#f5c06a', icon:'⭐', w:145},
+    elite_r32:    {label:'32avos',       accent:'#f5c06a', icon:'⭐', w:150},
+    elite_r16:    {label:'16avos',       accent:'#f5c06a', icon:'⭐', w:150},
+    elite_qf:     {label:'Cuartos',      accent:'#f5c06a', icon:'⭐', w:155},
     elite_sf:     {label:'Semis',        accent:'#FFD700', icon:'⭐', w:160},
     elite_bronze: {label:'3er Lugar',    accent:'#CD7F32', icon:'🥉', w:175},
     elite_final:  {label:'FINAL ELITE',  accent:'#FFD700', icon:'🏆', w:200},
@@ -8770,7 +8748,7 @@ function cpRenderBracket(matches, nameMap, matchFmt, tournamentId){
     const amateurLate   = amateurRounds.filter(r=>LATE_ROUNDS.includes(r));
     const amateurEarly  = amateurRounds.filter(r=>EARLY_ROUNDS.includes(r));
     document.getElementById('cp-bracket-cols').innerHTML =
-      renderBracketSection(eliteLate,   '⭐ Bracket Elite — Top 64', '#d8d15a') +
+      renderBracketSection(eliteLate,   '⭐ Bracket Elite — Top 64', '#f5c06a') +
       (eliteEarly.length ? renderCollapsible(eliteEarly, 'Rondas anteriores · Elite') : '') +
       renderBracketSection(amateurLate, '🌱 Bracket Amateur',        '#5dcaa5') +
       (amateurEarly.length ? renderCollapsible(amateurEarly, 'Rondas anteriores · Amateur') : '');
@@ -8864,8 +8842,8 @@ function cpRenderMatchScore(overlay, m, matchId, tournamentId, myKey, rivalKey, 
 
       <!-- Marcador -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-        <div style="background:rgba(216,209,90,0.08);border:1px solid rgba(216,209,90,0.3);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:#d8d15a;margin-bottom:3px">${myName} (tú)</div>
+        <div style="background:rgba(245,192,106,0.08);border:1px solid rgba(245,192,106,0.3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:#f5c06a;margin-bottom:3px">${myName} (tú)</div>
           <div style="font-family:'Bebas Neue';font-size:38px;color:#fff;line-height:1">${myScore!=null?myScore:(myTotal||'—')}</div>
           ${myConfirmed?'<div style="font-size:9px;color:#5dcaa5;margin-top:2px">✓ Listo</div>':''}
         </div>
@@ -8882,7 +8860,7 @@ function cpRenderMatchScore(overlay, m, matchId, tournamentId, myKey, rivalKey, 
           const ep=e[myKey]||0;
           return`<div style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5)">E${i+1}: ${ep}</div>`;
         }).join('')}
-        <div style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(216,209,90,0.15);color:#d8d15a">Total: ${myTotal}</div>
+        <div style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(245,192,106,0.15);color:#f5c06a">Total: ${myTotal}</div>
       </div>`:''}
 
       <!-- Input del end actual -->
@@ -9049,8 +9027,8 @@ function cpRenderMatchSets(overlay, m, matchId, tournamentId, myKey, rivalKey, m
       <!-- Marcador global -->
       <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-bottom:16px;text-align:center">
         <div>
-          <div style="font-size:11px;color:#d8d15a">${myName} (tú)</div>
-          <div style="font-family:'Bebas Neue';font-size:48px;color:#d8d15a;line-height:1">${myPts}</div>
+          <div style="font-size:11px;color:#f5c06a">${myName} (tú)</div>
+          <div style="font-family:'Bebas Neue';font-size:48px;color:#f5c06a;line-height:1">${myPts}</div>
           <div style="font-size:10px;color:rgba(255,255,255,0.3)">pts set</div>
         </div>
         <div style="font-size:14px;color:rgba(255,255,255,0.3)">vs</div>
@@ -9075,7 +9053,7 @@ function cpRenderMatchSets(overlay, m, matchId, tournamentId, myKey, rivalKey, m
         <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:8px;text-align:center">Set ${currentSet} — 3 flechas</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center">
           <div>
-            <div style="font-size:10px;color:#d8d15a;margin-bottom:3px">Tú</div>
+            <div style="font-size:10px;color:#f5c06a;margin-bottom:3px">Tú</div>
             <div style="font-family:'Bebas Neue';font-size:28px;color:#fff">${mySetScore??'—'}</div>
           </div>
           <div>
@@ -9437,11 +9415,11 @@ function cpRenderPodium(players){
     const medal=p.final_position===1?'\u{1F947}':p.final_position===2?'\u{1F948}':p.final_position===3?'\u{1F949}':'';
     const posColor=p.final_position===1?'#FFD700':p.final_position===2?'#C0C0C0':p.final_position===3?'#CD7F32':'rgba(255,255,255,0.5)';
     const isMe=p.user_id===cpUserId;
-    return`<div class="cp-row" style="${isMe?'background:rgba(216,209,90,0.04);border-radius:8px;':''}">
+    return`<div class="cp-row" style="${isMe?'background:rgba(245,192,106,0.04);border-radius:8px;':''}">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:18px">${medal}</span>
         <div>
-          <div style="font-size:13px;font-weight:600;color:${isMe?'#d8d15a':'#fff'}">${name}${isMe?' (tú)':''}</div>
+          <div style="font-size:13px;font-weight:600;color:${isMe?'#f5c06a':'#fff'}">${name}${isMe?' (tú)':''}</div>
           <div style="font-size:10px;color:rgba(255,255,255,0.35)">${p.final_position}° lugar</div>
         </div>
       </div>
@@ -9459,12 +9437,12 @@ function cpShowWinAnimation(playerName){
   for(let i=0;i<20;i++){
     const c=document.createElement('div');
     c.className='cp-confetti-piece';
-    c.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*40}%;background:${['#d8d15a','#5dcaa5','#5ab4d6','#e03030','#9a88dd'][i%5]};animation-delay:${Math.random()*0.5}s;animation-duration:${1+Math.random()}s`;
+    c.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*40}%;background:${['#f5c06a','#5dcaa5','#5ab4d6','#e03030','#9a88dd'][i%5]};animation-delay:${Math.random()*0.5}s;animation-duration:${1+Math.random()}s`;
     overlay.appendChild(c);
   }
   overlay.innerHTML+=`
     <div class="cp-win-trophy">🏆</div>
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#d8d15a;letter-spacing:.06em;text-align:center">¡CAMPEÓN!</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#f5c06a;letter-spacing:.06em;text-align:center">¡CAMPEÓN!</div>
     <div style="font-size:16px;font-weight:600;color:#fff;text-align:center">${playerName}</div>
     <div class="cp-muted" style="font-size:12px;text-align:center;margin-top:4px">Toca para continuar</div>`;
   overlay.onclick=()=>overlay.remove();
@@ -9602,7 +9580,7 @@ async function cpLoadAdminLeagues(){
       const activeRound=activeRounds.find(r=>r.league_id===l.id);
       const timerLeft=activeRound?.active_until?Math.max(0,Math.round((new Date(activeRound.active_until)-Date.now())/60000)):0;
       return`<div class="cp-card" style="margin-bottom:8px">
-        <div class="cp-ca" style="background:linear-gradient(90deg,#d8d15a,#e05555)"></div>
+        <div class="cp-ca" style="background:linear-gradient(90deg,#f5c06a,#e05555)"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="font-size:13px;font-weight:600;color:#fff">${l.title}</div>
           <span class="cp-pill ${l.status==='active'?'cp-badge-playing':'cp-badge-closed'}">${l.status==='active'?'Activa':'Finalizada'}</span>
@@ -9610,9 +9588,9 @@ async function cpLoadAdminLeagues(){
         <div class="cp-muted" style="font-size:11px;margin-bottom:4px">${l.current_round||0}/${l.rounds_total} fechas · ${DISC_LABELS[l.discipline]||l.discipline||'—'} · ${l.visible?'Visible':'Oculta'}</div>
         ${activeRound?`<div style="background:rgba(93,202,165,0.08);border:0.5px solid rgba(93,202,165,0.3);border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#5dcaa5">⏱ Fecha ${activeRound.round_number} activa · ${timerLeft} min restantes</div>`:''}
         ${l.code?`
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.2);border-radius:8px;padding:6px 10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:rgba(245,192,106,0.06);border:0.5px solid rgba(245,192,106,0.2);border-radius:8px;padding:6px 10px">
           <span style="font-size:10px;color:rgba(255,255,255,0.4)">CÓDIGO</span>
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#d8d15a;letter-spacing:.08em">${l.code}</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#f5c06a;letter-spacing:.08em">${l.code}</span>
           <button class="cp-btn cp-btn-sm" onclick="navigator.clipboard?.writeText('${l.code}').then(()=>cpToast('Copiado ✓'))" style="padding:4px 8px;font-size:10px;margin-left:auto">Copiar</button>
         </div>`:''}
         <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -9838,7 +9816,7 @@ window.cpOpenLeague = async function(leagueId){
           <span class="cp-muted" style="font-size:11px">Fecha ${league.current_round||0} / ${league.rounds_total}</span>
         </div>
         <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden">
-          <div style="height:100%;background:#d8d15a;border-radius:2px;width:${pct}%"></div>
+          <div style="height:100%;background:#f5c06a;border-radius:2px;width:${pct}%"></div>
         </div>
       </div>`;
 
@@ -9874,8 +9852,8 @@ window.cpOpenLeague = async function(leagueId){
 
       if(alreadyShot){
         actionEl.innerHTML = timerHtml + `
-          <div style="background:rgba(216,209,90,0.08);border:0.5px solid rgba(216,209,90,0.3);border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:14px;font-weight:600;color:#d8d15a">✓ Ya registraste esta fecha</div>
+          <div style="background:rgba(245,192,106,0.08);border:0.5px solid rgba(245,192,106,0.3);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:14px;font-weight:600;color:#f5c06a">✓ Ya registraste esta fecha</div>
             <div class="cp-num" style="font-size:28px;color:#fff;margin:4px 0">${myScore[0].score} pts</div>
             <div class="cp-muted" style="font-size:11px">Espera a que cierren los resultados</div>
           </div>`;
@@ -9889,7 +9867,7 @@ window.cpOpenLeague = async function(leagueId){
       actionEl.innerHTML = `
         <div class="cp-sec">Mis puntos</div>
         <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
-          <div><div class="cp-num" style="font-size:36px;color:#d8d15a">${meInStandings.total_points}</div><div class="cp-muted" style="font-size:10px;text-transform:uppercase">Puntos totales</div></div>
+          <div><div class="cp-num" style="font-size:36px;color:#f5c06a">${meInStandings.total_points}</div><div class="cp-muted" style="font-size:10px;text-transform:uppercase">Puntos totales</div></div>
           <div><div class="cp-num" style="font-size:24px;color:#5dcaa5">+${meInStandings.last_round_points||0}</div><div class="cp-muted" style="font-size:10px;text-transform:uppercase">Última fecha</div></div>
           <div><div class="cp-num" style="font-size:24px;color:#fff">${meInStandings.rounds_played||0}</div><div class="cp-muted" style="font-size:10px;text-transform:uppercase">Fechas jugadas</div></div>
         </div>
@@ -9929,12 +9907,12 @@ window.cpOpenLeague = async function(leagueId){
             <div style="display:flex;align-items:center;gap:8px;flex:1">
               <span style="font-family:'Bebas Neue';font-size:20px;color:rgba(255,255,255,0.4);min-width:24px">${i+1}</span>
               <div>
-                <span style="font-size:13px;font-weight:600;color:${isMe?'#d8d15a':'#fff'}">${medal} ${isMe?cpUserName+' (tú)':(s.archer_name||s.display_name||'Arquero')}</span>
+                <span style="font-size:13px;font-weight:600;color:${isMe?'#f5c06a':'#fff'}">${medal} ${isMe?cpUserName+' (tú)':(s.archer_name||s.display_name||'Arquero')}</span>
                 <div class="cp-muted" style="font-size:10px">${s.rounds_played||0} fechas jugadas</div>
               </div>
             </div>
             <div style="text-align:right">
-              <div class="cp-num" style="font-size:18px;color:${isMe?'#d8d15a':'#fff'}">${s.total_points} pts</div>
+              <div class="cp-num" style="font-size:18px;color:${isMe?'#f5c06a':'#fff'}">${s.total_points} pts</div>
               ${lastPts?`<div style="font-size:10px;color:#5dcaa5">+${lastPts} pts${lastPos?' · '+lastPos+'° última fecha':''}</div>`:''}
             </div>
           </div>`;
@@ -9962,7 +9940,7 @@ window.cpOpenLeague = async function(leagueId){
               return`<div class="cp-row">
                 <div style="display:flex;align-items:center;gap:8px">
                   <span style="font-size:16px">${medal}</span>
-                  <span style="font-size:13px;color:${isMe?'#d8d15a':'#fff'}">${playerName}</span>
+                  <span style="font-size:13px;color:${isMe?'#f5c06a':'#fff'}">${playerName}</span>
                 </div>
                 <div class="cp-num" style="font-size:16px;color:${isMe?'#5dcaa5':'#fff'}">${sc.score} pts</div>
               </div>`;
@@ -10139,7 +10117,7 @@ async function cpRenderRRAction(t, players, me, el){
       let html='<div class="cp-sec">Mi score clasificatorio</div>';
       html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><span class="cp-num" style="font-size:36px;color:#5dcaa5">'+me.qualifying_score+'</span><span class="cp-muted" style="font-size:11px">pts en '+(DISC_LABELS[t.discipline]||t.discipline)+'</span></div>';
       html+='<div style="border-top:0.5px solid rgba(255,255,255,0.08);padding-top:10px">';
-      if(pending.length) html+='<div style="font-size:11px;color:#d8d15a;margin-bottom:8px">⚠️ '+pending.length+' arquero'+(pending.length>1?'s':'')+' sin clasificar — se excluirán del RR</div>';
+      if(pending.length) html+='<div style="font-size:11px;color:#f5c06a;margin-bottom:8px">⚠️ '+pending.length+' arquero'+(pending.length>1?'s':'')+' sin clasificar — se excluirán del RR</div>';
       else html+='<div style="font-size:11px;color:#5dcaa5;margin-bottom:8px">✓ '+withScore.length+' arqueros listos</div>';
       if(canStart) html+='<button class="cp-btn cp-btn-y" onclick="cpIniciarTorneo(\''+t.id+'\','+pending.length+',true)">🏆 Iniciar Round Robin →</button>';
       else html+='<div class="cp-muted" style="font-size:11px">Se necesitan al menos 3 arqueros clasificados para iniciar.</div>';
@@ -10211,7 +10189,7 @@ function cpRenderRRStandingsHTML(standings, players, isFinal){
   html+='<div style="display:grid;grid-template-columns:1fr 28px 28px 28px 36px;padding:6px 10px;background:rgba(255,255,255,0.04);font-size:10px;color:rgba(255,255,255,0.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em"><span>Arquero</span><span style="text-align:center">G</span><span style="text-align:center">E</span><span style="text-align:center">P</span><span style="text-align:right">Pts</span></div>';
   standings.forEach((s,i)=>{
     const isMe=s.user_id===cpUserId;
-    html+='<div style="display:grid;grid-template-columns:1fr 28px 28px 28px 36px;padding:8px 10px;border-top:0.5px solid rgba(255,255,255,0.06);background:'+(isMe?'rgba(216,209,90,0.04)':'transparent')+'"><span style="font-size:12px;font-weight:'+(isMe?'600':'400')+';color:'+(isMe?'#d8d15a':'#fff')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(medals[i]||'')+(i>2?(i+1)+'° ':' ')+s.name+(isMe?' (tú)':'')+'</span><span style="font-size:12px;color:#5dcaa5;text-align:center">'+s.G+'</span><span style="font-size:12px;color:rgba(255,255,255,0.5);text-align:center">'+s.E+'</span><span style="font-size:12px;color:#e05555;text-align:center">'+s.P+'</span><span style="font-family:\'Bebas Neue\';font-size:16px;color:'+(isMe?'#d8d15a':'#fff')+';text-align:right">'+s.pts+'</span></div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 28px 28px 28px 36px;padding:8px 10px;border-top:0.5px solid rgba(255,255,255,0.06);background:'+(isMe?'rgba(245,192,106,0.04)':'transparent')+'"><span style="font-size:12px;font-weight:'+(isMe?'600':'400')+';color:'+(isMe?'#f5c06a':'#fff')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(medals[i]||'')+(i>2?(i+1)+'° ':' ')+s.name+(isMe?' (tú)':'')+'</span><span style="font-size:12px;color:#5dcaa5;text-align:center">'+s.G+'</span><span style="font-size:12px;color:rgba(255,255,255,0.5);text-align:center">'+s.E+'</span><span style="font-size:12px;color:#e05555;text-align:center">'+s.P+'</span><span style="font-family:\'Bebas Neue\';font-size:16px;color:'+(isMe?'#f5c06a':'#fff')+';text-align:right">'+s.pts+'</span></div>';
   });
   html+='</div>';
   return html;
@@ -10235,8 +10213,8 @@ async function cpRenderRoundRobin(t, players, me, el){
         const iAmP1=m.player1_id===cpUserId;
         const iSubmitted=iAmP1?m.p1_confirmed:m.p2_confirmed;
         const rivalSubmitted=iAmP1?m.p2_confirmed:m.p1_confirmed;
-        html+='<div style="border:1px solid rgba(216,209,90,0.25);border-radius:10px;padding:12px 14px;margin-bottom:8px;background:rgba(216,209,90,0.03)">';
-        html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:13px;font-weight:600;color:#fff">vs '+rivalName+'</div><span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(216,209,90,0.12);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3)">Partido '+m.match_number+'</span></div>';
+        html+='<div style="border:1px solid rgba(245,192,106,0.25);border-radius:10px;padding:12px 14px;margin-bottom:8px;background:rgba(245,192,106,0.03)">';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:13px;font-weight:600;color:#fff">vs '+rivalName+'</div><span style="font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(245,192,106,0.12);color:#f5c06a;border:0.5px solid rgba(245,192,106,0.3)">Partido '+m.match_number+'</span></div>';
         html+='<div style="display:flex;gap:12px;margin-bottom:10px"><div style="font-size:10px;color:'+(iSubmitted?'#5dcaa5':'rgba(255,255,255,0.35)')+'">✓ Tú '+(iSubmitted?'registrado':'pendiente')+'</div><div style="font-size:10px;color:'+(rivalSubmitted?'#5dcaa5':'rgba(255,255,255,0.35)')+'">· '+rivalName+' '+(rivalSubmitted?'registrado':'pendiente')+'</div></div>';
         if(!iSubmitted) html+='<button class="cp-btn cp-btn-y" onclick="cpOpenRRMatch(\''+m.id+'\',\''+t.id+'\',\''+rivalName+'\',\''+rrFmt+'\')">🏹 Registrar mi score →</button>';
         else html+='<div style="font-size:11px;color:#5dcaa5;padding:8px;border-radius:6px;background:rgba(93,202,165,0.08);border:0.5px solid rgba(93,202,165,0.2)">✓ Score registrado — esperando a '+rivalName+'</div>';
@@ -10251,7 +10229,7 @@ async function cpRenderRoundRobin(t, players, me, el){
       const isDone=m.status==='done';
       let res='Pendiente';
       if(isDone){if(m.winner_id===m.player1_id)res=p1n+' ganó';else if(m.winner_id===m.player2_id)res=p2n+' ganó';else res='Empate';}
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,0.06)"><span style="font-size:11px;color:'+(isDone?'rgba(255,255,255,0.5)':'#fff')+'">'+p1n+' vs '+p2n+'</span><span style="font-size:11px;color:'+(isDone?'#5dcaa5':'#d8d15a')+'">'+res+'</span></div>';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,0.06)"><span style="font-size:11px;color:'+(isDone?'rgba(255,255,255,0.5)':'#fff')+'">'+p1n+' vs '+p2n+'</span><span style="font-size:11px;color:'+(isDone?'#5dcaa5':'#f5c06a')+'">'+res+'</span></div>';
     });
     html+='</div></details>';
     el.innerHTML=html;
@@ -10279,7 +10257,7 @@ function cpRRRenderModal(){
     const endScores=s.ends.map(end=>end.reduce((a,b)=>a+b,0));
     overlay.innerHTML='<div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:340px"><div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:4px">✓ Series completadas</div><div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">vs '+s.rivalName+'</div><div style="display:flex;justify-content:space-between;gap:4px;margin-bottom:16px">'+endScores.map((sc,i)=>'<div style="text-align:center;flex:1"><div style="font-size:10px;color:rgba(255,255,255,0.35)">S'+(i+1)+'</div><div style="font-family:\'Bebas Neue\';font-size:20px;color:#fff">'+sc+'</div></div>').join('')+'</div><div style="text-align:center;margin-bottom:16px"><div style="font-size:11px;color:rgba(255,255,255,0.4)">Total</div><div style="font-family:\'Bebas Neue\';font-size:48px;color:#5dcaa5;line-height:1">'+totalScore+'</div></div><button class="cp-btn cp-btn-g" onclick="cpRRSubmitScore()">✓ Enviar score →</button><button class="cp-btn" style="margin-top:8px;color:rgba(255,255,255,0.4);font-size:12px" onclick="document.getElementById(\'cp-rr-match-overlay\').remove()">Cancelar</button></div>';
   } else {
-    const dots=Array.from({length:5},(_,i)=>'<div style="width:8px;height:8px;border-radius:50%;background:'+(i<s.ends.length?'#5dcaa5':i===s.ends.length?'#d8d15a':'rgba(255,255,255,0.15)')+'"></div>').join('');
+    const dots=Array.from({length:5},(_,i)=>'<div style="width:8px;height:8px;border-radius:50%;background:'+(i<s.ends.length?'#5dcaa5':i===s.ends.length?'#f5c06a':'rgba(255,255,255,0.15)')+'"></div>').join('');
     const fmtLabel=s.rrFmt==='sets'?'Sets':'Score';
     overlay.innerHTML='<div style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:20px;width:100%;max-width:340px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-size:15px;font-weight:600;color:#fff">vs '+s.rivalName+'</div><button onclick="document.getElementById(\'cp-rr-match-overlay\').remove()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:0;line-height:1">×</button></div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px">'+fmtLabel+' · Serie '+endNum+' de 5</div><div style="display:flex;gap:6px;margin-bottom:16px">'+dots+'</div><div style="display:flex;gap:8px;margin-bottom:16px"><div style="flex:1;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px">Flecha 1</div><input id="cp-rr-a1" type="number" min="0" max="10" placeholder="—" style="width:100%;padding:12px 4px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:22px;font-family:\'Bebas Neue\';text-align:center" onkeydown="if(event.key===\'Enter\')document.getElementById(\'cp-rr-a2\').focus()"></div><div style="flex:1;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px">Flecha 2</div><input id="cp-rr-a2" type="number" min="0" max="10" placeholder="—" style="width:100%;padding:12px 4px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:22px;font-family:\'Bebas Neue\';text-align:center" onkeydown="if(event.key===\'Enter\')document.getElementById(\'cp-rr-a3\').focus()"></div><div style="flex:1;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px">Flecha 3</div><input id="cp-rr-a3" type="number" min="0" max="10" placeholder="—" style="width:100%;padding:12px 4px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;font-size:22px;font-family:\'Bebas Neue\';text-align:center" onkeydown="if(event.key===\'Enter\')cpRRConfirmEnd()"></div></div>'+(totalScore>0?'<div style="text-align:center;margin-bottom:12px"><span style="font-size:11px;color:rgba(255,255,255,0.4)">Acumulado: </span><span style="font-family:\'Bebas Neue\';font-size:18px;color:#5dcaa5">'+totalScore+'</span></div>':'')+'<button class="cp-btn cp-btn-y" onclick="cpRRConfirmEnd()">Confirmar serie →</button></div>';
   }
