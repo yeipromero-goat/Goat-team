@@ -340,10 +340,10 @@ function _freshToken() {
 }
 
 // ── Limpieza de lo que va a la base ───────────────────────────────
-// La tabla rechaza la FILA ENTERA si face no es 'A'/'B' o impacts no es un arreglo. Como el guardado
+// La tabla rechaza la FILA ENTERA si face no es 'A'/'B'/'F' o impacts no es un arreglo. Como el guardado
 // es una sola inserción (scores no permite UPDATE por RLS), un dato malformado perdería toda la sesión.
 // Por eso se limpia aquí y, si algo no es válido, se omite ese campo en vez de arriesgar la sesión.
-function _cleanFace(f) { return (f === 'A' || f === 'B') ? f : null; }
+function _cleanFace(f) { return (f === 'A' || f === 'B' || f === 'F') ? f : null; }
 function _cleanImpacts(arr) {
   if (!Array.isArray(arr)) return null;
   var out = [];
@@ -393,20 +393,43 @@ window.supabaseSaveScore = function(session) {
   if (face)    payload.face    = face;
   if (impacts) payload.impacts = impacts;
 
-  return _freshToken().then(function(token){
-    return fetch(SUPABASE_URL + '/rest/v1/scores', {
-      method: 'POST',
-      headers: { apikey: key, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify(payload)
+  // Una sola inserción por sesión (scores no permite UPDATE). Si la base rechaza la fila por la diana o los impactos
+  // (por ejemplo, porque falta correr la migración que acepta la diana F de Field), se reintenta UNA vez sin ellos:
+  // es mejor guardar la sesión sin diana que perderla entera. En ese caso lastPartial queda en true para avisar.
+  var post = function(body){
+    return _freshToken().then(function(token){
+      return fetch(SUPABASE_URL + '/rest/v1/scores', {
+        method: 'POST',
+        headers: { apikey: key, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(body)
+      });
     });
-  }).then(function(r){
+  };
+  window.supabaseSaveScore.lastPartial = false;
+  return post(payload).then(function(r){
     if(r.ok || r.status===201 || r.status===204){ console.log('✅ Puntuación guardada'); return true; }
-    return r.text().then(function(t){ console.error('❌ Error guardando:', r.status, t); return false; });
+    return r.text().then(function(t){
+      console.error('❌ Error guardando:', r.status, t);
+      if((payload.face || payload.impacts) && (r.status===400 || r.status===422)){
+        var basic = {}; Object.keys(payload).forEach(function(k){ if(k!=='face' && k!=='impacts') basic[k]=payload[k]; });
+        return post(basic).then(function(r2){
+          if(r2.ok || r2.status===201 || r2.status===204){
+            console.warn('⚠️ Sesión guardada SIN diana ni impactos: la base rechazó esos campos (¿falta la migración de Field?)');
+            window.supabaseSaveScore.lastPartial = true;
+            return true;
+          }
+          return r2.text().then(function(t2){ console.error('❌ Error guardando (reintento sin diana):', r2.status, t2); return false; });
+        });
+      }
+      return false;
+    });
   }).catch(function(e){ console.error('❌ supabaseSaveScore error:', e); return false; });
 };
 
 // Marca de versión: la Bitácora la consulta para avisar si este archivo es una versión anterior que descartaría los impactos.
 window.supabaseSaveScore.supportsImpacts = true;
+window.supabaseSaveScore.supportsFieldFace = true;   // acepta la diana 'F' (Field)
+window.supabaseSaveScore.lastPartial = false;        // true si la última sesión se guardó sin diana (la base rechazó esos campos)
 
 // opts.ownOnly = true: trae solo las sesiones del usuario. Sin esa opción el comportamiento es el de siempre.
 // Hace falta porque la política de coach deja leer TODAS las sesiones: sin filtro, la Bitácora de un coach
