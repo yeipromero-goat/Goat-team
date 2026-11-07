@@ -5501,6 +5501,36 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 .bt-rec-fill{height:100%;border-radius:9px;background:var(--bt-amber)}
 .bt-rec-lbl{font-size:9px;color:var(--bt-ink-2);text-align:right;margin-top:2px}
 .bt-rec-lbl b{font-weight:700;color:var(--bt-ink)}
+/* ── Detalle de sesión: clic en una fila del historial ── */
+.bt-srow.bt-click{cursor:pointer;transition:background .12s}
+.bt-srow.bt-click:hover{background:var(--bt-fill)}
+.bt-srow.bt-click:focus-visible{outline:2px solid var(--bt-amber);outline-offset:-2px}
+.bt-chev{color:var(--bt-ink-3);font-size:22px;line-height:1;margin-left:6px;align-self:center}
+.bt-det{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.72);display:none}
+.bt-det.open{display:block}
+.bt-det-panel{max-width:460px;height:100%;margin:0 auto;overflow-y:auto;overscroll-behavior:contain;background:#141414;padding:14px 14px 32px;box-sizing:border-box;-webkit-overflow-scrolling:touch}
+.bt-det-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.bt-det-top .bt-btn{width:auto;margin:0;padding:7px 14px;font-size:13px;flex-shrink:0}
+.bt-det-h{font-size:20px;font-style:italic;font-weight:600;color:var(--bt-ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt-det-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.bt-det-stat .v{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;color:var(--bt-ink);letter-spacing:.03em}
+.bt-det-stat .v small{font-family:'DM Sans',sans-serif;font-size:10px;color:var(--bt-ink-3);letter-spacing:0}
+.bt-det-stat .l{font-size:10px;color:var(--bt-ink-3);margin-top:3px}
+.bt-det-sel{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px}
+.bt-det-sel .bt-fp{flex:0 0 auto;min-width:34px;text-align:center}
+.bt-end-head,.bt-end{display:grid;grid-template-columns:40px 1fr 74px;gap:8px;align-items:center}
+.bt-end-head{font-size:10px;color:var(--bt-ink-3);padding:0 6px 6px;border-bottom:0.5px solid var(--bt-line-soft)}
+.bt-end{padding:8px 6px;border-bottom:0.5px solid var(--bt-line-soft);border-left:3px solid transparent;cursor:pointer}
+.bt-end:focus-visible{outline:2px solid var(--bt-amber);outline-offset:-2px}
+.bt-end.sel{background:var(--bt-fill-2);border-left-color:var(--bt-amber)}
+.bt-end-n{font-size:12px;font-weight:700;color:var(--bt-ink-2)}
+.bt-end-ar{display:flex;flex-wrap:wrap;gap:4px}
+.bt-chip{min-width:26px;height:26px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;border-radius:13px;font-size:12px;font-weight:700;box-sizing:border-box}
+.bt-end-t{text-align:right}
+.bt-end-t b{display:block;font-family:'Bebas Neue',sans-serif;font-size:19px;font-weight:400;letter-spacing:.03em;color:var(--bt-ink);line-height:1}
+.bt-end-t small{display:block;font-size:10px;color:var(--bt-ink-3);margin-top:2px}
+.bt-end-foot{display:flex;justify-content:space-between;align-items:baseline;padding:10px 6px 0;font-size:12px;color:var(--bt-ink-2)}
+.bt-end-foot b{font-family:'Bebas Neue',sans-serif;font-size:24px;font-weight:400;letter-spacing:.03em;color:var(--bt-ink)}
 /* Input por diana */
 .bt-facewrap{position:relative;max-width:340px;margin:0 auto}
 .bt-facewrap svg{display:block;width:100%;height:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:crosshair}
@@ -5853,6 +5883,17 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 </div>
 </div>
 
+<!-- Detalle de una sesión (se abre al tocar una fila del historial) -->
+<div id="bt-det" class="bt-det" aria-hidden="true">
+  <div class="bt-det-panel" id="bt-det-panel" role="dialog" aria-modal="true" aria-labelledby="bt-det-h">
+    <div class="bt-det-top">
+      <button class="bt-btn" id="bt-det-close" type="button">‹ Volver</button>
+      <div class="bt-det-h" id="bt-det-h">Detalle</div>
+    </div>
+    <div id="bt-det-body"></div>
+  </div>
+</div>
+
 <script>
 (function(){
 const BT_COLORS={outdoor:'#b33c29',indoor:'#48878e',field:'#182440','3d':'#b89563'}; // sincronizado con --bt-c-* del CSS
@@ -5869,6 +5910,15 @@ const BT_MODES={
   '3d':        {lbl:'3D',g:'3d',rondas:null,apR:1,vals:['12','11','10','8','5','M'],sp:'12',max:null},
 };
 function btSpLabel(g){return{outdoor:"X's",indoor:"X's",field:"6's",'3d':"12/11's"}[g]||"X's";}
+// ¿Esta flecha es "especial"? X en Outdoor e Indoor, 6 en Field, 11 y 12 en 3D. El 6 solo es especial en Field: en Outdoor/Indoor es un anillo normal.
+function btIsSp(g,v){ return g==='3d' ? (v==='12'||v==='11') : g==='field' ? v==='6' : v==='X'; }
+// Especiales de una sesión: se cuentan desde las flechas (ends) cuando están; si no, el valor guardado.
+function btSpOf(s){
+  if(Array.isArray(s.ends) && s.ends.some(e=>Array.isArray(e)&&e.length)){
+    let c=0; s.ends.forEach(e=>(e||[]).forEach(v=>{ if(btIsSp(s.g,String(v))) c++; })); return c;
+  }
+  return s.sp||0;
+}
 
 let btSessions=[], btFDays=7, btFRange=null, btFMod='all', btFSrc='all', btBow='all', btBowTouched=false, btBows=[], btLastFs=[], btLegacy=[], btCurMode=null, btState={};
 window._btDebug = ()=>({ sessions:btSessions, filt:btFilt(), mod:btFMod, src:btFSrc });
@@ -6159,7 +6209,7 @@ function btAv(v){if(!v||v==='M')return 0;if(v==='X')return 10;return parseInt(v)
 function btUpdSum(){const c=btState.ends[btState.cur]||[];document.getElementById('bt-end-sum').textContent=c.length?`End: ${c.reduce((a,v)=>a+btAv(v),0)} pts`:'';}
 function btUpdTot(){
   let t=0,n=0,sp=0;
-  btState.ends.forEach(e=>e.forEach(v=>{t+=btAv(v);if(v&&v!=='')n++;if(v==='X'||v==='6'||v==='12'||v==='11')sp++;}));
+  btState.ends.forEach(e=>e.forEach(v=>{t+=btAv(v);if(v&&v!=='')n++;if(btIsSp(btState.g,v))sp++;}));
   document.getElementById('bt-st').textContent=t;
   document.getElementById('bt-sa').textContent=n>0?(t/n).toFixed(1):'—';
   document.getElementById('bt-sx').textContent=sp;
@@ -6180,7 +6230,7 @@ function btShowResumen(){
   document.getElementById('bt-res-ends').innerHTML=btState.ends.map((e,i)=>{
     if(!e.length)return'';
     const s=e.reduce((a,v)=>a+btAv(v),0);
-    const sp=e.filter(v=>v==='X'||v==='6'||v==='12'||v==='11').length;
+    const sp=e.filter(v=>btIsSp(btState.g,v)).length;
     return`<div class="bt-srow"><span class="bt-muted" style="font-size:11px">End ${i+1}</span><span style="font-size:11px;color:var(--bt-ink-3)">${e.join('  ')}</span><span class="bt-num" style="font-size:16px;color:var(--bt-ink)">${s}${sp?`<span style="font-size:10px;color:var(--bt-accent)"> ${sp}${btState.sp}</span>`:''}</span></div>`;
   }).filter(Boolean).join('');
 }
@@ -6659,7 +6709,8 @@ function btRenderH(){
     hl.innerHTML=fs.map(s=>{
     const d=new Date(s.date).toLocaleDateString('es-MX',{month:'short',day:'numeric'});
     const pct=s.max?Math.round(s.total/s.max*100):null;
-    return`<div class="bt-srow">
+    const clk=!btUsingDemo, spN=btSpOf(s);
+    return`<div class="bt-srow${clk?' bt-click':''}"${clk?` data-id="${btEsc(s.id)}" role="button" tabindex="0" aria-label="Ver el detalle de esta sesión"`:''}>
       <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0">
         <div class="bt-dot" style="background:${BT_COLORS[s.g]};margin-top:3px"></div>
         <div style="min-width:0">
@@ -6672,8 +6723,9 @@ function btRenderH(){
       </div>
       <div style="text-align:right;flex-shrink:0;padding-left:8px">
         <div class="bt-num" style="font-size:18px;color:var(--bt-ink)">${s.total}${pct?`<span class="bt-muted" style="font-size:10px"> (${pct}%)</span>`:'  '}</div>
-        <div class="bt-muted" style="font-size:10px">${s.avg.toFixed(1)} p/f${s.sp?` · ${s.sp} ${btSpLabel(s.g)}`:''}</div>
+        <div class="bt-muted" style="font-size:10px">${s.avg.toFixed(1)} p/f${spN?` · ${spN} ${btSpLabel(s.g)}`:''}</div>
       </div>
+      ${clk?'<span class="bt-chev" aria-hidden="true">›</span>':''}
     </div>`;
   }).join('');
   }
@@ -6915,6 +6967,148 @@ function btFaceCancel(){ btDrag=null; btFaceAimClear(); }
   svg.addEventListener('pointercancel',btFaceCancel);
 })();
 btStartIcons();
+
+// ══════════ Detalle de una sesión: clic en una fila del historial ══════════
+// Muestra el resultado completo: totales, cada serie con el valor de cada flecha (y acumulado) y, si la sesión guardó la
+// posición de los impactos, la diana con sus puntos (todos, o solo los de la serie que elijas, numerados por flecha).
+let btDet=null, btDetFocus=null;
+const BT_SRC_LABEL={practica:'Sesión',liga:'Liga',torneo:'Torneo'};
+
+// Texto blanco o marino, el de mayor contraste sobre el fondo
+function btInkOn(hex){
+  const lum=h=>{ const v=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(x=>x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4)); return 0.2126*v[0]+0.7152*v[1]+0.0722*v[2]; };
+  const L=lum(hex);
+  return (1.05/(L+0.05)) >= ((L+0.05)/(lum('#1b2743')+0.05)) ? '#ffffff' : '#1b2743';
+}
+// Color de cada flecha = color del anillo donde cae (los mismos de las dianas)
+function btChipStyle(g,v){
+  if(v==null || v==='' || v==='M') return 'background:transparent;border:1px solid var(--bt-line);color:var(--bt-ink-3)';
+  const C=BT_FACE_COL; let bg;
+  if(g==='field') bg=(v==='6'||v==='5')?C.gold:C.black;
+  else if(g==='3d') bg=(v==='12'||v==='11')?'#f5c06a':'#ffffff';
+  else { const n=(v==='X')?10:(parseInt(v,10)||0); bg = n>=9?C.gold : n>=7?C.red : n>=5?C.blue : n>=3?C.black : C.white; }
+  return 'background:'+bg+';color:'+btInkOn(bg)+';border:1px solid rgba(255,255,255,0.35)';
+}
+// Series con flechas: [{e: índice original de la serie, v: [valores]}]
+function btEndsOf(s){
+  const out=[];
+  (Array.isArray(s.ends)?s.ends:[]).forEach((arr,e)=>{ if(Array.isArray(arr) && arr.length) out.push({e:e, v:arr.map(x=>x==null?'':String(x))}); });
+  return out;
+}
+function btFmtLong(d){
+  const x=new Date(d); if(isNaN(x)) return '';
+  return x.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+', '+x.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit'});
+}
+function btDetImpacts(s){ return (Array.isArray(s.impacts)?s.impacts:[]).filter(p=>p&&isFinite(p.x)&&isFinite(p.y)); }
+
+function btOpenSession(id){
+  const s=btSessions.find(x=>String(x.id)===String(id));
+  const box=document.getElementById('bt-det'); if(!s || !box) return;
+  btDet={s:s, sel:null}; btDetFocus=document.activeElement;
+  const m=BT_MODES[s.mode]||{}, ext=(s.setup_note==='torneo-externo');
+  const gl=BT_GLABELS[s.g]||'', ml=(m.lbl||s.lbl||''), modeLbl=(ml && ml!==gl) ? gl+' · '+ml : gl;   // 3D: solo "3D", no "3D · 3D"
+  document.getElementById('bt-det-h').textContent = ext ? (s.lbl||'Torneo externo') : modeLbl;
+  const ends=btEndsOf(s), imps=btDetImpacts(s);
+  const hasFace = imps.length>0 && s.face && BT_FACES[s.face] && s.g!=='3d';
+  const bow=s.setup_id ? btBows.find(x=>String(x.id)===String(s.setup_id)) : null;
+  const pct=s.max ? Math.round(s.total/s.max*100) : null;
+  const spN=btSpOf(s), src=BT_SRC_LABEL[s.src]||null;
+  const stat=(v,l)=>'<div class="bt-det-stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';
+  let h='<div class="bt-card">';
+  h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="bt-pill" style="background:'+BT_COLORS[s.g]+';color:'+btInkOn(BT_COLORS[s.g])+';border:none;font-size:10px">'+btEsc(modeLbl)+'</span>'+
+     (src?'<span class="bt-pill" style="background:var(--bt-white);color:var(--bt-on-white);border:none;font-size:10px">'+src+'</span>':'')+'</div>';
+  h+='<div class="bt-muted" style="margin-top:8px">'+btEsc(btFmtLong(s.date))+'</div>';
+  if(bow) h+='<div class="bt-muted" style="margin-top:2px">Arco: <b style="color:var(--bt-ink)">'+btEsc(bow.name||'')+'</b></div>';
+  if(s.notes) h+='<div style="margin-top:8px;font-size:13px;color:var(--bt-ink-2)">'+btEsc(s.notes)+'</div>';
+  if(s.setup_note && !ext) h+='<div class="bt-muted" style="margin-top:6px">Nota de equipo: '+btEsc(s.setup_note)+'</div>';
+  h+='<div class="bt-det-stats">'+
+     stat(btEsc(s.total)+(pct!==null?' <small>'+pct+'%</small>':''), 'puntos')+
+     stat(s.n>0?Number(s.avg||0).toFixed(1):'—', 'por flecha')+
+     stat(spN, btSpLabel(s.g))+
+     stat(s.n||'—', 'flechas')+'</div></div>';
+
+  if(hasFace){
+    h+='<div class="bt-card"><div class="bt-sec">Impactos en la diana</div><div class="bt-det-sel" id="bt-det-sel">'+
+       '<button type="button" class="bt-fp act" data-e="" aria-pressed="true">Todas</button>'+
+       ends.map((r,k)=>'<button type="button" class="bt-fp" data-e="'+r.e+'" aria-pressed="false">'+(k+1)+'</button>').join('')+'</div>'+
+       '<svg id="bt-det-svg" viewBox="0 0 300 300" style="width:100%;max-width:340px;display:block;margin:0 auto" role="img" aria-label="Diana con los impactos de la sesión"></svg>'+
+       '<div class="bt-muted" id="bt-det-cap" style="text-align:center;margin-top:6px"></div></div>';
+  } else if(ends.length){
+    h+='<div class="bt-card"><div class="bt-muted" style="text-align:center">'+(s.g==='3d'?'3D no usa diana: solo hay el valor de cada flecha.':'Esta sesión se capturó sin diana: solo hay el valor de cada flecha.')+'</div></div>';
+  }
+
+  if(!ends.length){
+    h+='<div class="bt-card"><div class="bt-muted" style="text-align:center;padding:6px 0">Solo se registró el total de '+(ext?'esta competencia':'esta sesión')+': no hay detalle por serie ni por flecha.</div></div>';
+  } else {
+    let acc=0;
+    h+='<div class="bt-card"><div class="bt-sec">Series y flechas</div><div class="bt-end-head"><span>Serie</span><span>Flechas</span><span style="text-align:right">Pts · acum.</span></div>';
+    h+=ends.map((r,k)=>{
+      const sum=r.v.reduce((a,v)=>a+btAv(v),0); acc+=sum;
+      const spc=r.v.filter(v=>btIsSp(s.g,v)).length;
+      return '<div class="bt-end" data-e="'+r.e+'" role="button" tabindex="0" aria-pressed="false"><div class="bt-end-n">'+(k+1)+'</div>'+
+        '<div class="bt-end-ar">'+r.v.map(v=>'<span class="bt-chip" style="'+btChipStyle(s.g,v)+'">'+btEsc(v===''?'·':v)+'</span>').join('')+'</div>'+
+        '<div class="bt-end-t"><b>'+sum+'</b><small>'+acc+(spc?' · '+spc+' '+btSpLabel(s.g):'')+'</small></div></div>';
+    }).join('');
+    h+='<div class="bt-end-foot"><span>Suma de las flechas</span><b>'+acc+'</b></div>';
+    if(acc!==Number(s.total)) h+='<div class="bt-muted" style="font-size:10px;margin-top:4px">El total guardado es '+btEsc(s.total)+'.</div>';
+    h+='</div>';
+  }
+  document.getElementById('bt-det-body').innerHTML=h;
+  box.classList.add('open'); box.setAttribute('aria-hidden','false');
+  document.getElementById('bt-det-panel').scrollTop=0;
+  btDetPaint();
+  document.getElementById('bt-det-close').focus();
+}
+
+// Pinta la diana y marca la serie elegida (sel = índice original de la serie, o null para todas)
+function btDetPaint(){
+  if(!btDet) return;
+  const s=btDet.s, sel=btDet.sel, R=140, cx=150, cy=150;
+  const svg=document.getElementById('bt-det-svg'), imps=btDetImpacts(s);
+  if(svg){
+    let h='<g>'+btFaceMarkup(s.face)+'</g>';
+    imps.forEach(p=>{
+      const X=(cx+p.x*R).toFixed(1), Y=(cy-p.y*R).toFixed(1), at=' data-imp="1" data-e="'+p.e+'" data-i="'+p.i+'"';
+      if(sel===null) h+='<circle'+at+' cx="'+X+'" cy="'+Y+'" r="3.4" fill="#182440" stroke="#fffffc" stroke-width="1"/>';
+      else if(p.e===sel) h+='<g'+at+' data-sel="1"><circle cx="'+X+'" cy="'+Y+'" r="7.5" fill="#182440" stroke="#f5c06a" stroke-width="1.6"/><text x="'+X+'" y="'+Y+'" dy="2.8" text-anchor="middle" font-size="8" font-weight="700" fill="#ffffff" font-family="DM Sans,sans-serif">'+(p.i+1)+'</text></g>';
+      else h+='<circle'+at+' cx="'+X+'" cy="'+Y+'" r="2.6" fill="#182440" stroke="#fffffc" stroke-width="0.8" opacity="0.28"/>';
+    });
+    svg.innerHTML=h; svg.setAttribute('data-face',s.face);
+  }
+  document.querySelectorAll('#bt-det-sel .bt-fp').forEach(btn=>{ const on=(btn.dataset.e===''?null:+btn.dataset.e)===sel; btn.classList.toggle('act',on); btn.setAttribute('aria-pressed',on?'true':'false'); });
+  document.querySelectorAll('#bt-det-body .bt-end').forEach(row=>{ const on=(+row.dataset.e===sel); row.classList.toggle('sel',on); row.setAttribute('aria-pressed',on?'true':'false'); });
+  const cap=document.getElementById('bt-det-cap');
+  if(cap){
+    if(sel===null) cap.textContent=imps.length+' impactos';
+    else {
+      const ends=btEndsOf(s), k=ends.findIndex(r=>r.e===sel), nA=k>=0?ends[k].v.length:0, nI=imps.filter(p=>p.e===sel).length;
+      cap.textContent='Serie '+(k+1)+': '+nI+' de '+nA+' flechas con posición';
+    }
+  }
+}
+function btDetSelect(e){
+  if(!btDet) return;
+  btDet.sel = (e===null || e===btDet.sel) ? null : e;
+  btDetPaint();
+  const svg=document.getElementById('bt-det-svg');
+  if(svg && btDet.sel!==null){ const r=svg.getBoundingClientRect(); if(r.top<0 || r.bottom>window.innerHeight) svg.scrollIntoView({block:'center',behavior:'smooth'}); }
+}
+function btCloseSession(){
+  const box=document.getElementById('bt-det'); if(!box) return;
+  box.classList.remove('open'); box.setAttribute('aria-hidden','true'); btDet=null;
+  if(btDetFocus && btDetFocus.focus){ try{ btDetFocus.focus(); }catch(e){} }
+}
+(function(){
+  const hl=document.getElementById('bt-hl'), box=document.getElementById('bt-det'), body=document.getElementById('bt-det-body');
+  if(!hl || !box) return;
+  hl.addEventListener('click',ev=>{ const r=ev.target.closest('.bt-srow[data-id]'); if(r) btOpenSession(r.dataset.id); });
+  hl.addEventListener('keydown',ev=>{ if((ev.key==='Enter'||ev.key===' ') && ev.target.matches('.bt-srow[data-id]')){ ev.preventDefault(); btOpenSession(ev.target.dataset.id); } });
+  box.addEventListener('click',ev=>{ if(ev.target===box) btCloseSession(); });
+  document.getElementById('bt-det-close').addEventListener('click',btCloseSession);
+  body.addEventListener('click',ev=>{ const t=ev.target.closest('[data-e]'); if(!t) return; btDetSelect(t.dataset.e===''?null:+t.dataset.e); });
+  body.addEventListener('keydown',ev=>{ if((ev.key==='Enter'||ev.key===' ') && ev.target.matches('.bt-end')){ ev.preventDefault(); btDetSelect(+ev.target.dataset.e); } });
+  document.addEventListener('keydown',ev=>{ if(ev.key==='Escape' && box.classList.contains('open')) btCloseSession(); });
+})();
 
 // Progreso: promedio por flecha de cada sesión, una línea por modalidad, sobre eje de tiempo real.
 function btDrawProgress(fs){
