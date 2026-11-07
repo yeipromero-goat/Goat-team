@@ -5491,11 +5491,13 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 .bt-rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-bottom:12px}
 .bt-rec-grid.one{grid-template-columns:1fr}
 .bt-rec-grid>div:empty{display:none}
+/* Récords sobre tarjeta oscura (antes blanca: con las barras vacías en marino se veían como barras llenas) */
+.bt-rec-card{background:var(--bt-fill);border:0.5px solid var(--bt-line);border-radius:12px;padding:14px}
 .bt-rec{display:flex;align-items:center;gap:8px;min-height:46px;margin-bottom:6px}
 .bt-rec-chip{flex:0 0 66px;padding:8px 4px;border-radius:16px;color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:1.15}
 .bt-rec-chip small{display:block;font-size:8px;font-weight:500}
 .bt-rec-bar{flex:1;min-width:0}
-.bt-rec-track{height:16px;border-radius:9px;background:var(--bt-navy);overflow:hidden}
+.bt-rec-track{height:16px;border-radius:9px;background:var(--bt-navy);border:1px solid var(--bt-line);box-sizing:border-box;overflow:hidden}
 .bt-rec-fill{height:100%;border-radius:9px;background:var(--bt-amber)}
 .bt-rec-lbl{font-size:9px;color:var(--bt-ink-2);text-align:right;margin-top:2px}
 .bt-rec-lbl b{font-weight:700;color:var(--bt-ink)}
@@ -5837,7 +5839,7 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 
   <div class="bt-dots"></div>
   <div class="bt-hd">Récords</div>
-  <div class="bt-rec-grid bt-lt bt-wcard"><div id="bt-rec-l"></div><div id="bt-rec-r"></div></div>
+  <div class="bt-rec-grid bt-rec-card"><div id="bt-rec-l"></div><div id="bt-rec-r"></div></div>
 
   <details class="bt-sess">
     <summary>Sesiones (<span id="bt-sc">0</span>)</summary>
