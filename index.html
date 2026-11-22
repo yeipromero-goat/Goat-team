@@ -5488,19 +5488,59 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 .bt-range{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin:4px 0 10px;padding:10px;border:1px solid var(--bt-line);border-radius:12px}
 .bt-range label{font-size:11px;color:var(--bt-ink-3);display:flex;flex-direction:column;gap:3px}
 .bt-range input{padding:6px 8px;border:1px solid var(--bt-line);border-radius:8px;background:var(--bt-field);color:var(--bt-ink);font-size:16px;font-family:'DM Sans',sans-serif}
-.bt-rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-bottom:12px}
-.bt-rec-grid.one{grid-template-columns:1fr}
+.bt-rec-grid{margin-bottom:12px}
 .bt-rec-grid>div:empty{display:none}
-/* Récords sobre tarjeta oscura (antes blanca: con las barras vacías en marino se veían como barras llenas) */
-.bt-rec-card{background:var(--bt-fill);border:0.5px solid var(--bt-line);border-radius:12px;padding:14px}
-.bt-rec{display:flex;align-items:center;gap:8px;min-height:46px;margin-bottom:6px}
-.bt-rec-chip{flex:0 0 66px;padding:8px 4px;border-radius:16px;color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:1.15}
-.bt-rec-chip small{display:block;font-size:8px;font-weight:500}
-.bt-rec-bar{flex:1;min-width:0}
-.bt-rec-track{height:16px;border-radius:9px;background:var(--bt-navy);border:1px solid var(--bt-line);box-sizing:border-box;overflow:hidden}
-.bt-rec-fill{height:100%;border-radius:9px;background:var(--bt-amber)}
-.bt-rec-lbl{font-size:9px;color:var(--bt-ink-2);text-align:right;margin-top:2px}
-.bt-rec-lbl b{font-weight:700;color:var(--bt-ink)}
+/* Récords: tarjeta de progreso. Pestaña de color de la modalidad a la izquierda, "Mejor marca" y el avance a la derecha, y una barra
+   con hitos (50, 75 y 90 % del tope): punto oscuro = hito ya alcanzado (sobre el relleno), punto ámbar = hito por alcanzar. */
+.bt-rec{display:flex;align-items:stretch;margin-bottom:8px;border:0.5px solid var(--bt-line);border-radius:14px;background:var(--bt-fill);overflow:hidden}
+.bt-rec-chip{flex:0 0 78px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;color:#fff;font-size:12px;font-weight:700;text-align:center;line-height:1.15}
+.bt-rec-chip small{display:block;font-size:9px;font-weight:600;margin-top:2px}
+/* Pestañas de Récords: color de la modalidad con un degradado leve y sombreado para dar relieve */
+#tab-bitacora{--bt-g-outdoor:linear-gradient(160deg,#c8432e 0%,#b33c29 30%,#923121 100%);--bt-g-indoor:linear-gradient(160deg,#51979f 0%,#48878e 30%,#3a6d73 100%);--bt-g-field:linear-gradient(160deg,#1f2e53 0%,#182440 30%,#0d1322 100%);--bt-g-3d:linear-gradient(160deg,#caaf8a 0%,#b89563 55%,#a37e4a 100%);}
+.bt-rec-chip{position:relative;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,0.38);box-shadow:inset 0 1px 0 rgba(255,255,255,0.34),inset 0 -3px 5px rgba(0,0,0,0.17),3px 0 8px rgba(0,0,0,0.40)}
+.bt-rec-chip.dk{text-shadow:0 1px 0 rgba(255,255,255,0.38)}
+.bt-rec-body{flex:1;min-width:0;padding:11px 14px 13px}
+.bt-rec-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.bt-rec-cap{font-size:11px;color:var(--bt-ink-3)}
+.bt-rec-meta{font-size:11px;color:var(--bt-ink-2);white-space:nowrap}
+.bt-rec-lbl{font-size:19px;font-weight:700;color:var(--bt-amber);margin:2px 0 9px;line-height:1.15}
+.bt-rec-lbl.empty{color:var(--bt-ink-3);font-weight:600}
+.bt-rec-lbl b{font-weight:700;color:var(--bt-ink);font-size:13px}
+.bt-rec-track{position:relative;height:10px;border-radius:5px;background:rgba(255,255,255,0.14)}
+.bt-rec-fill{height:100%;border-radius:5px;background:var(--bt-amber)}
+.bt-rec-dot{position:absolute;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--bt-amber)}
+.bt-rec-dot.done{background:var(--bt-navy)}
+/* Lapso: siete botones en una sola línea, repartidos a lo ancho */
+#bt-fd{flex-wrap:nowrap;gap:5px}
+#bt-fd .bt-fp{flex:1 1 auto;padding:6px 4px;text-align:center}
+/* ── Modalidad y Categoría: una caja cada una; la elección se hace en una ventana ── */
+.bt-fbox-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 4px}
+.bt-fbox{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:9px 34px 10px 14px;border:1px solid rgba(255,255,255,0.14);border-radius:14px;background-color:var(--bt-navy);background-image:var(--bt-g-field);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.38);box-shadow:inset 0 1px 0 rgba(255,255,255,0.34),inset 0 -3px 5px rgba(0,0,0,0.17),0 3px 8px rgba(0,0,0,0.40);font-family:'DM Sans',sans-serif;cursor:pointer;min-width:0}
+.bt-fbox:active{transform:translateY(1px)}
+.bt-fbox:focus-visible{outline:2px solid var(--bt-amber);outline-offset:2px}
+.bt-fbox.on{box-shadow:0 0 0 2px var(--bt-amber),inset 0 1px 0 rgba(255,255,255,0.34),inset 0 -3px 5px rgba(0,0,0,0.17),0 3px 8px rgba(0,0,0,0.40)}
+.bt-fbox-l{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.78)}
+.bt-fbox-v{display:flex;align-items:center;gap:7px;max-width:100%;font-size:16px;font-weight:700;color:#fff}
+.bt-fbox-v>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt-fbox-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block;box-shadow:0 0 0 1.5px rgba(255,255,255,0.65),0 1px 2px rgba(0,0,0,0.4)}
+.bt-fbox-c{position:absolute;right:14px;top:50%;width:12px;height:8px;margin-top:-4px;color:#fff}
+.bt-pop{position:fixed;inset:0;z-index:410;background:rgba(0,0,0,0.6);display:none;align-items:flex-end;justify-content:center}
+.bt-pop.open{display:flex}
+.bt-pop-panel{width:100%;max-width:460px;box-sizing:border-box;background:#1c1c1c;border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));max-height:80vh;overflow-y:auto;overscroll-behavior:contain;animation:btPopUp .18s ease-out}
+@keyframes btPopUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.bt-pop-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.bt-pop-t{font-size:20px;font-style:italic;font-weight:600;color:var(--bt-ink)}
+.bt-pop-x{width:34px;height:34px;border-radius:50%;border:1px solid var(--bt-line);background:transparent;color:var(--bt-ink);font-size:15px;line-height:1;cursor:pointer}
+.bt-pop-list{display:flex;flex-direction:column;gap:8px}
+.bt-pop-opt{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:48px;padding:0 18px;border:2px solid var(--bt-navy);border-radius:16px;background:var(--bt-navy);color:#fff;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left}
+.bt-pop-opt[data-cat="outdoor"]{background:var(--bt-c-outdoor);border-color:var(--bt-c-outdoor)}
+.bt-pop-opt[data-cat="indoor"]{background:var(--bt-c-indoor);border-color:var(--bt-c-indoor)}
+.bt-pop-opt[data-cat="field"]{background:var(--bt-c-field);border-color:var(--bt-c-field)}
+.bt-pop-opt[data-cat="3d"]{background:var(--bt-c-3d);border-color:var(--bt-c-3d);color:var(--bt-on-white)}
+.bt-pop-opt.act{background:var(--bt-white);color:var(--bt-on-white);border-color:#000}
+.bt-pop-opt .ck{font-size:17px;opacity:0}
+.bt-pop-opt.act .ck{opacity:1}
+.bt-pop-opt:focus-visible{outline:2px solid var(--bt-amber);outline-offset:2px}
 /* ── Detalle de sesión: clic en una fila del historial ── */
 .bt-srow.bt-click{cursor:pointer;transition:background .12s}
 .bt-srow.bt-click:hover{background:var(--bt-fill)}
@@ -5542,6 +5582,32 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 .bt-loupe-v{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);padding:1px 8px;border-radius:10px;background:rgba(24,36,64,0.92);color:#fff;font-size:13px;font-weight:700}
 .bt-sess{margin-top:6px;border-top:1px solid var(--bt-line-soft);padding-top:8px}
 .bt-sess summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--bt-ink-2);padding:4px 0}
+/* ── Fondo BLANCO en celular ──────────────────────────────────────────────
+   El script de esta pestaña pone la clase .bt-light en <html> mientras "Puntuaciones" está visible. Solo aplica en celular
+   (≤768 px, el mismo corte que usa el menú). En escritorio sigue oscuro. Para llevarlo también a escritorio, quita el @media.
+   El menú lateral y el encabezado móvil siguen oscuros. Las ventanas (detalle y elegir) y las tarjetas de récords conservan
+   su superficie oscura, con su propia tinta clara. */
+@media (max-width:768px){
+  html.bt-light, html.bt-light body{background-color:#fffffc;background-image:none}
+  html.bt-light body::before{display:none}
+  html.bt-light .main-content{--text:#1b2743;--muted:rgba(27,39,67,0.72);--hint:rgba(27,39,67,0.64);--border:rgba(27,39,67,0.14);--surface:#f6f7fa;--surface2:#eceef3}
+  html.bt-light #tab-bitacora{
+    --bt-ink:#1b2743;--bt-ink-2:rgba(27,39,67,0.82);--bt-ink-3:rgba(27,39,67,0.72);--bt-ink-4:rgba(27,39,67,0.66);
+    --bt-line:rgba(27,39,67,0.20);--bt-line-soft:rgba(27,39,67,0.11);--bt-fill:rgba(27,39,67,0.04);--bt-fill-2:rgba(27,39,67,0.08);
+    --bt-field:#eef0f5;--bt-accent:#182440;--bt-up:#167a5a;--bt-down:#c62f2f;--bt-dot-ring:rgba(27,39,67,0.28);
+    color:var(--bt-ink);color-scheme:light;
+  }
+  /* superficies que siguen oscuras sobre el fondo blanco */
+  html.bt-light .bt-det-panel, html.bt-light .bt-pop-panel, html.bt-light .bt-rec{--bt-ink:#f2f2f2;--bt-ink-2:rgba(255,255,255,0.75);--bt-ink-3:rgba(255,255,255,0.58);--bt-ink-4:rgba(255,255,255,0.45);--bt-line:rgba(255,255,255,0.18);--bt-line-soft:rgba(255,255,255,0.09);--bt-fill:rgba(255,255,255,0.05);--bt-fill-2:rgba(255,255,255,0.09);--bt-field:#1a1a1a;--bt-accent:#f5c06a;--bt-up:#5dcaa5;--bt-down:#e05555;--bt-dot-ring:rgba(255,255,255,0.4);color:var(--bt-ink);color-scheme:dark;}
+  html.bt-light .bt-rec{background:#1b1b1f;border-color:rgba(255,255,255,0.14)}
+  /* superficies blancas: necesitan borde y sombra para no perderse en el blanco */
+  /* el vidrio del encabezado y del menú se mezclaría con la página clara: se hacen casi sólidos para conservar su contraste */
+  html.bt-light .mobile-header{background:rgba(14,14,14,0.96)}
+  html.bt-light .sidebar{background:rgba(20,20,20,0.96)}
+  html.bt-light .bt-wcard{border:1px solid rgba(27,39,67,0.14);box-shadow:0 2px 10px rgba(27,39,67,0.08)}
+  html.bt-light .bt-disc-card.bt-start{box-shadow:0 1px 6px rgba(27,39,67,0.12)}
+  html.bt-light .bt-bow{box-shadow:0 1px 5px rgba(27,39,67,0.14)}
+}
 </style>
 
 <div class="bt-app">
@@ -5827,22 +5893,17 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
   </div>
 
   <div class="bt-dots"></div>
-  <div class="bt-flabel">Modalidad</div>
-  <div class="bt-frow" id="bt-fm">
-    <button class="bt-fp act" onclick="btSf('all',this,'bt-fm')">Todas</button>
-    <button class="bt-fp" data-cat="outdoor" onclick="btSf('outdoor',this,'bt-fm')">Outdoor</button>
-    <button class="bt-fp" data-cat="indoor" onclick="btSf('indoor',this,'bt-fm')">Indoor</button>
-    <button class="bt-fp" data-cat="3d" onclick="btSf('3d',this,'bt-fm')">3D</button>
-    <button class="bt-fp" data-cat="field" onclick="btSf('field',this,'bt-fm')">Field</button>
-  </div>
-
-  <div class="bt-dots"></div>
-  <div class="bt-flabel">Categoría</div>
-  <div class="bt-filters" id="bt-fs">
-    <button class="bt-fp act" onclick="btSfSrc('all',this)">Todas</button>
-    <button class="bt-fp" onclick="btSfSrc('practica',this)">Sesión</button>
-    <button class="bt-fp" onclick="btSfSrc('liga',this)">Liga</button>
-    <button class="bt-fp" onclick="btSfSrc('torneo',this)">Torneo</button>
+  <div class="bt-fbox-row">
+    <button type="button" class="bt-fbox" id="bt-fbox-m" aria-haspopup="dialog" aria-label="Elegir modalidad" onclick="btOpenPop('fm')">
+      <span class="bt-fbox-l">Modalidad</span>
+      <span class="bt-fbox-v"><i class="bt-fbox-dot" id="bt-fbox-m-dot" style="display:none"></i><span id="bt-fbox-m-v">Todas</span></span>
+      <svg class="bt-fbox-c" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button type="button" class="bt-fbox" id="bt-fbox-s" aria-haspopup="dialog" aria-label="Elegir categoría" onclick="btOpenPop('fs')">
+      <span class="bt-fbox-l">Categoría</span>
+      <span class="bt-fbox-v"><span id="bt-fbox-s-v">Todas</span></span>
+      <svg class="bt-fbox-c" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
   </div>
 
   <div class="bt-dots"></div>
@@ -5853,8 +5914,10 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
     <button class="bt-fp" onclick="btSf(30,this,'bt-fd')">30d</button>
     <button class="bt-fp" onclick="btSf(60,this,'bt-fd')">60d</button>
     <button class="bt-fp" onclick="btSf(90,this,'bt-fd')">90d</button>
+    <button class="bt-fp" onclick="btSf(0,this,'bt-fd')" aria-label="Todo el historial">Max</button>
     <button class="bt-fp" id="bt-cal-btn" aria-label="Elegir rango de fechas" onclick="btOpenRange()">📅</button>
   </div>
+  <div id="bt-max-note" class="bt-muted" style="display:none;font-size:10px;margin:0 0 6px" role="status"></div>
   <div id="bt-range" class="bt-range" style="display:none">
     <label>Desde<input type="date" id="bt-r-from"></label>
     <label>Hasta<input type="date" id="bt-r-to"></label>
@@ -5869,7 +5932,7 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 
   <div class="bt-dots"></div>
   <div class="bt-hd">Récords</div>
-  <div class="bt-rec-grid bt-rec-card"><div id="bt-rec-l"></div><div id="bt-rec-r"></div></div>
+  <div class="bt-rec-grid"><div id="bt-rec-l"></div><div id="bt-rec-r"></div></div>
 
   <details class="bt-sess">
     <summary>Sesiones (<span id="bt-sc">0</span>)</summary>
@@ -5891,6 +5954,14 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
       <div class="bt-det-h" id="bt-det-h">Detalle</div>
     </div>
     <div id="bt-det-body"></div>
+  </div>
+</div>
+
+<!-- Ventana para elegir Modalidad o Categoría -->
+<div id="bt-pop" class="bt-pop" aria-hidden="true">
+  <div class="bt-pop-panel" role="dialog" aria-modal="true" aria-labelledby="bt-pop-t">
+    <div class="bt-pop-head"><div class="bt-pop-t" id="bt-pop-t">Modalidad</div><button type="button" class="bt-pop-x" id="bt-pop-x" aria-label="Cerrar">✕</button></div>
+    <div class="bt-pop-list" id="bt-pop-list"></div>
   </div>
 </div>
 
@@ -5920,7 +5991,7 @@ function btSpOf(s){
   return s.sp||0;
 }
 
-let btSessions=[], btFDays=7, btFRange=null, btFMod='all', btFSrc='all', btBow='all', btBowTouched=false, btBows=[], btLastFs=[], btLegacy=[], btCurMode=null, btState={};
+let btSessions=[], btFDays=7, btFRange=null, btFMod='all', btFSrc='all', btBow='all', btBowTouched=false, btBows=[], btLastFs=[], btLegacy=[], btTruncated=false, btCurMode=null, btState={};
 window._btDebug = ()=>({ sessions:btSessions, filt:btFilt(), mod:btFMod, src:btFSrc });
 let btUsingDemo=false;
 
@@ -5977,9 +6048,11 @@ function btLoadSessions(){
 
     Promise.all([
       window.supabaseLoadScores({ownOnly:true}),
-      userId ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&select=submitted_at,score&order=submitted_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([]),
-      userId ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_at,qualifying_score,tournaments(title)&order=qualifying_at.desc&limit=200`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([])
+      userId ? fetch(`${SUPA}/rest/v1/league_round_scores?user_id=eq.${userId}&select=submitted_at,score&order=submitted_at.desc&limit=1000`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([]),
+      userId ? fetch(`${SUPA}/rest/v1/tournament_players?user_id=eq.${userId}&qualifying_score=not.is.null&select=qualifying_at,qualifying_score,tournaments(title)&order=qualifying_at.desc&limit=1000`,{headers:h}).then(r=>r.json()).catch(()=>[]) : Promise.resolve([])
     ]).then(function([daily, liga, torneo]){
+      // Si llegaron tantas sesiones como el límite de carga, puede haber más antiguas sin traer (lo avisa el filtro Max)
+      btTruncated = Array.isArray(daily) && daily.length >= (Number(window.supabaseLoadScores && window.supabaseLoadScores.limit) || 200);
       let all = [];
       // Práctica diaria
       if(Array.isArray(daily) && daily.length){
@@ -6575,8 +6648,9 @@ function btTeStartArrows(){
 
 window.btSfSrc=function(v,el){
   btFSrc=v;
-  document.getElementById('bt-fs').querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
-  el.classList.add('act');
+  const g=document.getElementById('bt-fs'); if(g) g.querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
+  if(el) el.classList.add('act');
+  btFilterBoxes();
   btRenderH();
 }
 
@@ -6585,8 +6659,10 @@ window.btSf=function(v,el,id){
     btFDays=v; btFRange=null;
     const rp=document.getElementById('bt-range'); if(rp) rp.style.display='none';
   } else btFMod=v;
-  document.getElementById(id).querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
-  el.classList.add('act');btRenderH();
+  const grp=document.getElementById(id); if(grp) grp.querySelectorAll('.bt-fp').forEach(b=>b.classList.remove('act'));
+  if(el) el.classList.add('act');
+  if(id==='bt-fm') btFilterBoxes();
+  btRenderH();
 }
 
 // Calendario: rango personalizado de fechas
@@ -6677,7 +6753,20 @@ const BT_RECORDS=[
   {col:'r', chip:'3D', g:'3d', mode:'3d', kind:'avg', perfect:11, all:true}
 ];
 
+// Aviso honesto: con "Max" (o un rango muy antiguo) puede faltar historial si se llegó al límite de carga
+function btRenderMaxNote(){
+  const el=document.getElementById('bt-max-note'); if(!el) return;
+  let show=false;
+  if(btTruncated && !btUsingDemo && btSessions.length){
+    const oldest=btSessions.reduce((m,s)=>Math.min(m,new Date(s.date).getTime()),Infinity);
+    show = btFRange ? (btFRange.from<oldest) : (btFDays===0);
+  }
+  el.style.display = show ? 'block' : 'none';
+  if(show) el.textContent='Se muestran tus '+btSessions.length+' sesiones más recientes (límite de carga): puede haber sesiones más antiguas que no se ven aquí.';
+}
+
 function btRenderH(){
+  btFilterBoxes();
   const fs=btFilt();
   btLastFs=fs;
 
@@ -6701,6 +6790,7 @@ function btRenderH(){
   btRenderRecords();
 
   btRenderLegacy();
+  btRenderMaxNote();
   document.getElementById('bt-sc').textContent=fs.length;
   const hl=document.getElementById('bt-hl');
   if(!fs.length){
@@ -7110,6 +7200,59 @@ function btCloseSession(){
   document.addEventListener('keydown',ev=>{ if(ev.key==='Escape' && box.classList.contains('open')) btCloseSession(); });
 })();
 
+// ══════════ Modalidad y Categoría: caja con la elección actual; al tocarla, una ventana para elegir ══════════
+const BT_POP={
+  fm:{title:'Modalidad', val:()=>btFMod, opts:[['all','Todas',''],['outdoor','Outdoor','outdoor'],['indoor','Indoor','indoor'],['3d','3D','3d'],['field','Field','field']]},
+  fs:{title:'Categoría', val:()=>btFSrc, opts:[['all','Todas',''],['practica','Sesión',''],['liga','Liga',''],['torneo','Torneo','']]}
+};
+let btPopKind=null, btPopFocus=null;
+function btFilterBoxes(){
+  const pick=k=>{ const d=BT_POP[k]; return d.opts.find(o=>o[0]===d.val()) || d.opts[0]; };
+  const m=pick('fm'), s=pick('fs'), set=(id,t)=>{ const e=document.getElementById(id); if(e) e.textContent=t; };
+  set('bt-fbox-m-v',m[1]); set('bt-fbox-s-v',s[1]);
+  const dot=document.getElementById('bt-fbox-m-dot');
+  if(dot){ dot.style.display=m[2]?'inline-block':'none'; dot.style.background=m[2]?BT_COLORS[m[2]]:'transparent'; }
+  const bm=document.getElementById('bt-fbox-m'), bs=document.getElementById('bt-fbox-s');
+  if(bm) bm.classList.toggle('on', btFMod!=='all');
+  if(bs) bs.classList.toggle('on', btFSrc!=='all');
+}
+window.btOpenPop=function(kind){
+  const d=BT_POP[kind], box=document.getElementById('bt-pop'); if(!d || !box) return;
+  btPopKind=kind; btPopFocus=document.activeElement;
+  document.getElementById('bt-pop-t').textContent=d.title;
+  const cur=d.val();
+  document.getElementById('bt-pop-list').innerHTML=d.opts.map(o=>'<button type="button" class="bt-pop-opt'+(o[0]===cur?' act':'')+'"'+(o[2]?' data-cat="'+o[2]+'"':'')+' data-v="'+o[0]+'" aria-pressed="'+(o[0]===cur?'true':'false')+'"><span>'+btEsc(o[1])+'</span><span class="ck" aria-hidden="true">✓</span></button>').join('');
+  box.classList.add('open'); box.setAttribute('aria-hidden','false');
+  const first=box.querySelector('.bt-pop-opt.act') || box.querySelector('.bt-pop-opt'); if(first) first.focus();
+};
+function btClosePop(){
+  const box=document.getElementById('bt-pop'); if(!box) return;
+  box.classList.remove('open'); box.setAttribute('aria-hidden','true'); btPopKind=null;
+  if(btPopFocus && btPopFocus.focus){ try{ btPopFocus.focus(); }catch(e){} }
+}
+(function(){
+  const box=document.getElementById('bt-pop'); if(!box) return;
+  document.getElementById('bt-pop-list').addEventListener('click',ev=>{
+    const o=ev.target.closest('.bt-pop-opt'); if(!o) return;
+    const k=btPopKind, v=o.dataset.v; btClosePop();
+    if(k==='fm') btSf(v,null,'bt-fm'); else btSfSrc(v,null);
+  });
+  box.addEventListener('click',ev=>{ if(ev.target===box) btClosePop(); });
+  document.getElementById('bt-pop-x').addEventListener('click',btClosePop);
+  document.addEventListener('keydown',ev=>{ if(ev.key==='Escape' && box.classList.contains('open')) btClosePop(); });
+})();
+
+// ══════════ Fondo blanco en celular ══════════
+// Marca <html> con .bt-light mientras esta pestaña está activa (la activa/desactiva switchTab con la clase .active del panel).
+// El CSS solo lo aplica en pantallas de celular; al cambiar de pestaña la clase se quita y vuelve el fondo oscuro de la app.
+(function(){
+  const panel=document.getElementById('tab-bitacora'); if(!panel) return;
+  const root=document.documentElement;
+  const sync=()=>root.classList.toggle('bt-light', panel.classList.contains('active'));
+  sync();
+  new MutationObserver(sync).observe(panel,{attributes:true,attributeFilter:['class']});
+})();
+
 // Progreso: promedio por flecha de cada sesión, una línea por modalidad, sobre eje de tiempo real.
 function btDrawProgress(fs){
   const c=document.getElementById('bt-prog'); if(!c) return;
@@ -7211,6 +7354,7 @@ function btRenderLegacy(){
 function btRenderRecords(){
   const fs=btFilt({noWindow:true});
   const rows=BT_RECORDS.filter(r=> btFMod==='all' ? r.all : r.g===btFMod);
+  const MS=[0.5,0.75,0.9];     // hitos de la barra, como fracción del tope
   const rowHtml=r=>{
     const mine=fs.filter(s=> r.kind==='avg' ? (s.mode===r.mode||s.g===r.g) : s.mode===r.mode);
     let best=null, topes=0;
@@ -7223,16 +7367,20 @@ function btRenderRecords(){
     const top = r.kind==='avg' ? r.perfect : r.max;
     const pct = best===null ? 0 : Math.min(100, best/top*100);
     let lbl = best===null ? '—' : (r.kind==='avg' ? best.toFixed(1)+' p/f' : best+'/'+r.max);
-    if(topes>0) lbl += ' · <b>'+topes+(topes===1?' vez':' veces')+'</b>'+(r.kind==='avg'?' con prom. '+r.perfect:'');
+    if(topes>0) lbl += ' · <b>'+topes+(topes===1?' vez':' veces')+(r.kind==='avg'?' con prom. '+r.perfect:'')+'</b>';
+    const falta = best===null ? null : Math.max(0, top-best);
+    const meta = best===null ? 'Sin registro' : (pct>=100 ? 'Tope' : Math.round(pct)+'% · faltan '+(r.kind==='avg'?falta.toFixed(1):Math.round(falta)));
+    const dots = MS.map(m=>'<i class="bt-rec-dot'+(pct>=m*100?' done':'')+'" style="left:'+(m*100)+'%"></i>').join('');
     const chip = btEsc(r.chip)+(r.sub?'<small>'+btEsc(r.sub)+'</small>':'');
-    return '<div class="bt-rec"><div class="bt-rec-chip" style="background:'+BT_COLORS[r.g]+'">'+chip+'</div>'+
-           '<div class="bt-rec-bar"><div class="bt-rec-track"><div class="bt-rec-fill" style="width:'+pct.toFixed(1)+'%"></div></div><div class="bt-rec-lbl">'+lbl+'</div></div></div>';
+    const fg = btInkOn(BT_COLORS[r.g]);
+    return '<div class="bt-rec"><div class="bt-rec-chip'+(fg==='#ffffff'?'':' dk')+'" style="background-color:'+BT_COLORS[r.g]+';background-image:var(--bt-g-'+r.g+');color:'+fg+'">'+chip+'</div>'+
+           '<div class="bt-rec-body"><div class="bt-rec-top"><span class="bt-rec-cap">Mejor marca</span><span class="bt-rec-meta">'+meta+'</span></div>'+
+           '<div class="bt-rec-lbl'+(best===null?' empty':'')+'">'+lbl+'</div>'+
+           '<div class="bt-rec-track" role="progressbar" aria-label="Avance hacia el tope" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(pct)+'"><div class="bt-rec-fill" style="width:'+pct.toFixed(1)+'%"></div>'+dots+'</div></div></div>';
   };
   const L=document.getElementById('bt-rec-l'), Rr=document.getElementById('bt-rec-r');
-  if(L) L.innerHTML=rows.filter(r=>r.col==='l').map(rowHtml).join('');
-  if(Rr) Rr.innerHTML=rows.filter(r=>r.col==='r').map(rowHtml).join('');
-  const grid=document.querySelector('.bt-rec-grid');
-  if(grid) grid.classList.toggle('one', !rows.some(r=>r.col==='l') || !rows.some(r=>r.col==='r'));
+  if(L) L.innerHTML=rows.map(rowHtml).join('');
+  if(Rr) Rr.innerHTML='';
 }
 
 // ── Tooltip de nota de ajuste ───────────────────────────
