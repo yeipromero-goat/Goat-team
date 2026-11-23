@@ -5606,6 +5606,35 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
    porque va después en el árbol). La clase la pone y quita el script de abajo según la pestaña activa. */
 html.bt-light .main-content{z-index:auto}
 
+/* ── Récords: tocar una tarjeta abre la gráfica del promedio por serie ── */
+.bt-rec.bt-click{cursor:pointer;transition:border-color .12s}
+.bt-rec.bt-click:hover{border-color:var(--bt-ink-4)}
+.bt-rec.bt-click:focus-visible{outline:2px solid var(--bt-amber);outline-offset:2px}
+.bt-rec-meta{margin-left:auto}
+.bt-rec-top .bt-chev{margin-left:2px;align-self:center}
+.bt-rgc{margin:0 0 12px;padding:12px 12px 10px;border:0.5px solid var(--bt-line-soft);border-radius:14px;background:var(--bt-fill)}
+.bt-rgc-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+.bt-rgc-t{font-size:13px;font-weight:700;color:var(--bt-ink)}
+.bt-rgc-s{font-size:11px;color:var(--bt-ink-3);white-space:nowrap}
+.bt-rgc svg{display:block;width:100%;height:auto;overflow:visible}
+.bt-rgc-cap{min-height:16px;margin-top:4px;font-size:11px;line-height:1.35;color:var(--bt-ink-3)}
+.bt-rg-pt{cursor:pointer}
+.bt-rg-pt:focus-visible .bt-rg-dot{stroke:#fff;stroke-width:2}
+.bt-rg-line.dim{opacity:0.28}
+.bt-rg-line.hl path{stroke-width:3.2}
+.bt-rgm-svg{cursor:pointer;touch-action:manipulation}
+.bt-rg-leg{margin-top:10px}
+.bt-rg-lb{display:flex;gap:6px;margin-bottom:8px}
+.bt-rg-lb button{padding:4px 11px;border-radius:12px;border:1px solid var(--bt-line);background:transparent;color:var(--bt-ink-2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer}
+.bt-rg-chips{display:flex;flex-wrap:wrap;gap:6px}
+.bt-rg-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:14px;border:1px solid var(--bt-line);background:var(--bt-fill);color:var(--bt-ink);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer}
+.bt-rg-chip i{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--c)}
+.bt-rg-chip small{font-size:10px;font-weight:500;color:var(--bt-ink-3)}
+.bt-rg-chip.off{background:transparent;color:var(--bt-ink-3)}
+.bt-rg-chip.off i{background:transparent;box-shadow:inset 0 0 0 2px var(--c)}
+.bt-rg-chip:focus-visible,.bt-rg-lb button:focus-visible{outline:2px solid var(--bt-amber);outline-offset:2px}
+.bt-rg-cd{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+
 /* ── Fondo BLANCO en celular ──────────────────────────────────────────────
    El script de esta pestaña pone la clase .bt-light en <html> mientras "Puntuaciones" está visible. Solo aplica en celular
    (≤768 px, el mismo corte que usa el menú). En escritorio sigue oscuro. Para llevarlo también a escritorio, quita el @media.
@@ -5991,6 +6020,18 @@ html.bt-light .main-content{z-index:auto}
   <div class="bt-pop-panel" role="dialog" aria-modal="true" aria-labelledby="bt-pop-t">
     <div class="bt-pop-head"><div class="bt-pop-t" id="bt-pop-t">Modalidad</div><button type="button" class="bt-pop-x" id="bt-pop-x" aria-label="Cerrar">✕</button></div>
     <div class="bt-pop-list" id="bt-pop-list"></div>
+  </div>
+</div>
+
+<!-- Récords: gráfica del promedio por serie de cada conteo -->
+<div id="bt-rg" class="bt-det" aria-hidden="true">
+  <div class="bt-det-panel bt-rg-panel" id="bt-rg-panel" role="dialog" aria-modal="true" aria-labelledby="bt-rg-h">
+    <div class="bt-det-top">
+      <button class="bt-btn" id="bt-rg-close" type="button">‹ Volver</button>
+      <div class="bt-det-h" id="bt-rg-h">Promedio por serie</div>
+    </div>
+    <div id="bt-rg-sub" class="bt-muted" style="margin:-4px 0 10px;font-size:12px"></div>
+    <div id="bt-rg-body"></div>
   </div>
 </div>
 
@@ -7414,6 +7455,174 @@ function btSaveEdit(){
   const ed=document.getElementById('bt-det-edit'); if(ed) ed.addEventListener('click',()=>{ if(btDet) btEditSaved(btDet.s.id); });
 })();
 
+// ══════════ Récords: gráfica del promedio por serie ══════════
+// Al tocar un récord se abre una ventana con el promedio por flecha de cada serie:
+//   1) arriba, UNA sola gráfica con una línea de color por conteo (todas juntas, para ver tendencias y correlaciones);
+//   2) debajo, cada conteo por separado (con el mismo color que su línea).
+// Usa los mismos filtros que el historial: lapso de fechas, arco y categoría. (Las tarjetas de récord en sí siguen siendo históricas.)
+let btRgFocus=null, btRgData={}, btRgHidden={}, btRgSel=null;
+const BT_RG_PALETTE=['#f5c06a','#5ab4d6','#ef6f5e','#7bd88f','#c792ea','#ff9fb2','#4dd0c8','#9db2ff','#ff9a4d','#c5e063'];
+function btRgColor(i){ return i<BT_RG_PALETTE.length ? BT_RG_PALETTE[i] : 'hsl('+Math.round((i*137.508)%360)+',65%,66%)'; }   // pasadas 10, se reparten en el círculo de colores
+function btRgRangeLabel(){
+  if(btFRange){ const f=d=>new Date(d).toLocaleDateString('es-MX',{day:'numeric',month:'short'}); return f(btFRange.from)+' al '+f(btFRange.to); }
+  return btFDays===0 ? 'todo el historial' : 'últimos '+btFDays+' días';
+}
+// Promedio por flecha de cada serie. Una serie incompleta promedia solo las flechas tiradas (y se marca); sin ninguna flecha queda vacía.
+function btRgSeries(s,m){
+  const n=m.rondas||(Array.isArray(s.ends)?s.ends.length:0), out=[];
+  for(let e=0;e<n;e++){
+    const a=Array.isArray(s.ends[e])?s.ends[e]:[], vals=[];
+    for(let k=0;k<m.apR;k++){ const x=a[k]; vals.push(x==null||x===''?'':String(x)); }
+    const f=vals.filter(v=>v!=='').length;
+    out.push({vals:vals, filled:f, miss:m.apR-f, v:f?vals.reduce((t,v)=>t+btAv(v),0)/f:null});
+  }
+  return out;
+}
+// Ejes comunes: rejilla horizontal con el promedio por flecha y numeración de las series
+function btRgAxes(N,lo,top,W,H){
+  const PL=28,PR=10,PT=10,PB=22,w=W-PL-PR,h=H-PT-PB, INK='rgba(255,255,255,0.58)';
+  const X=i=>N<=1?PL+w/2:PL+i*w/(N-1), Y=v=>PT+h-(v-lo)/(top-lo)*h;
+  let g=''; const step=(top-lo)<=6?1:2;
+  for(let y=Math.ceil(lo/step)*step; y<=top+1e-9; y+=step)
+    g+='<line x1="'+PL+'" x2="'+(W-PR)+'" y1="'+Y(y).toFixed(1)+'" y2="'+Y(y).toFixed(1)+'" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>'+
+       '<text class="bt-rg-y" x="'+(PL-6)+'" y="'+(Y(y)+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="'+INK+'">'+y+'</text>';
+  for(let i=0;i<N;i++){ if(N>12 && i%2===1 && i!==N-1) continue;
+    g+='<text class="bt-rg-x" x="'+X(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="'+INK+'">'+(i+1)+'</text>'; }
+  return {g:g,X:X,Y:Y,PL:PL,PR:PR,W:W};
+}
+function btRgPath(series,X,Y){      // la línea se corta donde falta una serie
+  let d='', pen=false;
+  series.forEach((p,i)=>{ if(p.v==null){ pen=false; return; } d+=(pen?'L':'M')+X(i).toFixed(1)+' '+Y(p.v).toFixed(1)+' '; pen=true; });
+  return d;
+}
+// Gráfica de UN conteo
+function btRgChart(id,series,N,lo,top,ref,color){
+  const A=btRgAxes(N,lo,top,340,150), X=A.X, Y=A.Y; let g=A.g;
+  if(ref!=null) g+='<line class="bt-rg-ref" x1="'+A.PL+'" x2="'+(A.W-A.PR)+'" y1="'+Y(ref).toFixed(1)+'" y2="'+Y(ref).toFixed(1)+'" stroke="rgba(255,255,255,0.5)" stroke-width="1" stroke-dasharray="3 3"/>';
+  const d=btRgPath(series,X,Y); if(d) g+='<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+  series.forEach((p,i)=>{ if(p.v==null) return;
+    const x=X(i).toFixed(1), y=Y(p.v).toFixed(1), inc=p.miss>0;
+    g+='<g class="bt-rg-pt" data-c="'+id+'" data-s="'+i+'" data-v="'+p.v.toFixed(3)+'"'+(inc?' data-miss="'+p.miss+'"':'')+' tabindex="0">'+
+       '<circle cx="'+x+'" cy="'+y+'" r="11" fill="transparent"/>'+
+       '<circle class="bt-rg-dot" cx="'+x+'" cy="'+y+'" r="3.6" fill="'+(inc?'#141414':color)+'" stroke="'+color+'" stroke-width="'+(inc?1.8:1)+'"/></g>'; });
+  return '<svg viewBox="0 0 340 150" role="img" aria-label="Promedio por flecha en cada serie">'+g+'</svg>';
+}
+// Gráfica COMBINADA: una línea por conteo (la más reciente se dibuja al final, encima) y, apagada por defecto, la del promedio de todos
+function btRgMulti(rows,N,lo,top,avg){
+  const A=btRgAxes(N,lo,top,340,220), X=A.X, Y=A.Y; let g=A.g;
+  const line=(k,series,color,wid,extra)=>{
+    let o='<g class="bt-rg-line" data-k="'+k+'"'+(extra||'')+'><path d="'+btRgPath(series,X,Y)+'" fill="none" stroke="'+color+'" stroke-width="'+wid+'" stroke-linejoin="round" stroke-linecap="round"/>';
+    series.forEach((p,i)=>{ if(p.v==null) return; const inc=p.miss>0;
+      o+='<circle class="bt-rg-mp" data-k="'+k+'" data-s="'+i+'" data-v="'+p.v.toFixed(3)+'"'+(inc?' data-miss="'+p.miss+'"':'')+' cx="'+X(i).toFixed(1)+'" cy="'+Y(p.v).toFixed(1)+'" r="2.8" fill="'+(inc?'#141414':color)+'" stroke="'+color+'" stroke-width="'+(inc?1.6:1)+'"/>'; });
+    return o+'</g>';
+  };
+  rows.slice().reverse().forEach(x=>{ g+=line(x.k,x.ser,x.color,1.8); });
+  g+=line('avg',avg.ser,'#ffffff',2.6,' style="display:none"');
+  return '<svg class="bt-rgm-svg" viewBox="0 0 340 220" role="img" aria-label="Promedio por flecha en cada serie, todos los conteos juntos">'+g+'</svg>';
+}
+function btRgApplyVis(){
+  document.querySelectorAll('#bt-rgm .bt-rg-line').forEach(gr=>{ gr.style.display = btRgHidden[gr.dataset.k] ? 'none' : ''; });
+  document.querySelectorAll('#bt-rgm .bt-rg-chip').forEach(c=>{ const on=!btRgHidden[c.dataset.k]; c.classList.toggle('off',!on); c.setAttribute('aria-pressed',on?'true':'false'); });
+}
+function btRgHighlight(){
+  document.querySelectorAll('#bt-rgm .bt-rg-line').forEach(gr=>{ gr.classList.toggle('hl',btRgSel!==null&&gr.dataset.k===btRgSel); gr.classList.toggle('dim',btRgSel!==null&&gr.dataset.k!==btRgSel); });
+}
+window.btOpenRecGraph=function(mode){
+  const r=BT_RECORDS.find(x=>x.mode===mode), m=BT_MODES[mode], box=document.getElementById('bt-rg'); if(!r||!m||!box) return;
+  btRgFocus=document.activeElement; btRgData={}; btRgHidden={avg:true}; btRgSel=null;
+  const all=btFilt().filter(s=>s.mode===mode);
+  const ok=all.filter(s=>Array.isArray(s.ends)&&s.ends.some(e=>Array.isArray(e)&&e.some(v=>v!=null&&v!=='')))
+             .sort((a,b)=>new Date(b.date)-new Date(a.date));                 // el más reciente primero
+  const title=r.chip+(r.sub?' · '+r.sub:''), nSin=all.length-ok.length, rng=btRgRangeLabel();
+  document.getElementById('bt-rg-h').textContent=title;
+  document.getElementById('bt-rg-sub').textContent=rng.charAt(0).toUpperCase()+rng.slice(1)+' · '+ok.length+(ok.length===1?' conteo':' conteos')+(nSin?' · '+nSin+' sin detalle por serie':'');
+  const fmt=s=>{ const d=new Date(s.date); return d.toLocaleDateString('es-MX',{day:'numeric',month:'short'})+(d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():''); };
+  let h='';
+  if(!ok.length){
+    h='<div class="bt-card"><div class="bt-muted" style="text-align:center;padding:8px 0">No hay conteos de '+btEsc(title)+' con detalle por serie en este rango ('+btEsc(rng)+'). Amplía el lapso para ver más.</div></div>';
+  } else {
+    const rows=ok.map((s,k)=>({k:String(k), id:'c'+k, s:s, ser:btRgSeries(s,m), color:btRgColor(k)}));
+    const N=Math.max.apply(null,rows.map(x=>x.ser.length));
+    const top=Math.max.apply(null,m.vals.map(btAv));                              // lo máximo por flecha: X=10, 6 en Field, 12 en 3D
+    let mn=top; rows.forEach(x=>{ x.ser.forEach(p=>{ if(p.v!=null && p.v<mn) mn=p.v; }); if(isFinite(x.s.avg) && x.s.avg<mn) mn=x.s.avg; });
+    let lo=Math.max(0,Math.floor(mn)-1); if(top-lo<3) lo=Math.max(0,top-3);       // MISMO eje en todas las gráficas para poder comparar
+    h+='<div class="bt-muted" style="font-size:11px;margin:0 0 10px">Cada punto es el promedio por flecha de esa serie. Punto hueco: serie incompleta. Toca un punto para ver sus flechas.</div>';
+    if(rows.length>1){
+      const agg=[]; for(let i=0;i<N;i++){ const vs=rows.map(x=>x.ser[i]&&x.ser[i].v).filter(v=>v!=null); agg.push({v:vs.length?vs.reduce((a,v)=>a+v,0)/vs.length:null, n:vs.length, miss:0, vals:[]}); }
+      btRgData.cM={rows:rows, avg:{ser:agg}};
+      const chips=rows.map(x=>'<button type="button" class="bt-rg-chip" data-k="'+x.k+'" aria-pressed="true" style="--c:'+x.color+'"><i></i><span>'+btEsc(fmt(x.s))+'</span><small>'+btEsc(x.s.max||m.max?x.s.total+'/'+(x.s.max||m.max):x.s.total+' pts')+'</small></button>').join('')+
+        '<button type="button" class="bt-rg-chip off" data-k="avg" aria-pressed="false" style="--c:#ffffff"><i></i><span>Promedio</span><small>de los '+rows.length+'</small></button>';
+      h+='<div class="bt-rgc" id="bt-rgm"><div class="bt-rgc-h"><div class="bt-rgc-t">Todos los conteos juntos</div><div class="bt-rgc-s">'+rows.length+' líneas</div></div>'+
+         btRgMulti(rows,N,lo,top,btRgData.cM.avg)+'<div class="bt-rgc-cap" id="bt-cap-cM">Toca un punto para ver a qué conteo y serie pertenece.</div>'+
+         '<div class="bt-rg-leg"><div class="bt-rg-lb"><button type="button" data-a="all">Mostrar todas</button><button type="button" data-a="none">Ocultar todas</button></div><div class="bt-rg-chips">'+chips+'</div></div></div>'+
+         '<div class="bt-sec" style="margin:16px 0 8px">Conteo por conteo</div>';
+    }
+    rows.forEach(x=>{
+      btRgData[x.id]={ser:x.ser,s:x.s};
+      const sub=(x.s.max||m.max?x.s.total+'/'+(x.s.max||m.max):x.s.total+' pts')+' · '+Number(x.s.avg||0).toFixed(1)+' por flecha';
+      h+='<div class="bt-rgc"><div class="bt-rgc-h"><div class="bt-rgc-t"><i class="bt-rg-cd" style="background:'+x.color+'"></i>'+btEsc(fmt(x.s))+'</div><div class="bt-rgc-s">'+btEsc(sub)+'</div></div>'+btRgChart(x.id,x.ser,N,lo,top,isFinite(x.s.avg)?Number(x.s.avg):null,x.color)+'<div class="bt-rgc-cap" id="bt-cap-'+x.id+'"></div></div>';
+    });
+  }
+  document.getElementById('bt-rg-body').innerHTML=h;
+  btRgApplyVis();
+  box.classList.add('open'); box.setAttribute('aria-hidden','false');
+  document.getElementById('bt-rg-panel').scrollTop=0;
+  document.getElementById('bt-rg-close').focus();
+};
+// Un punto de un conteo individual
+function btRgPick(pt){
+  const id=pt.dataset.c, i=+pt.dataset.s, d=btRgData[id], cap=document.getElementById('bt-cap-'+id); if(!d||!cap) return;
+  const p=d.ser[i]; if(!p) return;
+  const svg=pt.closest('svg'); svg.querySelectorAll('.bt-rg-dot').forEach(c=>c.setAttribute('r','3.6')); pt.querySelector('.bt-rg-dot').setAttribute('r','5.4');
+  cap.textContent='Serie '+(i+1)+': '+p.vals.map(v=>v===''?'·':v).join('  ')+' → '+p.v.toFixed(2)+' por flecha'+(p.miss?' (faltan '+p.miss+' '+(p.miss===1?'flecha':'flechas')+')':'');
+}
+// Un punto de la gráfica combinada: dice a qué conteo y serie pertenece y resalta su línea
+function btRgPickMulti(c){
+  const M=btRgData.cM, cap=document.getElementById('bt-cap-cM'); if(!M||!cap) return;
+  const k=c.dataset.k, i=+c.dataset.s, svg=c.closest('svg');
+  const same=(btRgSel===k && svg.getAttribute('data-sel')===String(i)+'|'+k);
+  svg.querySelectorAll('.bt-rg-mp').forEach(x=>x.setAttribute('r','2.8'));
+  if(same){ btRgSel=null; svg.removeAttribute('data-sel'); btRgHighlight(); cap.textContent='Toca un punto para ver a qué conteo y serie pertenece.'; return; }
+  btRgSel=k; svg.setAttribute('data-sel',i+'|'+k); c.setAttribute('r','4.8'); btRgHighlight();
+  if(k==='avg'){ const p=M.avg.ser[i]; cap.innerHTML='<i class="bt-rg-cd" style="background:#fff"></i>'+'Promedio de los '+M.rows.length+' conteos · Serie '+(i+1)+': '+p.v.toFixed(2)+' por flecha (de '+p.n+(p.n===1?' conteo':' conteos')+')'; return; }
+  const row=M.rows.find(x=>x.k===k), p=row.ser[i], d=new Date(row.s.date);
+  cap.innerHTML='<i class="bt-rg-cd" style="background:'+row.color+'"></i>'+btEsc(d.toLocaleDateString('es-MX',{day:'numeric',month:'short'}))+' · Serie '+(i+1)+': '+btEsc(p.vals.map(v=>v===''?'·':v).join('  '))+' → '+p.v.toFixed(2)+' por flecha'+(p.miss?' (faltan '+p.miss+' '+(p.miss===1?'flecha':'flechas')+')':'');
+}
+// En la combinada las líneas se cruzan, así que se elige el punto VISIBLE más cercano al toque (hasta ~16 unidades)
+function btRgMultiClick(ev,svg){
+  const m=svg.getScreenCTM(); if(!m) return;
+  const pt=svg.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY; const q=pt.matrixTransform(m.inverse());
+  let best=null, bd=16*16;
+  svg.querySelectorAll('.bt-rg-line').forEach(gr=>{ if(gr.style.display==='none') return;
+    gr.querySelectorAll('.bt-rg-mp').forEach(c=>{ const dx=+c.getAttribute('cx')-q.x, dy=+c.getAttribute('cy')-q.y, dd=dx*dx+dy*dy; if(dd<bd){ bd=dd; best=c; } }); });
+  if(best) btRgPickMulti(best);
+}
+function btCloseRecGraph(){
+  const box=document.getElementById('bt-rg'); if(!box) return;
+  box.classList.remove('open'); box.setAttribute('aria-hidden','true');
+  if(btRgFocus && btRgFocus.focus){ try{ btRgFocus.focus(); }catch(e){} }
+}
+(function(){
+  const rec=document.getElementById('bt-rec-l'), box=document.getElementById('bt-rg'), body=document.getElementById('bt-rg-body');
+  if(rec){
+    rec.addEventListener('click',ev=>{ const c=ev.target.closest('.bt-rec.bt-click'); if(c) btOpenRecGraph(c.dataset.mode); });
+    rec.addEventListener('keydown',ev=>{ if((ev.key==='Enter'||ev.key===' ') && ev.target.matches('.bt-rec.bt-click')){ ev.preventDefault(); btOpenRecGraph(ev.target.dataset.mode); } });
+  }
+  if(!box) return;
+  box.addEventListener('click',ev=>{ if(ev.target===box) btCloseRecGraph(); });
+  document.getElementById('bt-rg-close').addEventListener('click',btCloseRecGraph);
+  body.addEventListener('click',ev=>{
+    const chip=ev.target.closest('.bt-rg-chip');
+    if(chip){ const k=chip.dataset.k; btRgHidden[k]=!btRgHidden[k]; if(btRgHidden[k] && btRgSel===k){ btRgSel=null; btRgHighlight(); } btRgApplyVis(); return; }
+    const lb=ev.target.closest('.bt-rg-lb button');
+    if(lb){ const M=btRgData.cM; if(M){ M.rows.forEach(x=>{ btRgHidden[x.k]=(lb.dataset.a==='none'); }); if(lb.dataset.a==='none'){ btRgSel=null; btRgHighlight(); } btRgApplyVis(); } return; }
+    const p=ev.target.closest('.bt-rg-pt'); if(p){ btRgPick(p); return; }
+    const ms=ev.target.closest('.bt-rgm-svg'); if(ms) btRgMultiClick(ev,ms);
+  });
+  body.addEventListener('keydown',ev=>{ if((ev.key==='Enter'||ev.key===' ') && ev.target.matches('.bt-rg-pt')){ ev.preventDefault(); btRgPick(ev.target); } });
+  document.addEventListener('keydown',ev=>{ if(ev.key==='Escape' && box.classList.contains('open')) btCloseRecGraph(); });
+})();
+
 // Progreso: promedio por flecha de cada sesión, una línea por modalidad, sobre eje de tiempo real.
 function btDrawProgress(fs){
   const c=document.getElementById('bt-prog'); if(!c) return;
@@ -7534,8 +7743,9 @@ function btRenderRecords(){
     const dots = MS.map(m=>'<i class="bt-rec-dot'+(pct>=m*100?' done':'')+'" style="left:'+(m*100)+'%"></i>').join('');
     const chip = btEsc(r.chip)+(r.sub?'<small>'+btEsc(r.sub)+'</small>':'');
     const fg = btInkOn(BT_COLORS[r.g]);
-    return '<div class="bt-rec"><div class="bt-rec-chip'+(fg==='#ffffff'?'':' dk')+'" style="background-color:'+BT_COLORS[r.g]+';background-image:var(--bt-g-'+r.g+');color:'+fg+'">'+chip+'</div>'+
-           '<div class="bt-rec-body"><div class="bt-rec-top"><span class="bt-rec-cap">Mejor marca</span><span class="bt-rec-meta">'+meta+'</span></div>'+
+    const clk = mine.length>0;      // con al menos un conteo de este formato se puede abrir la gráfica
+    return '<div class="bt-rec'+(clk?' bt-click':'')+'"'+(clk?' data-mode="'+r.mode+'" role="button" tabindex="0" aria-label="Ver cómo cambia el promedio por serie en '+btEsc(r.chip+(r.sub?' '+r.sub:''))+'"':'')+'><div class="bt-rec-chip'+(fg==='#ffffff'?'':' dk')+'" style="background-color:'+BT_COLORS[r.g]+';background-image:var(--bt-g-'+r.g+');color:'+fg+'">'+chip+'</div>'+
+           '<div class="bt-rec-body"><div class="bt-rec-top"><span class="bt-rec-cap">Mejor marca</span><span class="bt-rec-meta">'+meta+'</span>'+(clk?'<span class="bt-chev" aria-hidden="true">›</span>':'')+'</div>'+
            '<div class="bt-rec-lbl'+(best===null?' empty':'')+'">'+lbl+'</div>'+
            '<div class="bt-rec-track" role="progressbar" aria-label="Avance hacia el tope" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(pct)+'"><div class="bt-rec-fill" style="width:'+pct.toFixed(1)+'%"></div>'+dots+'</div></div></div>';
   };
