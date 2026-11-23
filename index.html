@@ -5635,6 +5635,33 @@ html.bt-light .main-content{z-index:auto}
 .bt-rg-chip:focus-visible,.bt-rg-lb button:focus-visible{outline:2px solid var(--bt-amber);outline-offset:2px}
 .bt-rg-cd{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
 
+/* ── Entrenamiento libre ── */
+.bt-libre-card{display:flex;align-items:center;gap:14px;width:100%;margin-top:10px;padding:14px 16px;border:1px solid rgba(255,255,255,0.14);border-radius:14px;background-color:var(--bt-navy);background-image:var(--bt-g-field);color:#fff;text-align:left;font-family:'DM Sans',sans-serif;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,0.38);box-shadow:inset 0 1px 0 rgba(255,255,255,0.34),inset 0 -3px 5px rgba(0,0,0,0.17),0 3px 8px rgba(0,0,0,0.40)}
+.bt-libre-card:active{transform:translateY(1px)}
+.bt-libre-card:focus-visible{outline:2px solid var(--bt-amber);outline-offset:2px}
+.bt-libre-card svg{flex-shrink:0}
+.bt-libre-card .t{display:block;font-size:16px;font-weight:700}
+.bt-libre-card .s{display:block;margin-top:2px;font-size:12px;line-height:1.3;color:rgba(255,255,255,0.8)}
+.bt-libre-card .chev{margin-left:auto;font-size:24px;line-height:1}
+.bt-lib-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.bt-lib-step{display:flex;align-items:center;justify-content:center;gap:18px;margin:4px 0 10px}
+.bt-lib-step button{width:48px;height:48px;border-radius:14px;border:1.5px solid var(--bt-line);background:var(--bt-fill);color:var(--bt-ink);font-family:'DM Sans',sans-serif;font-size:24px;font-weight:600;cursor:pointer}
+.bt-lib-step button:disabled{opacity:0.35;cursor:default}
+.bt-lib-step output{min-width:64px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:42px;line-height:1;color:var(--bt-ink)}
+.bt-lib-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.bt-btn:disabled{opacity:0.4;cursor:default}
+#bt-fbox-s .bt-fbox-v>span{white-space:normal;line-height:1.15}
+/* mismas reglas que las opciones de la ventana de filtros, con clase propia para no chocar con ellas */
+.bt-lib-opt{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:48px;padding:0 18px;border:2px solid var(--bt-navy);border-radius:16px;background:var(--bt-navy);color:#fff;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left}
+.bt-lib-opt[data-cat="outdoor"]{background:var(--bt-c-outdoor);border-color:var(--bt-c-outdoor)}
+.bt-lib-opt[data-cat="indoor"]{background:var(--bt-c-indoor);border-color:var(--bt-c-indoor)}
+.bt-lib-opt[data-cat="field"]{background:var(--bt-c-field);border-color:var(--bt-c-field)}
+.bt-lib-opt[data-cat="3d"]{background:var(--bt-c-3d);border-color:var(--bt-c-3d);color:var(--bt-on-white)}
+.bt-lib-opt.act{background:var(--bt-white);color:var(--bt-on-white);border-color:#000}
+.bt-lib-opt .ck{font-size:17px;opacity:0}
+.bt-lib-opt.act .ck{opacity:1}
+.bt-lib-opt:focus-visible{outline:2px solid var(--bt-amber);outline-offset:2px}
+
 /* ── Fondo BLANCO en celular ──────────────────────────────────────────────
    El script de esta pestaña pone la clase .bt-light en <html> mientras "Puntuaciones" está visible. Solo aplica en celular
    (≤768 px, el mismo corte que usa el menú). En escritorio sigue oscuro. Para llevarlo también a escritorio, quita el @media.
@@ -5715,6 +5742,13 @@ html.bt-light .main-content{z-index:auto}
       </div>
     </div>
 
+    <!-- Entrenamiento libre: sin formato fijo; eliges flechas por ronda y rondas -->
+    <button type="button" class="bt-libre-card" onclick="btShowLibre()">
+      <svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2.2"/><circle cx="20" cy="20" r="10.5" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2.2"/><circle cx="20" cy="20" r="4" fill="#f5c06a"/></svg>
+      <span><span class="t">Entrenamiento libre</span><span class="s">Sin apuntar por ronda: tú eliges las flechas y las rondas, y guardas tus impactos</span></span>
+      <span class="chev" aria-hidden="true">›</span>
+    </button>
+
     <!-- Registro rápido torneo externo -->
     <div style="margin-top:10px">
       <div class="bt-disc-card bt-lt bt-start" style="display:flex;align-items:center;gap:12px;text-align:left;padding:12px 16px" onclick="btShowTorneoExterno()">
@@ -5725,6 +5759,48 @@ html.bt-light .main-content{z-index:auto}
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Pantalla: entrenamiento libre -->
+  <div id="bt-s-libre" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <button class="bt-abtn" onclick="btShowS('bt-s-inicio')" aria-label="Volver">←</button>
+      <div style="font-size:13px;font-weight:600;color:var(--bt-ink)">Entrenamiento libre</div>
+      <div style="width:32px"></div>
+    </div>
+    <div id="bt-lib-pend" class="bt-warn" style="display:none" role="status"></div>
+    <div class="bt-sec">Modalidad</div>
+    <div class="bt-lib-grid" id="bt-lib-mods">
+      <button type="button" class="bt-lib-opt" data-cat="outdoor" data-v="outdoor" onclick="btLibMod('outdoor')" aria-pressed="false"><span>Outdoor</span><span class="ck" aria-hidden="true">✓</span></button>
+      <button type="button" class="bt-lib-opt" data-cat="indoor" data-v="indoor" onclick="btLibMod('indoor')" aria-pressed="false"><span>Indoor</span><span class="ck" aria-hidden="true">✓</span></button>
+      <button type="button" class="bt-lib-opt" data-cat="field" data-v="field" onclick="btLibMod('field')" aria-pressed="false"><span>Field</span><span class="ck" aria-hidden="true">✓</span></button>
+      <button type="button" class="bt-lib-opt" data-cat="3d" data-v="3d" onclick="btLibMod('3d')" aria-pressed="false"><span>3D</span><span class="ck" aria-hidden="true">✓</span></button>
+    </div>
+    <div id="bt-lib-hint" class="bt-muted" style="font-size:11px;margin:2px 0 0;min-height:14px"></div>
+
+    <div class="bt-sec" style="margin-top:16px">Flechas por ronda</div>
+    <div class="bt-lib-step">
+      <button type="button" id="bt-lib-apr-dn" onclick="btLibStep('apr',-1)" aria-label="Una flecha menos">−</button>
+      <output id="bt-lib-apr" aria-live="polite">6</output>
+      <button type="button" id="bt-lib-apr-up" onclick="btLibStep('apr',1)" aria-label="Una flecha más">+</button>
+    </div>
+    <div class="bt-lib-chips" id="bt-lib-apr-chips">
+      <button type="button" class="bt-fp" data-v="3" onclick="btLibSet('apr',3)">3</button><button type="button" class="bt-fp" data-v="6" onclick="btLibSet('apr',6)">6</button><button type="button" class="bt-fp" data-v="9" onclick="btLibSet('apr',9)">9</button><button type="button" class="bt-fp" data-v="12" onclick="btLibSet('apr',12)">12</button>
+    </div>
+
+    <div class="bt-sec" style="margin-top:16px">Rondas</div>
+    <div class="bt-lib-step">
+      <button type="button" id="bt-lib-rondas-dn" onclick="btLibStep('rondas',-1)" aria-label="Una ronda menos">−</button>
+      <output id="bt-lib-rondas" aria-live="polite">6</output>
+      <button type="button" id="bt-lib-rondas-up" onclick="btLibStep('rondas',1)" aria-label="Una ronda más">+</button>
+    </div>
+    <div class="bt-lib-chips" id="bt-lib-rondas-chips">
+      <button type="button" class="bt-fp" data-v="4" onclick="btLibSet('rondas',4)">4</button><button type="button" class="bt-fp" data-v="6" onclick="btLibSet('rondas',6)">6</button><button type="button" class="bt-fp" data-v="8" onclick="btLibSet('rondas',8)">8</button><button type="button" class="bt-fp" data-v="10" onclick="btLibSet('rondas',10)">10</button><button type="button" class="bt-fp" data-v="12" onclick="btLibSet('rondas',12)">12</button>
+    </div>
+
+    <div class="bt-card" style="margin-top:16px;text-align:center"><div id="bt-lib-sum" style="font-size:14px;font-weight:600;color:var(--bt-ink)"></div><div class="bt-muted" style="font-size:11px;margin-top:3px">Se guarda como categoría "Entrenamiento libre": no cuenta en los récords por formato.</div></div>
+    <div id="bt-lib-need" class="bt-muted" style="font-size:12px;text-align:center;margin:10px 0 0">Elige una modalidad para empezar.</div>
+    <button type="button" id="bt-lib-go" class="bt-btn bt-btn-p" style="margin-top:10px" onclick="btStartLibre()" disabled>Empezar</button>
   </div>
 
   <!-- Pantalla: registro rápido torneo externo -->
@@ -6050,6 +6126,16 @@ const BT_MODES={
   'field-d':   {lbl:'Desconocidas',g:'field',rondas:14,apR:3,vals:['6','5','4','3','2','1','M'],sp:'6',max:252},
   '3d':        {lbl:'3D',g:'3d',rondas:null,apR:1,vals:['12','11','10','8','5','M'],sp:'12',max:null},
 };
+// Entrenamiento libre: el formato viaja en el nombre, <modalidad>-libre-<flechas>x<rondas> (p. ej. outdoor-libre-9x8). Conserva el prefijo
+// de la modalidad (la diana y los filtros dependen de él). Se registra aquí para que el resto del código lo trate como cualquier formato.
+function btRegLibre(mode){
+  const k=/^(outdoor|indoor|field|3d)-libre-(\d+)x(\d+)$/.exec(mode||''); if(!k) return null;
+  if(BT_MODES[mode]) return BT_MODES[mode];
+  const base={outdoor:BT_MODES['outdoor-36'],indoor:BT_MODES['indoor-15'],field:BT_MODES['field-c'],'3d':BT_MODES['3d']}[k[1]];
+  const apR=+k[2], rondas=+k[3], top=Math.max.apply(null,base.vals.map(btAv));      // lo máximo por flecha: X=10, 6 en Field, 12 en 3D
+  BT_MODES[mode]={lbl:'Libre '+apR+'×'+rondas,g:k[1],rondas:rondas,apR:apR,vals:base.vals,sp:base.sp,max:rondas*apR*top,libre:true};
+  return BT_MODES[mode];
+}
 function btSpLabel(g){return{outdoor:"X's",indoor:"X's",field:"6's",'3d':"12/11's"}[g]||"X's";}
 // ¿Esta flecha es "especial"? X en Outdoor e Indoor, 6 en Field, 11 y 12 en 3D. El 6 solo es especial en Field: en Outdoor/Indoor es un anillo normal.
 function btIsSp(g,v){ return g==='3d' ? (v==='12'||v==='11') : g==='field' ? v==='6' : v==='X'; }
@@ -6141,7 +6227,8 @@ function btLoadSessions(){
           if(!s.sp)   s.sp   = s.specials    || 0;
           if(!s.date) s.date = s.session_date || s.created_at || new Date().toISOString();
           // Fuente: el emparejamiento con liga/torneo se hace abajo, con todas las sesiones ya normalizadas
-          s.src = (s.setup_note === 'torneo-externo') ? 'torneo' : 'practica';
+          s.src = (s.setup_note === 'torneo-externo') ? 'torneo' : (s.setup_note === 'entrenamiento-libre') ? 'libre' : 'practica';
+          btRegLibre(s.mode);
         });
         all = all.concat(daily);
       }
@@ -6151,7 +6238,7 @@ function btLoadSessions(){
       const items = [];
       if(Array.isArray(liga))   liga.forEach(function(r){ items.push({kind:'liga',   t:r.submitted_at ? new Date(r.submitted_at).getTime() : NaN, row:r}); });
       if(Array.isArray(torneo)) torneo.forEach(function(r){ items.push({kind:'torneo', t:r.qualifying_at ? new Date(r.qualifying_at).getTime() : NaN, row:r}); });
-      const pool = all.filter(function(s){ return s.setup_note !== 'torneo-externo'; });
+      const pool = all.filter(function(s){ return s.setup_note !== 'torneo-externo' && s.setup_note !== 'entrenamiento-libre'; });
       const cand = [];
       items.forEach(function(it,ii){
         if(!isFinite(it.t)) return;
@@ -6257,7 +6344,7 @@ window.btCancelPlanConteo = function(){
 };
 
 window.btShowS=function(id){
-  ['bt-s-inicio','bt-s-config','bt-s-sesion','bt-s-resumen','bt-s-torneo-ext'].forEach(s=>{
+  ['bt-s-inicio','bt-s-config','bt-s-sesion','bt-s-resumen','bt-s-torneo-ext','bt-s-libre'].forEach(s=>{
     const el=document.getElementById(s);if(el)el.style.display=s===id?'block':'none';
   });
 }
@@ -6463,6 +6550,9 @@ window.btSaveSession=function(){
       s.setup_id = btBowForDate(btState.ext.date);
     }
   }
+  // Entrenamiento libre: categoría propia (marca en setup_note, como el torneo externo). Nunca se envía a liga, torneo ni plan.
+  const isLibre = !!btState.libre;
+  if(isLibre){ s.setup_note = 'entrenamiento-libre'; s.src = 'libre'; }
   if(btUsingDemo){ btSessions=[]; btUsingDemo=false; }
   btSessions.unshift(s);
 
@@ -6509,7 +6599,7 @@ window.btSaveSession=function(){
   }
 
   // Si hay LIGA pendiente — guardar score en league_rounds y actualizar standings
-  const pendingLeague = isExt ? null : window._cpPendingLeague;
+  const pendingLeague = (isExt||isLibre) ? null : window._cpPendingLeague;
   if(pendingLeague && userId){
     const {leagueId, roundId} = pendingLeague;
 
@@ -6529,7 +6619,7 @@ window.btSaveSession=function(){
   }
 
   // Si hay TORNEO pendiente — subir score automáticamente
-  const pendingTournament = isExt ? null : window._cpPendingTournament;
+  const pendingTournament = (isExt||isLibre) ? null : window._cpPendingTournament;
   if(pendingTournament && userId){
     console.log('💾 Guardando score torneo:', pendingTournament, 'score:', s.total);
     Promise.all([
@@ -6563,7 +6653,7 @@ window.btSaveSession=function(){
   }
 
   // ── Hook: guardar reporte de plan si viene de conteo ──
-  const pendingPlan = window._rtPendingPlanActivity;
+  const pendingPlan = isLibre ? null : window._rtPendingPlanActivity;
   if(pendingPlan && pendingPlan.type === 'conteo' && userId){
     window._rtPendingPlanActivity = null;
     const weekNum = (typeof window.rtCurrentWeek !== 'undefined') ? window.rtCurrentWeek : 1;
@@ -6869,7 +6959,7 @@ function btFilt(opts){
     const t=new Date(s.date).getTime();
     const age=(now-t)/86400000;
     // Detectar src: torneo-externo guardado en setup_note
-    const src = s.src || (s.setup_note==='torneo-externo' ? 'torneo' : 'practica');
+    const src = s.src || (s.setup_note==='torneo-externo' ? 'torneo' : s.setup_note==='entrenamiento-libre' ? 'libre' : 'practica');
     const srcOk = btFSrc==='all' || src===btFSrc;
     let winOk = true;
     if(!noWin) winOk = btFRange ? (t>=btFRange.from && t<=btFRange.to) : (btFDays===0 || age<=btFDays);
@@ -7202,7 +7292,7 @@ btStartIcons();
 // Muestra el resultado completo: totales, cada serie con el valor de cada flecha (y acumulado) y, si la sesión guardó la
 // posición de los impactos, la diana con sus puntos (todos, o solo los de la serie que elijas, numerados por flecha).
 let btDet=null, btDetFocus=null;
-const BT_SRC_LABEL={practica:'Sesión',liga:'Liga',torneo:'Torneo'};
+const BT_SRC_LABEL={practica:'Sesión',liga:'Liga',torneo:'Torneo',libre:'Entrenamiento libre'};
 
 // Texto blanco o marino, el de mayor contraste sobre el fondo
 function btInkOn(hex){
@@ -7235,7 +7325,7 @@ function btOpenSession(id){
   const s=btSessions.find(x=>String(x.id)===String(id));
   const box=document.getElementById('bt-det'); if(!s || !box) return;
   btDet={s:s, sel:null}; btDetFocus=document.activeElement;
-  const m=BT_MODES[s.mode]||{}, ext=(s.setup_note==='torneo-externo');
+  const m=BT_MODES[s.mode]||{}, ext=(s.setup_note==='torneo-externo'), libre=(s.setup_note==='entrenamiento-libre');
   const gl=BT_GLABELS[s.g]||'', ml=(m.lbl||s.lbl||''), modeLbl=(ml && ml!==gl) ? gl+' · '+ml : gl;   // 3D: solo "3D", no "3D · 3D"
   document.getElementById('bt-det-h').textContent = ext ? (s.lbl||'Torneo externo') : modeLbl;
   const ends=btEndsOf(s), imps=btDetImpacts(s);
@@ -7250,7 +7340,7 @@ function btOpenSession(id){
   h+='<div class="bt-muted" style="margin-top:8px">'+btEsc(btFmtLong(s.date))+'</div>';
   if(bow) h+='<div class="bt-muted" style="margin-top:2px">Arco: <b style="color:var(--bt-ink)">'+btEsc(bow.name||'')+'</b></div>';
   if(s.notes) h+='<div style="margin-top:8px;font-size:13px;color:var(--bt-ink-2)">'+btEsc(s.notes)+'</div>';
-  if(s.setup_note && !ext) h+='<div class="bt-muted" style="margin-top:6px">Nota de equipo: '+btEsc(s.setup_note)+'</div>';
+  if(s.setup_note && !ext && !libre) h+='<div class="bt-muted" style="margin-top:6px">Nota de equipo: '+btEsc(s.setup_note)+'</div>';
   if(btLocked(s)) h+='<div class="bt-muted" style="margin-top:6px">Esta sesión se envió a una liga o torneo: ya no se edita desde aquí.</div>';
   h+='<div class="bt-det-stats">'+
      stat(btEsc(s.total)+(pct!==null?' <small>'+pct+'%</small>':''), 'puntos')+
@@ -7345,7 +7435,7 @@ function btCloseSession(){
 // ══════════ Modalidad y Categoría: caja con la elección actual; al tocarla, una ventana para elegir ══════════
 const BT_POP={
   fm:{title:'Modalidad', val:()=>btFMod, opts:[['all','Todas',''],['outdoor','Outdoor','outdoor'],['indoor','Indoor','indoor'],['3d','3D','3d'],['field','Field','field']]},
-  fs:{title:'Categoría', val:()=>btFSrc, opts:[['all','Todas',''],['practica','Sesión',''],['liga','Liga',''],['torneo','Torneo','']]}
+  fs:{title:'Categoría', val:()=>btFSrc, opts:[['all','Todas',''],['practica','Sesión',''],['liga','Liga',''],['torneo','Torneo',''],['libre','Entrenamiento libre','']]}
 };
 let btPopKind=null, btPopFocus=null;
 function btFilterBoxes(){
@@ -7357,6 +7447,7 @@ function btFilterBoxes(){
   const bm=document.getElementById('bt-fbox-m'), bs=document.getElementById('bt-fbox-s');
   if(bm) bm.classList.toggle('on', btFMod!=='all');
   if(bs) bs.classList.toggle('on', btFSrc!=='all');
+  btFitBoxText();
 }
 window.btOpenPop=function(kind){
   const d=BT_POP[kind], box=document.getElementById('bt-pop'); if(!d || !box) return;
@@ -7390,7 +7481,7 @@ function btClosePop(){
 (function(){
   const panel=document.getElementById('tab-bitacora'); if(!panel) return;
   const root=document.documentElement;
-  const sync=()=>root.classList.toggle('bt-light', panel.classList.contains('active'));
+  const sync=()=>{ root.classList.toggle('bt-light', panel.classList.contains('active')); if(panel.classList.contains('active')) requestAnimationFrame(btFitBoxText); };
   sync();
   new MutationObserver(sync).observe(panel,{attributes:true,attributeFilter:['class']});
 })();
@@ -7623,6 +7714,55 @@ function btCloseRecGraph(){
   document.addEventListener('keydown',ev=>{ if(ev.key==='Escape' && box.classList.contains('open')) btCloseRecGraph(); });
 })();
 
+// Ajusta el tamaño del texto de las cajas de filtro hasta que quepa (mínimo 10.5 px). Se repite al girar el teléfono y al volver a esta pestaña.
+function btFitBoxText(){
+  document.querySelectorAll('.bt-fbox-v>span').forEach(function(sp){
+    sp.style.fontSize=''; let f=parseFloat(getComputedStyle(sp).fontSize)||16;
+    while(sp.scrollWidth>sp.clientWidth+0.5 && f>10.5){ f-=0.5; sp.style.fontSize=f+'px'; }
+  });
+}
+window.addEventListener('resize',btFitBoxText);
+
+// ══════════ Entrenamiento libre ══════════
+// Sin formato fijo: eliges modalidad, flechas por ronda y rondas, y capturas los impactos como siempre (diana y teclado).
+// Se guarda con la categoría "Entrenamiento libre" para poder filtrarlo en el historial, y con un formato propio (ver btRegLibre).
+let btLib={g:null,apr:6,rondas:6};
+const BT_LIB_MAX={apr:12,rondas:40};
+function btLibPaint(){
+  document.querySelectorAll('#bt-lib-mods .bt-lib-opt').forEach(b=>{ const on=b.dataset.v===btLib.g; b.classList.toggle('act',on); b.setAttribute('aria-pressed',on?'true':'false'); });
+  [['apr','bt-lib-apr'],['rondas','bt-lib-rondas']].forEach(p=>{
+    const k=p[0], id=p[1];
+    document.getElementById(id).textContent=btLib[k];
+    document.querySelectorAll('#'+id+'-chips .bt-fp').forEach(c=>c.classList.toggle('act',+c.dataset.v===btLib[k]));
+    document.getElementById(id+'-dn').disabled = btLib[k]<=1;
+    document.getElementById(id+'-up').disabled = btLib[k]>=BT_LIB_MAX[k];
+  });
+  const n=btLib.apr*btLib.rondas;
+  document.getElementById('bt-lib-sum').textContent=btLib.apr+(btLib.apr===1?' flecha':' flechas')+' por ronda × '+btLib.rondas+(btLib.rondas===1?' ronda':' rondas')+' = '+n+(n===1?' flecha':' flechas');
+  document.getElementById('bt-lib-go').disabled=!btLib.g;
+  document.getElementById('bt-lib-need').style.display=btLib.g?'none':'block';
+  document.getElementById('bt-lib-hint').textContent = btLib.g==='3d' ? '3D no usa diana, así que aquí se guardan los valores pero no hay impactos para la dispersión. Lo habitual es 1 flecha por animal.' : '';
+}
+window.btShowLibre=function(){
+  btLib={g:null,apr:6,rondas:6}; btLibPaint();
+  const pend=[]; if(window._cpPendingLeague) pend.push('una liga'); if(window._cpPendingTournament) pend.push('un torneo');
+  if(window._rtPendingPlanActivity && window._rtPendingPlanActivity.type==='conteo') pend.push('un conteo del plan semanal');
+  const el=document.getElementById('bt-lib-pend');
+  el.style.display=pend.length?'block':'none';
+  el.textContent=pend.length?'Tienes '+pend.join(' y ')+' pendiente: una sesión de entrenamiento libre NO se envía ahí. Para eso elige la modalidad normal.':'';
+  btShowS('bt-s-libre'); btScrollTo('bt-s-libre');
+};
+window.btLibMod=function(g){ btLib.g=g; btLibPaint(); };
+window.btLibSet=function(k,v){ v=Math.round(+v); if(!isFinite(v)) return; btLib[k]=Math.max(1,Math.min(BT_LIB_MAX[k],v)); btLibPaint(); };
+window.btLibStep=function(k,d){ btLibSet(k,btLib[k]+d); };
+window.btStartLibre=function(){
+  if(!btLib.g) return;
+  const mode=btLib.g+'-libre-'+btLib.apr+'x'+btLib.rondas, m=btRegLibre(mode); if(!m) return;
+  btCurMode=mode;
+  btState={active:true,mode:mode,g:m.g,rondas:m.rondas,apR:m.apR,vals:m.vals,sp:m.sp,ends:Array.from({length:m.rondas},()=>[]),cur:0,slot:0,max:m.max,face:btSessionFace(mode),impacts:[],libre:true};
+  btShowS('bt-s-sesion'); btRenderEnd();
+};
+
 // Progreso: promedio por flecha de cada sesión, una línea por modalidad, sobre eje de tiempo real.
 function btDrawProgress(fs){
   const c=document.getElementById('bt-prog'); if(!c) return;
@@ -7722,7 +7862,7 @@ function btRenderLegacy(){
 // Récords: siempre históricos (ignoran el lapso); respetan modalidad, categoría y arco.
 // Si ya llegaste al tope de un formato, cuenta cuántas veces lo has logrado (el reto pasa a ser cuántos tiras).
 function btRenderRecords(){
-  const fs=btFilt({noWindow:true});
+  const fs=btFilt({noWindow:true}).filter(s=>s.src!=='libre');      // el entrenamiento libre no tiene formato fijo: no entra en los récords
   const rows=BT_RECORDS.filter(r=> btFMod==='all' ? r.all : r.g===btFMod);
   const MS=[0.5,0.75,0.9];     // hitos de la barra, como fracción del tope
   const rowHtml=r=>{
