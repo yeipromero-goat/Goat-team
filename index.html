@@ -1234,31 +1234,6 @@ body{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;overflow-x:hidden}
   flex-direction:column;
   gap:10px;
 }
-.sb-user-row{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.sb-avatar{
-  width:32px;height:32px;
-  border-radius:50%;
-  background:rgba(216,209,90,0.2);
-  border:1.5px solid rgba(216,209,90,0.35);
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Bebas Neue',sans-serif;
-  font-size:14px;color:var(--yellow);
-  flex-shrink:0;
-}
-.sb-user-info{flex:1;min-width:0}
-.sb-user-name{
-  font-size:12px;font-weight:500;
-  color:var(--text);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.sb-user-email{
-  font-size:10px;color:var(--hint);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
 .sb-signout{
   display:flex;align-items:center;gap:7px;
   padding:7px 10px;border-radius:7px;
@@ -1398,7 +1373,31 @@ body.theme-light .main-content{
   --hint:rgba(27,39,67,0.45);
   --border:rgba(27,39,67,0.14);
 }
+/* ── Íconos SVG (reemplazan a los emojis) ──
+   Línea redondeada que toma el color del elemento (gris, amarillo si está activo, coral en "Cerrar sesión") y un detalle en ámbar. */
+.ic{width:22px;height:22px;flex-shrink:0;display:block;overflow:visible}
+.sb-item-icon{display:inline-flex;align-items:center;justify-content:center;font-size:0;width:24px}
+.sb-item-icon .ic-sm{width:20px;height:20px}
+.sb-item.active{--ic-accent:currentColor}
+.sb-signout .ic{width:18px;height:18px;--ic-accent:currentColor}
+.page-title-icon{display:inline-flex;font-size:0;color:var(--text)}
+.page-title-icon .ic{width:28px;height:28px}
+html.bt-light .page-title{--ic-accent:#d9962a}
 </style>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <!-- Íconos del menú: línea redondeada de 1.7 px en rejilla de 24, con un detalle en ámbar (--ic-accent). El trazo toma el color del elemento (currentColor). -->
+  <symbol id="ic-trophy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5.2a4 4 0 0 1-8 0z"/><path d="M8 6H5.6a.6.6 0 0 0-.6.6V8a3 3 0 0 0 3 3"/><path d="M16 6h2.4a.6.6 0 0 1 .6.6V8a3 3 0 0 1-3 3"/><path d="M12 13.2V16"/><path d="M8.5 20h7"/><path d="M9.5 20v-1.2a1.2 1.2 0 0 1 1.2-1.2h2.6a1.2 1.2 0 0 1 1.2 1.2V20"/></g><path d="M12 5.9l.9 1.9 1.9.9-1.9.9-.9 1.9-.9-1.9-1.9-.9 1.9-.9z" style="fill:var(--ic-accent,#f5c06a)"/></symbol>
+  <symbol id="ic-target" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="13" r="7.8"/><circle cx="11" cy="13" r="4.2"/><path d="M12.6 11.4L20 4"/><path d="M16.6 4H20v3.4"/></g><circle cx="11" cy="13" r="1.7" style="fill:var(--ic-accent,#f5c06a)"/></symbol>
+  <symbol id="ic-pose" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="2.2"/><path d="M12 7.6v6"/><path d="M12 9.2l-4.6 2.4"/><path d="M12 9.2l4.8-2"/><path d="M12 13.6l-3.2 6.2"/><path d="M12 13.6l3.4 6.2"/></g><circle cx="7.4" cy="11.6" r="1.35" style="fill:var(--ic-accent,#f5c06a)"/><circle cx="16.9" cy="7.2" r="1.35" style="fill:var(--ic-accent,#f5c06a)"/></symbol>
+  <symbol id="ic-calendar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10.2h16"/><path d="M8.5 3.5v4M15.5 3.5v4"/></g><rect x="7.4" y="13" width="3.3" height="3.3" rx=".9" style="fill:var(--ic-accent,#f5c06a)"/><rect x="13.2" y="13" width="3.3" height="3.3" rx=".9" style="fill:currentColor;opacity:.45"/></symbol>
+  <symbol id="ic-podium" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="12.2" width="5.2" height="7.8" rx="1.3"/><rect x="9.4" y="7.8" width="5.2" height="12.2" rx="1.3"/><rect x="15.4" y="14.6" width="5.2" height="5.4" rx="1.3"/></g><path d="M12 2.4l.8 1.6 1.7.25-1.25 1.2.3 1.7L12 6.3l-1.55.85.3-1.7L9.5 4.25l1.7-.25z" style="fill:var(--ic-accent,#f5c06a)"/></symbol>
+  <symbol id="ic-cards" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3.8" y="5.6" width="10.6" height="14.4" rx="2.3" transform="rotate(-9 9.1 12.8)"/><rect x="9.4" y="4.4" width="10.8" height="15.2" rx="2.3"/></g><path d="M14.8 9.4l2.1 3-2.1 3-2.1-3z" style="fill:var(--ic-accent,#f5c06a)"/></symbol>
+  <symbol id="ic-bow" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3.6c6 2.4 6 14.4 0 16.8"/><path d="M9 3.6v16.8"/><path d="M3.4 12h16.6"/><path d="M3.4 12l-1.2-1.7M3.4 12l-1.2 1.7"/></g><path d="M17.2 8.9l3.4 3.1-3.4 3.1" fill="none" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--ic-accent,#f5c06a)"/></symbol>
+  <symbol id="ic-user" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20c.9-4.2 3.9-6.3 7.2-6.3s6.3 2.1 7.2 6.3"/></g><circle cx="12" cy="8.2" r="1.5" style="fill:var(--ic-accent,#f5c06a)"/></symbol>
+  <symbol id="ic-clipboard" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="5.4" y="4.8" width="13.2" height="15.8" rx="2.5"/><rect x="9" y="3" width="6" height="3.6" rx="1.3"/><path d="M8.8 11.2h6.4"/><path d="M8.8 14.6h3.6"/></g><circle cx="15.3" cy="14.6" r="1.25" style="fill:var(--ic-accent,#f5c06a)"/></symbol>
+  <symbol id="ic-logout" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h3"/><path d="M15 8l4 4-4 4M19 12H9.5"/></g></symbol>
+</svg>
 
 <!-- ── MOBILE HEADER (solo mobile) ── -->
 <header class="mobile-header" id="mobile-header">
@@ -1429,11 +1428,11 @@ body.theme-light .main-content{
   <!-- Nav items -->
   <nav class="sb-nav">
     <div class="sb-item" id="sb-competencias" onclick="switchTab('competencias',this)">
-      <span class="sb-item-icon">🏆</span>
+      <span class="sb-item-icon"><svg class="ic" aria-hidden="true"><use href="#ic-trophy"/></svg></span>
       <span class="sb-item-label">Competencias</span>
     </div>
     <div class="sb-item active" id="sb-bitacora" onclick="switchTab('bitacora',this)">
-      <span class="sb-item-icon">📊</span>
+      <span class="sb-item-icon"><svg class="ic" aria-hidden="true"><use href="#ic-target"/></svg></span>
       <span class="sb-item-label">Puntuaciones</span>
     </div>
 
@@ -1441,11 +1440,11 @@ body.theme-light .main-content{
     <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:4px 12px 2px">Entrenamiento</div>
 
     <div class="sb-item" id="sb-biomec" onclick="switchTab('biomec',this)">
-      <span class="sb-item-icon">🦾</span>
+      <span class="sb-item-icon"><svg class="ic" aria-hidden="true"><use href="#ic-pose"/></svg></span>
       <span class="sb-item-label">Biomecánica</span>
     </div>
     <div class="sb-item" id="sb-rutina" onclick="switchTab('rutina',this)">
-      <span class="sb-item-icon">📅</span>
+      <span class="sb-item-icon"><svg class="ic" aria-hidden="true"><use href="#ic-calendar"/></svg></span>
       <span class="sb-item-label">Plan semanal</span>
     </div>
 
@@ -1455,15 +1454,15 @@ body.theme-light .main-content{
     <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:4px 12px 2px">Juego</div>
 
     <div class="sb-item" id="sb-score" onclick="switchTab('score',this)">
-      <span class="sb-item-icon">🎯</span>
+      <span class="sb-item-icon"><svg class="ic" aria-hidden="true"><use href="#ic-podium"/></svg></span>
       <span class="sb-item-label">Tablero</span>
     </div>
     <div class="sb-item" id="sb-cards" onclick="switchTab('cards',this)">
-      <span class="sb-item-icon">🃏</span>
+      <span class="sb-item-icon"><svg class="ic" aria-hidden="true"><use href="#ic-cards"/></svg></span>
       <span class="sb-item-label">Cartas</span>
     </div>
     <div class="sb-item" id="sb-mi-arco" onclick="switchTab('mi-arco',this)">
-      <span class="sb-item-icon">🏹</span>
+      <span class="sb-item-icon"><svg class="ic" aria-hidden="true"><use href="#ic-bow"/></svg></span>
       <span class="sb-item-label">Mi Arco</span>
     </div>
     </div>
@@ -1475,11 +1474,11 @@ body.theme-light .main-content{
     <!-- Tabs de perfil y coach ANTES del usuario -->
     <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px">
       <div class="sb-item" id="sb-perfil" onclick="switchTab('perfil',this)" style="padding:7px 12px">
-        <span class="sb-item-icon" style="font-size:14px">👤</span>
+        <span class="sb-item-icon"><svg class="ic ic-sm" aria-hidden="true"><use href="#ic-user"/></svg></span>
         <span class="sb-item-label" style="font-size:12px">Mi Perfil</span>
       </div>
       <div class="sb-item" id="sb-coach" onclick="switchTab('coach',this)" style="padding:7px 12px;display:none">
-        <span class="sb-item-icon" style="font-size:14px">📋</span>
+        <span class="sb-item-icon"><svg class="ic ic-sm" aria-hidden="true"><use href="#ic-clipboard"/></svg></span>
         <span class="sb-item-label" style="font-size:12px">Coach</span>
         <span style="margin-left:auto;font-size:8px;padding:1px 5px;border-radius:6px;background:rgba(216,209,90,0.15);color:#d8d15a;border:0.5px solid rgba(216,209,90,0.3);font-weight:700;letter-spacing:.06em">PRO</span>
       </div>
@@ -1487,15 +1486,8 @@ body.theme-light .main-content{
 
     <div style="height:0.5px;background:rgba(255,255,255,0.06);margin-bottom:10px"></div>
 
-    <div class="sb-user-row">
-      <div class="sb-avatar" id="sb-avatar-initials" style="cursor:pointer" onclick="switchTab('perfil',document.getElementById('sb-perfil'))">?</div>
-      <div class="sb-user-info">
-        <div class="sb-user-name" id="sb-user-name">—</div>
-        <div class="sb-user-email" id="sb-user-email">—</div>
-      </div>
-    </div>
     <button class="sb-signout" onclick="window._supabaseClient.auth.signOut().then(()=>{ document.getElementById('auth-screen').style.display='flex'; closeSidebar(); })">
-      <span>↪</span> Cerrar sesión
+      <svg class="ic" aria-hidden="true"><use href="#ic-logout"/></svg> Cerrar sesión
     </button>
   </div>
 
@@ -1506,7 +1498,7 @@ body.theme-light .main-content{
 
 <!-- Título de página dinámico -->
 <div class="page-title" id="page-title">
-  <span class="page-title-icon">📊</span>
+  <span class="page-title-icon"><svg class="ic" aria-hidden="true"><use href="#ic-target"/></svg></span>
   <div>
     <div class="page-title-text">Puntuaciones</div>
     <div class="page-title-sub">Bitácora y estadísticas</div>
@@ -1533,15 +1525,15 @@ const LIGHT_TABS = ['bitacora'];
 
 // ── switchTab: actualiza tabs Y sidebar ──
 const TAB_META = {
-  'score':       { icon:'🎯', label:'Tablero',       sub:'Puntuación y partidas' },
-  'competencias':{ icon:'🏆', label:'Competencias',   sub:'Torneos y ligas' },
-  'bitacora':    { icon:'📊', label:'Puntuaciones',   sub:'Bitácora y estadísticas' },
-  'biomec':      { icon:'🦾', label:'Biomecánica',    sub:'Análisis de postura en vivo' },
-  'rutina':      { icon:'📅', label:'Plan semanal',   sub:'Entrenamiento y seguimiento' },
-  'cards':       { icon:'🃏', label:'Cartas',         sub:'Arqueros y coaches' },
-  'mi-arco':     { icon:'🏹', label:'Mi Arco',        sub:'Equipo y stats' },
-  'perfil':      { icon:'👤', label:'Mi Perfil',      sub:'Club, categoría y datos' },
-  'coach':       { icon:'📋', label:'Coach',          sub:'Estadísticas de arqueros' },
+  'score':       { icon:'ic-podium',    label:'Tablero',       sub:'Puntuación y partidas' },
+  'competencias':{ icon:'ic-trophy',    label:'Competencias',   sub:'Torneos y ligas' },
+  'bitacora':    { icon:'ic-target',    label:'Puntuaciones',   sub:'Bitácora y estadísticas' },
+  'biomec':      { icon:'ic-pose',      label:'Biomecánica',    sub:'Análisis de postura en vivo' },
+  'rutina':      { icon:'ic-calendar',  label:'Plan semanal',   sub:'Entrenamiento y seguimiento' },
+  'cards':       { icon:'ic-cards',     label:'Cartas',         sub:'Arqueros y coaches' },
+  'mi-arco':     { icon:'ic-bow',       label:'Mi Arco',        sub:'Equipo y stats' },
+  'perfil':      { icon:'ic-user',      label:'Mi Perfil',      sub:'Club, categoría y datos' },
+  'coach':       { icon:'ic-clipboard', label:'Coach',          sub:'Estadísticas de arqueros' },
 };
 
 function updatePageTitle(name){
@@ -1549,7 +1541,7 @@ function updatePageTitle(name){
   const el = document.getElementById('page-title');
   if(!el) return;
   el.innerHTML = `
-    <span class="page-title-icon">${meta.icon||''}</span>
+    <span class="page-title-icon">${meta.icon ? '<svg class="ic" aria-hidden="true"><use href="#'+meta.icon+'"/></svg>' : ''}</span>
     <div>
       <div class="page-title-text">${meta.label||''}</div>
       <div class="page-title-sub">${meta.sub||''}</div>
@@ -1573,12 +1565,6 @@ document.addEventListener('DOMContentLoaded', function(){
   window._supabaseClient.auth.getUser().then(({ data }) => {
     if(!data?.user) return;
     const u = data.user;
-    const email = u.email || '';
-    const name = u.user_metadata?.nombre || u.user_metadata?.full_name || email.split('@')[0] || '?';
-    const initials = name.charAt(0).toUpperCase();
-    document.getElementById('sb-user-name').textContent = name;
-    document.getElementById('sb-user-email').textContent = email;
-    document.getElementById('sb-avatar-initials').textContent = initials;
 
     // Mostrar tab Coach — verificar app_metadata primero (seguro), luego user_metadata (legacy)
     const isCoach = u.app_metadata?.is_coach === true || u.user_metadata?.is_coach === true;
