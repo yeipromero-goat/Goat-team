@@ -5582,6 +5582,30 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 .bt-loupe-v{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);padding:1px 8px;border-radius:10px;background:rgba(24,36,64,0.92);color:#fff;font-size:13px;font-weight:700}
 .bt-sess{margin-top:6px;border-top:1px solid var(--bt-line-soft);padding-top:8px}
 .bt-sess summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--bt-ink-2);padding:4px 0}
+/* ── Rondas: navegar, completar y corregir ── */
+#bt-s-sesion,#bt-s-resumen{scroll-margin-top:68px}
+.bt-endstrip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin:0 0 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.bt-endstrip::-webkit-scrollbar{display:none}
+.bt-ec{flex:0 0 auto;min-width:36px;height:36px;padding:0 9px;border-radius:18px;border:1.5px solid var(--bt-line);background:var(--bt-fill);color:var(--bt-ink-2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.bt-ec.done{background:var(--bt-navy);border-color:var(--bt-navy);color:#fff}
+.bt-ec.cur{background:var(--bt-white);border:2px solid #000;color:var(--bt-on-white)}
+.bt-ec.inc{background:var(--bt-amber);border-color:#c98a1b;color:#1b2743}
+.bt-ec-x{margin-left:2px;font-weight:800}
+.bt-ec:focus-visible{outline:2px solid var(--bt-amber);outline-offset:2px}
+.bt-warn{margin:0 0 10px;padding:9px 12px;border-radius:10px;background:rgba(245,192,106,0.22);border:0.5px solid rgba(245,192,106,0.65);font-size:12px;line-height:1.4;color:var(--bt-ink)}
+.bt-warn b{font-weight:700}
+.bt-warn.info{background:none;border:none;padding:0 2px;color:var(--bt-ink-3)}
+.bt-miss{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:9px;background:var(--bt-amber);color:#1b2743;font-size:10px;font-weight:700}
+.bt-endrow{gap:8px;padding:12px 4px;min-height:44px}
+.bt-endrow>span:nth-child(2){flex:1;text-align:center;font-size:12px;letter-spacing:.02em;color:var(--bt-ink-2)}
+.bt-det-top .bt-det-h{flex:1}
+#bt-det-edit{margin-left:auto;flex-shrink:0}
+/* Las ventanas (detalle y elegir) son position:fixed dentro de .main-content. Por la regla body>*{position:relative;z-index:1} de 00-head,
+   .main-content forma su propio nivel de apilamiento (1) y el encabezado móvil (150) y el menú (100) quedaban ENCIMA de ellas: tapaban
+   "Volver" y "Editar". Mientras esta pestaña está activa, .main-content deja de formar ese nivel (sigue encima de la capa oscura de fondo
+   porque va después en el árbol). La clase la pone y quita el script de abajo según la pestaña activa. */
+html.bt-light .main-content{z-index:auto}
+
 /* ── Fondo BLANCO en celular ──────────────────────────────────────────────
    El script de esta pestaña pone la clase .bt-light en <html> mientras "Puntuaciones" está visible. Solo aplica en celular
    (≤768 px, el mismo corte que usa el menú). En escritorio sigue oscuro. Para llevarlo también a escritorio, quita el @media.
@@ -5805,6 +5829,9 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
         <button class="bt-abtn" onclick="btConfirmCancel()" style="background:var(--bt-white);color:var(--bt-down);border:1.5px solid var(--bt-down);font-size:13px">✕</button>
       </div>
     </div>
+    <div id="bt-endstrip" class="bt-endstrip" role="group" aria-label="Rondas: toca una para ir a ella"></div>
+    <div id="bt-endwarn" class="bt-warn" style="display:none" role="status"></div>
+    <button type="button" id="bt-go-res" class="bt-btn bt-btn-sm" style="display:none;margin:0 0 10px">← Volver al resumen</button>
     <div class="bt-card">
       <div class="bt-sec" id="bt-end-lbl"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="bt-slots"></div>
@@ -5838,7 +5865,7 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
 
   <div id="bt-s-resumen" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:16px;font-weight:600;color:var(--bt-ink)">Resumen</div>
+      <div style="font-size:16px;font-weight:600;color:var(--bt-ink)" id="bt-res-title">Resumen</div>
       <span id="bt-res-badge" class="bt-pill"></span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
@@ -5846,6 +5873,7 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
       <div class="bt-metric"><div class="v" id="bt-ra">—</div><div class="l">P/Flecha</div></div>
       <div class="bt-metric"><div class="v" id="bt-rx" style="color:#ffffff">—</div><div class="l" id="bt-rsp-lbl">X's</div></div>
     </div>
+    <div id="bt-res-note" class="bt-warn info" role="status"></div>
     <div class="bt-card">
       <div class="bt-sec">Por end</div>
       <div id="bt-res-ends"></div>
@@ -5866,8 +5894,8 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
     </div>
 
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="bt-btn bt-btn-sm bt-btn-d" onclick="btCancelSession()">Descartar</button>
-      <button class="bt-btn bt-btn-sm bt-btn-p" style="flex:1" onclick="btSaveSession()">Guardar sesión</button>
+      <button class="bt-btn bt-btn-sm bt-btn-d" id="bt-res-discard" onclick="btCancelSession()">Descartar</button>
+      <button class="bt-btn bt-btn-sm bt-btn-p" style="flex:1" id="bt-res-save" onclick="btSaveSession()">Guardar sesión</button>
     </div>
   </div>
 </div>
@@ -5952,6 +5980,7 @@ window.CARD_SCORE_MULT       = CARD_SCORE_MULT;
     <div class="bt-det-top">
       <button class="bt-btn" id="bt-det-close" type="button">‹ Volver</button>
       <div class="bt-det-h" id="bt-det-h">Detalle</div>
+      <button type="button" class="bt-btn bt-btn-sm bt-btn-p" id="bt-det-edit" style="display:none">✎ Editar</button>
     </div>
     <div id="bt-det-body"></div>
   </div>
@@ -6122,7 +6151,7 @@ function btLoadSessions(){
 
 window.btShowMain=function(tab){
   if(tab==='historial'&&btState.active){
-    if(!confirm('¿Salir? Se perderá el progreso de la sesión actual.'))return;
+    if(!confirm(btState.editId ? '¿Salir? Se perderán los cambios sin guardar.' : '¿Salir? Se perderá el progreso de la sesión actual.'))return;
     btResetState();
   }
   document.getElementById('bt-main-nueva').style.display=tab==='nueva'?'block':'none';
@@ -6194,15 +6223,23 @@ window.btShowS=function(id){
 
 function btResetState(){
   btCurMode=null;btState={active:false};
+  // La nota y el ajuste de la sesión anterior no deben reaparecer en la siguiente (antes se quedaban escritos)
+  const nt=document.getElementById('bt-notes'); if(nt) nt.value='';
+  const sn=document.getElementById('bt-setup-note'); if(sn) sn.value='';
+  if(typeof btWarnClear==='function') btWarnClear();
   document.querySelectorAll('#bt-s-inicio .bt-disc-card').forEach(c=>c.classList.remove('sel'));
   const pb = document.getElementById('bt-plan-banner');
   if(pb) pb.style.display='none';
 }
 
 window.btConfirmCancel=function(){
-  if(confirm('¿Cancelar sesión? Se perderá el progreso.')){btResetState();btShowS('bt-s-inicio');}
+  const ed=!!btState.editId;
+  if(confirm(ed?'¿Cancelar la edición? Se perderán los cambios.':'¿Cancelar sesión? Se perderá el progreso.')){ btResetState(); if(ed) btShowMain('historial'); else btShowS('bt-s-inicio'); }
 }
-window.btCancelSession=function(){btResetState();btShowS('bt-s-inicio');}
+window.btCancelSession=function(){
+  if(btState.editId){ if(!confirm('¿Cancelar la edición? Se perderán los cambios.')) return; btResetState(); btShowMain('historial'); return; }
+  btResetState();btShowS('bt-s-inicio');
+}
 
 window.btSelGroup=function(g,el){
   document.querySelectorAll('#bt-s-inicio .bt-disc-card').forEach(c=>c.classList.remove('sel'));
@@ -6267,6 +6304,7 @@ function btRenderEnd(){
   kg.innerHTML=vals.map(v=>`<button class="bt-kbtn" onclick="btPressK('${v}')">${v}</button>`).join('');
   btRenderFace();
   btUpdSum();btUpdTot();
+  btRenderStrip();
 }
 
 window.btSetSlt=function(i){btState.slot=i;btRenderEnd();}
@@ -6288,27 +6326,88 @@ function btUpdTot(){
   document.getElementById('bt-sx').textContent=sp;
   btState._t=t;btState._n=n;btState._sp=sp;
 }
-window.btNextE=function(){if(btState.cur===btState.rondas-1){btShowResumen();return;}btState.cur++;btState.slot=0;btRenderEnd();}
-window.btPrevE=function(){if(btState.cur>0){btState.cur--;btState.slot=0;btRenderEnd();}}
+// Avanzar con flechas sin valor no se bloquea (a veces no se tiran), pero se avisa y la ronda queda marcada en ámbar.
+window.btNextE=function(){
+  const miss=btEndMissing(btState.cur);
+  if(miss>0) btWarn('El end '+(btState.cur+1)+' quedó con '+miss+(miss===1?' flecha':' flechas')+' sin valor (cuenta 0). Toca el '+(btState.cur+1)+' de arriba para completarlo.'); else btWarnClear();
+  if(btState.cur===btState.rondas-1){btShowResumen();return;}
+  btState.cur++;btState.slot=btFirstEmpty(btState.cur);btRenderEnd();
+}
+window.btPrevE=function(){if(btState.cur>0){btWarnClear();btState.cur--;btState.slot=btFirstEmpty(btState.cur);btRenderEnd();}}
+
+// ── Estado de cada ronda (end): completa, incompleta (faltan flechas, o se saltó) o pendiente ──
+function btEndFilled(e){ const a=btState.ends[e]||[]; let n=0; for(let k=0;k<btState.apR;k++){ const v=a[k]; if(v!==undefined&&v!==null&&v!=='') n++; } return n; }
+function btEndMissing(e){ return btState.apR-btEndFilled(e); }
+function btLastTouched(){ let l=-1; btState.ends.forEach((a,i)=>{ if(btEndFilled(i)>0) l=i; }); return l; }
+function btFirstEmpty(i){ const a=btState.ends[i]||[]; for(let k=0;k<btState.apR;k++){ const v=a[k]; if(v===undefined||v===null||v==='') return k; } return 0; }
+function btEndStatus(i){
+  if(i===btState.cur) return 'cur';
+  const f=btEndFilled(i); if(f===btState.apR) return 'done';
+  if(f>0) return 'inc';
+  return i<btLastTouched() ? 'inc' : 'pend';
+}
+let btWarnT=null;
+function btWarn(msg){ const el=document.getElementById('bt-endwarn'); if(!el) return; el.textContent=msg; el.style.display='block'; clearTimeout(btWarnT); btWarnT=setTimeout(btWarnClear,7000); }
+function btWarnClear(){ const el=document.getElementById('bt-endwarn'); if(el) el.style.display='none'; clearTimeout(btWarnT); }
+function btScrollTo(id){ const el=document.getElementById(id); if(el && el.scrollIntoView){ try{ el.scrollIntoView({block:'start'}); }catch(e){} } }
+function btNotify(msg){ if(typeof showToast==='function') showToast(msg); else alert(msg); }
+
+// Tira de rondas: tocar una lleva a ella, venga de donde venga
+function btRenderStrip(){
+  const st=btState, box=document.getElementById('bt-endstrip'); if(!box || !st.active || !st.rondas) return;
+  box.innerHTML=Array.from({length:st.rondas},(_,i)=>{
+    const s=btEndStatus(i), miss=st.apR-btEndFilled(i);
+    const lab='End '+(i+1)+(s==='cur'?' (actual)':s==='inc'?', incompleto: faltan '+miss:s==='done'?', completo':', sin empezar');
+    return '<button type="button" class="bt-ec '+s+'" data-e="'+i+'" aria-label="'+lab+'"'+(s==='cur'?' aria-current="step"':'')+'>'+(i+1)+(s==='inc'?'<span class="bt-ec-x">!</span>':'')+'</button>';
+  }).join('');
+  const cur=box.querySelector('.cur'); if(cur) box.scrollLeft=cur.offsetLeft-box.clientWidth/2+cur.offsetWidth/2;
+  const gr=document.getElementById('bt-go-res'); if(gr) gr.style.display=st.fromResumen?'block':'none';
+}
+window.btGoEnd=function(i){ if(!btState.active||i<0||i>=btState.rondas) return; btWarnClear(); btState.cur=i; btState.slot=btFirstEmpty(i); btRenderEnd(); };
+// Desde el resumen: abrir una ronda para corregirla
+window.btEditEnd=function(i){
+  if(!btState.active||i<0||i>=btState.rondas) return;
+  btState.fromResumen=true; btWarnClear(); btShowS('bt-s-sesion'); btState.cur=i; btState.slot=btFirstEmpty(i); btRenderEnd(); btScrollTo('bt-s-sesion');
+};
 
 function btShowResumen(){
   btUpdTot();btShowS('bt-s-resumen');
-  const m=BT_MODES[btState.mode];
-  document.getElementById('bt-res-badge').textContent=`${BT_GLABELS[btState.g]} · ${m.lbl}`;
-  document.getElementById('bt-res-badge').style.cssText=`background:${BT_COLORS[btState.g]};color:#fff;border:none`;
-  document.getElementById('bt-rt').textContent=btState._t;
-  document.getElementById('bt-ra').textContent=btState._n>0?(btState._t/btState._n).toFixed(1):'—';
-  document.getElementById('bt-rx').textContent=btState._sp;
-  document.getElementById('bt-rsp-lbl').textContent=btSpLabel(btState.g);
-  document.getElementById('bt-res-ends').innerHTML=btState.ends.map((e,i)=>{
-    if(!e.length)return'';
+  const st=btState, m=BT_MODES[st.mode], ed=!!st.editId;
+  const badge=document.getElementById('bt-res-badge');
+  badge.textContent=`${BT_GLABELS[st.g]} · ${m.lbl}`;
+  badge.style.cssText=`background:${BT_COLORS[st.g]};color:#fff;border:none`;
+  document.getElementById('bt-rt').textContent=st._t;
+  document.getElementById('bt-ra').textContent=st._n>0?(st._t/st._n).toFixed(1):'—';
+  document.getElementById('bt-rx').textContent=st._sp;
+  document.getElementById('bt-rsp-lbl').textContent=btSpLabel(st.g);
+  document.getElementById('bt-res-title').textContent = ed ? 'Editando · '+new Date(st.editDate).toLocaleDateString('es-MX',{day:'numeric',month:'short'}) : 'Resumen';
+  document.getElementById('bt-res-save').textContent = ed ? 'Guardar cambios' : 'Guardar sesión';
+  document.getElementById('bt-res-discard').textContent = ed ? 'Cancelar' : 'Descartar';
+  const sb=document.getElementById('bt-setup-banner'); if(sb) sb.style.display = ed ? 'none' : '';
+  const last=btLastTouched(), inc=[];
+  const rows=st.ends.map((e,i)=>{
+    const f=btEndFilled(i);
+    if(f===0 && i>last) return '';                    // rondas finales sin tirar: no se listan
+    const miss=st.apR-f; if(miss>0) inc.push(i+1);
     const s=e.reduce((a,v)=>a+btAv(v),0);
-    const sp=e.filter(v=>btIsSp(btState.g,v)).length;
-    return`<div class="bt-srow"><span class="bt-muted" style="font-size:11px">End ${i+1}</span><span style="font-size:11px;color:var(--bt-ink-3)">${e.join('  ')}</span><span class="bt-num" style="font-size:16px;color:var(--bt-ink)">${s}${sp?`<span style="font-size:10px;color:var(--bt-accent)"> ${sp}${btState.sp}</span>`:''}</span></div>`;
+    const sp=e.filter(v=>btIsSp(st.g,v)).length;
+    const cells=Array.from({length:st.apR},(_,k)=>{ const v=e[k]; return (v!==undefined&&v!==null&&v!=='')?v:'·'; }).join('  ');
+    return '<div class="bt-srow bt-endrow bt-click" data-end="'+i+'" role="button" tabindex="0" aria-label="Editar el end '+(i+1)+(miss?', incompleto':'')+'">'+
+      '<span class="bt-muted" style="font-size:11px">End '+(i+1)+(miss?'<span class="bt-miss">falta '+miss+'</span>':'')+'</span>'+
+      '<span>'+cells+'</span>'+
+      '<span class="bt-num" style="font-size:16px;color:var(--bt-ink)">'+s+(sp?'<span style="font-size:10px;color:var(--bt-accent)"> '+sp+st.sp+'</span>':'')+'</span>'+
+      '<span class="bt-chev" aria-hidden="true">›</span></div>';
   }).filter(Boolean).join('');
+  document.getElementById('bt-res-ends').innerHTML=rows;
+  const note=document.getElementById('bt-res-note');
+  if(inc.length){ note.className='bt-warn'; note.innerHTML='<b>'+(inc.length===1?'1 end incompleto':inc.length+' ends incompletos')+'</b> (End '+inc.join(', ')+'): las flechas sin valor cuentan 0. Toca el end para completarlo.'; }
+  else { note.className='bt-warn info'; note.textContent = ed ? 'Toca un end para corregirlo.' : 'Toca un end si necesitas corregirlo antes de guardar.'; }
+  btScrollTo('bt-s-resumen');
 }
+window.btShowResumen=btShowResumen;
 
 window.btSaveSession=function(){
+  if(btState.editId){ btSaveEdit(); return; }          // editando una sesión ya guardada: se actualiza, no se inserta otra
   const m=BT_MODES[btState.mode];
   const setupId = window._activeSetupId || null;
   const setupNote = document.getElementById('bt-setup-note')?.value.trim() || null;
@@ -6973,7 +7072,7 @@ function btRenderFace(){
   svg.setAttribute('data-face',key);
   var tg=document.getElementById('bt-face-toggle');
   if(tg){
-    if(st.mode.indexOf('outdoor-')!==0){ tg.innerHTML=''; }
+    if(st.mode.indexOf('outdoor-')!==0 || st.editId){ tg.innerHTML=''; }      // al editar, la diana ya está fijada
     else {
       var locked=imps.length>0;
       tg.innerHTML=['A','B'].map(function(k){
@@ -7111,6 +7210,7 @@ function btOpenSession(id){
   if(bow) h+='<div class="bt-muted" style="margin-top:2px">Arco: <b style="color:var(--bt-ink)">'+btEsc(bow.name||'')+'</b></div>';
   if(s.notes) h+='<div style="margin-top:8px;font-size:13px;color:var(--bt-ink-2)">'+btEsc(s.notes)+'</div>';
   if(s.setup_note && !ext) h+='<div class="bt-muted" style="margin-top:6px">Nota de equipo: '+btEsc(s.setup_note)+'</div>';
+  if(btLocked(s)) h+='<div class="bt-muted" style="margin-top:6px">Esta sesión se envió a una liga o torneo: ya no se edita desde aquí.</div>';
   h+='<div class="bt-det-stats">'+
      stat(btEsc(s.total)+(pct!==null?' <small>'+pct+'%</small>':''), 'puntos')+
      stat(s.n>0?Number(s.avg||0).toFixed(1):'—', 'por flecha')+
@@ -7147,6 +7247,7 @@ function btOpenSession(id){
   box.classList.add('open'); box.setAttribute('aria-hidden','false');
   document.getElementById('bt-det-panel').scrollTop=0;
   btDetPaint();
+  const eb=document.getElementById('bt-det-edit'); if(eb) eb.style.display = (btEditable(s) && !btUsingDemo) ? '' : 'none';
   document.getElementById('bt-det-close').focus();
 }
 
@@ -7251,6 +7352,66 @@ function btClosePop(){
   const sync=()=>root.classList.toggle('bt-light', panel.classList.contains('active'));
   sync();
   new MutationObserver(sync).observe(panel,{attributes:true,attributeFilter:['class']});
+})();
+
+// ══════════ Editar una sesión ya guardada ══════════
+// Solo sesiones con series y flechas guardadas. Las enviadas a una liga o a un torneo no se editan (esos resultados tienen su propia copia).
+function btLocked(s){ return s.src==='liga' || (s.src==='torneo' && s.setup_note!=='torneo-externo'); }
+function btEditable(s){
+  const ok=Array.isArray(s.ends) && s.ends.some(e=>Array.isArray(e) && e.some(v=>v!=null && v!==''));
+  return ok && !btLocked(s) && !!BT_MODES[s.mode];
+}
+window.btEditSaved=function(id){
+  const s=btSessions.find(x=>String(x.id)===String(id)); if(!s || !btEditable(s) || btUsingDemo) return;
+  if(btState.active && !confirm('Tienes una sesión en captura. Si editas esta, se perderá ese progreso. ¿Continuar?')) return;
+  const m=BT_MODES[s.mode], rondas=s.ends.length;
+  const ends=s.ends.map(e=>{ const a=[]; (Array.isArray(e)?e:[]).forEach((v,k)=>{ if(v!=null && v!=='') a[k]=String(v); }); return a; });
+  const impacts=(Array.isArray(s.impacts)?s.impacts:[]).filter(p=>p && isFinite(p.x) && isFinite(p.y)).map(p=>({e:p.e,i:p.i,x:p.x,y:p.y}));
+  if(typeof btCloseSession==='function') btCloseSession();
+  btCurMode=s.mode;
+  btState={active:true,mode:s.mode,g:s.g,rondas,apR:m.apR,vals:m.vals,sp:m.sp,ends,cur:0,slot:0,max:(s.mode==='3d'?rondas*12:(s.max||m.max)),
+           face:(s.face && impacts.length)?s.face:null,impacts,editId:s.id,editDate:s.date,fromResumen:true};
+  document.getElementById('bt-notes').value=s.notes||'';
+  document.getElementById('bt-main-nueva').style.display='block';
+  document.getElementById('bt-main-historial').style.display='none';
+  document.querySelectorAll('#bt-tab-bar button').forEach((bt,i)=>bt.classList.toggle('act',i===1));
+  window.scrollTo(0,0);
+  btShowResumen();
+};
+function btSaveEdit(){
+  const st=btState, s=btSessions.find(x=>String(x.id)===String(st.editId));
+  if(!s){ btNotify('⚠️ No encontré la sesión que estabas editando. Ábrela de nuevo desde el historial.'); return; }
+  btUpdTot();
+  const imp=(st.impacts&&st.impacts.length)?st.impacts.map(p=>({e:p.e,i:p.i,x:p.x,y:p.y})):null;
+  const patch={total:st._t||0,n:st._n||0,sp:st._sp||0,avg:st._n>0?parseFloat((st._t/st._n).toFixed(2)):0,
+               ends:st.ends.map(e=>[...e]),notes:document.getElementById('bt-notes').value,face:imp?st.face:null,impacts:imp};
+  patch.touchDiana=!!(s.face||imp);
+  if(typeof window.supabaseUpdateScore!=='function'){ btNotify('⚠️ Falta actualizar supabase-persistence.js en el sitio: sin él no se pueden guardar cambios de una sesión.'); return; }
+  const btn=document.getElementById('bt-res-save'); if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
+  window.supabaseUpdateScore(s.id,patch).then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='Guardar cambios'; }
+    if(res && res.ok){
+      Object.assign(s,{total:patch.total,n:patch.n,sp:patch.sp,avg:patch.avg,ends:patch.ends,notes:patch.notes,face:patch.face,impacts:patch.impacts});
+      const id=s.id; btResetState(); btShowMain('historial');
+      if(typeof showToast==='function') showToast('✓ Cambios guardados');
+      btOpenSession(id);
+      return;
+    }
+    btNotify(res && res.reason==='blocked'
+      ? '⚠️ La base no permitió editar la sesión: falta correr migracion_editar_scores.sql en Supabase. Tus cambios siguen en pantalla.'
+      : '⚠️ No se pudieron guardar los cambios. Revisa tu conexión: siguen en pantalla para que reintentes.');
+  });
+}
+(function(){
+  const strip=document.getElementById('bt-endstrip');
+  if(strip) strip.addEventListener('click',ev=>{ const c=ev.target.closest('.bt-ec'); if(c) btGoEnd(+c.dataset.e); });
+  const rows=document.getElementById('bt-res-ends');
+  if(rows){
+    rows.addEventListener('click',ev=>{ const r=ev.target.closest('.bt-endrow'); if(r) btEditEnd(+r.dataset.end); });
+    rows.addEventListener('keydown',ev=>{ if((ev.key==='Enter'||ev.key===' ') && ev.target.matches('.bt-endrow')){ ev.preventDefault(); btEditEnd(+ev.target.dataset.end); } });
+  }
+  const gr=document.getElementById('bt-go-res'); if(gr) gr.addEventListener('click',()=>btShowResumen());
+  const ed=document.getElementById('bt-det-edit'); if(ed) ed.addEventListener('click',()=>{ if(btDet) btEditSaved(btDet.s.id); });
 })();
 
 // Progreso: promedio por flecha de cada sesión, una línea por modalidad, sobre eje de tiempo real.

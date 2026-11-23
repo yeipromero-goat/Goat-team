@@ -431,6 +431,37 @@ window.supabaseSaveScore.supportsImpacts = true;
 window.supabaseSaveScore.supportsFieldFace = true;   // acepta la diana 'F' (Field)
 window.supabaseSaveScore.lastPartial = false;        // true si la última sesión se guardó sin diana (la base rechazó esos campos)
 
+// Edita una sesión YA guardada (solo la del propio usuario). Requiere la política UPDATE de migracion_editar_scores.sql:
+// sin ella PostgREST responde 200 con [] y no cambia nada, por eso se pide la fila de vuelta y se comprueba que llegó.
+// Devuelve una promesa con {ok:true} o {ok:false, reason:'blocked'|'error'|'no-session'}.
+// s.touchDiana = true solo cuando la sesión tiene (o tenía) diana: así una sesión sin diana no toca esas columnas.
+window.supabaseUpdateScore = function(id, s) {
+  var key    = window._supabaseAnonKey;
+  var userId = window._supabaseUserId;
+  if(!window._supabaseToken || !userId || id == null || !s) return Promise.resolve({ ok:false, reason:'no-session' });
+  var body = { total: s.total, arrow_count: s.n, avg_arrow: s.avg, specials: s.sp, ends: s.ends || [], notes: s.notes || '' };
+  if (s.touchDiana) {
+    var face = _cleanFace(s.face), impacts = _cleanImpacts(s.impacts);
+    if (impacts && !face) impacts = null;
+    body.face = face; body.impacts = impacts;      // null = quitar la diana guardada
+  }
+  return _freshToken().then(function(token){
+    return fetch(SUPABASE_URL + '/rest/v1/scores?id=eq.' + encodeURIComponent(id) + '&user_id=eq.' + encodeURIComponent(userId), {
+      method: 'PATCH',
+      headers: { apikey: key, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify(body)
+    });
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ console.error('❌ Error editando la sesión:', r.status, t); return { ok:false, reason:'error', status:r.status }; });
+    return r.json().then(function(rows){
+      if(Array.isArray(rows) && rows.length > 0){ console.log('✅ Sesión actualizada'); return { ok:true }; }
+      console.error('❌ La edición no cambió ninguna fila: falta la política UPDATE (migracion_editar_scores.sql)');
+      return { ok:false, reason:'blocked' };
+    });
+  }).catch(function(e){ console.error('❌ supabaseUpdateScore error:', e); return { ok:false, reason:'error' }; });
+};
+window.supabaseUpdateScore.supported = true;
+
 // opts.ownOnly = true: trae solo las sesiones del usuario. Sin esa opción el comportamiento es el de siempre.
 // Hace falta porque la política de coach deja leer TODAS las sesiones: sin filtro, la Bitácora de un coach
 // se llenaría con las de otros atletas (y el límite de 200 se repartiría entre todos).
@@ -441,7 +472,7 @@ window.supabaseLoadScores = function(opts) {
   if (own && !window._supabaseUserId) return Promise.resolve([]);
   var url = SUPABASE_URL + '/rest/v1/scores?' +
             (own ? 'user_id=eq.' + encodeURIComponent(window._supabaseUserId) + '&' : '') +
-            'order=session_date.desc&limit=200';
+            'order=session_date.desc&limit=1000';
 
   return _freshToken().then(function(token){
     return fetch(url, { headers: { apikey: key, Authorization: 'Bearer ' + token } });
@@ -460,3 +491,5 @@ window.supabaseLoadScores = function(opts) {
     });
   }).catch(function(e){ console.error('❌ supabaseLoadScores error:', e); return []; });
 };
+// Sesiones que trae cada carga (máximo por consulta de Supabase). La Bitácora avisa si se llega a este tope.
+window.supabaseLoadScores.limit = 1000;
