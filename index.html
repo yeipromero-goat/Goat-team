@@ -1397,6 +1397,7 @@ html.bt-light .page-title{--ic-accent:#d9962a}
   <symbol id="ic-user" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20c.9-4.2 3.9-6.3 7.2-6.3s6.3 2.1 7.2 6.3"/></g><circle cx="12" cy="8.2" r="1.5" style="fill:var(--ic-accent,#f5c06a)"/></symbol>
   <symbol id="ic-clipboard" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="5.4" y="4.8" width="13.2" height="15.8" rx="2.5"/><rect x="9" y="3" width="6" height="3.6" rx="1.3"/><path d="M8.8 11.2h6.4"/><path d="M8.8 14.6h3.6"/></g><circle cx="15.3" cy="14.6" r="1.25" style="fill:var(--ic-accent,#f5c06a)"/></symbol>
   <symbol id="ic-logout" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h3"/><path d="M15 8l4 4-4 4M19 12H9.5"/></g></symbol>
+  <symbol id="ic-timer" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.7"/><path d="M9.5 3h5"/><path d="M12 3v2.8"/><path d="M18.4 6.6l1.5-1.5"/></g><path d="M12 13.5V9.4" fill="none" stroke-width="1.85" stroke-linecap="round" style="stroke:var(--ic-accent,#f5c06a)"/><circle cx="12" cy="13.5" r="1.4" style="fill:var(--ic-accent,#f5c06a)"/></symbol>
 </svg>
 
 <!-- ── MOBILE HEADER (solo mobile) ── -->
@@ -1446,6 +1447,11 @@ html.bt-light .page-title{--ic-accent:#d9962a}
     <div class="sb-item" id="sb-rutina" onclick="switchTab('rutina',this)">
       <span class="sb-item-icon"><svg class="ic" aria-hidden="true"><use href="#ic-calendar"/></svg></span>
       <span class="sb-item-label">Plan semanal</span>
+    </div>
+
+    <div class="sb-item" id="sb-timer" onclick="switchTab('timer',this)">
+      <span class="sb-item-icon"><svg class="ic" aria-hidden="true"><use href="#ic-timer"/></svg></span>
+      <span class="sb-item-label">Temporizador</span>
     </div>
 
     <!-- JUEGO oculto por ahora. Para volver: quita el atributo hidden de este div y pon GAME_ENABLED = true en 08-foot.html -->
@@ -1530,6 +1536,7 @@ const TAB_META = {
   'bitacora':    { icon:'ic-target',    label:'Puntuaciones',   sub:'Bitácora y estadísticas' },
   'biomec':      { icon:'ic-pose',      label:'Biomecánica',    sub:'Análisis de postura en vivo' },
   'rutina':      { icon:'ic-calendar',  label:'Plan semanal',   sub:'Entrenamiento y seguimiento' },
+  'timer':       { icon:'ic-timer',     label:'Temporizador',   sub:'Tiempo de tiro y señales' },
   'cards':       { icon:'ic-cards',     label:'Cartas',         sub:'Arqueros y coaches' },
   'mi-arco':     { icon:'ic-bow',       label:'Mi Arco',        sub:'Equipo y stats' },
   'perfil':      { icon:'ic-user',      label:'Mi Perfil',      sub:'Club, categoría y datos' },
@@ -2414,6 +2421,7 @@ const ROUTE_TO_TAB = {
   '/entrenamiento':           'biomec',
   '/entrenamiento/biomecanica':'biomec',
   '/entrenamiento/rutina':    'rutina',
+  '/entrenamiento/temporizador':'timer',
   '/tablero':                 'score',
   '/tablero/cards':           'cards',
   '/tablero/mi-arco':         'mi-arco',
@@ -2425,6 +2433,7 @@ const TAB_TO_ROUTE = {
   'perfil':       '/perfil',
   'coach':        '/coach',
   'biomec':       '/entrenamiento/biomecanica',
+  'timer':        '/entrenamiento/temporizador',
   'score':        '/tablero',
   'cards':        '/tablero/cards',
   'mi-arco':      '/tablero/mi-arco',
@@ -17989,3 +17998,310 @@ window.addEventListener('rt-plan-score-saved', async function(e){
 </script>
 
 </div><!-- end tab-rutina -->
+
+<div id="tab-timer" class="tab-panel">
+<style>
+/* ═══ Temporizador · mismo lenguaje de diseño de la plataforma ═══
+   Marino #182440 con degradado y relieve en el botón principal; acento ámbar; encabezados en cursiva; semáforo rojo, amarillo y verde. */
+:root{
+  --tm-ink:#f2f2f2; --tm-ink-2:rgba(255,255,255,0.78); --tm-ink-3:rgba(255,255,255,0.64);
+  --tm-line:rgba(255,255,255,0.18); --tm-fill:rgba(255,255,255,0.05);
+  --tm-navy:#182440; --tm-g:linear-gradient(160deg,#1f2e53 0%,#182440 30%,#0d1322 100%);
+  --tm-amber:#f5c06a; --tm-down:#e05555;
+}
+.tm{max-width:460px;margin:0 auto;font-family:'DM Sans',sans-serif;color:var(--tm-ink)}
+.tm [hidden]{display:none!important}
+.tm-card{margin-bottom:12px;padding:14px;border:0.5px solid var(--tm-line);border-radius:14px;background:var(--tm-fill)}
+.tm-hd{margin:0 0 12px;font-size:20px;font-style:italic;font-weight:600;color:var(--tm-ink)}
+.tm-step{display:flex;align-items:center;justify-content:center;gap:16px;margin:4px 0 6px}
+.tm-step button{width:52px;height:52px;border:1.5px solid var(--tm-line);border-radius:14px;background:var(--tm-fill);color:#fff;font:600 26px 'DM Sans',sans-serif;cursor:pointer}
+.tm-step button:disabled{opacity:0.35;cursor:default}
+.tm-secs{display:flex;flex-direction:column;align-items:center}
+.tm-secs input{width:116px;padding:0 0 2px;border:none;border-bottom:2px solid var(--tm-line);background:transparent;color:#fff;text-align:center;font:400 54px/1 'Bebas Neue',sans-serif;letter-spacing:0.04em;-moz-appearance:textfield}
+.tm-secs input::-webkit-outer-spin-button,.tm-secs input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.tm-secs input:focus{outline:none;border-bottom-color:var(--tm-amber)}
+.tm-secs input:disabled{opacity:0.6}
+.tm-unit{margin-top:4px;font-size:11px;color:var(--tm-ink-3)}
+.tm-fmt{margin-bottom:10px;text-align:center;font-size:13px;color:var(--tm-ink-2)}
+.tm-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.tm-chip{min-width:50px;min-height:40px;padding:8px 12px;border:1.5px solid var(--tm-navy);border-radius:12px;background:var(--tm-navy);color:#fff;font:700 13px 'DM Sans',sans-serif;cursor:pointer}
+.tm-chip[aria-pressed="true"]{background:#fffffc;color:#1b2743;border-color:#000}
+.tm-chip:disabled{opacity:0.4;cursor:default}
+.tm-note{margin-top:12px;font-size:12px;line-height:1.45;text-align:center;color:var(--tm-ink-3)}
+/* Semáforo y reloj */
+.tm-stage{--c:rgba(255,255,255,0.18);--cg:rgba(0,0,0,0);--tx:rgba(255,255,255,0.8);display:flex;align-items:center;gap:16px;margin-bottom:12px;padding:16px;border:3px solid var(--c);border-radius:20px;background:linear-gradient(135deg,#182440,#101828);box-shadow:0 0 22px var(--cg),0 5px 10px rgba(0,0,0,0.45);transition:border-color .2s,box-shadow .2s}
+.tm-stage[data-phase="prep"],.tm-stage[data-phase="done"]{--c:#ff5a5a;--cg:rgba(255,90,90,0.45);--tx:#ff9b9b}
+.tm-stage[data-phase="go"]{--c:#43d17a;--cg:rgba(67,209,122,0.45);--tx:#6ee79a}
+.tm-stage[data-phase="warn"]{--c:#f2c200;--cg:rgba(242,194,0,0.45);--tx:#ffd84a}
+.tm-light{flex:none;display:flex;flex-direction:column;gap:12px;padding:14px 12px;border:2px solid rgba(255,255,255,0.18);border-radius:22px;background:linear-gradient(180deg,#232b3f,#12192a);box-shadow:inset 0 1px 0 rgba(255,255,255,0.25),inset 0 -3px 6px rgba(0,0,0,0.35),0 4px 10px rgba(0,0,0,0.5)}
+.tm-lamp{display:block;width:clamp(40px,12.5vw,58px);aspect-ratio:1;border-radius:50%;box-shadow:inset 0 2px 4px rgba(0,0,0,0.6);transition:background .15s,box-shadow .15s}
+.tm-r{background:radial-gradient(circle at 35% 30%,#4d1c1c,#2c0f0f)}
+.tm-y{background:radial-gradient(circle at 35% 30%,#4b4012,#2a2409)}
+.tm-g{background:radial-gradient(circle at 35% 30%,#17432a,#0b2616)}
+.tm-stage[data-phase="prep"] .tm-r,.tm-stage[data-phase="done"] .tm-r{background:radial-gradient(circle at 35% 30%,#ffb1a8,#ff4343 55%,#b01818);box-shadow:0 0 26px 8px rgba(255,67,67,0.55),inset 0 2px 4px rgba(255,255,255,0.35)}
+.tm-stage[data-phase="warn"] .tm-y{background:radial-gradient(circle at 35% 30%,#fff2a0,#f2c200 55%,#a37f00);box-shadow:0 0 26px 8px rgba(242,194,0,0.55),inset 0 2px 4px rgba(255,255,255,0.35)}
+.tm-stage[data-phase="go"] .tm-g{background:radial-gradient(circle at 35% 30%,#b6ffd0,#2fd16f 55%,#0f8a45);box-shadow:0 0 26px 8px rgba(47,209,111,0.55),inset 0 2px 4px rgba(255,255,255,0.35)}
+.tm-read{flex:1;min-width:0;text-align:center;container-type:inline-size}
+.tm-phase{font-size:15px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--tx)}
+.tm-clock{margin:2px 0 4px;font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,19vw,100px);font-size:clamp(44px,33cqw,108px);font-variant-numeric:tabular-nums;letter-spacing:0.03em;line-height:0.95;color:#fff}
+.tm-hint{min-height:36px;font-size:13px;line-height:1.4;color:var(--tm-ink-2)}
+/* Botones */
+.tm-actions{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.tm-go{display:block;width:100%;min-height:58px;border:1px solid rgba(255,255,255,0.14);border-radius:16px;background-color:var(--tm-navy);background-image:var(--tm-g);color:#fff;font:800 18px 'DM Sans',sans-serif;text-shadow:0 1px 2px rgba(0,0,0,0.38);cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,0.34),inset 0 -3px 5px rgba(0,0,0,0.17),0 3px 8px rgba(0,0,0,0.4)}
+.tm-go:active{transform:translateY(1px)}
+.tm-stop{display:block;width:100%;min-height:50px;border:1.5px solid var(--tm-down);border-radius:14px;background:transparent;color:var(--tm-down);font:700 15px 'DM Sans',sans-serif;cursor:pointer}
+.tm-alt{display:block;width:100%;min-height:44px;border:1.5px solid var(--tm-line);border-radius:14px;background:transparent;color:var(--tm-ink-2);font:600 14px 'DM Sans',sans-serif;cursor:pointer}
+.tm-go:focus-visible,.tm-stop:focus-visible,.tm-alt:focus-visible,.tm-chip:focus-visible,.tm-step button:focus-visible,.tm-snd:focus-visible,.tm-play:focus-visible{outline:3px solid var(--tm-amber);outline-offset:2px}
+/* Sonido */
+.tm-snd{display:flex;align-items:center;gap:10px;width:100%;margin-bottom:12px;padding:12px 14px;border:0.5px solid var(--tm-line);border-radius:14px;background:var(--tm-fill);color:var(--tm-ink);font:600 14px 'DM Sans',sans-serif;text-align:left;cursor:pointer}
+.tm-snd svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tm-snd .tm-sw{margin-left:auto;position:relative;width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,0.18);transition:background .2s}
+.tm-snd .tm-sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
+.tm-snd[aria-checked="true"] .tm-sw{background:var(--tm-amber)}
+.tm-snd[aria-checked="true"] .tm-sw::after{transform:translateX(18px)}
+/* Las señales */
+.tm-sig{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid rgba(255,255,255,0.09)}
+.tm-sig:last-of-type{border-bottom:none}
+.tm-dots{display:flex;align-items:center;justify-content:center;gap:4px;width:56px}
+.tm-dots i{display:block;width:10px;height:10px;border-radius:50%;background:var(--tm-amber)}
+.tm-sig b{display:block;font-size:14px;color:#fff}
+.tm-sig span{display:block;margin-top:2px;font-size:12px;line-height:1.4;color:var(--tm-ink-3)}
+.tm-play{padding:8px 12px;border:1.5px solid var(--tm-line);border-radius:12px;background:var(--tm-fill);color:#fff;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
+.tm-play:disabled{opacity:0.4;cursor:default}
+.tm-lights{margin-top:6px;font-size:12px;line-height:1.5;color:var(--tm-ink-3)}
+.tm-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+
+<div class="tm" id="tm-app">
+
+  <!-- Tiempo de tiro -->
+  <section class="tm-card" aria-labelledby="tm-cfg-t">
+    <h2 class="tm-hd" id="tm-cfg-t">Tiempo de tiro</h2>
+    <div class="tm-step">
+      <button type="button" id="tm-dn" aria-label="10 segundos menos">−</button>
+      <div class="tm-secs">
+        <input id="tm-secs" type="number" inputmode="numeric" min="5" max="999" step="1" value="180" aria-label="Segundos de tiro">
+        <span class="tm-unit">segundos</span>
+      </div>
+      <button type="button" id="tm-up" aria-label="10 segundos más">+</button>
+    </div>
+    <div class="tm-fmt" id="tm-fmt"></div>
+    <div class="tm-chips" id="tm-chips">
+      <button type="button" class="tm-chip" data-v="30">30</button><button type="button" class="tm-chip" data-v="40">40</button><button type="button" class="tm-chip" data-v="60">60</button><button type="button" class="tm-chip" data-v="90">90</button><button type="button" class="tm-chip" data-v="120">120</button><button type="button" class="tm-chip" data-v="180">180</button><button type="button" class="tm-chip" data-v="240">240</button>
+    </div>
+    <div class="tm-note" id="tm-note"></div>
+  </section>
+
+  <!-- Semáforo y reloj -->
+  <section class="tm-stage" id="tm-stage" data-phase="idle" aria-label="Semáforo y reloj">
+    <div class="tm-light" id="tm-light" role="img" aria-label="Semáforo apagado">
+      <i class="tm-lamp tm-r"></i><i class="tm-lamp tm-y"></i><i class="tm-lamp tm-g"></i>
+    </div>
+    <div class="tm-read">
+      <div class="tm-phase" id="tm-phase">Listo</div>
+      <div class="tm-clock" id="tm-clock" aria-hidden="true">3:00</div>
+      <div class="tm-hint" id="tm-hint">Elige el tiempo y pulsa Iniciar.</div>
+    </div>
+  </section>
+  <div class="tm-sr" id="tm-sr" aria-live="polite"></div>
+
+  <div class="tm-actions">
+    <button type="button" class="tm-go" id="tm-go">Iniciar</button>
+    <button type="button" class="tm-stop" id="tm-stop" hidden>Detener</button>
+    <button type="button" class="tm-alt" id="tm-change" hidden>Cambiar el tiempo</button>
+  </div>
+
+  <button type="button" class="tm-snd" id="tm-snd" role="switch" aria-checked="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path id="tm-snd-on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path id="tm-snd-off" d="M16 9.5l5 5M21 9.5l-5 5" style="display:none"/></svg>
+    <span id="tm-snd-t">Sonido activado</span><span class="tm-sw" aria-hidden="true"></span>
+  </button>
+
+  <!-- Las señales -->
+  <section class="tm-card" aria-labelledby="tm-sig-t">
+    <h2 class="tm-hd" id="tm-sig-t">Las señales</h2>
+    <div class="tm-sig"><div class="tm-dots" aria-hidden="true"><i></i><i></i></div><div><b>2 pitidos · Preparación</b><span>Avanzas a la línea de tiro. Tienes 10 segundos para colocarte; no saques ni montes flechas.</span></div><button type="button" class="tm-play" data-n="2" aria-label="Escuchar 2 pitidos">Escuchar</button></div>
+    <div class="tm-sig"><div class="tm-dots" aria-hidden="true"><i></i></div><div><b>1 pitido · Inicio de tiro</b><span>Empieza tu tiempo con la luz verde. Ya puedes montar la primera flecha.</span></div><button type="button" class="tm-play" data-n="1" aria-label="Escuchar 1 pitido">Escuchar</button></div>
+    <div class="tm-sig"><div class="tm-dots" aria-hidden="true"><i></i><i></i><i></i></div><div><b>3 pitidos · Fin de tiro</b><span>Se acabó el tiempo y la luz es roja. Es seguro cruzar la línea para anotar y recoger flechas.</span></div><button type="button" class="tm-play" data-n="3" aria-label="Escuchar 3 pitidos">Escuchar</button></div>
+    <div class="tm-lights" id="tm-lights"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+const PREP=10, BEEP=0.35, GAP=0.25, MINS=5, MAXS=999;     // preparación fija de 10 s; cada pitido dura 0.35 s con 0.25 s entre pitidos
+const $=function(id){ return document.getElementById(id); };
+let secs=180, snd=true, run=null, starting=false, previewing=false, wl=null, AC=null, NOISE=null;
+
+try{ const v=parseInt(localStorage.getItem('tm-secs'),10); if(v>=MINS && v<=MAXS) secs=v; snd=localStorage.getItem('tm-snd')!=='0'; }catch(e){}
+function save(){ try{ localStorage.setItem('tm-secs',String(secs)); localStorage.setItem('tm-snd',snd?'1':'0'); }catch(e){} }
+
+// El aviso amarillo salta 30 s antes del final; en tiempos cortos, a la mitad (para que siempre haya luz verde al empezar).
+function warnOf(s){ return Math.min(30,Math.floor(s/2)); }
+function beepsLen(n){ return n*BEEP+(n-1)*GAP; }
+function fmt(s){ s=Math.max(0,Math.ceil(s-1e-6)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function clamp(v){ return Math.max(MINS,Math.min(MAXS,v)); }
+
+// ── Línea de tiempo (en segundos desde que se pulsa Iniciar) ───────────────
+//  0 .............. 2 pitidos ........ p0 (0.95) ......... s = p0+10 ......... e = s+tus segundos
+//                   rojo, cuenta 10→0                      1 pitido, verde     3 pitidos, rojo
+function timeline(total){
+  const p0=beepsLen(2), s=p0+PREP; return {p0:p0, s:s, e:s+total, warn:warnOf(total)};
+}
+function phaseAt(t,R){
+  if(t<R.s) return {ph:'prep', left:R.s-Math.max(t,R.p0)};
+  if(t<R.e){ const rem=R.e-t; return {ph:(rem<=R.warn?'warn':'go'), left:rem}; }
+  return {ph:'done', left:0};
+}
+
+// ── Sonido: silbato sintetizado (Web Audio) ────────────────────────────────
+// En iPhone el interruptor de silencio apaga el audio del navegador; 'playback' lo trata como reproducción de medios (Safari 16.4 o más reciente).
+function playbackMode(){ try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){} }
+function ctx(){
+  if(AC) return AC;
+  const C=window.AudioContext||window.webkitAudioContext; if(!C) return null;
+  try{ AC=new C(); }catch(e){ AC=null; }
+  return AC;
+}
+function noiseBuf(c){
+  if(NOISE) return NOISE;
+  const n=Math.floor(c.sampleRate*0.5), b=c.createBuffer(1,n,c.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
+  NOISE=b; return b;
+}
+function whistle(c,dest,t,store){
+  const end=t+BEEP, g=c.createGain(), o=c.createOscillator(), o2=c.createOscillator(), lfo=c.createOscillator(), lg=c.createGain(), g2=c.createGain();
+  o.type='sine'; o.frequency.setValueAtTime(2850,t);
+  o2.type='sine'; o2.frequency.setValueAtTime(5700,t); g2.gain.setValueAtTime(0.18,t);
+  lfo.frequency.setValueAtTime(34,t); lg.gain.setValueAtTime(55,t); lfo.connect(lg); lg.connect(o.frequency);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.85,t+0.02); g.gain.setValueAtTime(0.85,end-0.05); g.gain.exponentialRampToValueAtTime(0.0001,end);
+  o.connect(g); o2.connect(g2); g2.connect(g);
+  const ns=c.createBufferSource(), bp=c.createBiquadFilter(), ng=c.createGain();       // un soplido de aire, como un silbato de verdad
+  ns.buffer=noiseBuf(c); bp.type='bandpass'; bp.frequency.setValueAtTime(3000,t); bp.Q.setValueAtTime(1.2,t); ng.gain.setValueAtTime(0.1,t);
+  ns.connect(bp); bp.connect(ng); ng.connect(g);
+  g.connect(dest);
+  [o,o2,lfo,ns].forEach(function(n){ n.start(t); n.stop(end+0.02); store.push(n); });
+}
+function signal(c,dest,t,n,store){ for(let i=0;i<n;i++) whistle(c,dest,t+i*(BEEP+GAP),store); }
+function killAudio(r){
+  try{ r.master.gain.cancelScheduledValues(0); r.master.gain.value=0; }catch(e){}
+  r.nodes.forEach(function(n){ try{ n.stop(); }catch(e){} try{ n.disconnect(); }catch(e){} });
+  try{ r.master.disconnect(); }catch(e){}
+}
+function preview(n){
+  playbackMode();
+  const c=ctx(); if(!c||run||previewing) return;
+  previewing=true; syncUi();
+  try{ c.resume(); }catch(e){}
+  const m=c.createGain(); m.gain.value=1; m.connect(c.destination); const store=[];
+  signal(c,m,c.currentTime+0.05,n,store);
+  setTimeout(function(){ previewing=false; try{ m.disconnect(); }catch(e){} syncUi(); }, Math.ceil((beepsLen(n)+0.2)*1000));
+}
+
+// ── Pantalla encendida mientras corre ──────────────────────────────────────
+async function lock(){ try{ if(navigator.wakeLock) wl=await navigator.wakeLock.request('screen'); }catch(e){ wl=null; } }
+function unlock(){ try{ if(wl) wl.release(); }catch(e){} wl=null; }
+
+// ── Pantalla ───────────────────────────────────────────────────────────────
+const TXT={
+  idle:['Listo','Elige el tiempo y pulsa Iniciar.','Semáforo apagado'],
+  prep:['Preparación','Colócate en la línea de tiro. No saques ni montes flechas.','Semáforo en rojo: aún no'],
+  go:['¡Tira!','Tu tiempo está corriendo.','Semáforo en verde: puedes tirar'],
+  warn:['','Termina tu tanda.','Semáforo en amarillo: últimos segundos'],
+  done:['Fin de tiro','Ve a anotar y a recoger flechas.','Semáforo en rojo: fin de tiro']
+};
+const SR={prep:'Preparación. Dos pitidos. Tienes 10 segundos para colocarte.',go:'Inicio de tiro. Un pitido.',warn:'Últimos segundos.',done:'Fin de tiro. Tres pitidos.'};
+let shown={ph:null,clock:null};
+function paint(ph,left,warn){
+  const st=$('tm-stage'), clock=fmt(ph==='idle'?secs:left);
+  if(shown.clock!==clock){ $('tm-clock').textContent=clock; shown.clock=clock; }
+  if(shown.ph!==ph){
+    const t=TXT[ph]; st.setAttribute('data-phase',ph);
+    $('tm-phase').textContent = ph==='warn' ? 'Últimos '+warn+' s' : t[0];
+    $('tm-hint').textContent=t[1]; $('tm-light').setAttribute('aria-label',t[2]);
+    if(SR[ph]) $('tm-sr').textContent=SR[ph];
+    shown.ph=ph;
+  }
+}
+function syncUi(){
+  const running=!!run, dis=running||starting;
+  $('tm-go').hidden=running; $('tm-stop').hidden=!running;
+  $('tm-go').textContent = (shown.ph==='done') ? 'Otra tanda' : 'Iniciar';
+  $('tm-change').hidden = !(shown.ph==='done' && !running);
+  $('tm-secs').disabled=dis; $('tm-dn').disabled=dis||secs<=MINS; $('tm-up').disabled=dis||secs>=MAXS;
+  document.querySelectorAll('.tm-chip').forEach(function(b){ b.disabled=dis; });
+  document.querySelectorAll('.tm-play').forEach(function(b){ b.disabled=dis||previewing; });
+}
+function drawConfig(){
+  const total=beepsLen(2)+PREP+secs, w=warnOf(secs);
+  $('tm-secs').value=secs;
+  $('tm-fmt').textContent='= '+fmt(secs)+' de tiro';
+  $('tm-note').textContent='Con los 2 pitidos y los 10 s de preparación, la tanda dura '+fmt(total)+'. El aviso amarillo salta '+w+' s antes del final.';
+  $('tm-lights').textContent='Semáforo: rojo = aún no (y al final), verde = tira, amarillo = últimos '+w+' s.';
+  document.querySelectorAll('.tm-chip').forEach(function(b){ b.setAttribute('aria-pressed', String(parseInt(b.getAttribute('data-v'),10)===secs)); });
+  if(!run && (shown.ph===null||shown.ph==='idle')) paint('idle',0);
+}
+function setSecs(v){ secs=clamp(v); save(); drawConfig(); syncUi(); }
+
+function tick(){
+  if(!run) return;
+  const t=(performance.now()-run.t0)/1000, st=phaseAt(t,run.R);
+  paint(st.ph,st.left,run.R.warn);
+  if(st.ph==='done') finish();
+}
+function finish(){
+  if(!run) return;
+  clearInterval(run.timer); unlock(); run=null; syncUi(); drawConfig();
+}
+function stop(){
+  if(!run) return;
+  clearInterval(run.timer); killAudio(run); unlock(); run=null;
+  shown={ph:null,clock:null}; paint('idle',0); $('tm-sr').textContent='Detenido.'; syncUi(); drawConfig();
+}
+async function start(){
+  if(run||starting) return;
+  starting=true; syncUi();
+  playbackMode();
+  const c=ctx();
+  if(c){ try{ await c.resume(); }catch(e){} }
+  const lead=0.08, R=timeline(secs);
+  run={R:R, t0:performance.now()+lead*1000, nodes:[], master:null, timer:null};
+  if(c){
+    try{
+      run.master=c.createGain(); run.master.gain.value=snd?1:0; run.master.connect(c.destination);
+      const at=c.currentTime+lead;                              // todo el audio se programa de una vez: no depende de que el navegador no frene los temporizadores
+      signal(c,run.master,at,2,run.nodes);
+      signal(c,run.master,at+R.s,1,run.nodes);
+      signal(c,run.master,at+R.e,3,run.nodes);
+    }catch(e){ console.error(e); }
+  }
+  starting=false; lock(); shown={ph:null,clock:null};
+  syncUi(); drawConfig(); tick(); run && (run.timer=setInterval(tick,50));
+}
+
+// ── Controles ──────────────────────────────────────────────────────────────
+$('tm-go').addEventListener('click',start);
+$('tm-stop').addEventListener('click',stop);
+$('tm-change').addEventListener('click',function(){ shown={ph:null,clock:null}; paint('idle',0); syncUi(); drawConfig(); $('tm-secs').focus(); });
+$('tm-dn').addEventListener('click',function(){ setSecs(secs-10); });
+$('tm-up').addEventListener('click',function(){ setSecs(secs+10); });
+$('tm-chips').addEventListener('click',function(e){ const b=e.target.closest('.tm-chip'); if(b && !b.disabled) setSecs(parseInt(b.getAttribute('data-v'),10)); });
+$('tm-secs').addEventListener('input',function(){        // mientras se escribe, solo se aplica un valor válido (no se corrige a medias)
+  const v=parseInt(this.value,10);
+  if(v>=MINS && v<=MAXS){ secs=v; save(); const keep=this.value; drawConfig(); this.value=keep; }
+});
+$('tm-secs').addEventListener('change',function(){ const v=parseInt(this.value,10); setSecs(isNaN(v)?secs:v); });
+$('tm-snd').addEventListener('click',function(){
+  snd=!snd; save(); drawSound();
+  if(run && run.master){ try{ run.master.gain.value=snd?1:0; }catch(e){} }
+});
+document.querySelectorAll('.tm-play').forEach(function(b){ b.addEventListener('click',function(){ preview(parseInt(b.getAttribute('data-n'),10)); }); });
+function drawSound(){
+  const b=$('tm-snd'); b.setAttribute('aria-checked',String(snd)); $('tm-snd-t').textContent=snd?'Sonido activado':'Sonido desactivado';
+  $('tm-snd-on').style.display=snd?'':'none'; $('tm-snd-off').style.display=snd?'none':'';
+}
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible' && run){ tick(); lock(); } });
+
+drawSound(); drawConfig(); syncUi();
+})();
+</script>
+</div>
