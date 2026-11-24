@@ -5648,6 +5648,17 @@ html.bt-light .main-content{z-index:auto}
 .bt-lib-opt.act .ck{opacity:1}
 .bt-lib-opt:focus-visible{outline:2px solid var(--bt-amber);outline-offset:2px}
 
+/* ── Aviso de sesión a medias ── */
+.bt-dr-sum{margin:0 0 16px;font-size:13px;line-height:1.55;color:var(--bt-ink-2)}
+.bt-dr-sum b{color:var(--bt-ink)}
+.bt-dr-sum .m{display:block;margin-top:6px;font-size:12px;color:var(--bt-ink-3)}
+.bt-dr-sum .w{display:block;margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(245,192,106,0.16);border:0.5px solid rgba(245,192,106,0.55);font-size:12px;color:var(--bt-ink)}
+.bt-dr-btns{display:grid;gap:8px}
+.bt-dr-go{min-height:50px;border:1px solid rgba(255,255,255,0.14);border-radius:14px;background-color:var(--bt-navy);background-image:var(--bt-g-field);color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,0.38);box-shadow:inset 0 1px 0 rgba(255,255,255,0.34),inset 0 -3px 5px rgba(0,0,0,0.17),0 3px 8px rgba(0,0,0,0.40)}
+.bt-dr-go:active{transform:translateY(1px)}
+.bt-dr-del{min-height:44px;border:1.5px solid var(--bt-down);border-radius:14px;background:transparent;color:var(--bt-down);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+.bt-dr-go:focus-visible,.bt-dr-del:focus-visible{outline:2px solid var(--bt-amber);outline-offset:2px}
+
 /* ── Fondo BLANCO en celular ──────────────────────────────────────────────
    El script de esta pestaña pone la clase .bt-light en <html> mientras "Puntuaciones" está visible. Solo aplica en celular
    (≤768 px, el mismo corte que usa el menú). En escritorio sigue oscuro. Para llevarlo también a escritorio, quita el @media.
@@ -6085,6 +6096,18 @@ html.bt-light .main-content{z-index:auto}
   </div>
 </div>
 
+<!-- Aviso al volver: ¿continuar la sesión que se quedó a medias? (no se cierra tocando afuera: hay que elegir) -->
+<div id="bt-dr" class="bt-pop" aria-hidden="true">
+  <div class="bt-pop-panel" role="alertdialog" aria-modal="true" aria-labelledby="bt-dr-t" aria-describedby="bt-dr-b">
+    <div class="bt-pop-t" id="bt-dr-t" style="margin-bottom:10px">¿Continuar donde lo dejaste?</div>
+    <div class="bt-dr-sum" id="bt-dr-b"></div>
+    <div class="bt-dr-btns">
+      <button type="button" class="bt-dr-go" id="bt-dr-go">Continuar</button>
+      <button type="button" class="bt-dr-del" id="bt-dr-del">Descartar esta sesión</button>
+    </div>
+  </div>
+</div>
+
 <!-- Récords: gráfica del promedio por serie de cada conteo -->
 <div id="bt-rg" class="bt-det" aria-hidden="true">
   <div class="bt-det-panel bt-rg-panel" id="bt-rg-panel" role="dialog" aria-modal="true" aria-labelledby="bt-rg-h">
@@ -6341,6 +6364,7 @@ function btResetState(){
   const nt=document.getElementById('bt-notes'); if(nt) nt.value='';
   const sn=document.getElementById('bt-setup-note'); if(sn) sn.value='';
   if(typeof btWarnClear==='function') btWarnClear();
+  btDraftClear();               // la sesión terminó (guardada, cancelada o descartada): ya no hay nada que recuperar
   document.querySelectorAll('#bt-s-inicio .bt-disc-card').forEach(c=>c.classList.remove('sel'));
   const pb = document.getElementById('bt-plan-banner');
   if(pb) pb.style.display='none';
@@ -6419,6 +6443,7 @@ function btRenderEnd(){
   btRenderFace();
   btUpdSum();btUpdTot();
   btRenderStrip();
+  btDraftSave();                // cada flecha, cada cambio de ronda: el avance queda guardado en este dispositivo
 }
 
 window.btSetSlt=function(i){btState.slot=i;btRenderEnd();}
@@ -6517,6 +6542,7 @@ function btShowResumen(){
   if(inc.length){ note.className='bt-warn'; note.innerHTML='<b>'+(inc.length===1?'1 end incompleto':inc.length+' ends incompletos')+'</b> (End '+inc.join(', ')+'): las flechas sin valor cuentan 0. Toca el end para completarlo.'; }
   else { note.className='bt-warn info'; note.textContent = ed ? 'Toca un end para corregirlo.' : 'Toca un end si necesitas corregirlo antes de guardar.'; }
   btScrollTo('bt-s-resumen');
+  btDraftSave();
 }
 window.btShowResumen=btShowResumen;
 
@@ -7467,7 +7493,7 @@ function btClosePop(){
 (function(){
   const panel=document.getElementById('tab-bitacora'); if(!panel) return;
   const root=document.documentElement;
-  const sync=()=>{ root.classList.toggle('bt-light', panel.classList.contains('active')); if(panel.classList.contains('active')) requestAnimationFrame(btFitBoxText); };
+  const sync=()=>{ root.classList.toggle('bt-light', panel.classList.contains('active')); if(panel.classList.contains('active')){ requestAnimationFrame(btFitBoxText); requestAnimationFrame(btDraftAsk); } };
   sync();
   new MutationObserver(sync).observe(panel,{attributes:true,attributeFilter:['class']});
 })();
@@ -7482,6 +7508,7 @@ function btEditable(s){
 window.btEditSaved=function(id){
   const s=btSessions.find(x=>String(x.id)===String(id)); if(!s || !btEditable(s) || btUsingDemo) return;
   if(btState.active && !confirm('Tienes una sesión en captura. Si editas esta, se perderá ese progreso. ¿Continuar?')) return;
+  if(btState.active) btDraftClear();
   const m=BT_MODES[s.mode], rondas=s.ends.length;
   const ends=s.ends.map(e=>{ const a=[]; (Array.isArray(e)?e:[]).forEach((v,k)=>{ if(v!=null && v!=='') a[k]=String(v); }); return a; });
   const impacts=(Array.isArray(s.impacts)?s.impacts:[]).filter(p=>p && isFinite(p.x) && isFinite(p.y)).map(p=>({e:p.e,i:p.i,x:p.x,y:p.y}));
@@ -7748,6 +7775,92 @@ window.btStartLibre=function(){
   btState={active:true,mode:mode,g:m.g,rondas:m.rondas,apR:m.apR,vals:m.vals,sp:m.sp,ends:Array.from({length:m.rondas},()=>[]),cur:0,slot:0,max:m.max,face:btSessionFace(mode),impacts:[],libre:true};
   btShowS('bt-s-sesion'); btRenderEnd();
 };
+
+// ══════════ Borrador de la sesión en curso ══════════
+// El navegador del celular puede descartar y recargar la pestaña (al cambiar de app o por falta de memoria) y se perdía lo capturado.
+// Mientras hay una sesión en captura (con al menos una flecha) se guarda un borrador en ESTE dispositivo, aparte por usuario.
+// Al volver se pregunta si continuar o descartar. Se borra al guardar, cancelar o descartar. No se guarda al editar una sesión ya guardada.
+const BT_DRAFT_KEY=function(uid){ return 'bt-draft-v1:'+uid; };
+let btDraftAsked=false;
+function btDraftHasData(){ return Array.isArray(btState.ends) && btState.ends.some(function(e){ return Array.isArray(e) && e.some(function(v){ return v!==undefined && v!==null && v!==''; }); }); }
+function btDraftSave(){
+  try{
+    const uid=window._supabaseUserId; if(!uid || !btState || !btState.active || btState.editId) return;
+    if(!btDraftHasData()){ localStorage.removeItem(BT_DRAFT_KEY(uid)); return; }
+    const st=btState, res=document.getElementById('bt-s-resumen');
+    const d={ v:1, uid:uid, savedAt:new Date().toISOString(), screen:(res && res.style.display==='block')?'resumen':'sesion',
+      st:{ mode:st.mode, g:st.g, rondas:st.rondas, apR:st.apR, vals:st.vals, sp:st.sp, max:st.max, cur:st.cur, slot:st.slot, face:st.face||null,
+           ends:st.ends.map(function(e){ return Array.from({length:st.apR},function(_,k){ return e[k]===undefined?null:e[k]; }); }),
+           impacts:st.impacts||[], libre:!!st.libre, ext:st.ext||null, fromResumen:!!st.fromResumen },
+      notes:(document.getElementById('bt-notes')||{}).value||'', setupNote:(document.getElementById('bt-setup-note')||{}).value||'',
+      pend:{ league:window._cpPendingLeague||null, tournament:window._cpPendingTournament||null, plan:window._rtPendingPlanActivity||null } };
+    localStorage.setItem(BT_DRAFT_KEY(uid),JSON.stringify(d));
+  }catch(e){}
+}
+function btDraftClear(){ try{ const uid=window._supabaseUserId; if(uid) localStorage.removeItem(BT_DRAFT_KEY(uid)); }catch(e){} }
+function btDraftRead(){
+  const uid=window._supabaseUserId; if(!uid) return null;
+  let d=null;
+  try{ const raw=localStorage.getItem(BT_DRAFT_KEY(uid)); if(!raw) return null; d=JSON.parse(raw); }catch(e){ d=null; }
+  const ok = d && d.v===1 && d.uid===uid && d.st && typeof d.st.mode==='string' && Array.isArray(d.st.ends) && d.st.ends.length>0 && (BT_MODES[d.st.mode] || btRegLibre(d.st.mode));
+  if(!ok){ btDraftClear(); return null; }
+  return d;
+}
+function btDraftAge(iso){
+  const m=Math.round((Date.now()-new Date(iso).getTime())/60000);
+  if(!isFinite(m) || m<1) return 'hace unos segundos';
+  if(m<60) return 'hace '+m+' min';
+  const h=Math.round(m/60); if(h<48) return 'hace '+h+' h';
+  return 'hace '+Math.round(h/24)+' días';
+}
+function btDraftAsk(){
+  if(btDraftAsked) return;
+  const uid=window._supabaseUserId, panel=document.getElementById('tab-bitacora'), box=document.getElementById('bt-dr');
+  if(!uid || !box || !panel || !panel.classList.contains('active') || (btState && btState.active)) return;
+  const d=btDraftRead(); if(!d) return;
+  btDraftAsked=true;
+  const st=d.st, m=BT_MODES[st.mode];
+  let n=0, pts=0; st.ends.forEach(function(e){ (e||[]).forEach(function(v){ if(v!==null && v!==undefined && v!==''){ n++; pts+=btAv(v); } }); });
+  const cat = st.libre ? ' · Entrenamiento libre' : (st.ext ? ' · Torneo externo: '+st.ext.name : '');
+  const where = d.screen==='resumen' ? 'Estabas en el resumen, a punto de guardar.' : 'Ibas en el end '+(Math.min(st.cur,st.rondas-1)+1)+' de '+st.rondas+'.';
+  const pend=[]; if(d.pend && d.pend.league) pend.push('a una liga'); if(d.pend && d.pend.tournament) pend.push('a un torneo'); if(d.pend && d.pend.plan && d.pend.plan.type==='conteo') pend.push('a tu plan semanal');
+  document.getElementById('bt-dr-b').innerHTML = '<b>'+btEsc((BT_GLABELS[st.g]||'')+' · '+m.lbl)+'</b>'+btEsc(cat)+'<br>'+btEsc(where)+' '+n+(n===1?' flecha':' flechas')+' · '+pts+' puntos.'+
+    '<span class="m">Guardada '+btDraftAge(d.savedAt)+'.</span>'+(pend.length?'<span class="w">Esta sesión se enviará '+pend.join(' y ')+' al guardarla, como estaba.</span>':'');
+  box.classList.add('open'); box.setAttribute('aria-hidden','false');
+  document.getElementById('bt-dr-go').focus();
+}
+function btDraftClose(){ const box=document.getElementById('bt-dr'); if(box){ box.classList.remove('open'); box.setAttribute('aria-hidden','true'); } }
+function btDraftRestore(){
+  const d=btDraftRead(); btDraftClose(); if(!d) return;
+  const s=d.st;
+  const ends=s.ends.map(function(e){ const a=[]; (Array.isArray(e)?e:[]).forEach(function(v,k){ if(v!==null && v!==undefined && v!=='') a[k]=v; }); return a; });
+  btCurMode=s.mode;
+  btState={ active:true, mode:s.mode, g:s.g, rondas:s.rondas, apR:s.apR, vals:s.vals, sp:s.sp, max:s.max, ends:ends, cur:Math.min(Math.max(0,s.cur|0),s.rondas-1), slot:Math.max(0,s.slot|0),
+            face:s.face||null, impacts:Array.isArray(s.impacts)?s.impacts:[], libre:!!s.libre, ext:s.ext||undefined, fromResumen:!!s.fromResumen };
+  if(!btState.ext) delete btState.ext;
+  document.getElementById('bt-notes').value=d.notes||''; const sn=document.getElementById('bt-setup-note'); if(sn) sn.value=d.setupNote||'';
+  if(d.pend){                       // la sesión conserva a dónde se iba a enviar (liga, torneo o plan), si esos datos se perdieron al recargar
+    if(d.pend.league && !window._cpPendingLeague) window._cpPendingLeague=d.pend.league;
+    if(d.pend.tournament && !window._cpPendingTournament) window._cpPendingTournament=d.pend.tournament;
+    if(d.pend.plan && !window._rtPendingPlanActivity) window._rtPendingPlanActivity=d.pend.plan;
+  }
+  document.getElementById('bt-main-nueva').style.display='block'; document.getElementById('bt-main-historial').style.display='none';
+  document.querySelectorAll('#bt-tab-bar button').forEach(function(bt,i){ bt.classList.toggle('act',i===1); });
+  window.scrollTo(0,0);
+  if(d.screen==='resumen') btShowResumen(); else { btShowS('bt-s-sesion'); btRenderEnd(); }
+}
+(function(){
+  const go=document.getElementById('bt-dr-go'), del=document.getElementById('bt-dr-del');
+  if(go) go.addEventListener('click',btDraftRestore);
+  if(del) del.addEventListener('click',function(){
+    if(!confirm('¿Descartar esta sesión? Se perderá lo que llevabas.')) return;
+    btDraftClear(); btDraftClose();
+  });
+  ['bt-notes','bt-setup-note'].forEach(function(id){ const el=document.getElementById(id); if(el) el.addEventListener('input',btDraftSave); });
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') btDraftSave(); });
+  window.addEventListener('pagehide',btDraftSave);
+  window.addEventListener('supabase-user-ready',btDraftAsk);
+})();
 
 // Progreso: promedio por flecha de cada sesión, una línea por modalidad, sobre eje de tiempo real.
 function btDrawProgress(fs){
@@ -8020,6 +8133,7 @@ if(window._supabaseUserId && window._supabaseToken){
   btLoadSessions();
   btLoadActiveSetup();
   btLoadAdjustments();
+  btDraftAsk();
 } else {
   btSessions=btMakeDemoSessions();
   btUsingDemo=true;
@@ -8028,6 +8142,7 @@ if(window._supabaseUserId && window._supabaseToken){
     btLoadSessions();
     btLoadActiveSetup();
     btLoadAdjustments();
+    btDraftAsk();
   }, {once:true});
 }
 })();
