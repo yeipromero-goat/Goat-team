@@ -8277,9 +8277,86 @@ if(window._supabaseUserId && window._supabaseToken){
 .cp-win-overlay{position:fixed;inset:0;z-index:99999;background:rgba(14,14,14,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
 .cp-win-trophy{font-size:80px;animation:cpWinPop .5s cubic-bezier(.34,1.56,.64,1) forwards}
 .cp-confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;animation:cpConfetti 1.5s ease forwards}
+/* ═══ Banners del lobby (Competencias) ═══
+   Banner ancho con borde de color y filo blanco, panel azul de diana con un dibujo a la derecha y anillos de diana de marca de agua.
+   El color lo da la modalidad: Outdoor rojo, Indoor verde azulado, Field negro con borde dorado, 3D arena. Código y ligas en marino; crear torneo en ámbar. */
+.cp-ban{--bb:linear-gradient(100deg,#182440 0%,#243a68 60%,#35508c 100%);--be:#6f8fd8;--bg:rgba(111,143,216,0.35);position:relative;display:block;box-sizing:border-box;width:100%;margin:0 0 12px;border:3px solid var(--be);border-radius:20px;overflow:hidden;background:var(--bb);color:#fff;text-align:left;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 0 14px var(--bg),0 5px 10px rgba(0,0,0,0.45);-webkit-tap-highlight-color:transparent;transition:filter .15s,transform .1s}
+.cp-ban::before{content:"";position:absolute;inset:0;border-radius:17px;border:2px solid rgba(255,255,255,0.92);pointer-events:none;z-index:4}
+.cp-ban:hover{filter:brightness(1.07)}
+.cp-ban:active{transform:translateY(1px)}
+.cp-ban:focus-visible{outline:3px solid var(--cp-amber);outline-offset:3px}
+.cp-ban-static{cursor:default}
+.cp-ban-static:hover{filter:none}
+.cp-ban-static:active{transform:none}
+.cp-ban-amber{--bb:linear-gradient(100deg,#d98e1f 0%,#f5c06a 60%,#ffe2a6 100%);--be:#ffe6ad;--bg:rgba(245,192,106,0.45);color:#182440}
+.cp-ban-outdoor{--bb:linear-gradient(100deg,#7d2217 0%,#b23a2a 60%,#d5543b 100%);--be:#f0897a;--bg:rgba(240,137,122,0.35)}
+.cp-ban-indoor{--bb:linear-gradient(100deg,#123d44 0%,#236670 60%,#3d8791 100%);--be:#7fd0da;--bg:rgba(127,208,218,0.35)}
+.cp-ban-field{--bb:linear-gradient(100deg,#141414 0%,#2a2a2a 60%,#454545 100%);--be:#e8c800;--bg:rgba(232,200,0,0.3)}
+.cp-ban-3d{--bb:linear-gradient(100deg,#5a4120 0%,#7a5d30 60%,#9a7b45 100%);--be:#e0c49a;--bg:rgba(224,196,154,0.35)}
+.cp-ban-league{--bb:linear-gradient(100deg,#182440 0%,#243a68 60%,#35508c 100%);--be:#f5c06a;--bg:rgba(245,192,106,0.35)}
+.cp-ban-mark{position:absolute;left:-34px;top:50%;width:170px;height:170px;transform:translateY(-50%);fill:none;stroke:#fff;stroke-opacity:0.12;stroke-width:6;pointer-events:none}
+.cp-ban-art{position:absolute;top:0;right:0;bottom:0;width:40%;background:rgba(255,255,255,0.55);clip-path:polygon(32% 0,100% 0,100% 100%,0 100%);z-index:1;pointer-events:none}
+.cp-ban-art::before{content:"";position:absolute;inset:0;background:linear-gradient(165deg,#d4effa 0%,#5ab4d6 100%);clip-path:polygon(38% 0,100% 0,100% 100%,7% 100%)}
+.cp-ban-art svg{position:absolute;left:37%;top:50%;width:62%;height:auto;max-height:92%;transform:translateY(-50%)}
+.cp-ban-split .cp-ban-art{bottom:auto;height:112px}
+.cp-ban-body{position:relative;z-index:2;padding:16px 42% 16px 18px}
+.cp-ban-head{position:relative;z-index:2;padding:16px 42% 12px 18px;min-height:96px}
+.cp-ban-top{margin-bottom:6px;min-height:20px}
+.cp-ban-t{margin-bottom:4px;font-size:19px;font-weight:800;font-style:italic;line-height:1.15;text-shadow:0 2px 0 rgba(0,0,0,0.3);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.cp-ban-s{font-size:12px;line-height:1.4;color:rgba(255,255,255,0.96);text-shadow:0 1px 1px rgba(0,0,0,0.25)}
+.cp-ban-amber .cp-ban-t{text-shadow:0 1px 0 rgba(255,255,255,0.4)}
+.cp-ban-amber .cp-ban-s{color:rgba(24,36,64,0.88)}
+.cp-ban-chip{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.55);font-size:10px;font-weight:700;vertical-align:1px}
+.cp-ban-cta{display:inline-block;margin-top:10px;padding:9px 16px;border-radius:12px;background:#182440;color:#fff;font-size:13px;font-weight:700;box-shadow:0 2px 0 rgba(0,0,0,0.25)}
+.cp-ban-form{position:relative;z-index:5;display:flex;gap:8px;padding:0 16px 8px}
+.cp-ban-in{flex:1;min-width:0;height:48px;box-sizing:border-box;padding:0 14px;border:2px solid rgba(24,36,64,0.35);border-radius:12px;background:#fffffc;color:#182440;font:700 16px 'DM Sans',sans-serif;letter-spacing:0.08em;text-transform:uppercase}
+.cp-ban-in::placeholder{color:rgba(24,36,64,0.62);font-weight:600}
+.cp-ban-in:focus{outline:3px solid var(--cp-amber);outline-offset:1px}
+.cp-ban-go{flex:none;height:48px;padding:0 16px;border:2px solid #fffffc;border-radius:12px;background:var(--cp-amber);color:#182440;font:700 14px 'DM Sans',sans-serif;white-space:nowrap;cursor:pointer}
+.cp-ban-go:active{transform:translateY(1px)}
+.cp-ban-help{position:relative;z-index:5;padding:0 18px 14px;font-size:11px;color:rgba(255,255,255,0.82)}
+.cp-ban-foot{position:relative;z-index:5;padding:0 18px 16px}
+.cp-ban-bar{height:8px;margin:8px 0 10px;border-radius:5px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.25);overflow:hidden}
+.cp-ban-bar>i{display:block;height:100%;border-radius:4px;background:var(--cp-amber)}
+.cp-ban-hint{margin-bottom:6px;font-size:12px;font-weight:700;color:var(--cp-amber)}
+.cp-ban-stats{display:flex;flex-wrap:wrap;gap:2px 18px}
+.cp-ban-n{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:0.04em;line-height:1;color:#fff}
+.cp-ban-l{font-size:11px;color:rgba(255,255,255,0.85)}
+.cp-ban-n.cp-up{color:var(--cp-up)}
 </style>
 
 <div class="cp" id="cp-app">
+
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <!-- Arte de los banners del lobby (viewBox 100×100). Cada símbolo trae su propio resplandor marino con puntos, como un letrero. -->
+  <defs><linearGradient id="cpGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#f5c06a"/><stop offset="1" stop-color="#d98e1f"/></linearGradient></defs>
+  <symbol id="cp-art-trophy" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <path d="M33 33h-9a2 2 0 0 0-2 2v3a11 11 0 0 0 11 11" fill="none" stroke="#e8a93a" stroke-width="4.2" stroke-linecap="round"/><path d="M67 33h9a2 2 0 0 1 2 2v3a11 11 0 0 1-11 11" fill="none" stroke="#e8a93a" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M33 29h34v14a17 17 0 0 1-34 0z" fill="url(#cpGold)" stroke="#8a5a10" stroke-width="1.6"/>
+    <rect x="46" y="59" width="8" height="9" fill="#e8a93a" stroke="#8a5a10" stroke-width="1.2"/><path d="M36 68h28v6H36z" fill="#d98e1f" stroke="#8a5a10" stroke-width="1.2"/><path d="M31 74h38v6H31z" fill="#8a5a10"/>
+    <path d="M40 32v14" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/>
+    <path d="M50 35l2.4 4.8 5.3.8-3.8 3.7.9 5.3-4.8-2.5-4.8 2.5.9-5.3-3.8-3.7 5.3-.8z" fill="#182440"/><path d="M19 19l2.1 2.9 2.9 2.1-2.9 2.1-2.1 2.9-2.1-2.9-2.9-2.1 2.9-2.1z" fill="#fff"/><path d="M82 26l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/><path d="M78 74.5l1.5 2.0 2.0 1.5-2.0 1.5-1.5 2.0-1.5-2.0-2.0-1.5 2.0-1.5z" fill="#fff"/></symbol>
+  <symbol id="cp-art-ticket" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <g transform="rotate(-10 50 50)"><path d="M16 33h68a4 4 0 0 1 4 4v7a6 6 0 0 0 0 12v7a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4v-7a6 6 0 0 0 0-12v-7a4 4 0 0 1 4-4z" fill="url(#cpGold)" stroke="#8a5a10" stroke-width="1.6"/>
+    <path d="M66 36v28" stroke="#8a5a10" stroke-width="1.4" stroke-dasharray="2.5 3"/><rect x="21" y="41" width="36" height="5.5" rx="2.7" fill="#182440"/><rect x="21" y="50" width="26" height="4.5" rx="2.2" fill="#182440" fill-opacity=".6"/><rect x="21" y="58" width="31" height="4.5" rx="2.2" fill="#182440" fill-opacity=".6"/>
+    <path d="M77 41l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z" fill="#182440"/></g><path d="M18 17l2.1 2.9 2.9 2.1-2.9 2.1-2.1 2.9-2.1-2.9-2.9-2.1 2.9-2.1z" fill="#fff"/><path d="M84 22l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/><path d="M80 76.5l1.5 2.0 2.0 1.5-2.0 1.5-1.5 2.0-1.5-2.0-2.0-1.5 2.0-1.5z" fill="#fff"/></symbol>
+  <symbol id="cp-art-outdoor" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <circle cx="46" cy="56" r="29" fill="#5ab4d6" stroke="#182440" stroke-width="1.2"/><circle cx="46" cy="56" r="19.5" fill="#e03030" stroke="#182440" stroke-width="1"/><circle cx="46" cy="56" r="10" fill="#e8c800" stroke="#182440" stroke-width="1"/><circle cx="46" cy="56" r="4" fill="none" stroke="#182440" stroke-width=".8"/>
+    <path d="M47 55L82 18" stroke="#182440" stroke-width="2.6" stroke-linecap="round"/><path d="M82 18l-9 .5m9-.5l-.5 9" stroke="#e03030" stroke-width="3" stroke-linecap="round"/><path d="M76 24l-9 .3m9-.3l-.3 9" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M18 21l2.1 2.9 2.9 2.1-2.9 2.1-2.1 2.9-2.1-2.9-2.9-2.1 2.9-2.1z" fill="#fff"/><path d="M84 58l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="cp-art-indoor" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <g stroke="#182440" stroke-width="1"><circle cx="50" cy="33" r="16" fill="#5ab4d6"/><circle cx="50" cy="33" r="12.8" fill="#e03030"/><circle cx="50" cy="33" r="6.4" fill="#e8c800"/>
+    <circle cx="33" cy="64" r="16" fill="#5ab4d6"/><circle cx="33" cy="64" r="12.8" fill="#e03030"/><circle cx="33" cy="64" r="6.4" fill="#e8c800"/>
+    <circle cx="67" cy="64" r="16" fill="#5ab4d6"/><circle cx="67" cy="64" r="12.8" fill="#e03030"/><circle cx="67" cy="64" r="6.4" fill="#e8c800"/></g><path d="M16 17.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M86 26l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="cp-art-field" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <circle cx="50" cy="52" r="30" fill="#1a1a1a" stroke="#fff" stroke-width="1.4"/><circle cx="50" cy="52" r="22" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1"/><circle cx="50" cy="52" r="14" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1"/><circle cx="50" cy="52" r="8" fill="#e8c800" stroke="#182440" stroke-width="1"/><circle cx="50" cy="52" r="3" fill="none" stroke="#182440" stroke-width=".8"/>
+    <path d="M52 50L82 20" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M82 20l-8 .4m8-.4l-.4 8" stroke="#e8c800" stroke-width="2.8" stroke-linecap="round"/><path d="M18 21l2.1 2.9 2.9 2.1-2.9 2.1-2.1 2.9-2.1-2.9-2.9-2.1 2.9-2.1z" fill="#fff"/><path d="M84 66l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="cp-art-3d" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <g transform="translate(10 12) scale(1.0)"><ellipse cx="46" cy="50" rx="26" ry="16" fill="#b8864e"/><rect x="24" y="34" width="12" height="18" rx="5" fill="#b8864e"/><ellipse cx="22" cy="30" rx="9" ry="7" fill="#b8864e"/><ellipse cx="15" cy="32" rx="5" ry="3.5" fill="#c9956a"/><circle cx="18" cy="27" r="1.8" fill="#222"/><circle cx="18" cy="27" r=".7" fill="#fff"/><path d="M24 22Q20 14 17 8" stroke="#3d2b1a" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M28 20Q32 12 34 7" stroke="#3d2b1a" stroke-width="1.8" fill="none" stroke-linecap="round"/><rect x="30" y="62" width="5" height="12" rx="2.5" fill="#8a6035"/><rect x="42" y="62" width="5" height="12" rx="2.5" fill="#8a6035"/><rect x="55" y="62" width="5" height="12" rx="2.5" fill="#8a6035"/><ellipse cx="46" cy="48" rx="9" ry="7" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="2,1"/><ellipse cx="70" cy="48" rx="4" ry="6" fill="#e8e0d0"/></g><path d="M84 19.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/></symbol>
+  <symbol id="cp-art-podium" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <rect x="14" y="58" width="24" height="26" rx="2" fill="#c9d3dc" stroke="#182440" stroke-width="1.2"/><rect x="38" y="44" width="24" height="40" rx="2" fill="url(#cpGold)" stroke="#182440" stroke-width="1.2"/><rect x="62" y="66" width="24" height="18" rx="2" fill="#c58a54" stroke="#182440" stroke-width="1.2"/>
+    <g font-family="Bebas Neue,sans-serif" font-size="17" text-anchor="middle" fill="#182440"><text x="26" y="77">2</text><text x="50" y="68">1</text><text x="74" y="80">3</text></g>
+    <path d="M50 22l3 6 6.6 1-4.8 4.6 1.2 6.6-6-3.2-6 3.2 1.2-6.6-4.8-4.6 6.6-1z" fill="url(#cpGold)" stroke="#8a5a10" stroke-width="1"/><path d="M19 23.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M84 28l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+</svg>
 
 <!-- TABS PRINCIPALES -->
 <div class="cp-tab-bar" id="cp-main-tabs">
@@ -8291,32 +8368,41 @@ if(window._supabaseUserId && window._supabaseToken){
 <!-- ══ LOBBY ══════════════════════════════════════════════════ -->
 <div id="cp-tab-lobby">
 
-  <!-- Crear torneo entre amigos -->
-  <div class="cp-hero" onclick="cpShowCreate()">
-    <div class="cp-hero-t">Crear torneo entre amigos</div>
-    <div class="cp-hero-s">Invita a 2 a 6 arqueros. Cada quien tira a su ritmo, con clasificatorio y llaves opcionales.</div>
-    <span class="cp-hero-cta">Crear torneo →</span>
-  </div>
-
-  <!-- Unirse con código -->
-  <div class="cp-card">
-    <div class="cp-label">Unirse con código (torneos o ligas)</div>
-    <div style="display:flex;gap:8px">
-      <input class="cp-input" id="cp-join-code" placeholder="Ej: GOAT-3829" style="margin-bottom:0;flex:1;text-transform:uppercase" maxlength="9" oninput="this.value=this.value.toUpperCase()">
-      <button class="cp-btn cp-btn-y cp-btn-sm" onclick="cpJoinByCode()" style="white-space:nowrap">Unirse →</button>
+  <!-- 1 · Unirse con código -->
+  <div class="cp-ban cp-ban-split cp-ban-static">
+    <svg class="cp-ban-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="16"/></svg>
+    <div class="cp-ban-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cp-art-ticket"/></svg></div>
+    <div class="cp-ban-head">
+      <div class="cp-ban-t">Unirse con código</div>
+      <div class="cp-ban-s">Para entrar a un torneo o a una liga</div>
     </div>
-    <div class="cp-muted" style="font-size:11px;margin-top:6px">Tu coach o el creador del evento te da el código</div>
+    <div class="cp-ban-form">
+      <input class="cp-ban-in" id="cp-join-code" placeholder="Ej: GOAT-3829" maxlength="9" oninput="this.value=this.value.toUpperCase()" aria-label="Código del torneo o de la liga" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <button type="button" class="cp-ban-go" onclick="cpJoinByCode()">Unirse →</button>
+    </div>
+    <div class="cp-ban-help">Tu coach o el creador del evento te da el código</div>
   </div>
 
-  <!-- Torneos de club activos -->
-  <div class="cp-hd">Torneos de club</div>
+  <!-- 2 · Crear torneo entre amigos -->
+  <div class="cp-ban cp-ban-amber" role="button" tabindex="0" onclick="cpShowCreate()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+    <svg class="cp-ban-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="16"/></svg>
+    <div class="cp-ban-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cp-art-trophy"/></svg></div>
+    <div class="cp-ban-body">
+      <div class="cp-ban-t">Crear torneo entre amigos</div>
+      <div class="cp-ban-s">Invita a 2 a 6 arqueros. Cada quien tira a su ritmo, con clasificatorio y llaves opcionales.</div>
+      <span class="cp-ban-cta">Crear torneo →</span>
+    </div>
+  </div>
+
+  <!-- 3 · Torneos activos (abiertos, en juego o validando) -->
+  <div class="cp-hd">Torneos activos</div>
   <div id="cp-club-list">
     <div class="cp-muted" style="text-align:center;padding:20px 0">Cargando torneos...</div>
   </div>
 
-  <!-- Mis ligas activas -->
+  <!-- 4 · Ligas activas en las que estás inscrito -->
   <div id="cp-my-leagues-section" style="display:none">
-    <div class="cp-hd">Mis ligas</div>
+    <div class="cp-hd">Ligas activas</div>
     <div id="cp-my-leagues-list"></div>
   </div>
 
@@ -8872,6 +8958,38 @@ function cpToast(msg){
   else console.log(msg);
 }
 
+// ── Banners del lobby ─────────────────────────────────────────────
+// Mismo contenido y mismos datos que las tarjetas anteriores; cambia solo cómo se dibujan. El color lo da la modalidad.
+function cpEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+const CP_BAN_KEY="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}";
+const CP_BAN_MARK='<svg class="cp-ban-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="16"/></svg>';
+function cpBanArt(id){ return '<div class="cp-ban-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cp-art-'+id+'"/></svg></div>'; }
+function cpTourBanner(t){
+  const g=({indoor:'indoor',outdoor:'outdoor',field:'field','3d':'3d'})[String(t.discipline||'').split('-')[0]]||'navy';
+  const cupo=t.max_players_club||t.max_players;
+  return '<div class="cp-ban cp-ban-'+g+'" role="button" tabindex="0" onclick="cpOpenRoom(\''+cpEsc(t.id)+'\')" onkeydown="'+CP_BAN_KEY+'">'+
+    CP_BAN_MARK+cpBanArt(g==='navy'?'trophy':g)+
+    '<div class="cp-ban-body"><div class="cp-ban-top">'+cpStatusBadge(t.status)+'</div>'+
+    '<div class="cp-ban-t">'+cpEsc(t.title)+'</div>'+
+    '<div class="cp-ban-s">'+cpEsc(DISC_LABELS[t.discipline]||t.discipline)+' · '+(t.has_bracket?'Score + llaves':'Solo score')+'</div>'+
+    '<div class="cp-ban-s">Cupo: '+cpEsc(cupo)+' arqueros'+(t.handicap_enabled?'<span class="cp-ban-chip">Handicap activo</span>':'')+'</div></div></div>';
+}
+function cpLeagueBanner(d,activeRounds){
+  const l=d.leagues;
+  const pct=Math.round((l.current_round||0)/l.rounds_total*100);
+  const ar=activeRounds.find(r=>r.league_id===d.league_id&&new Date(r.active_until)>new Date());
+  const msLeft=ar?new Date(ar.active_until)-Date.now():0;
+  const hLeft=Math.floor(msLeft/3600000), mLeft=Math.floor((msLeft%3600000)/60000);
+  const pill=ar?'<span class="cp-pill cp-badge-open">⏱ '+hLeft+'h '+mLeft+'m</span>':'<span class="cp-pill cp-badge-playing">Activa</span>';
+  return '<div class="cp-ban cp-ban-league cp-ban-split" role="button" tabindex="0" onclick="cpOpenLeague(\''+cpEsc(l.id)+'\')" onkeydown="'+CP_BAN_KEY+'">'+
+    CP_BAN_MARK+cpBanArt('podium')+
+    '<div class="cp-ban-head"><div class="cp-ban-top">'+pill+'</div><div class="cp-ban-t">'+cpEsc(l.title)+'</div><div class="cp-ban-s">Fecha '+(l.current_round||0)+' / '+cpEsc(l.rounds_total)+'</div></div>'+
+    '<div class="cp-ban-foot">'+(ar?'<div class="cp-ban-hint">Fecha '+cpEsc(ar.round_number)+' corriendo: toca para tirar</div>':'')+
+    '<div class="cp-ban-bar"><i style="width:'+pct+'%"></i></div>'+
+    '<div class="cp-ban-stats"><div><span class="cp-ban-n">'+cpEsc(d.total_points)+'</span><span class="cp-ban-l"> pts totales</span></div>'+
+    '<div><span class="cp-ban-n cp-up">+'+cpEsc(d.last_round_points||0)+'</span><span class="cp-ban-l"> última fecha</span></div></div></div></div>';
+}
+
 // ── CARGAR LOBBY ──────────────────────────────────────────────────
 async function cpLoadLobby(){
   const listEl=document.getElementById('cp-club-list');
@@ -8884,19 +9002,9 @@ async function cpLoadLobby(){
     const res=await cpFetch('/rest/v1/tournaments?type=eq.club&status=neq.closed&order=created_at.desc&limit=10');
     const data=await res.json();
     if(!data.length){
-      listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:20px 0">Sin torneos de club activos</div>';
+      listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:20px 0">Sin torneos activos</div>';
     } else {
-      listEl.innerHTML=data.map(t=>`
-        <div class="cp-item" onclick="cpOpenRoom('${t.id}')">
-          <div class="cp-item-top">
-            <div style="min-width:0">
-              <div class="cp-item-t">${t.title}</div>
-              <div class="cp-item-s">${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}</div>
-            </div>
-            ${cpStatusBadge(t.status)}
-          </div>
-          <div class="cp-item-s" style="margin-top:8px">Cupo: ${t.max_players_club||t.max_players} arqueros${t.handicap_enabled?' · <span class="cp-tag">Handicap activo</span>':''}</div>
-        </div>`).join('');
+      listEl.innerHTML=data.map(cpTourBanner).join('');
     }
   } catch(e){ listEl.innerHTML='<div class="cp-muted" style="text-align:center;padding:16px 0">Error cargando torneos</div>'; }
 
@@ -8914,31 +9022,7 @@ async function cpLoadLobby(){
       const arRes=await cpFetch(`/rest/v1/league_rounds?league_id=in.(${leagueIds})&status=eq.active&order=round_number.desc`);
       const activeRounds=await arRes.json();
 
-      leaguesListEl.innerHTML=activeLeagues.map(d=>{
-        const l=d.leagues;
-        const pct=Math.round((l.current_round||0)/l.rounds_total*100);
-        const ar=activeRounds.find(r=>r.league_id===d.league_id&&new Date(r.active_until)>new Date());
-        const msLeft=ar?new Date(ar.active_until)-Date.now():0;
-        const hLeft=Math.floor(msLeft/3600000);
-        const mLeft=Math.floor((msLeft%3600000)/60000);
-        return`<div class="cp-item" onclick="cpOpenLeague('${l.id}')">
-          <div class="cp-item-top">
-            <div style="min-width:0">
-              <div class="cp-item-t">${l.title}</div>
-              <div class="cp-item-s">Fecha ${l.current_round||0} / ${l.rounds_total}</div>
-            </div>
-            ${ar
-              ?`<span class="cp-pill cp-badge-open">⏱ ${hLeft}h ${mLeft}m</span>`
-              :`<span class="cp-pill cp-badge-playing">Activa</span>`}
-          </div>
-          ${ar?`<div class="cp-item-hint">Fecha ${ar.round_number} corriendo: toca para tirar</div>`:''}
-          <div class="cp-bar"><div class="cp-bar-f" style="width:${pct}%"></div></div>
-          <div class="cp-stats">
-            <div><span class="cp-num cp-stat-n">${d.total_points}</span><span class="cp-item-s"> pts totales</span></div>
-            <div><span class="cp-num cp-stat-n cp-up">+${d.last_round_points||0}</span><span class="cp-item-s"> última fecha</span></div>
-          </div>
-        </div>`;
-      }).join('');
+      leaguesListEl.innerHTML=activeLeagues.map(d=>cpLeagueBanner(d,activeRounds)).join('');
     } else {
       section.style.display='none';
     }
