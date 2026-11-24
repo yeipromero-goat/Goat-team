@@ -8289,10 +8289,10 @@ if(window._supabaseUserId && window._supabaseToken){
 .cp-ban-static:hover{filter:none}
 .cp-ban-static:active{transform:none}
 .cp-ban-amber{--bb:linear-gradient(100deg,#d98e1f 0%,#f5c06a 60%,#ffe2a6 100%);--be:#ffe6ad;--bg:rgba(245,192,106,0.45);color:#182440}
-.cp-ban-outdoor{--bb:linear-gradient(100deg,#7d2217 0%,#b23a2a 60%,#d5543b 100%);--be:#f0897a;--bg:rgba(240,137,122,0.35)}
-.cp-ban-indoor{--bb:linear-gradient(100deg,#123d44 0%,#236670 60%,#3d8791 100%);--be:#7fd0da;--bg:rgba(127,208,218,0.35)}
+.cp-ban-outdoor{--bb:linear-gradient(100deg,#7d2217 0%,#b23a2a 60%,#c24a34 100%);--be:#f0897a;--bg:rgba(240,137,122,0.35)}
+.cp-ban-indoor{--bb:linear-gradient(100deg,#123d44 0%,#236670 60%,#34808a 100%);--be:#7fd0da;--bg:rgba(127,208,218,0.35)}
 .cp-ban-field{--bb:linear-gradient(100deg,#141414 0%,#2a2a2a 60%,#454545 100%);--be:#e8c800;--bg:rgba(232,200,0,0.3)}
-.cp-ban-3d{--bb:linear-gradient(100deg,#5a4120 0%,#7a5d30 60%,#9a7b45 100%);--be:#e0c49a;--bg:rgba(224,196,154,0.35)}
+.cp-ban-3d{--bb:linear-gradient(100deg,#5a4120 0%,#7a5d30 60%,#8c6f3d 100%);--be:#e0c49a;--bg:rgba(224,196,154,0.35)}
 .cp-ban-league{--bb:linear-gradient(100deg,#182440 0%,#243a68 60%,#35508c 100%);--be:#f5c06a;--bg:rgba(245,192,106,0.35)}
 .cp-ban-mark{position:absolute;left:-34px;top:50%;width:170px;height:170px;transform:translateY(-50%);fill:none;stroke:#fff;stroke-opacity:0.12;stroke-width:6;pointer-events:none}
 .cp-ban-art{position:absolute;top:0;right:0;bottom:0;width:40%;background:rgba(255,255,255,0.55);clip-path:polygon(32% 0,100% 0,100% 100%,0 100%);z-index:1;pointer-events:none}
@@ -8321,15 +8321,30 @@ if(window._supabaseUserId && window._supabaseToken){
 .cp-ban-hint{margin-bottom:6px;font-size:12px;font-weight:700;color:var(--cp-amber)}
 .cp-ban-stats{display:flex;flex-wrap:wrap;gap:2px 18px}
 .cp-ban-n{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:0.04em;line-height:1;color:#fff}
-.cp-ban-l{font-size:11px;color:rgba(255,255,255,0.85)}
+.cp-ban-l{font-size:11px;color:rgba(255,255,255,0.93)}
 .cp-ban-n.cp-up{color:var(--cp-up)}
+/* ── Mis partidas (mismos banners) ── */
+.cp-ban-tall .cp-ban-head{min-height:112px}
+.cp-ban-done{--bb:linear-gradient(100deg,#262b36 0%,#3a4254 60%,#4d566b 100%);--be:#9aa3b5;--bg:rgba(154,163,181,0.25)}
+.cp-ban-score{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.cp-ban-big{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:0.04em;line-height:1;color:#fff}
+.cp-ban-ok{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--cp-up);color:#0f2a22;font-size:12px;font-weight:800}
+.cp-ban-todo{margin:0 0 10px;padding:10px 12px;border:2px solid #fffffc;border-radius:12px;background:var(--cp-amber);color:#182440;font-size:13px;font-weight:800;text-align:center}
+.cp-ban-link{text-align:right;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,0.3)}
+.cp-ban-stats3{display:flex;gap:20px}
+.cp-ban-stat{display:flex;flex-direction:column}
+.cp-ban-n.cp-dim{color:rgba(255,255,255,0.8)}
+.cp-ban-compact .cp-ban-body{padding:12px 40% 12px 18px}
+.cp-ban-compact .cp-ban-art{width:34%}
+.cp-ban-res{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.cp-ban-pos{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.04em;line-height:1;color:#fff}
 </style>
 
 <div class="cp" id="cp-app">
 
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <!-- Arte de los banners del lobby (viewBox 100×100). Cada símbolo trae su propio resplandor marino con puntos, como un letrero. -->
-  <defs><linearGradient id="cpGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#f5c06a"/><stop offset="1" stop-color="#d98e1f"/></linearGradient></defs>
+  <defs><linearGradient id="cpGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#f5c06a"/><stop offset="1" stop-color="#d98e1f"/></linearGradient><linearGradient id="cpSilver" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7f9fb"/><stop offset=".5" stop-color="#c9d3dc"/><stop offset="1" stop-color="#8e9aa6"/></linearGradient><linearGradient id="cpBronze" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3c896"/><stop offset=".5" stop-color="#c58a54"/><stop offset="1" stop-color="#8a5a2a"/></linearGradient><linearGradient id="cpBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4effa"/><stop offset=".5" stop-color="#5ab4d6"/><stop offset="1" stop-color="#2f7fa3"/></linearGradient></defs>
   <symbol id="cp-art-trophy" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
     <path d="M33 33h-9a2 2 0 0 0-2 2v3a11 11 0 0 0 11 11" fill="none" stroke="#e8a93a" stroke-width="4.2" stroke-linecap="round"/><path d="M67 33h9a2 2 0 0 1 2 2v3a11 11 0 0 1-11 11" fill="none" stroke="#e8a93a" stroke-width="4.2" stroke-linecap="round"/>
     <path d="M33 29h34v14a17 17 0 0 1-34 0z" fill="url(#cpGold)" stroke="#8a5a10" stroke-width="1.6"/>
@@ -8356,6 +8371,10 @@ if(window._supabaseUserId && window._supabaseToken){
     <rect x="14" y="58" width="24" height="26" rx="2" fill="#c9d3dc" stroke="#182440" stroke-width="1.2"/><rect x="38" y="44" width="24" height="40" rx="2" fill="url(#cpGold)" stroke="#182440" stroke-width="1.2"/><rect x="62" y="66" width="24" height="18" rx="2" fill="#c58a54" stroke="#182440" stroke-width="1.2"/>
     <g font-family="Bebas Neue,sans-serif" font-size="17" text-anchor="middle" fill="#182440"><text x="26" y="77">2</text><text x="50" y="68">1</text><text x="74" y="80">3</text></g>
     <path d="M50 22l3 6 6.6 1-4.8 4.6 1.2 6.6-6-3.2-6 3.2 1.2-6.6-4.8-4.6 6.6-1z" fill="url(#cpGold)" stroke="#8a5a10" stroke-width="1"/><path d="M19 23.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M84 28l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="cp-art-medal1" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/><path d="M35 14h14l7 30H42z" fill="#e03030"/><path d="M65 14H51l-7 30h14z" fill="#5ab4d6"/><circle cx="50" cy="60" r="23" fill="url(#cpGold)" stroke="#8a5a10" stroke-width="1.6"/><circle cx="50" cy="60" r="17.5" fill="none" stroke="#8a5a10" stroke-opacity=".55" stroke-width="1.2"/><text x="50" y="68" text-anchor="middle" font-family="Bebas Neue,sans-serif" font-size="26" fill="#182440">1</text><path d="M19 23.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M84 30l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="cp-art-medal2" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/><path d="M35 14h14l7 30H42z" fill="#e03030"/><path d="M65 14H51l-7 30h14z" fill="#5ab4d6"/><circle cx="50" cy="60" r="23" fill="url(#cpSilver)" stroke="#5d6873" stroke-width="1.6"/><circle cx="50" cy="60" r="17.5" fill="none" stroke="#5d6873" stroke-opacity=".55" stroke-width="1.2"/><text x="50" y="68" text-anchor="middle" font-family="Bebas Neue,sans-serif" font-size="26" fill="#182440">2</text><path d="M19 23.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M84 30l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="cp-art-medal3" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/><path d="M35 14h14l7 30H42z" fill="#e03030"/><path d="M65 14H51l-7 30h14z" fill="#5ab4d6"/><circle cx="50" cy="60" r="23" fill="url(#cpBronze)" stroke="#6a3f17" stroke-width="1.6"/><circle cx="50" cy="60" r="17.5" fill="none" stroke="#6a3f17" stroke-opacity=".55" stroke-width="1.2"/><text x="50" y="68" text-anchor="middle" font-family="Bebas Neue,sans-serif" font-size="26" fill="#182440">3</text><path d="M19 23.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M84 30l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="cp-art-medal" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/><path d="M35 14h14l7 30H42z" fill="#e03030"/><path d="M65 14H51l-7 30h14z" fill="#5ab4d6"/><circle cx="50" cy="60" r="23" fill="url(#cpBlue)" stroke="#1d5f80" stroke-width="1.6"/><circle cx="50" cy="60" r="17.5" fill="none" stroke="#1d5f80" stroke-opacity=".55" stroke-width="1.2"/><path d="M50 47l3.6 7.3 8 1.2-5.8 5.6 1.4 8-7.2-3.8-7.2 3.8 1.4-8-5.8-5.6 8-1.2z" fill="#182440"/><path d="M19 23.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M84 30l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
 </svg>
 
 <!-- TABS PRINCIPALES -->
@@ -9029,6 +9048,40 @@ async function cpLoadLobby(){
   } catch(e){ console.error('mis ligas error:',e); }
 }
 
+// ── Banners de Mis partidas ───────────────────────────────────────
+// Misma información que antes; cambia cómo se dibuja. Reusan los banners del lobby (color y dibujo por modalidad).
+function cpBanGroup(disc){ return ({indoor:'indoor',outdoor:'outdoor',field:'field','3d':'3d'})[String(disc||'').split('-')[0]]||'navy'; }
+function cpMineTour(d){
+  const t=d.tournaments, g=cpBanGroup(t.discipline), hasScore=d.qualifying_score!=null;
+  return '<div class="cp-ban cp-ban-split cp-ban-tall cp-ban-'+g+'" role="button" tabindex="0" onclick="cpOpenRoom(\''+cpEsc(t.id)+'\')" onkeydown="'+CP_BAN_KEY+'">'+
+    CP_BAN_MARK+cpBanArt(g==='navy'?'trophy':g)+
+    '<div class="cp-ban-head"><div class="cp-ban-top">'+cpStatusBadge(t.status)+'</div><div class="cp-ban-t">'+cpEsc(t.title)+'</div>'+
+    '<div class="cp-ban-s">'+cpEsc(DISC_LABELS[t.discipline]||t.discipline)+' · '+(t.has_bracket?'Score + llaves':'Solo score')+'</div></div>'+
+    '<div class="cp-ban-foot">'+(hasScore
+      ?'<div class="cp-ban-score"><span class="cp-ban-big">'+cpEsc(d.qualifying_score)+'</span><span class="cp-ban-l">pts clasificatorio</span><span class="cp-ban-ok" role="img" aria-label="registrado">✓</span></div>'
+      :'<div class="cp-ban-todo">Pendiente: sube tu score</div>')+
+    '<div class="cp-ban-link">Ver sala →</div></div></div>';
+}
+function cpMineStat(n,label,extra){ return '<div class="cp-ban-stat"><span class="cp-ban-n'+(extra||'')+'">'+cpEsc(n)+'</span><span class="cp-ban-l">'+label+'</span></div>'; }
+function cpMineLeague(d){
+  const l=d.leagues, pct=Math.round(((l.current_round||0)/l.rounds_total)*100), isActive=l.status==='active';
+  return '<div class="cp-ban cp-ban-split cp-ban-tall '+(isActive?'cp-ban-league':'cp-ban-done')+'" role="button" tabindex="0" onclick="cpOpenLeague(\''+cpEsc(l.id)+'\')" onkeydown="'+CP_BAN_KEY+'">'+
+    CP_BAN_MARK+cpBanArt('podium')+
+    '<div class="cp-ban-head"><div class="cp-ban-top"><span class="cp-pill '+(isActive?'cp-badge-playing':'cp-badge-closed')+'">'+(isActive?'Activa':'Finalizada')+'</span></div>'+
+    '<div class="cp-ban-t">'+cpEsc(l.title)+'</div><div class="cp-ban-s">Fecha '+(l.current_round||0)+' / '+cpEsc(l.rounds_total)+'</div></div>'+
+    '<div class="cp-ban-foot"><div class="cp-ban-bar"><i style="width:'+pct+'%"></i></div><div class="cp-ban-stats3">'+
+    cpMineStat(d.total_points,'pts totales','')+cpMineStat('+'+(d.last_round_points||0),'última fecha',' cp-up')+cpMineStat(d.rounds_played||0,'fechas jugadas',' cp-dim')+
+    '</div></div></div>';
+}
+function cpMineHist(d){
+  const t=d.tournaments, pos=d.final_position, g=cpBanGroup(t.discipline);
+  const art=pos===1?'medal1':pos===2?'medal2':pos===3?'medal3':'medal';
+  const posLabel=pos===1?'Campeón':pos===2?'2° lugar':pos===3?'3° lugar':pos?pos+'° lugar':'—';
+  return '<div class="cp-ban cp-ban-compact cp-ban-static cp-ban-'+g+'">'+CP_BAN_MARK+cpBanArt(art)+
+    '<div class="cp-ban-body"><div class="cp-ban-t">'+cpEsc(t.title)+'</div><div class="cp-ban-s">'+cpEsc(DISC_LABELS[t.discipline]||t.discipline)+'</div>'+
+    '<div class="cp-ban-res"><span class="cp-ban-pos">'+posLabel+'</span>'+(d.points_earned?'<span class="cp-ban-l">+'+cpEsc(d.points_earned)+' pts</span>':'')+'</div></div></div>';
+}
+
 // ── CARGAR MIS PARTIDAS ───────────────────────────────────────────
 async function cpLoadMisPartidas(){
   const listEl=document.getElementById('cp-mis-list');
@@ -9054,71 +9107,19 @@ async function cpLoadMisPartidas(){
     // Torneos activos
     if(active.length){
       html+=`<div class="cp-hd first">Torneos activos</div>`;
-      html+=active.map(d=>{
-        const t=d.tournaments;
-        const hasScore = d.qualifying_score != null;
-        return`<div class="cp-item" onclick="cpOpenRoom('${t.id}')">
-          <div class="cp-item-top">
-            <div style="min-width:0;flex:1">
-              <div class="cp-item-t cp-ellip">${t.title}</div>
-              <div class="cp-item-s">${DISC_LABELS[t.discipline]||t.discipline} · ${t.has_bracket?'Score + llaves':'Solo score'}</div>
-            </div>
-            <span class="cp-pill ${STATUS_CLASS[t.status]||''}" style="flex-shrink:0">${STATUS_LABELS[t.status]||t.status}</span>
-          </div>
-          ${hasScore
-            ?`<div class="cp-score-line"><span class="cp-num cp-score-big">${d.qualifying_score}</span><span class="cp-item-s">pts clasificatorio</span><span class="cp-up">✓</span></div>`
-            :`<div class="cp-pending">Pendiente: sube tu score</div>`}
-          <div class="cp-item-link">Ver sala →</div>
-        </div>`;
-      }).join('');
+      html+=active.map(cpMineTour).join('');
     }
 
     // Mis fechas de liga
     if(allLeagues.length){
       html+=`<div class="cp-hd${html?'':' first'}">Mis ligas</div>`;
-      html+=allLeagues.map(d=>{
-        const l=d.leagues;
-        const pct=Math.round(((l.current_round||0)/l.rounds_total)*100);
-        const isActive=l.status==='active';
-        return`<div class="cp-item" onclick="cpOpenLeague('${l.id}')">
-          <div class="cp-item-top">
-            <div style="min-width:0">
-              <div class="cp-item-t">${l.title}</div>
-              <div class="cp-item-s">Fecha ${l.current_round||0} / ${l.rounds_total}</div>
-            </div>
-            <span class="cp-pill ${isActive?'cp-badge-playing':'cp-badge-closed'}" style="flex-shrink:0">${isActive?'Activa':'Finalizada'}</span>
-          </div>
-          <div class="cp-bar"><div class="cp-bar-f" style="width:${pct}%"></div></div>
-          <div class="cp-stats">
-            <div><div class="cp-num cp-stat-n">${d.total_points}</div><div class="cp-stat-l">pts totales</div></div>
-            <div><div class="cp-num cp-stat-n cp-up">+${d.last_round_points||0}</div><div class="cp-stat-l">última fecha</div></div>
-            <div><div class="cp-num cp-stat-n" style="color:rgba(255,255,255,0.7)">${d.rounds_played||0}</div><div class="cp-stat-l">fechas jugadas</div></div>
-          </div>
-        </div>`;
-      }).join('');
+      html+=allLeagues.map(cpMineLeague).join('');
     }
 
     // Historial torneos
     if(past.length){
       html+=`<div class="cp-hd${html?'':' first'}">Historial</div>`;
-      html+=past.map(d=>{
-        const t=d.tournaments;
-        const pos=d.final_position;
-        const medal=pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':'';
-        const posColor=pos===1?'#FFD700':pos===2?'#C0C0C0':pos===3?'#CD7F32':'rgba(255,255,255,0.58)';
-        const posLabel=pos===1?'Campeón':pos===2?'2° lugar':pos===3?'3° lugar':pos?pos+'° lugar':'—';
-        return`<div class="cp-hist">
-          <div class="cp-hist-m">${medal||'🏅'}</div>
-          <div style="flex:1;min-width:0">
-            <div class="cp-item-t cp-ellip" style="font-size:14px">${t.title}</div>
-            <div class="cp-item-s">${DISC_LABELS[t.discipline]||t.discipline}</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div class="cp-num" style="font-size:18px;color:${posColor}">${posLabel}</div>
-            ${d.points_earned?`<div class="cp-item-s">+${d.points_earned} pts</div>`:''}
-          </div>
-        </div>`;
-      }).join('');
+      html+=past.map(cpMineHist).join('');
     }
 
     listEl.innerHTML=html||'<div class="cp-muted" style="text-align:center;padding:24px 0">Sin actividad aún.</div>';
