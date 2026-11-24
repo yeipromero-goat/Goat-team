@@ -18001,103 +18001,133 @@ window.addEventListener('rt-plan-score-saved', async function(e){
 
 <div id="tab-timer" class="tab-panel">
 <style>
-/* ═══ Temporizador · mismo lenguaje de diseño de la plataforma ═══
-   Marino #182440 con degradado y relieve en el botón principal; acento ámbar; encabezados en cursiva; semáforo rojo, amarillo y verde. */
+/* ═══ Temporizador · mismo lenguaje que Competencias ═══
+   Banner ancho con borde de color y filo blanco, degradado, brillo y panel azul de diana con un dibujo a la derecha.
+   Aquí el dibujo del banner principal ES el semáforo, y el color del banner cambia con la fase (rojo, verde, amarillo).
+   OJO: la raíz es .tm-app. La clase .tm sola ya existe en 00-head.html (una etiqueta chica) y pintaba un fondo marrón detrás de todo. */
 :root{
   --tm-ink:#f2f2f2; --tm-ink-2:rgba(255,255,255,0.78); --tm-ink-3:rgba(255,255,255,0.64);
-  --tm-line:rgba(255,255,255,0.18); --tm-fill:rgba(255,255,255,0.05);
-  --tm-navy:#182440; --tm-g:linear-gradient(160deg,#1f2e53 0%,#182440 30%,#0d1322 100%);
-  --tm-amber:#f5c06a; --tm-down:#e05555;
+  --tm-line:rgba(255,255,255,0.18); --tm-navy:#182440; --tm-amber:#f5c06a; --tm-dotted:#4eabc6; --tm-down:#e05555;
 }
-.tm{max-width:460px;margin:0 auto;font-family:'DM Sans',sans-serif;color:var(--tm-ink)}
-.tm [hidden]{display:none!important}
-.tm-card{margin-bottom:12px;padding:14px;border:0.5px solid var(--tm-line);border-radius:14px;background:var(--tm-fill)}
-.tm-hd{margin:0 0 12px;font-size:20px;font-style:italic;font-weight:600;color:var(--tm-ink)}
-.tm-step{display:flex;align-items:center;justify-content:center;gap:16px;margin:4px 0 6px}
-.tm-step button{width:52px;height:52px;border:1.5px solid var(--tm-line);border-radius:14px;background:var(--tm-fill);color:#fff;font:600 26px 'DM Sans',sans-serif;cursor:pointer}
-.tm-step button:disabled{opacity:0.35;cursor:default}
+.tm-app{max-width:460px;margin:0 auto;font-family:'DM Sans',sans-serif;color:var(--tm-ink)}
+.tm-app [hidden]{display:none!important}
+.tm-hd{margin:18px 0 10px;padding-top:12px;border-top:3px dotted var(--tm-dotted);font-size:20px;font-style:italic;font-weight:600;color:var(--tm-ink)}
+.tm-hd.first{margin-top:0;padding-top:0;border-top:none}
+/* Banner */
+.tm-ban{--bb:linear-gradient(100deg,#182440 0%,#243a68 60%,#35508c 100%);--be:#6f8fd8;--bg:rgba(111,143,216,0.35);--bt:#fff;position:relative;display:block;box-sizing:border-box;width:100%;margin:0 0 12px;border:3px solid var(--be);border-radius:20px;overflow:hidden;background:var(--bb);color:var(--bt);text-align:left;font-family:'DM Sans',sans-serif;box-shadow:0 0 14px var(--bg),0 5px 10px rgba(0,0,0,0.45);transition:border-color .2s,box-shadow .2s}
+.tm-ban::before{content:"";position:absolute;inset:0;border-radius:17px;border:2px solid rgba(255,255,255,0.92);pointer-events:none;z-index:4}
+.tm-ban-red{--bb:linear-gradient(100deg,#7d2217 0%,#b23a2a 60%,#c24a34 100%);--be:#f0897a;--bg:rgba(240,137,122,0.35);--bt:#fff}
+.tm-stage[data-phase="prep"],.tm-stage[data-phase="done"]{--bb:linear-gradient(100deg,#7d2217 0%,#b23a2a 60%,#c24a34 100%);--be:#f0897a;--bg:rgba(240,137,122,0.4);--bt:#fff}
+.tm-ban-green{--bb:linear-gradient(100deg,#0c4527 0%,#17794a 60%,#1f8d58 100%);--be:#7be8a6;--bg:rgba(67,209,122,0.35);--bt:#fff}
+.tm-stage[data-phase="go"]{--bb:linear-gradient(100deg,#0c4527 0%,#17794a 60%,#1f8d58 100%);--be:#7be8a6;--bg:rgba(67,209,122,0.45);--bt:#fff}
+.tm-stage[data-phase="warn"]{--bb:linear-gradient(100deg,#d9a400 0%,#f2c200 60%,#ffe27a 100%);--be:#fff0a0;--bg:rgba(242,194,0,0.5);--bt:#182440}
+.tm-ban-mark{position:absolute;left:-34px;top:50%;width:170px;height:170px;transform:translateY(-50%);fill:none;stroke:#fff;stroke-opacity:0.12;stroke-width:6;pointer-events:none}
+.tm-ban-art{position:absolute;top:0;right:0;bottom:0;width:40%;background:rgba(255,255,255,0.55);clip-path:polygon(32% 0,100% 0,100% 100%,0 100%);z-index:1;pointer-events:none}
+.tm-ban-art::before{content:"";position:absolute;inset:0;background:linear-gradient(165deg,#d4effa 0%,#5ab4d6 100%);clip-path:polygon(38% 0,100% 0,100% 100%,7% 100%)}
+.tm-ban-art>svg{position:absolute;left:37%;top:50%;width:62%;height:auto;max-height:92%;transform:translateY(-50%)}
+.tm-ban-split .tm-ban-art{bottom:auto;height:112px}
+.tm-ban-head{position:relative;z-index:2;padding:16px 42% 12px 18px;min-height:96px}
+.tm-ban-body{position:relative;z-index:2;padding:16px 42% 16px 18px}
+.tm-ban-foot{position:relative;z-index:5;padding:0 16px 16px}
+.tm-ban-t{margin-bottom:4px;font-size:19px;font-weight:800;font-style:italic;line-height:1.15;text-shadow:0 2px 0 rgba(0,0,0,0.3);overflow-wrap:anywhere}
+.tm-ban-s{font-size:12px;line-height:1.4;color:rgba(255,255,255,0.96);text-shadow:0 1px 1px rgba(0,0,0,0.25)}
+.tm-ban-compact .tm-ban-art{width:34%}
+.tm-ban-compact .tm-ban-body{padding:14px 40% 14px 18px}
+/* Tiempo de tiro */
+.tm-step{display:flex;align-items:center;justify-content:center;gap:14px;margin:0 0 8px}
+.tm-step button{width:52px;height:52px;border:2px solid #fffffc;border-radius:12px;background:var(--tm-amber);color:#182440;font:700 26px 'DM Sans',sans-serif;cursor:pointer}
+.tm-step button:disabled{opacity:0.45;cursor:default}
 .tm-secs{display:flex;flex-direction:column;align-items:center}
-.tm-secs input{width:116px;padding:0 0 2px;border:none;border-bottom:2px solid var(--tm-line);background:transparent;color:#fff;text-align:center;font:400 54px/1 'Bebas Neue',sans-serif;letter-spacing:0.04em;-moz-appearance:textfield}
+.tm-secs input{width:132px;height:58px;box-sizing:border-box;padding:0 8px;border:2px solid rgba(24,36,64,0.35);border-radius:12px;background:#fffffc;color:#182440;text-align:center;font:400 46px/1 'Bebas Neue',sans-serif;letter-spacing:0.04em;-moz-appearance:textfield}
 .tm-secs input::-webkit-outer-spin-button,.tm-secs input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.tm-secs input:focus{outline:none;border-bottom-color:var(--tm-amber)}
+.tm-secs input:focus{outline:3px solid var(--tm-amber);outline-offset:1px}
 .tm-secs input:disabled{opacity:0.6}
-.tm-unit{margin-top:4px;font-size:11px;color:var(--tm-ink-3)}
-.tm-fmt{margin-bottom:10px;text-align:center;font-size:13px;color:var(--tm-ink-2)}
+.tm-unit{margin-top:4px;font-size:11px;color:rgba(255,255,255,0.9)}
+.tm-fmt{margin-bottom:10px;text-align:center;font-size:13px;color:rgba(255,255,255,0.96)}
 .tm-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
-.tm-chip{min-width:50px;min-height:40px;padding:8px 12px;border:1.5px solid var(--tm-navy);border-radius:12px;background:var(--tm-navy);color:#fff;font:700 13px 'DM Sans',sans-serif;cursor:pointer}
-.tm-chip[aria-pressed="true"]{background:#fffffc;color:#1b2743;border-color:#000}
-.tm-chip:disabled{opacity:0.4;cursor:default}
-.tm-note{margin-top:12px;font-size:12px;line-height:1.45;text-align:center;color:var(--tm-ink-3)}
-/* Semáforo y reloj */
-.tm-stage{--c:rgba(255,255,255,0.18);--cg:rgba(0,0,0,0);--tx:rgba(255,255,255,0.8);display:flex;align-items:center;gap:16px;margin-bottom:12px;padding:16px;border:3px solid var(--c);border-radius:20px;background:linear-gradient(135deg,#182440,#101828);box-shadow:0 0 22px var(--cg),0 5px 10px rgba(0,0,0,0.45);transition:border-color .2s,box-shadow .2s}
-.tm-stage[data-phase="prep"],.tm-stage[data-phase="done"]{--c:#ff5a5a;--cg:rgba(255,90,90,0.45);--tx:#ff9b9b}
-.tm-stage[data-phase="go"]{--c:#43d17a;--cg:rgba(67,209,122,0.45);--tx:#6ee79a}
-.tm-stage[data-phase="warn"]{--c:#f2c200;--cg:rgba(242,194,0,0.45);--tx:#ffd84a}
-.tm-light{flex:none;display:flex;flex-direction:column;gap:12px;padding:14px 12px;border:2px solid rgba(255,255,255,0.18);border-radius:22px;background:linear-gradient(180deg,#232b3f,#12192a);box-shadow:inset 0 1px 0 rgba(255,255,255,0.25),inset 0 -3px 6px rgba(0,0,0,0.35),0 4px 10px rgba(0,0,0,0.5)}
-.tm-lamp{display:block;width:clamp(40px,12.5vw,58px);aspect-ratio:1;border-radius:50%;box-shadow:inset 0 2px 4px rgba(0,0,0,0.6);transition:background .15s,box-shadow .15s}
+.tm-chip{min-width:50px;min-height:40px;padding:8px 12px;border:1.5px solid rgba(255,255,255,0.55);border-radius:12px;background:rgba(255,255,255,0.14);color:#fff;font:700 13px 'DM Sans',sans-serif;cursor:pointer}
+.tm-chip[aria-pressed="true"]{background:var(--tm-amber);color:#182440;border-color:#fffffc}
+.tm-chip:disabled{opacity:0.45;cursor:default}
+.tm-note{margin-top:12px;font-size:12px;line-height:1.45;text-align:center;color:rgba(255,255,255,0.92)}
+/* Semáforo y reloj: el semáforo es el dibujo del panel azul */
+.tm-stage{min-height:250px}
+.tm-stage .tm-ban-art{width:36%}
+.tm-stage .tm-ban-body{padding-right:38%;min-height:244px;display:flex;flex-direction:column;justify-content:center;container-type:inline-size}
+.tm-light{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;padding:12px 10px;border:2px solid rgba(255,255,255,0.18);border-radius:22px;background:linear-gradient(180deg,#232b3f,#12192a);box-shadow:inset 0 1px 0 rgba(255,255,255,0.25),inset 0 -3px 6px rgba(0,0,0,0.35),0 4px 10px rgba(0,0,0,0.5)}
+.tm-lamp{display:block;width:clamp(36px,11vw,50px);aspect-ratio:1;border-radius:50%;box-shadow:inset 0 2px 4px rgba(0,0,0,0.6);transition:background .15s,box-shadow .15s}
 .tm-r{background:radial-gradient(circle at 35% 30%,#4d1c1c,#2c0f0f)}
 .tm-y{background:radial-gradient(circle at 35% 30%,#4b4012,#2a2409)}
 .tm-g{background:radial-gradient(circle at 35% 30%,#17432a,#0b2616)}
 .tm-stage[data-phase="prep"] .tm-r,.tm-stage[data-phase="done"] .tm-r{background:radial-gradient(circle at 35% 30%,#ffb1a8,#ff4343 55%,#b01818);box-shadow:0 0 26px 8px rgba(255,67,67,0.55),inset 0 2px 4px rgba(255,255,255,0.35)}
 .tm-stage[data-phase="warn"] .tm-y{background:radial-gradient(circle at 35% 30%,#fff2a0,#f2c200 55%,#a37f00);box-shadow:0 0 26px 8px rgba(242,194,0,0.55),inset 0 2px 4px rgba(255,255,255,0.35)}
 .tm-stage[data-phase="go"] .tm-g{background:radial-gradient(circle at 35% 30%,#b6ffd0,#2fd16f 55%,#0f8a45);box-shadow:0 0 26px 8px rgba(47,209,111,0.55),inset 0 2px 4px rgba(255,255,255,0.35)}
-.tm-read{flex:1;min-width:0;text-align:center;container-type:inline-size}
-.tm-phase{font-size:15px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--tx)}
-.tm-clock{margin:2px 0 4px;font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,19vw,100px);font-size:clamp(44px,33cqw,108px);font-variant-numeric:tabular-nums;letter-spacing:0.03em;line-height:0.95;color:#fff}
-.tm-hint{min-height:36px;font-size:13px;line-height:1.4;color:var(--tm-ink-2)}
+.tm-phase{font-size:15px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,0.25)}
+.tm-stage[data-phase="warn"] .tm-phase,.tm-stage[data-phase="warn"] .tm-hint{text-shadow:none}
+.tm-clock{margin:2px 0 4px;font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,17vw,84px);font-size:clamp(40px,36cqw,104px);font-variant-numeric:tabular-nums;letter-spacing:0.03em;line-height:0.95;text-shadow:0 2px 0 rgba(0,0,0,0.3)}
+.tm-stage[data-phase="warn"] .tm-clock{text-shadow:none}
+.tm-hint{min-height:36px;font-size:13px;line-height:1.4;opacity:0.96}
 /* Botones */
 .tm-actions{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.tm-go{display:block;width:100%;min-height:58px;border:1px solid rgba(255,255,255,0.14);border-radius:16px;background-color:var(--tm-navy);background-image:var(--tm-g);color:#fff;font:800 18px 'DM Sans',sans-serif;text-shadow:0 1px 2px rgba(0,0,0,0.38);cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,0.34),inset 0 -3px 5px rgba(0,0,0,0.17),0 3px 8px rgba(0,0,0,0.4)}
+.tm-go{display:block;width:100%;min-height:58px;border:2px solid #fffffc;border-radius:12px;background:var(--tm-amber);color:#182440;font:800 18px 'DM Sans',sans-serif;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,0.4)}
 .tm-go:active{transform:translateY(1px)}
 .tm-stop{display:block;width:100%;min-height:50px;border:1.5px solid var(--tm-down);border-radius:14px;background:transparent;color:var(--tm-down);font:700 15px 'DM Sans',sans-serif;cursor:pointer}
 .tm-alt{display:block;width:100%;min-height:44px;border:1.5px solid var(--tm-line);border-radius:14px;background:transparent;color:var(--tm-ink-2);font:600 14px 'DM Sans',sans-serif;cursor:pointer}
 .tm-go:focus-visible,.tm-stop:focus-visible,.tm-alt:focus-visible,.tm-chip:focus-visible,.tm-step button:focus-visible,.tm-snd:focus-visible,.tm-play:focus-visible{outline:3px solid var(--tm-amber);outline-offset:2px}
-/* Sonido */
-.tm-snd{display:flex;align-items:center;gap:10px;width:100%;margin-bottom:12px;padding:12px 14px;border:0.5px solid var(--tm-line);border-radius:14px;background:var(--tm-fill);color:var(--tm-ink);font:600 14px 'DM Sans',sans-serif;text-align:left;cursor:pointer}
+/* Sonido: mismo azul de los botones de pestaña */
+.tm-snd{display:flex;align-items:center;gap:10px;width:100%;margin-bottom:12px;padding:12px 14px;border:2px solid var(--tm-navy);border-radius:14px;background:var(--tm-navy);color:#fff;font:700 14px 'DM Sans',sans-serif;text-align:left;cursor:pointer}
 .tm-snd svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.tm-snd .tm-sw{margin-left:auto;position:relative;width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,0.18);transition:background .2s}
+.tm-snd .tm-sw{margin-left:auto;position:relative;width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,0.22);transition:background .2s}
 .tm-snd .tm-sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
 .tm-snd[aria-checked="true"] .tm-sw{background:var(--tm-amber)}
 .tm-snd[aria-checked="true"] .tm-sw::after{transform:translateX(18px)}
 /* Las señales */
-.tm-sig{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid rgba(255,255,255,0.09)}
-.tm-sig:last-of-type{border-bottom:none}
-.tm-dots{display:flex;align-items:center;justify-content:center;gap:4px;width:56px}
-.tm-dots i{display:block;width:10px;height:10px;border-radius:50%;background:var(--tm-amber)}
-.tm-sig b{display:block;font-size:14px;color:#fff}
-.tm-sig span{display:block;margin-top:2px;font-size:12px;line-height:1.4;color:var(--tm-ink-3)}
-.tm-play{padding:8px 12px;border:1.5px solid var(--tm-line);border-radius:12px;background:var(--tm-fill);color:#fff;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
-.tm-play:disabled{opacity:0.4;cursor:default}
-.tm-lights{margin-top:6px;font-size:12px;line-height:1.5;color:var(--tm-ink-3)}
+.tm-play{margin-top:10px;min-height:36px;padding:8px 16px;border:2px solid #fffffc;border-radius:12px;background:var(--tm-amber);color:#182440;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
+.tm-play:disabled{opacity:0.45;cursor:default}
+.tm-help{margin:0 0 12px;font-size:12px;line-height:1.5;color:var(--tm-ink-3)}
 .tm-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 
-<div class="tm" id="tm-app">
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <!-- Arte de los banners del temporizador (mismo estilo que Competencias). El sprite vive aquí para que esta pestaña no dependa de otra. -->
+  <defs><linearGradient id="tmGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#f5c06a"/><stop offset="1" stop-color="#d98e1f"/></linearGradient></defs>
+  <symbol id="tm-art-stopwatch" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/><rect x="43" y="13" width="14" height="9" rx="2" fill="url(#tmGold)" stroke="#8a5a10" stroke-width="1.2"/><path d="M71 27l6-6" stroke="#e8a93a" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="50" cy="57" r="29" fill="url(#tmGold)" stroke="#8a5a10" stroke-width="1.6"/><circle cx="50" cy="57" r="23.5" fill="#fffffc" stroke="#8a5a10" stroke-width="1"/><path d="M50.0 37.0L50.0 34.0" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M59.5 39.5L61.0 36.9" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M66.5 46.5L69.1 45.0" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M69.0 57.0L72.0 57.0" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M66.5 65.5L69.1 67.0" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M59.5 72.5L61.0 75.1" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M50.0 75.0L50.0 78.0" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M40.5 72.5L39.0 75.1" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M33.5 65.5L30.9 67.0" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M31.0 57.0L28.0 57.0" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M33.5 46.5L30.9 45.0" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/><path d="M40.5 39.5L39.0 36.9" stroke="#182440" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M50 57V39" stroke="#182440" stroke-width="3" stroke-linecap="round"/><path d="M50 57l11 6" stroke="#e03030" stroke-width="2.6" stroke-linecap="round"/><circle cx="50" cy="57" r="3" fill="#182440"/><path d="M18 21.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M85 26l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="tm-art-w1" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/><g stroke="#8a5a10" stroke-width="1.6" stroke-linejoin="round"><path d="M12 40h38v19H12a9.5 9.5 0 0 1 0-19z" fill="url(#tmGold)"/><circle cx="60" cy="50" r="23" fill="url(#tmGold)"/></g><circle cx="60" cy="50" r="9.5" fill="#182440"/><path d="M57 28l9-11" stroke="#8a5a10" stroke-width="3.4" stroke-linecap="round"/><circle cx="70" cy="15" r="5" fill="none" stroke="#e8a93a" stroke-width="3"/><circle cx="50.0" cy="83" r="4.8" fill="#f5c06a" stroke="#fffffc" stroke-width="1"/><path d="M17 19.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M85 28l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="tm-art-w2" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/><g stroke="#8a5a10" stroke-width="1.6" stroke-linejoin="round"><path d="M12 40h38v19H12a9.5 9.5 0 0 1 0-19z" fill="url(#tmGold)"/><circle cx="60" cy="50" r="23" fill="url(#tmGold)"/></g><circle cx="60" cy="50" r="9.5" fill="#182440"/><path d="M57 28l9-11" stroke="#8a5a10" stroke-width="3.4" stroke-linecap="round"/><circle cx="70" cy="15" r="5" fill="none" stroke="#e8a93a" stroke-width="3"/><circle cx="43.0" cy="83" r="4.8" fill="#f5c06a" stroke="#fffffc" stroke-width="1"/><circle cx="57.0" cy="83" r="4.8" fill="#f5c06a" stroke="#fffffc" stroke-width="1"/><path d="M17 19.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M85 28l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="tm-art-w3" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/><g stroke="#8a5a10" stroke-width="1.6" stroke-linejoin="round"><path d="M12 40h38v19H12a9.5 9.5 0 0 1 0-19z" fill="url(#tmGold)"/><circle cx="60" cy="50" r="23" fill="url(#tmGold)"/></g><circle cx="60" cy="50" r="9.5" fill="#182440"/><path d="M57 28l9-11" stroke="#8a5a10" stroke-width="3.4" stroke-linecap="round"/><circle cx="70" cy="15" r="5" fill="none" stroke="#e8a93a" stroke-width="3"/><circle cx="36.0" cy="83" r="4.8" fill="#f5c06a" stroke="#fffffc" stroke-width="1"/><circle cx="50.0" cy="83" r="4.8" fill="#f5c06a" stroke="#fffffc" stroke-width="1"/><circle cx="64.0" cy="83" r="4.8" fill="#f5c06a" stroke="#fffffc" stroke-width="1"/><path d="M17 19.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M85 28l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+</svg>
+
+<div class="tm-app" id="tm-app">
 
   <!-- Tiempo de tiro -->
-  <section class="tm-card" aria-labelledby="tm-cfg-t">
-    <h2 class="tm-hd" id="tm-cfg-t">Tiempo de tiro</h2>
-    <div class="tm-step">
-      <button type="button" id="tm-dn" aria-label="10 segundos menos">−</button>
-      <div class="tm-secs">
-        <input id="tm-secs" type="number" inputmode="numeric" min="5" max="999" step="1" value="180" aria-label="Segundos de tiro">
-        <span class="tm-unit">segundos</span>
+  <section class="tm-ban tm-ban-split" aria-labelledby="tm-cfg-t">
+    <svg class="tm-ban-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="16"/></svg><div class="tm-ban-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#tm-art-stopwatch"/></svg></div>
+    <div class="tm-ban-head"><div class="tm-ban-t" id="tm-cfg-t">Tiempo de tiro</div><div class="tm-ban-s">Tus segundos, sin contar la preparación</div></div>
+    <div class="tm-ban-foot">
+      <div class="tm-step">
+        <button type="button" id="tm-dn" aria-label="10 segundos menos">−</button>
+        <div class="tm-secs">
+          <input id="tm-secs" type="number" inputmode="numeric" min="5" max="999" step="1" value="180" aria-label="Segundos de tiro">
+          <span class="tm-unit">segundos</span>
+        </div>
+        <button type="button" id="tm-up" aria-label="10 segundos más">+</button>
       </div>
-      <button type="button" id="tm-up" aria-label="10 segundos más">+</button>
+      <div class="tm-fmt" id="tm-fmt"></div>
+      <div class="tm-chips" id="tm-chips">
+        <button type="button" class="tm-chip" data-v="30">30</button><button type="button" class="tm-chip" data-v="40">40</button><button type="button" class="tm-chip" data-v="60">60</button><button type="button" class="tm-chip" data-v="90">90</button><button type="button" class="tm-chip" data-v="120">120</button><button type="button" class="tm-chip" data-v="180">180</button><button type="button" class="tm-chip" data-v="240">240</button>
+      </div>
+      <div class="tm-note" id="tm-note"></div>
     </div>
-    <div class="tm-fmt" id="tm-fmt"></div>
-    <div class="tm-chips" id="tm-chips">
-      <button type="button" class="tm-chip" data-v="30">30</button><button type="button" class="tm-chip" data-v="40">40</button><button type="button" class="tm-chip" data-v="60">60</button><button type="button" class="tm-chip" data-v="90">90</button><button type="button" class="tm-chip" data-v="120">120</button><button type="button" class="tm-chip" data-v="180">180</button><button type="button" class="tm-chip" data-v="240">240</button>
-    </div>
-    <div class="tm-note" id="tm-note"></div>
   </section>
 
-  <!-- Semáforo y reloj -->
-  <section class="tm-stage" id="tm-stage" data-phase="idle" aria-label="Semáforo y reloj">
-    <div class="tm-light" id="tm-light" role="img" aria-label="Semáforo apagado">
-      <i class="tm-lamp tm-r"></i><i class="tm-lamp tm-y"></i><i class="tm-lamp tm-g"></i>
+  <!-- Semáforo y reloj: el color del banner sigue a la fase -->
+  <section class="tm-ban tm-stage" id="tm-stage" data-phase="idle" aria-label="Semáforo y reloj">
+    <svg class="tm-ban-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="16"/></svg>
+    <div class="tm-ban-art">
+      <div class="tm-light" id="tm-light" role="img" aria-label="Semáforo apagado"><i class="tm-lamp tm-r"></i><i class="tm-lamp tm-y"></i><i class="tm-lamp tm-g"></i></div>
     </div>
-    <div class="tm-read">
+    <div class="tm-ban-body tm-read">
       <div class="tm-phase" id="tm-phase">Listo</div>
       <div class="tm-clock" id="tm-clock" aria-hidden="true">3:00</div>
       <div class="tm-hint" id="tm-hint">Elige el tiempo y pulsa Iniciar.</div>
@@ -18117,13 +18147,20 @@ window.addEventListener('rt-plan-score-saved', async function(e){
   </button>
 
   <!-- Las señales -->
-  <section class="tm-card" aria-labelledby="tm-sig-t">
-    <h2 class="tm-hd" id="tm-sig-t">Las señales</h2>
-    <div class="tm-sig"><div class="tm-dots" aria-hidden="true"><i></i><i></i></div><div><b>2 pitidos · Preparación</b><span>Avanzas a la línea de tiro. Tienes 10 segundos para colocarte; no saques ni montes flechas.</span></div><button type="button" class="tm-play" data-n="2" aria-label="Escuchar 2 pitidos">Escuchar</button></div>
-    <div class="tm-sig"><div class="tm-dots" aria-hidden="true"><i></i></div><div><b>1 pitido · Inicio de tiro</b><span>Empieza tu tiempo con la luz verde. Ya puedes montar la primera flecha.</span></div><button type="button" class="tm-play" data-n="1" aria-label="Escuchar 1 pitido">Escuchar</button></div>
-    <div class="tm-sig"><div class="tm-dots" aria-hidden="true"><i></i><i></i><i></i></div><div><b>3 pitidos · Fin de tiro</b><span>Se acabó el tiempo y la luz es roja. Es seguro cruzar la línea para anotar y recoger flechas.</span></div><button type="button" class="tm-play" data-n="3" aria-label="Escuchar 3 pitidos">Escuchar</button></div>
-    <div class="tm-lights" id="tm-lights"></div>
-  </section>
+  <h2 class="tm-hd" id="tm-sig-t">Las señales</h2>
+  <div class="tm-ban tm-ban-compact tm-ban-red">
+    <svg class="tm-ban-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="16"/></svg><div class="tm-ban-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#tm-art-w2"/></svg></div>
+    <div class="tm-ban-body"><div class="tm-ban-t">2 pitidos · Preparación</div><div class="tm-ban-s">Avanza a la línea de tiro. Tienes 10 s para colocarte; sin sacar ni montar flechas.</div><button type="button" class="tm-play" data-n="2" aria-label="Escuchar 2 pitidos">Escuchar</button></div>
+  </div>
+  <div class="tm-ban tm-ban-compact tm-ban-green">
+    <svg class="tm-ban-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="16"/></svg><div class="tm-ban-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#tm-art-w1"/></svg></div>
+    <div class="tm-ban-body"><div class="tm-ban-t">1 pitido · Inicio de tiro</div><div class="tm-ban-s">Empieza tu tiempo con la luz verde. Ya puedes montar la primera flecha.</div><button type="button" class="tm-play" data-n="1" aria-label="Escuchar 1 pitido">Escuchar</button></div>
+  </div>
+  <div class="tm-ban tm-ban-compact tm-ban-red">
+    <svg class="tm-ban-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="16"/></svg><div class="tm-ban-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#tm-art-w3"/></svg></div>
+    <div class="tm-ban-body"><div class="tm-ban-t">3 pitidos · Fin de tiro</div><div class="tm-ban-s">Luz roja: se acabó el tiempo. Cruza la línea para anotar y recoger flechas.</div><button type="button" class="tm-play" data-n="3" aria-label="Escuchar 3 pitidos">Escuchar</button></div>
+  </div>
+  <div class="tm-help" id="tm-lights"></div>
 </div>
 
 <script>
