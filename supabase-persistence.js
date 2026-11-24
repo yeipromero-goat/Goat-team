@@ -340,10 +340,10 @@ function _freshToken() {
 }
 
 // ── Limpieza de lo que va a la base ───────────────────────────────
-// La tabla rechaza la FILA ENTERA si face no es 'A'/'B'/'F' o impacts no es un arreglo. Como el guardado
+// La tabla rechaza la FILA ENTERA si face no es 'A'/'B'/'F'/'T' o impacts no es un arreglo. Como el guardado
 // es una sola inserción (scores no permite UPDATE por RLS), un dato malformado perdería toda la sesión.
 // Por eso se limpia aquí y, si algo no es válido, se omite ese campo en vez de arriesgar la sesión.
-function _cleanFace(f) { return (f === 'A' || f === 'B' || f === 'F') ? f : null; }
+function _cleanFace(f) { return (f === 'A' || f === 'B' || f === 'F' || f === 'T') ? f : null; }   // T = Indoor, tres caras
 function _cleanImpacts(arr) {
   if (!Array.isArray(arr)) return null;
   var out = [];
@@ -355,6 +355,7 @@ function _cleanImpacts(arr) {
     var o = { x: Math.round(p.x * 10000) / 10000, y: Math.round(p.y * 10000) / 10000 };
     if (Number.isInteger(p.e) && p.e >= 0) o.e = p.e;   // índice de serie
     if (Number.isInteger(p.i) && p.i >= 0) o.i = p.i;   // índice de flecha dentro de la serie
+    if (Number.isInteger(p.s) && p.s >= 0 && p.s <= 2) o.s = p.s;   // cara donde cayó (0 a 2), solo en la diana de tres caras
     out.push(o);
   }
   return out.length ? out : null;
@@ -414,7 +415,7 @@ window.supabaseSaveScore = function(session) {
         var basic = {}; Object.keys(payload).forEach(function(k){ if(k!=='face' && k!=='impacts') basic[k]=payload[k]; });
         return post(basic).then(function(r2){
           if(r2.ok || r2.status===201 || r2.status===204){
-            console.warn('⚠️ Sesión guardada SIN diana ni impactos: la base rechazó esos campos (¿falta la migración de Field?)');
+            console.warn('⚠️ Sesión guardada SIN diana ni impactos: la base rechazó esos campos (¿falta la migración de la diana: Field o Indoor triple?)');
             window.supabaseSaveScore.lastPartial = true;
             return true;
           }
@@ -429,6 +430,7 @@ window.supabaseSaveScore = function(session) {
 // Marca de versión: la Bitácora la consulta para avisar si este archivo es una versión anterior que descartaría los impactos.
 window.supabaseSaveScore.supportsImpacts = true;
 window.supabaseSaveScore.supportsFieldFace = true;   // acepta la diana 'F' (Field)
+window.supabaseSaveScore.supportsTripleFace = true;  // acepta la diana 'T' (Indoor, tres caras) y la cara de cada impacto
 window.supabaseSaveScore.lastPartial = false;        // true si la última sesión se guardó sin diana (la base rechazó esos campos)
 
 // Edita una sesión YA guardada (solo la del propio usuario). Requiere la política UPDATE de migracion_editar_scores.sql:

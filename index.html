@@ -5939,7 +5939,7 @@ html.bt-light .main-content{z-index:auto}
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="bt-slots"></div>
       <div id="bt-face-box" style="display:none;margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:11px;color:var(--bt-ink-3)">Toca la diana donde cayó la flecha</span>
+          <span id="bt-face-hint" style="font-size:11px;color:var(--bt-ink-3)">Toca la diana donde cayó la flecha</span>
           <div id="bt-face-toggle" style="display:flex;gap:6px"></div>
         </div>
         <div class="bt-facewrap">
@@ -6551,7 +6551,7 @@ window.btSaveSession=function(){
   const m=BT_MODES[btState.mode];
   const setupId = window._activeSetupId || null;
   const setupNote = document.getElementById('bt-setup-note')?.value.trim() || null;
-  const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,setup_id:setupId,setup_note:setupNote,ends:btState.ends.map(e=>[...e]),face:(btState.impacts&&btState.impacts.length)?btState.face:null,impacts:(btState.impacts&&btState.impacts.length)?btState.impacts.map(function(p){return {e:p.e,i:p.i,x:p.x,y:p.y};}):null};
+  const s={id:Date.now(),date:new Date().toISOString(),mode:btState.mode,g:btState.g,lbl:m.lbl,total:btState._t||0,n:btState._n||0,sp:btState._sp||0,avg:btState._n>0?parseFloat((btState._t/btState._n).toFixed(2)):0,max:btState.max,notes:document.getElementById('bt-notes').value,setup_id:setupId,setup_note:setupNote,ends:btState.ends.map(e=>[...e]),face:(btState.impacts&&btState.impacts.length)?btState.face:null,impacts:(btState.impacts&&btState.impacts.length)?btState.impacts.map(btCopyImp):null};
   // Sesión de torneo externo capturada tiro por tiro: lleva el nombre y la marca de torneo externo
   const isExt = !!btState.ext;
   if(isExt){
@@ -6590,6 +6590,9 @@ window.btSaveSession=function(){
     if(s.impacts && !window.supabaseSaveScore.supportsImpacts){
       const warn = '⚠️ Falta actualizar supabase-persistence.js en el sitio: los impactos de esta sesión no se guardarán en la nube.';
       if(typeof showToast==='function') showToast(warn); else alert(warn);
+    } else if(s.face==='T' && !window.supabaseSaveScore.supportsTripleFace){
+      const warn = '⚠️ Falta actualizar supabase-persistence.js en el sitio: los impactos de Indoor no se guardarán en la nube.';
+      if(typeof showToast==='function') showToast(warn); else alert(warn);
     } else if(s.face==='F' && !window.supabaseSaveScore.supportsFieldFace){
       const warn = '⚠️ Falta actualizar supabase-persistence.js en el sitio: los impactos de Field no se guardarán en la nube.';
       if(typeof showToast==='function') showToast(warn); else alert(warn);
@@ -6599,7 +6602,7 @@ window.btSaveSession=function(){
       savePromise.then(function(ok){
         if(ok){
           if(window.supabaseSaveScore.lastPartial){
-            const pm = '⚠️ La sesión se guardó, pero SIN la diana de impactos: falta correr la migración de Field en la base de datos.';
+            const pm = '⚠️ La sesión se guardó, pero SIN la diana de impactos: falta correr la migración de la diana en la base de datos (Field o Indoor).';
             if(typeof showToast==='function') showToast(pm); else alert(pm);
           }
           return;
@@ -7078,7 +7081,8 @@ function btRenderStats(fs){
   set('bt-st-max',Math.max(...avgs).toFixed(1));
 }
 
-// Dianas. A = 6 anillos (5 a 10): compuesto outdoor e indoor. B = 10 anillos (1 a 10): recurvo y barebow outdoor.
+// Dianas. A = 6 anillos (5 a 10): compuesto outdoor. B = 10 anillos (1 a 10): recurvo y barebow outdoor.
+// T = Indoor: carátula de tres caras de 5 zonas (6 a 10) más el X, sin zona 5 (medida sobre la carátula de papel: anillos de 0.2 del radio; el X, 0.1).
 // F = Field: 5 zonas de ancho igual (1 a 5) y el 6 es la mitad interior del amarillo; dos amarillos (6 y 5), negro de 4 a 1.
 // Proporciones medidas de las dianas de referencia: anillos de ancho igual; el anillo k termina en (top+1-k)/n del radio exterior.
 // top = valor del anillo más interno; inner = valor de la mitad interior de ese anillo (A y B: X; F: 6).
@@ -7086,11 +7090,13 @@ const BT_FACE_COL={blue:'#5ab4d6',red:'#e03030',gold:'#e8c800',black:'#323232',w
 const BT_FACES={
   A:{n:6,  top:10, inner:'X', rings:[[5,'blue'],[6,'blue'],[7,'red'],[8,'red'],[9,'gold'],[10,'gold']]},
   B:{n:10, top:10, inner:'X', rings:[[1,'white'],[2,'white'],[3,'black'],[4,'black'],[5,'blue'],[6,'blue'],[7,'red'],[8,'red'],[9,'gold'],[10,'gold']]},
-  F:{n:5,  top:5,  inner:'6', rings:[[1,'black'],[2,'black'],[3,'black'],[4,'black'],[5,'gold']]}
+  F:{n:5,  top:5,  inner:'6', rings:[[1,'black'],[2,'black'],[3,'black'],[4,'black'],[5,'gold']]},
+  T:{n:5,  top:10, inner:'X', rings:[[6,'blue'],[7,'red'],[8,'red'],[9,'gold'],[10,'gold']]}
 };
 // Field siempre usa F. B solo para outdoor con arco recurvo o barebow. Con "Todos los arcos" o "Sin arco asignado" se usa el tipo del arco activo.
 function btFaceKey(){
   if(btFMod==='field') return 'F';
+  if(btFMod==='indoor') return 'T';
   if(btFMod!=='outdoor') return 'A';
   let type=null;
   if(btBow!=='all' && btBow!=='none'){ const b=btBows.find(x=>String(x.id)===String(btBow)); type=b?b.bow_type:null; }
@@ -7098,22 +7104,39 @@ function btFaceKey(){
   return (type==='recurvo'||type==='barebow') ? 'B' : 'A';
 }
 
-// Geometría de la diana (anillos, marca interior, cruz y números), compartida por la dispersión y el input.
-function btFaceMarkup(key){
-  const R=140, cx=150, cy=150, face=BT_FACES[key], n=face.n;
+// Disposición de las caras en el lienzo de 300×300. Una cara sola: centro (150,150), radio 140. El triple de Indoor son tres caras
+// como la carátula de papel: 1 abajo a la izquierda, 2 arriba y 3 abajo a la derecha. Cada impacto guarda en cuál cayó (p.s = 0, 1 o 2).
+const BT_ONE=[{cx:150,cy:150,R:140}];
+const BT_LAYOUT={ T:[ {cx:78,cy:213,R:67,lx:12,ly:292,la:'start'}, {cx:150,cy:85,R:67,lx:236,ly:40,la:'start'}, {cx:222,cy:213,R:67,lx:288,ly:292,la:'end'} ] };
+function btSpots(key){ return BT_LAYOUT[key]||BT_ONE; }
+function btImpPt(key,p){ const sp=btSpots(key), q=sp[(p.s>=0 && p.s<sp.length)?(p.s|0):0]; return {X:q.cx+p.x*q.R, Y:q.cy-p.y*q.R}; }
+function btCopyImp(p){ const o={e:p.e,i:p.i,x:p.x,y:p.y}; if(Number.isInteger(p.s) && p.s>=0 && p.s<=2) o.s=p.s; return o; }
+const btMk=function(key){ return key==='T'?0.7:1; };     // tamaño de los puntos: más chicos en las caras pequeñas
+
+// Una cara (anillos, marca interior, cruz y números) centrada en (cx,cy) con radio R. Compartida por la dispersión y el input.
+function btFaceOne(key,cx,cy,R){
+  const face=BT_FACES[key], n=face.n, sc=R/140, small=sc<1;
   let h='';
   face.rings.forEach(([k,c])=>{   // del anillo más grande al más chico
     const dark=c==='black';
-    h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R*(face.top+1-k)/n).toFixed(1)+'" fill="'+BT_FACE_COL[c]+'" stroke="'+(dark?'#ffffff':'#1b2743')+'" stroke-opacity="'+(dark?0.8:0.55)+'" stroke-width="0.8"/>';
+    h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R*(face.top+1-k)/n).toFixed(1)+'" fill="'+BT_FACE_COL[c]+'" stroke="'+(dark?'#ffffff':'#1b2743')+'" stroke-opacity="'+(dark?0.8:0.55)+'" stroke-width="'+(small?0.5:0.8)+'"/>';
   });
-  h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R/(2*n)).toFixed(1)+'" fill="none" stroke="#1b2743" stroke-opacity="0.45" stroke-width="0.6"/>';
-  h+='<path d="M'+(cx-4)+' '+cy+'h8M'+cx+' '+(cy-4)+'v8" stroke="#1b2743" stroke-opacity="0.6" stroke-width="0.8"/>';
+  h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R/(2*n)).toFixed(1)+'" fill="none" stroke="#1b2743" stroke-opacity="0.45" stroke-width="'+(small?0.4:0.6)+'"/>';
+  const a=4*sc;
+  h+='<path d="M'+(+(cx-a).toFixed(2))+' '+cy+'h'+(+(2*a).toFixed(2))+'M'+cx+' '+(+(cy-a).toFixed(2))+'v'+(+(2*a).toFixed(2))+'" stroke="#1b2743" stroke-opacity="0.6" stroke-width="'+(small?0.5:0.8)+'"/>';
   face.rings.forEach(([k,c])=>{
+    if(key==='T' && k===10) return;       // en las caras pequeñas el 10 se tapa con la cruz; el X ya lo marca
     let mid=(face.top+1-k)/n-1/(2*n);
     if(key==='F' && k===5) mid=0.15;     // el 5 es la mitad exterior del amarillo; el 6 lleva su propio número abajo
-    h+='<text x="'+(cx+R*mid).toFixed(1)+'" y="'+(cy+3)+'" font-size="'+(n===10?7.5:9)+'" text-anchor="middle" fill="'+(c==='black'?'#ffffff':'#1b2743')+'" fill-opacity="0.85" font-family="DM Sans,sans-serif">'+k+'</text>';
+    h+='<text x="'+(cx+R*mid).toFixed(1)+'" y="'+(+(cy+3*(small?0.6:1)).toFixed(1))+'" font-size="'+(small?5:(n===10?7.5:9))+'" text-anchor="middle" fill="'+(c==='black'?'#ffffff':'#1b2743')+'" fill-opacity="0.85" font-family="DM Sans,sans-serif">'+k+'</text>';
   });
   if(key==='F') h+='<text x="'+(cx+8.5)+'" y="'+(cy+3)+'" font-size="9" text-anchor="middle" fill="#1b2743" fill-opacity="0.85" font-family="DM Sans,sans-serif">6</text>';
+  return h;
+}
+function btFaceMarkup(key){
+  const sp=btSpots(key); let h='';
+  sp.forEach(q=>{ h+=btFaceOne(key,q.cx,q.cy,q.R); });
+  if(sp.length>1) sp.forEach((q,i)=>{ h+='<text x="'+q.lx+'" y="'+q.ly+'" text-anchor="'+q.la+'" font-size="26" font-weight="700" font-family="DM Sans,sans-serif" style="fill:var(--bt-ink-3)">'+(i+1)+'</text>'; });
   return h;
 }
 
@@ -7128,22 +7151,21 @@ function btFaceIconSvg(key,cx,cy,r){
   h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(r/(2*n)).toFixed(2)+'" fill="none" stroke="#1b2743" stroke-opacity="0.4" stroke-width="0.5"/>';
   return h;
 }
-// Outdoor muestra la diana que se usará con el arco activo (A para compuesto, B para recurvo y barebow); Indoor, tres A; Field, F. 3D no usa diana.
+// Outdoor muestra la diana que se usará con el arco activo (A para compuesto, B para recurvo y barebow); Indoor, tres T; Field, F. 3D no usa diana.
 function btStartIcons(){
   const put=(g,body)=>{ const s=document.querySelector('.bt-disc-card[data-group="'+g+'"] svg'); if(s) s.innerHTML=body; };
   put('outdoor', btFaceIconSvg(btSessionFace('outdoor-36'),40,40,38));
-  put('indoor',  btFaceIconSvg('A',40,20,17)+btFaceIconSvg('A',22,55,17)+btFaceIconSvg('A',58,55,17));
+  put('indoor',  btFaceIconSvg('T',40,20,17)+btFaceIconSvg('T',22,55,17)+btFaceIconSvg('T',58,55,17));
   put('field',   btFaceIconSvg('F',40,40,38));
 }
 
 // Dispersión de impactos.
 // Contrato propuesto para la fase de datos: s.impacts = [{x,y}] normalizado al radio exterior de la diana usada
 // (A: borde del anillo 5; B: borde del anillo 1; F: borde del anillo 1), (0,0) = centro, x hacia la derecha, y hacia arriba.
-// s.face = 'A' | 'B' | 'F' (si falta se asume 'A'). Solo se grafican impactos de la diana que se está mostrando.
+// s.face = 'A' | 'B' | 'F' | 'T' (si falta se asume 'A'). En T cada impacto trae p.s (la cara, 0 a 2). Solo se grafican impactos de la diana que se está mostrando.
 function btRenderScatter(fs){
   const svg=document.getElementById('bt-scatter-svg'); if(!svg) return;
-  const R=140, cx=150, cy=150;
-  const key=btFaceKey(), face=BT_FACES[key], n=face.n;
+  const key=btFaceKey(), mk=btMk(key), f=v=>+(v*mk).toFixed(2);
   svg.setAttribute('data-face',key);
   const is3d=btFMod==='3d';
   let imp=[], other=0;
@@ -7154,7 +7176,7 @@ function btRenderScatter(fs){
   });
   const faceOp = (is3d && !imp.length) ? 0.25 : 1;
   let h='<g opacity="'+faceOp+'">'+btFaceMarkup(key)+'</g>';
-  imp.forEach(p=>{ h+='<circle cx="'+(cx+p.x*R).toFixed(1)+'" cy="'+(cy-p.y*R).toFixed(1)+'" r="3.2" fill="#182440" stroke="#fffffc" stroke-width="1"/>'; });
+  imp.forEach(p=>{ const q=btImpPt(key,p); h+='<circle cx="'+q.X.toFixed(1)+'" cy="'+q.Y.toFixed(1)+'" r="'+f(3.2)+'" fill="#182440" stroke="#fffffc" stroke-width="'+f(1)+'"/>'; });
   svg.innerHTML=h;
   const emp=document.getElementById('bt-scatter-empty'), nEl=document.getElementById('bt-scatter-n');
   if(is3d){ emp.style.display='block'; emp.textContent='La dispersión no aplica a 3D.'; nEl.textContent=''; }
@@ -7174,6 +7196,7 @@ function btRenderScatter(fs){
 // Outdoor, indoor y field. 3D no usa diana y se queda con el teclado.
 function btSessionFace(mode){
   if(mode && mode.indexOf('field-')===0) return 'F';
+  if(mode && mode.indexOf('indoor-')===0) return 'T';      // Indoor: carátula de tres caras
   if(!mode || (mode.indexOf('outdoor-')!==0 && mode.indexOf('indoor-')!==0)) return null;
   var t=window._activeSetupType||null;
   return (mode.indexOf('outdoor-')===0 && (t==='recurvo'||t==='barebow')) ? 'B' : 'A';
@@ -7190,14 +7213,18 @@ function btValueFromXY(x,y,key){
   if(u<=0.5) return f.inner;
   return String(f.top+1-Math.ceil(u));
 }
-function btPlaceImpact(x,y){
+function btPlaceImpact(x,y,sp){
   var st=btState;
   if(!st.active || !st.face) return;
   var s=st.slot; if(s>=st.apR) return;
   var v=btValueFromXY(x,y,st.face);
   if(st.vals.indexOf(v)<0) return;
   btDropImpact(st.cur,s);
-  if(v!=='M') st.impacts.push({e:st.cur,i:s,x:Math.round(x*10000)/10000,y:Math.round(y*10000)/10000});
+  if(v!=='M'){
+    var o={e:st.cur,i:s,x:Math.round(x*10000)/10000,y:Math.round(y*10000)/10000};
+    if(btSpots(st.face).length>1) o.s=sp|0;          // en la diana de tres caras: en cuál cayó
+    st.impacts.push(o);
+  }
   btPressK(v);   // misma vía que el teclado: guarda el valor, avanza de flecha y repinta
 }
 // Cambiar de diana solo antes de colocar la primera flecha (las coordenadas dependen de la diana)
@@ -7211,8 +7238,11 @@ function btRenderFace(){
   var st=btState;
   if(!st.active || !st.face){ box.style.display='none'; return; }
   box.style.display='block';
-  var key=st.face, imps=st.impacts||[], R=140, cx=150, cy=150;
+  var key=st.face, imps=st.impacts||[], mk=btMk(key), f=function(v){ return +(v*mk).toFixed(2); }, sps=btSpots(key);
   svg.setAttribute('data-face',key);
+  var hint=document.getElementById('bt-face-hint');
+  if(hint) hint.textContent = sps.length>1 ? 'Flecha '+(st.slot+1)+': toca la cara '+((st.slot%sps.length)+1)+' donde cayó' : 'Toca la diana donde cayó la flecha';
+  svg.setAttribute('aria-label', sps.length>1 ? 'Tres caras: toca donde cayó la flecha' : 'Diana: toca donde cayó la flecha');
   var tg=document.getElementById('bt-face-toggle');
   if(tg){
     if(st.mode.indexOf('outdoor-')!==0 || st.editId){ tg.innerHTML=''; }      // al editar, la diana ya está fijada
@@ -7227,13 +7257,19 @@ function btRenderFace(){
   var h='<g>'+btFaceMarkup(key)+'</g>';
   imps.forEach(function(p){            // series anteriores: puntos discretos
     if(p.e===st.cur) return;
-    h+='<circle cx="'+(cx+p.x*R).toFixed(1)+'" cy="'+(cy-p.y*R).toFixed(1)+'" r="2.4" fill="#182440" stroke="#fffffc" stroke-width="0.7" opacity="0.75"/>';
+    var q=btImpPt(key,p);
+    h+='<circle cx="'+q.X.toFixed(1)+'" cy="'+q.Y.toFixed(1)+'" r="'+f(2.4)+'" fill="#182440" stroke="#fffffc" stroke-width="'+f(0.7)+'" opacity="0.75"/>';
   });
+  if(sps.length>1){                    // la cara que toca a esta flecha (la 1.ª flecha, la cara 1; la 2.ª, la 2...); se puede tocar otra si se tira en otro orden
+    var ex=sps[st.slot%sps.length];
+    h+='<circle cx="'+ex.cx+'" cy="'+ex.cy+'" r="'+(ex.R*1.08).toFixed(1)+'" fill="none" stroke="#182440" stroke-opacity="0.55" stroke-width="3.6" pointer-events="none"/>'+     // base marina: el ámbar solo no se ve sobre fondo blanco
+       '<circle cx="'+ex.cx+'" cy="'+ex.cy+'" r="'+(ex.R*1.08).toFixed(1)+'" fill="none" stroke="#e0a030" stroke-width="1.6" stroke-dasharray="5 3" pointer-events="none" data-expected="1"/>';
+  }
   imps.forEach(function(p){            // serie actual: numeradas por flecha, la activa resaltada
     if(p.e!==st.cur) return;
-    var act=(p.i===st.slot), X=(cx+p.x*R).toFixed(1), Y=(cy-p.y*R);
-    h+='<circle cx="'+X+'" cy="'+Y.toFixed(1)+'" r="'+(act?6.5:5.5)+'" fill="#182440" stroke="'+(act?'#f5c06a':'#fffffc')+'" stroke-width="'+(act?1.8:1.1)+'"/>'+
-       '<text x="'+X+'" y="'+(Y+2.4).toFixed(1)+'" font-size="6.8" font-weight="700" text-anchor="middle" fill="#ffffff" font-family="DM Sans,sans-serif">'+(p.i+1)+'</text>';
+    var act=(p.i===st.slot), q=btImpPt(key,p), X=q.X.toFixed(1), Y=q.Y, big=(p.i+1)>9;
+    h+='<circle cx="'+X+'" cy="'+Y.toFixed(1)+'" r="'+f(act?6.5:5.5)+'" fill="#182440" stroke="'+(act?'#f5c06a':'#fffffc')+'" stroke-width="'+f(act?1.8:1.1)+'"/>'+
+       '<text x="'+X+'" y="'+(Y+f(2.4)).toFixed(1)+'" font-size="'+(big?+(f(6.8)*0.8).toFixed(2):f(6.8))+'" font-weight="700" text-anchor="middle" fill="#ffffff" font-family="DM Sans,sans-serif">'+(p.i+1)+'</text>';
   });
   h+='<g id="bt-face-aim" pointer-events="none"></g>';
   svg.innerHTML=h;
@@ -7243,7 +7279,10 @@ function btFaceToXY(svg,e){
   var m=svg.getScreenCTM(); if(!m) return null;
   var pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY;
   var p=pt.matrixTransform(m.inverse());
-  return {sx:p.x, sy:p.y, x:(p.x-150)/140, y:(150-p.y)/140};
+  var sp=btSpots(btState.face), bi=0, bd=1e9;
+  sp.forEach(function(q,i){ var d=Math.hypot(p.x-q.cx,p.y-q.cy); if(d<bd){ bd=d; bi=i; } });   // la cara más cercana al dedo
+  var q=sp[bi];
+  return {sx:p.x, sy:p.y, s:bi, x:(p.x-q.cx)/q.R, y:(q.cy-p.y)/q.R};
 }
 // Mira + lupa mientras el dedo está presionado: la lupa va en la esquina opuesta para que el dedo no la tape
 function btFaceAim(q,first){
@@ -7257,14 +7296,15 @@ function btFaceAim(q,first){
   var lp=document.getElementById('bt-loupe'); if(!lp) return;
   if(first){
     var c=btFaceMarkup(key);
-    (st.impacts||[]).forEach(function(p){ c+='<circle cx="'+(150+p.x*140).toFixed(1)+'" cy="'+(150-p.y*140).toFixed(1)+'" r="1.5" fill="#182440" stroke="#fffffc" stroke-width="0.4"/>'; });
+    (st.impacts||[]).forEach(function(p){ var q=btImpPt(key,p); c+='<circle cx="'+q.X.toFixed(1)+'" cy="'+q.Y.toFixed(1)+'" r="'+(1.5*btMk(key)).toFixed(2)+'" fill="#182440" stroke="#fffffc" stroke-width="0.4"/>'; });
     lp.innerHTML='<svg id="bt-loupe-svg" viewBox="0 0 28 28">'+c+'</svg><div class="bt-loupe-x"></div><div class="bt-loupe-v" id="bt-loupe-v"></div>';
   }
   lp.style.display='block';
   lp.style.left  = q.sx<150 ? 'auto' : '6px';
   lp.style.right = q.sx<150 ? '6px'  : 'auto';
   var ls=document.getElementById('bt-loupe-svg');
-  if(ls) ls.setAttribute('viewBox',(q.sx-14).toFixed(2)+' '+(q.sy-14).toFixed(2)+' 28 28');
+  var LW=(key==='T')?18:28;     // ventana de la lupa: más cerrada en las caras pequeñas
+  if(ls) ls.setAttribute('viewBox',(q.sx-LW/2).toFixed(2)+' '+(q.sy-LW/2).toFixed(2)+' '+LW+' '+LW);
   var lv=document.getElementById('bt-loupe-v');
   if(lv){ var v=btValueFromXY(q.x,q.y,key); lv.textContent = v==='M' ? 'Fuera' : v; }
 }
@@ -7287,7 +7327,7 @@ function btFaceMove(e){
 function btFaceUp(e){
   if(!btDrag || e.pointerId!==btDrag.id) return;
   var q=btFaceToXY(e.currentTarget,e); btDrag=null; btFaceAimClear();
-  if(q) btPlaceImpact(q.x,q.y);          // se coloca donde se SUELTA el dedo
+  if(q) btPlaceImpact(q.x,q.y,q.s);        // se coloca donde se SUELTA el dedo, en la cara más cercana
 }
 function btFaceCancel(){ btDrag=null; btFaceAimClear(); }
 (function btInitFaceInput(){
@@ -7397,15 +7437,15 @@ function btOpenSession(id){
 // Pinta la diana y marca la serie elegida (sel = índice original de la serie, o null para todas)
 function btDetPaint(){
   if(!btDet) return;
-  const s=btDet.s, sel=btDet.sel, R=140, cx=150, cy=150;
+  const s=btDet.s, sel=btDet.sel, mk=btMk(s.face), f=v=>+(v*mk).toFixed(2);
   const svg=document.getElementById('bt-det-svg'), imps=btDetImpacts(s);
   if(svg){
     let h='<g>'+btFaceMarkup(s.face)+'</g>';
     imps.forEach(p=>{
-      const X=(cx+p.x*R).toFixed(1), Y=(cy-p.y*R).toFixed(1), at=' data-imp="1" data-e="'+p.e+'" data-i="'+p.i+'"';
-      if(sel===null) h+='<circle'+at+' cx="'+X+'" cy="'+Y+'" r="3.4" fill="#182440" stroke="#fffffc" stroke-width="1"/>';
-      else if(p.e===sel) h+='<g'+at+' data-sel="1"><circle cx="'+X+'" cy="'+Y+'" r="7.5" fill="#182440" stroke="#f5c06a" stroke-width="1.6"/><text x="'+X+'" y="'+Y+'" dy="2.8" text-anchor="middle" font-size="8" font-weight="700" fill="#ffffff" font-family="DM Sans,sans-serif">'+(p.i+1)+'</text></g>';
-      else h+='<circle'+at+' cx="'+X+'" cy="'+Y+'" r="2.6" fill="#182440" stroke="#fffffc" stroke-width="0.8" opacity="0.28"/>';
+      const q=btImpPt(s.face,p), X=q.X.toFixed(1), Y=q.Y.toFixed(1), at=' data-imp="1" data-e="'+p.e+'" data-i="'+p.i+'"';
+      if(sel===null) h+='<circle'+at+' cx="'+X+'" cy="'+Y+'" r="'+f(3.4)+'" fill="#182440" stroke="#fffffc" stroke-width="'+f(1)+'"/>';
+      else if(p.e===sel) h+='<g'+at+' data-sel="1"><circle cx="'+X+'" cy="'+Y+'" r="'+f(7.5)+'" fill="#182440" stroke="#f5c06a" stroke-width="'+f(1.6)+'"/><text x="'+X+'" y="'+Y+'" dy="'+f(2.8)+'" text-anchor="middle" font-size="'+f(8)+'" font-weight="700" fill="#ffffff" font-family="DM Sans,sans-serif">'+(p.i+1)+'</text></g>';
+      else h+='<circle'+at+' cx="'+X+'" cy="'+Y+'" r="'+f(2.6)+'" fill="#182440" stroke="#fffffc" stroke-width="'+f(0.8)+'" opacity="0.28"/>';
     });
     svg.innerHTML=h; svg.setAttribute('data-face',s.face);
   }
@@ -7511,7 +7551,7 @@ window.btEditSaved=function(id){
   if(btState.active) btDraftClear();
   const m=BT_MODES[s.mode], rondas=s.ends.length;
   const ends=s.ends.map(e=>{ const a=[]; (Array.isArray(e)?e:[]).forEach((v,k)=>{ if(v!=null && v!=='') a[k]=String(v); }); return a; });
-  const impacts=(Array.isArray(s.impacts)?s.impacts:[]).filter(p=>p && isFinite(p.x) && isFinite(p.y)).map(p=>({e:p.e,i:p.i,x:p.x,y:p.y}));
+  const impacts=(Array.isArray(s.impacts)?s.impacts:[]).filter(p=>p && isFinite(p.x) && isFinite(p.y)).map(btCopyImp);
   if(typeof btCloseSession==='function') btCloseSession();
   btCurMode=s.mode;
   btState={active:true,mode:s.mode,g:s.g,rondas,apR:m.apR,vals:m.vals,sp:m.sp,ends,cur:0,slot:0,max:(s.mode==='3d'?rondas*12:(s.max||m.max)),
@@ -7527,7 +7567,7 @@ function btSaveEdit(){
   const st=btState, s=btSessions.find(x=>String(x.id)===String(st.editId));
   if(!s){ btNotify('⚠️ No encontré la sesión que estabas editando. Ábrela de nuevo desde el historial.'); return; }
   btUpdTot();
-  const imp=(st.impacts&&st.impacts.length)?st.impacts.map(p=>({e:p.e,i:p.i,x:p.x,y:p.y})):null;
+  const imp=(st.impacts&&st.impacts.length)?st.impacts.map(btCopyImp):null;
   const patch={total:st._t||0,n:st._n||0,sp:st._sp||0,avg:st._n>0?parseFloat((st._t/st._n).toFixed(2)):0,
                ends:st.ends.map(e=>[...e]),notes:document.getElementById('bt-notes').value,face:imp?st.face:null,impacts:imp};
   patch.touchDiana=!!(s.face||imp);
@@ -7544,6 +7584,8 @@ function btSaveEdit(){
     }
     btNotify(res && res.reason==='blocked'
       ? '⚠️ La base no permitió editar la sesión: falta correr migracion_editar_scores.sql en Supabase. Tus cambios siguen en pantalla.'
+      : (res && (res.status===400||res.status===422) && patch.face==='T')
+      ? '⚠️ La base aún no acepta la diana de Indoor: falta correr migracion_cara_triple.sql en Supabase. Tus cambios siguen en pantalla.'
       : '⚠️ No se pudieron guardar los cambios. Revisa tu conexión: siguen en pantalla para que reintentes.');
   });
 }
