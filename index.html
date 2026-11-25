@@ -18085,6 +18085,22 @@ window.addEventListener('rt-plan-score-saved', async function(e){
 .tm-play:disabled{opacity:0.45;cursor:default}
 .tm-help{margin:0 0 12px;font-size:12px;line-height:1.5;color:var(--tm-ink-3)}
 .tm-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* ── Fondo claro ──
+   El script de esta pestaña pone la clase .tm-claro en <html> mientras el Temporizador está visible. (No se llama .tm-light porque
+   esa clase ya es la carcasa del semáforo.) Aplica a todos los tamaños de pantalla; para limitarlo al celular, envuelve este bloque
+   en @media (max-width:768px). Mismo mecanismo que el fondo blanco de Puntuaciones. El menú lateral y el encabezado del celular
+   siguen oscuros (se hacen casi sólidos para que su vidrio no se mezcle con la página clara). */
+html.tm-claro,html.tm-claro body{background-color:#fffffc;background-image:none}
+html.tm-claro body::before{display:none}
+html.tm-claro .main-content{--text:#1b2743;--muted:rgba(27,39,67,0.72);--hint:rgba(27,39,67,0.64);--border:rgba(27,39,67,0.14);--ic-accent:#d9962a;--tm-ink:#1b2743;--tm-ink-2:rgba(27,39,67,0.8);--tm-ink-3:rgba(27,39,67,0.7);--tm-line:rgba(27,39,67,0.55);--tm-down:#c4332b}
+html.tm-claro .mobile-header{background:rgba(14,14,14,0.96)}
+html.tm-claro .sidebar{background:rgba(20,20,20,0.96)}
+/* los banners: borde más oscuro para que se lean sobre blanco, y una sombra menos pesada */
+html.tm-claro .tm-ban{--be:#4a6bb5;--bg:rgba(74,107,181,0.3);box-shadow:0 0 14px var(--bg),0 4px 10px rgba(27,39,67,0.25)}
+html.tm-claro .tm-ban-red,html.tm-claro .tm-stage[data-phase="prep"],html.tm-claro .tm-stage[data-phase="done"]{--be:#d9604a;--bg:rgba(217,96,74,0.3)}
+html.tm-claro .tm-ban-green,html.tm-claro .tm-stage[data-phase="go"]{--be:#2e9e5e;--bg:rgba(46,158,94,0.3)}
+html.tm-claro .tm-stage[data-phase="warn"]{--be:#b88a00;--bg:rgba(184,138,0,0.3)}
+html.tm-claro .tm-go{border-color:#b7791a}
 </style>
 
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -18339,6 +18355,16 @@ function drawSound(){
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible' && run){ tick(); lock(); } });
 
 drawSound(); drawConfig(); syncUi();
+})();
+</script>
+<script>
+// Marca <html> con .tm-claro mientras esta pestaña está visible (switchTab pone o quita la clase .active del panel).
+(function(){
+  const panel=document.getElementById('tab-timer'); if(!panel) return;
+  const root=document.documentElement;
+  const sync=function(){ root.classList.toggle('tm-claro',panel.classList.contains('active')); };
+  sync();
+  if(window.MutationObserver) new MutationObserver(sync).observe(panel,{attributes:true,attributeFilter:['class']});
 })();
 </script>
 </div>
