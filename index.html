@@ -16067,560 +16067,459 @@ window.coTrOpenAthlete = function(userId){
 
 <div id="tab-rutina" class="tab-panel">
 <style>
-/* ── RUTINA VARS ── */
-.rt-wrap{ max-width:680px; margin:0 auto; }
-
-/* Cards */
-.rt-card{
-  background:var(--surface);
-  border:0.5px solid var(--border);
-  border-radius:14px;
-  padding:16px;
-  margin-bottom:12px;
-  position:relative;
-  overflow:hidden;
+/* ═══ Plan semanal · mismo lenguaje que Competencias, Temporizador y Puntuaciones ═══
+   Página blanca (el script pone .rt-claro en <html> mientras esta pestaña está visible), banners de color con filo blanco,
+   el detalle va en ventanas emergentes desde abajo (como en Puntuaciones) y la información se muestra por pasos. */
+.rt-app{max-width:460px;margin:0 auto;font-family:'DM Sans',sans-serif;color:var(--rt-ink)}
+/* Variables de color: también para las ventanas emergentes y el aviso, que viven FUERA de .rt-app */
+.rt-app,.rt-sheet,.rt-toast{
+  --rt-ink:#1b2743;--rt-ink-2:rgba(27,39,67,0.8);--rt-ink-3:rgba(27,39,67,0.68);
+  --rt-hair:rgba(27,39,67,0.14);--rt-line:rgba(27,39,67,0.55);--rt-field:#eef0f5;--rt-field-line:rgba(27,39,67,0.35);
+  --rt-navy:#182440;--rt-amber:#f5c06a;--rt-dotted:#4eabc6;--rt-down:#c4332b;--rt-up:#167a5a;
 }
-.rt-card-bar{
-  position:absolute;top:0;left:0;right:0;height:2px;
-}
-
-/* Plan list item */
-.rt-plan-item{
-  padding:12px 14px;
-  border-radius:10px;
-  border:0.5px solid var(--border);
-  background:var(--surface);
-  margin-bottom:8px;
-  cursor:pointer;
-  transition:all .15s;
-}
-.rt-plan-item:hover{ border-color:var(--border2); background:var(--surface2); }
-.rt-plan-item.active-plan{
-  border-color:rgba(216,209,90,0.35);
-  background:rgba(216,209,90,0.05);
-}
-
-/* Day pills */
-.rt-day-pill{
-  width:32px;height:32px;
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:700;
-  cursor:pointer;
-  transition:all .15s;
-  border:0.5px solid var(--border);
-  color:var(--muted);
-  background:var(--surface2);
-  user-select:none;
-  -webkit-tap-highlight-color:transparent;
-}
-.rt-day-pill.on{
-  background:rgba(216,209,90,0.15);
-  border-color:rgba(216,209,90,0.4);
-  color:var(--yellow);
-}
-
-/* Activity types */
-.rt-act-type{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 12px;
-  border-radius:10px;
-  border:0.5px solid var(--border);
-  background:var(--surface2);
-  cursor:pointer;
-  transition:all .15s;
-  margin-bottom:6px;
-  user-select:none;
-}
-.rt-act-type.sel{
-  border-color:rgba(216,209,90,0.4);
-  background:rgba(216,209,90,0.06);
-}
-.rt-act-icon{ font-size:18px;width:24px;text-align:center;flex-shrink:0; }
-.rt-act-info{ flex:1 }
-.rt-act-label{ font-size:13px;font-weight:600;color:var(--text); }
-.rt-act-sub{ font-size:10px;color:var(--muted);margin-top:1px; }
-
-/* Activity card in day view */
-.rt-act-card{
-  border:0.5px solid var(--border);
-  border-radius:10px;
-  padding:12px 14px;
-  margin-bottom:8px;
-  background:var(--surface2);
-  position:relative;
-}
-.rt-act-card-bar{
-  position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:10px 0 0 10px;
-}
-
-/* Report row */
-.rt-report-row{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 0;
-  border-bottom:0.5px solid var(--border);
-}
-.rt-report-row:last-child{ border-bottom:none; }
-
-/* Progress ring */
-.rt-ring-wrap{ position:relative;width:52px;height:52px;flex-shrink:0; }
-.rt-ring-wrap svg{ transform:rotate(-90deg); }
-.rt-ring-pct{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Bebas Neue',sans-serif;
-  font-size:13px;color:var(--text);
-}
-
-/* Section label */
-.rt-sec{
-  font-size:9px;font-weight:700;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--muted);
-  margin:14px 0 8px;
-}
-
-/* Buttons */
-.rt-btn{
-  padding:10px 16px;border-radius:10px;
-  border:0.5px solid var(--border2);
-  background:var(--surface2);
-  color:var(--text);
-  font-size:13px;font-family:'DM Sans',sans-serif;
-  cursor:pointer;transition:all .15s;
-}
-.rt-btn.y{
-  background:rgba(216,209,90,0.12);
-  border-color:rgba(216,209,90,0.4);
-  color:var(--yellow);font-weight:600;
-}
-.rt-btn.y:hover{ background:rgba(216,209,90,0.2); }
-.rt-btn.sm{ padding:6px 12px;font-size:11px; }
-.rt-btn.ghost{
-  background:transparent;border-color:var(--border);
-  color:var(--muted);
-}
-
-/* Input */
-.rt-input{
-  width:100%;padding:9px 12px;
-  border:0.5px solid var(--border2);
-  border-radius:8px;
-  background:var(--surface2);
-  color:var(--text);
-  font-size:13px;font-family:'DM Sans',sans-serif;
-  outline:none;box-sizing:border-box;
-}
-.rt-input:focus{ border-color:var(--yellow); }
-.rt-label{
-  font-size:10px;font-weight:600;
-  letter-spacing:.06em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:5px;
-}
-.rt-textarea{
-  width:100%;padding:9px 12px;
-  border:0.5px solid var(--border2);
-  border-radius:8px;
-  background:var(--surface2);
-  color:var(--text);
-  font-size:12px;font-family:'DM Sans',sans-serif;
-  outline:none;resize:none;
-  box-sizing:border-box;
-  min-height:60px;
-}
-.rt-textarea:focus{ border-color:var(--yellow); }
-
-/* Week tabs */
-.rt-week-tabs{
-  display:flex;gap:4px;overflow-x:auto;
-  padding-bottom:2px;margin-bottom:12px;
-  scrollbar-width:none;
-}
-.rt-week-tabs::-webkit-scrollbar{ display:none; }
-.rt-week-tab{
-  flex-shrink:0;padding:5px 12px;
-  border-radius:8px;border:0.5px solid var(--border);
-  background:var(--surface2);color:var(--muted);
-  font-size:11px;font-weight:600;cursor:pointer;
-  transition:all .15s;white-space:nowrap;
-}
-.rt-week-tab.act{
-  background:rgba(216,209,90,0.12);
-  border-color:rgba(216,209,90,0.3);
-  color:var(--yellow);
-}
-
-/* Toggle switch */
-.rt-toggle{
-  width:36px;height:20px;border-radius:10px;
-  background:rgba(255,255,255,0.1);
-  border:none;cursor:pointer;position:relative;
-  flex-shrink:0;transition:background .2s;
-}
-.rt-toggle.on{ background:rgba(93,202,165,0.5); }
-.rt-toggle-dot{
-  position:absolute;top:3px;left:3px;
-  width:14px;height:14px;border-radius:50%;
-  background:#fff;transition:transform .2s;
-}
-.rt-toggle.on .rt-toggle-dot{ transform:translateX(16px); }
-
-/* Time filter chips — mismo estilo que coach tab */
-.rt-tf-btn{
-  padding:5px 12px;border-radius:20px;
-  font-size:11px;font-weight:600;
-  border:0.5px solid rgba(255,255,255,0.12);
-  background:transparent;color:rgba(255,255,255,0.4);
-  cursor:pointer;font-family:'DM Sans',sans-serif;
-  transition:all .15s;white-space:nowrap;
-}
-.rt-tf-btn:hover{ color:#fff;border-color:rgba(255,255,255,0.3); }
-.rt-tf-btn.rt-tf-act{
-  background:rgba(216,209,90,0.12);
-  border-color:rgba(216,209,90,0.4);
-  color:#d8d15a;
-}
-
-/* Stats mini */
-.rt-stat-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
-}
-.rt-stat-box{
-  text-align:center;padding:10px 8px;
-  border-radius:10px;
-  background:var(--surface2);
-  border:0.5px solid var(--border);
-}
-.rt-stat-val{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:26px;line-height:1;color:var(--yellow);
-}
-.rt-stat-lbl{
-  font-size:9px;color:var(--muted);
-  text-transform:uppercase;letter-spacing:.06em;
-  margin-top:3px;
-}
-
-/* Toast mini */
-.rt-toast{
-  position:fixed;bottom:80px;left:50%;
-  transform:translateX(-50%) translateY(60px);
-  background:var(--surface);border:0.5px solid var(--border2);
-  border-radius:10px;padding:8px 18px;
-  font-size:12px;color:var(--text);
-  z-index:5000;transition:transform .25s ease;
-  white-space:nowrap;pointer-events:none;
-}
-.rt-toast.show{ transform:translateX(-50%) translateY(0); }
-.rt-toast.ok{ border-color:var(--green);color:var(--green); }
+.rt-app [hidden]{display:none!important}
+.rt-app button,.rt-sheet button,.rt-sheet input,.rt-sheet select,.rt-sheet textarea{font-family:'DM Sans',sans-serif}
+/* ── página blanca ── */
+html.rt-claro,html.rt-claro body{background-color:#fffffc;background-image:none}
+html.rt-claro body::before{display:none}
+html.rt-claro .main-content{--text:#1b2743;--muted:rgba(27,39,67,0.72);--hint:rgba(27,39,67,0.64);--border:rgba(27,39,67,0.14);--ic-accent:#d9962a}
+html.rt-claro .mobile-header{background:rgba(14,14,14,0.96)}
+html.rt-claro .sidebar{background:rgba(20,20,20,0.96)}
+/* ── encabezados de sección ── */
+.rt-hd{margin:18px 0 10px;padding-top:12px;border-top:3px dotted var(--rt-dotted);font-size:20px;font-style:italic;font-weight:600;color:var(--rt-ink);display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rt-hd.first{margin-top:0;padding-top:0;border-top:none}
+.rt-hd small{font-size:12px;font-style:normal;font-weight:600;color:var(--rt-ink-3)}
+/* ── banners ── */
+.rt-ban{--bb:linear-gradient(100deg,#182440 0%,#243a68 60%,#35508c 100%);--be:#4a6bb5;--bg:rgba(74,107,181,0.3);--bt:#fff;position:relative;display:block;box-sizing:border-box;width:100%;margin:0 0 12px;padding:0;border:3px solid var(--be);border-radius:20px;overflow:hidden;background:var(--bb);color:var(--bt);text-align:left;font-family:'DM Sans',sans-serif;box-shadow:0 0 14px var(--bg),0 4px 10px rgba(27,39,67,0.25)}
+button.rt-ban{cursor:pointer;-webkit-tap-highlight-color:transparent}
+button.rt-ban:active{filter:brightness(1.06)}
+button.rt-ban:focus-visible{outline:3px solid var(--rt-amber);outline-offset:2px}
+.rt-ban::before{content:"";position:absolute;inset:0;border-radius:17px;border:2px solid rgba(255,255,255,0.92);pointer-events:none;z-index:4}
+.rt-ban-red{--bb:linear-gradient(100deg,#7d2217 0%,#b23a2a 60%,#c24a34 100%);--be:#d9604a;--bg:rgba(217,96,74,0.3)}
+.rt-ban-green{--bb:linear-gradient(100deg,#0c4527 0%,#17794a 60%,#1f8d58 100%);--be:#2e9e5e;--bg:rgba(46,158,94,0.3)}
+.rt-ban-amber{--bb:linear-gradient(100deg,#d98e1f 0%,#f5c06a 60%,#ffe2a6 100%);--be:#b7791a;--bg:rgba(183,121,26,0.3);--bt:#182440}
+.rt-ban-teal{--bb:linear-gradient(100deg,#123d44 0%,#236670 60%,#34808a 100%);--be:#2f8f9c;--bg:rgba(47,143,156,0.3)}
+.rt-ban-field{--bb:linear-gradient(100deg,#141414 0%,#2a2a2a 60%,#454545 100%);--be:#a88a00;--bg:rgba(168,138,0,0.3)}
+.rt-ban-tan{--bb:linear-gradient(100deg,#5a4120 0%,#7a5d30 60%,#8c6f3d 100%);--be:#a07a45;--bg:rgba(160,122,69,0.3)}
+.rt-ban-done{--bb:linear-gradient(100deg,#262b36 0%,#3a4254 60%,#4d566b 100%);--be:#7d8798;--bg:rgba(125,135,152,0.25)}
+.rt-ban-mark{position:absolute;left:-34px;top:50%;width:170px;height:170px;transform:translateY(-50%);fill:none;stroke:#fff;stroke-opacity:0.12;stroke-width:6;pointer-events:none}
+.rt-ban-art{position:absolute;top:0;right:0;bottom:0;width:34%;background:rgba(255,255,255,0.55);clip-path:polygon(32% 0,100% 0,100% 100%,0 100%);z-index:1;pointer-events:none}
+.rt-ban-art::before{content:"";position:absolute;inset:0;background:linear-gradient(165deg,#d4effa 0%,#5ab4d6 100%);clip-path:polygon(38% 0,100% 0,100% 100%,7% 100%)}
+.rt-ban-art>svg{position:absolute;left:37%;top:50%;width:62%;height:auto;max-height:92%;transform:translateY(-50%)}
+.rt-ban-body{position:relative;z-index:2;padding:14px 38% 14px 18px;min-height:92px}
+.rt-ban-t{margin-bottom:4px;font-size:19px;font-weight:800;font-style:italic;line-height:1.15;text-shadow:0 2px 0 rgba(0,0,0,0.3);overflow-wrap:anywhere}
+.rt-ban-amber .rt-ban-t{text-shadow:0 1px 0 rgba(255,255,255,0.4)}
+.rt-ban-s{font-size:12px;line-height:1.4;color:rgba(255,255,255,0.96);text-shadow:0 1px 1px rgba(0,0,0,0.25)}
+.rt-ban-amber .rt-ban-s{color:rgba(24,36,64,0.88);text-shadow:none}
+.rt-ban-amber .rt-note{color:rgba(24,36,64,0.92)}
+.rt-ban-amber .rt-pill{background:#182440;color:#fff}
+.rt-ban-amber .rt-bar{background:rgba(24,36,64,0.25)}
+.rt-ban-amber .rt-bar i{background:#182440}
+.rt-ban-go{display:block;margin-top:8px;font-size:13px;font-weight:700}
+.rt-pill{display:inline-block;margin-bottom:6px;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:800;background:#f5c06a;color:#182440}
+.rt-pill.ok{background:#7be8a6;color:#0c3a22}
+.rt-pill.off{background:rgba(255,255,255,0.22);color:#fff}
+.rt-state{margin-top:4px;font-size:13px;font-weight:700}
+.rt-note{margin-top:4px;font-size:12px;line-height:1.35;color:rgba(255,255,255,0.92);overflow-wrap:anywhere}
+.rt-note b{font-weight:800}
+.rt-bar{margin-top:8px;height:5px;border-radius:3px;background:rgba(255,255,255,0.25);overflow:hidden}
+.rt-bar i{display:block;height:100%;border-radius:3px;background:#f5c06a}
+/* ── semana ── */
+.rt-weeknav{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;padding:4px;border:2px solid var(--rt-navy);border-radius:14px;background:var(--rt-navy);color:#fff}
+.rt-weeknav button{display:flex;align-items:center;justify-content:center;width:48px;height:42px;border:none;border-radius:10px;background:transparent;color:var(--rt-amber);cursor:pointer}
+.rt-weeknav button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.rt-weeknav button:focus-visible{outline:3px solid var(--rt-amber);outline-offset:1px}
+.rt-weeknav #rt-week-label{flex:1;text-align:center;font-size:15px;font-weight:700}
+/* ── cabecera de detalle ── */
+.rt-top{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.rt-top-t{min-width:0;flex:1}
+.rt-top-h{font-size:20px;font-style:italic;font-weight:600;line-height:1.15;color:var(--rt-ink);overflow-wrap:anywhere}
+.rt-top-s{margin-top:2px;font-size:12px;color:var(--rt-ink-3)}
+.rt-back{flex:none;min-height:40px;padding:8px 14px;border:2px solid var(--rt-navy);border-radius:14px;background:var(--rt-navy);color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+.rt-back:focus-visible{outline:3px solid var(--rt-amber);outline-offset:2px}
+.rt-step-ind{flex:none;font-size:12px;font-weight:700;color:var(--rt-ink-3)}
+/* ── resumen (plan y coach) ── */
+.rt-sum .rt-ban-body{padding:14px 16px 14px;min-height:0}
+.rt-sum-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.rt-sum-row .rt-ban-t{margin:0;font-size:17px}
+.rt-stats,.rt-stats-in{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rt-stat{padding:10px 6px;border-radius:12px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.3);text-align:center}
+.rt-stat .v{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;letter-spacing:0.03em;color:#fff}
+.rt-stat .v small{font-family:'DM Sans',sans-serif;font-size:11px;letter-spacing:0;color:rgba(255,255,255,0.86);margin-left:2px}
+.rt-stat .l{margin-top:3px;font-size:11px;color:rgba(255,255,255,0.92)}
+.rt-sum-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;color:rgba(255,255,255,0.92)}
+/* ── botones ── */
+.rt-btn-a{display:block;width:100%;min-height:54px;border:2px solid #b7791a;border-radius:12px;background:var(--rt-amber);color:#182440;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 3px 8px rgba(27,39,67,0.25)}
+.rt-btn-a:active{transform:translateY(1px)}
+.rt-btn-s{display:block;width:100%;min-height:46px;border:1.5px solid var(--rt-line);border-radius:12px;background:transparent;color:var(--rt-ink-2);font-size:14px;font-weight:700;cursor:pointer}
+.rt-btn-sm{flex:none;min-height:34px;padding:6px 14px;border:2px solid #fffffc;border-radius:12px;background:var(--rt-amber);color:#182440;font-size:12px;font-weight:700;cursor:pointer}
+.rt-btn-a:focus-visible,.rt-btn-s:focus-visible,.rt-btn-sm:focus-visible,.rt-chip:focus-visible,.rt-act-type:focus-visible,.rt-day-pill:focus-visible,.rt-toggle:focus-visible,.rt-tf-btn:focus-visible,.rt-x:focus-visible{outline:3px solid var(--rt-amber);outline-offset:2px}
+/* ── chips de semana, día y filtros ── */
+.rt-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin:0 0 4px;scrollbar-width:none}
+.rt-chips::-webkit-scrollbar{display:none}
+.rt-chip{flex:0 0 auto;min-width:46px;min-height:40px;padding:8px 14px;border:2px solid var(--rt-navy);border-radius:14px;background:var(--rt-navy);color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;text-align:center}
+.rt-chip.act{background:#fffffc;color:var(--rt-navy);border-color:#000}
+.rt-chip .hoy{display:block;font-size:10px;font-weight:700;line-height:1;margin-top:2px;opacity:0.9}
+/* ── formularios ── */
+.rt-label{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--rt-ink-2)}
+.rt-label span{font-weight:500;color:var(--rt-ink-3)}
+.rt-input,.rt-textarea{width:100%;box-sizing:border-box;padding:11px 12px;border:2px solid var(--rt-field-line);border-radius:12px;background:var(--rt-field);color:var(--rt-ink);font-size:15px;font-family:'DM Sans',sans-serif;outline:none}
+.rt-textarea{min-height:76px;resize:none;font-size:14px}
+.rt-input::placeholder,.rt-textarea::placeholder{color:var(--rt-ink-3);opacity:1}
+.rt-input:focus,.rt-textarea:focus{border-color:#182440;background:#fff;box-shadow:0 0 0 3px rgba(245,192,106,0.7)}
+.rt-form-card{margin:0 0 12px;padding:14px;border:1px solid var(--rt-hair);border-radius:16px;background:#f6f7fa}
+.rt-field{margin-bottom:14px}
+.rt-field:last-child{margin-bottom:0}
+.rt-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rt-hint{margin-top:6px;font-size:12px;line-height:1.4;color:var(--rt-ink-3)}
+.rt-daypicker{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.rt-day-pill{height:44px;display:flex;align-items:center;justify-content:center;border:2px solid var(--rt-navy);border-radius:12px;background:#fffffc;color:var(--rt-navy);font-size:14px;font-weight:800;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.rt-day-pill.on{background:var(--rt-navy);color:#fff}
+.rt-switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rt-switch-row b{display:block;font-size:14px;color:var(--rt-ink)}
+.rt-switch-row span{display:block;font-size:12px;color:var(--rt-ink-3);margin-top:2px}
+.rt-toggle{flex:none;position:relative;width:48px;height:28px;border:none;border-radius:14px;background:rgba(27,39,67,0.35);cursor:pointer;transition:background .2s}
+.rt-toggle.on{background:#167a5a}
+.rt-toggle-dot{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}
+.rt-toggle.on .rt-toggle-dot{transform:translateX(20px)}
+/* ── actividades del armado de plan ── */
+.rt-row{position:relative;display:flex;align-items:center;gap:12px;margin:0 0 8px;padding:10px 10px 10px 16px;border:1px solid var(--rt-hair);border-radius:14px;background:#f6f7fa;overflow:hidden}
+.rt-row-bar{position:absolute;left:0;top:0;bottom:0;width:6px}
+.rt-row-ic{flex:none;width:34px;height:34px}
+.rt-row-ic svg{width:100%;height:100%}
+.rt-row-t{min-width:0;flex:1}
+.rt-row-t b{display:block;font-size:14px;color:var(--rt-ink)}
+.rt-row-t span{display:block;font-size:12px;color:var(--rt-ink-3);overflow-wrap:anywhere}
+.rt-row-b{display:flex;gap:6px}
+.rt-row-b button{min-width:40px;min-height:40px;padding:0 12px;border:1.5px solid var(--rt-line);border-radius:12px;background:#fffffc;color:var(--rt-ink);font-size:13px;font-weight:700;cursor:pointer}
+.rt-row-b button.del{color:var(--rt-down)}
+.rt-row-b button:focus-visible{outline:3px solid var(--rt-amber);outline-offset:2px}
+.rt-empty{margin:0 0 12px;padding:18px 14px;border:1.5px dashed var(--rt-line);border-radius:16px;text-align:center;font-size:13px;line-height:1.45;color:var(--rt-ink-2)}
+/* ── ventanas emergentes (como Puntuaciones) ── */
+.rt-sheet{position:fixed;inset:0;z-index:410;background:rgba(0,0,0,0.6)}
+.rt-sheet-panel{--rt-ink:#f2f2f2;--rt-ink-2:rgba(255,255,255,0.8);--rt-ink-3:rgba(255,255,255,0.66);--rt-hair:rgba(255,255,255,0.14);--rt-line:rgba(255,255,255,0.4);--rt-field:#2b2b2b;--rt-field-line:rgba(255,255,255,0.6);--rt-down:#ff8f8f;--rt-up:#5dcaa5;color:var(--rt-ink);position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:460px;box-sizing:border-box;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;background:#1c1c1c;border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));animation:rtUp .18s ease-out}
+@keyframes rtUp{from{transform:translate(-50%,24px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.rt-sheet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.rt-sheet-sub{font-size:12px;color:var(--rt-ink-3);margin-bottom:2px}
+.rt-sheet-t{font-size:20px;font-style:italic;font-weight:600;color:var(--rt-ink);overflow-wrap:anywhere}
+.rt-x{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--rt-line);background:transparent;color:var(--rt-ink);font-size:16px;line-height:1;cursor:pointer}
+.rt-sheet-panel .rt-btn-s{color:var(--rt-ink)}
+.rt-types{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rt-act-type{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:84px;padding:10px 12px;border:2px solid var(--rt-navy);border-radius:16px;background:var(--rt-navy);color:#fff;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rt-act-type .ic{width:30px;height:30px}
+.rt-act-type .ic svg{width:100%;height:100%}
+.rt-act-type b{font-size:14px;line-height:1.15}
+.rt-act-type span{font-size:11px;line-height:1.3;color:rgba(255,255,255,0.86)}
+.rt-act-type.sel{background:#fffffc;color:#182440;border-color:#000}
+.rt-act-type.sel span{color:rgba(24,36,64,0.85)}
+.rt-act-cfg{margin-top:14px;padding-top:14px;border-top:1px solid var(--rt-hair)}
+.rt-yn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.rt-yn button{min-height:56px;border:2px solid var(--rt-navy);border-radius:14px;background:var(--rt-navy);color:#fff;font-size:15px;font-weight:800;cursor:pointer}
+.rt-yn button.pick-yes{background:#fffffc;color:#0c3a22;border-color:#7be8a6;box-shadow:0 0 0 3px rgba(123,232,166,0.5)}
+.rt-yn button.pick-no{background:#fffffc;color:#8f1d16;border-color:#ff8f8f;box-shadow:0 0 0 3px rgba(255,143,143,0.5)}
+.rt-rep-meta{margin-bottom:14px;padding:10px 12px;border:1px solid var(--rt-hair);border-radius:12px;background:rgba(255,255,255,0.06)}
+.rt-rep-meta b{display:block;margin-bottom:4px;font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--rt-ink-3)}
+.rt-rep-meta div{font-size:13px;line-height:1.45;color:var(--rt-ink-2);overflow-wrap:anywhere}
+.rt-rep-score{text-align:center;margin-bottom:12px}
+.rt-rep-score .n{font-family:'Bebas Neue',sans-serif;font-size:54px;line-height:1;color:#f5c06a}
+.rt-rep-score .l{font-size:12px;color:var(--rt-ink-3)}
+.rt-rep-bar{height:6px;border-radius:3px;background:rgba(255,255,255,0.18);margin-bottom:14px;overflow:hidden}
+.rt-rep-bar i{display:block;height:100%;border-radius:3px;background:#f5c06a;transition:width .3s}
+.rt-pfa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rt-pfa{padding:10px 12px;border-radius:14px;border:1px solid var(--rt-hair);border-left:5px solid var(--c,#5ab4d6);background:rgba(255,255,255,0.06)}
+.rt-pfa.nodata{opacity:0.6;border-left-color:rgba(255,255,255,0.25)}
+.rt-pfa .d{font-size:11px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:var(--c,#5ab4d6)}
+.rt-pfa.nodata .d{color:var(--rt-ink-3)}
+.rt-pfa .n{display:flex;align-items:baseline;gap:4px;margin-top:2px}
+.rt-pfa .n b{font-family:'Bebas Neue',sans-serif;font-size:28px;font-weight:400;line-height:1;color:var(--rt-ink)}
+.rt-pfa .n span{font-size:11px;color:var(--rt-ink-3)}
+.rt-pfa .s{margin-top:2px;font-size:11px;color:var(--rt-ink-3)}
+.rt-tfs{display:flex;flex-wrap:wrap;gap:6px}
+.rt-tf-btn{min-height:38px;padding:6px 14px;border-radius:14px;border:2px solid var(--rt-navy);background:var(--rt-navy);color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.rt-tf-btn.rt-tf-act{background:#fffffc;color:#182440;border-color:#000}
+.rt-sheet-panel select.rt-input{margin-bottom:0}
+/* ── aviso ── */
+.rt-toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(70px);opacity:0;visibility:hidden;max-width:calc(100% - 32px);box-sizing:border-box;padding:11px 18px;border-radius:14px;background:#182440;border:2px solid #fffffc;color:#fff;font-size:14px;font-weight:700;text-align:center;z-index:5000;transition:transform .25s ease,opacity .25s ease,visibility .25s;pointer-events:none}
+.rt-toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
+.rt-toast.ok{border-color:#7be8a6;color:#7be8a6}
 </style>
 
-<!-- Toast -->
-<div class="rt-toast" id="rt-toast"></div>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <!-- Arte de los banners del plan semanal (mismo estilo que Competencias). El sprite vive aquí para que esta pestaña no dependa de otra. -->
+  <defs><linearGradient id="rtGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".5" stop-color="#f5c06a"/><stop offset="1" stop-color="#d98e1f"/></linearGradient></defs>
+  <symbol id="rt-art-plan" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <rect x="22" y="27" width="56" height="52" rx="6" fill="#fffffc" stroke="#8a5a10" stroke-width="1.6"/>
+    <path d="M22 33a6 6 0 0 1 6-6h44a6 6 0 0 1 6 6v9H22z" fill="url(#rtGold)" stroke="#8a5a10" stroke-width="1.6"/>
+    <rect x="35" y="21" width="5" height="12" rx="2.5" fill="#182440"/><rect x="60" y="21" width="5" height="12" rx="2.5" fill="#182440"/>
+    <g fill="#cfd6e3"><rect x="28" y="48" width="9" height="8" rx="1.5"/><rect x="45.5" y="48" width="9" height="8" rx="1.5"/><rect x="63" y="48" width="9" height="8" rx="1.5"/><rect x="28" y="62" width="9" height="8" rx="1.5"/><rect x="63" y="62" width="9" height="8" rx="1.5"/></g>
+    <rect x="45.5" y="62" width="9" height="8" rx="1.5" fill="#f5c06a" stroke="#8a5a10" stroke-width="1"/><path d="M47.5 66l2 2 3.2-3.6" fill="none" stroke="#182440" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 21.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M85 30l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="rt-art-flame" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <path d="M50 19c3 10 17 17 17 34a17 17 0 0 1-34 0c0-9 4-13 8-17 1 5 4 8 7 9-2-11-1-18 2-26z" fill="url(#rtGold)" stroke="#8a5a10" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M50 80a9 9 0 0 1-9-9c0-6 4-9 7-14 2 3 4 5 6 7 1-2 1-4 1-5 3 3 4 10 1 15-1 3-3 6-6 6z" fill="#fff3b0" stroke="#d98e1f" stroke-width="1"/><path d="M19 23.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M84 36l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="rt-art-bow" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <path d="M37 18c24 10 24 54 0 64" fill="none" stroke="url(#rtGold)" stroke-width="5" stroke-linecap="round"/><path d="M37 18c24 10 24 54 0 64" fill="none" stroke="#8a5a10" stroke-width="1" stroke-linecap="round"/>
+    <path d="M37 18L37 82" stroke="#fff" stroke-width="1" stroke-opacity=".85"/>
+    <path d="M30 50H84" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M84 50l-9-5.5m9 5.5l-9 5.5" stroke="#e8c800" stroke-width="3" stroke-linecap="round"/><path d="M33 50l-6-5m6 5l-6 5" stroke="#e03030" stroke-width="2.6" stroke-linecap="round"/><path d="M20 19.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M82 70l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="rt-art-check" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <circle cx="50" cy="50" r="27" fill="url(#rtGold)" stroke="#8a5a10" stroke-width="1.6"/><circle cx="50" cy="50" r="21" fill="#fffffc" stroke="#8a5a10" stroke-width="1"/>
+    <path d="M38 51l9 9 16-18" fill="none" stroke="#167a5a" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 21.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M85 26l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="rt-art-trophy" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <path d="M33 33h-9a2 2 0 0 0-2 2v3a11 11 0 0 0 11 11" fill="none" stroke="#e8a93a" stroke-width="4.2" stroke-linecap="round"/><path d="M67 33h9a2 2 0 0 1 2 2v3a11 11 0 0 1-11 11" fill="none" stroke="#e8a93a" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M33 29h34v14a17 17 0 0 1-34 0z" fill="url(#rtGold)" stroke="#8a5a10" stroke-width="1.6"/>
+    <rect x="46" y="59" width="8" height="9" fill="#e8a93a" stroke="#8a5a10" stroke-width="1.2"/><path d="M36 68h28v6H36z" fill="#d98e1f" stroke="#8a5a10" stroke-width="1.2"/><path d="M31 74h38v6H31z" fill="#8a5a10"/>
+    <path d="M40 32v14" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/>
+    <path d="M50 35l2.4 4.8 5.3.8-3.8 3.7.9 5.3-4.8-2.5-4.8 2.5.9-5.3-3.8-3.7 5.3-.8z" fill="#182440"/><path d="M19 19l2.1 2.9 2.9 2.1-2.9 2.1-2.1 2.9-2.1-2.9-2.9-2.1 2.9-2.1z" fill="#fff"/><path d="M82 26l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/><path d="M78 74.5l1.5 2.0 2.0 1.5-2.0 1.5-1.5 2.0-1.5-2.0-2.0-1.5 2.0-1.5z" fill="#fff"/></symbol>
+  <symbol id="rt-art-outdoor" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <circle cx="46" cy="56" r="29" fill="#5ab4d6" stroke="#182440" stroke-width="1.2"/><circle cx="46" cy="56" r="19.5" fill="#e03030" stroke="#182440" stroke-width="1"/><circle cx="46" cy="56" r="10" fill="#e8c800" stroke="#182440" stroke-width="1"/><circle cx="46" cy="56" r="4" fill="none" stroke="#182440" stroke-width=".8"/>
+    <path d="M47 55L82 18" stroke="#182440" stroke-width="2.6" stroke-linecap="round"/><path d="M82 18l-9 .5m9-.5l-.5 9" stroke="#e03030" stroke-width="3" stroke-linecap="round"/><path d="M76 24l-9 .3m9-.3l-.3 9" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M18 21l2.1 2.9 2.9 2.1-2.9 2.1-2.1 2.9-2.1-2.9-2.9-2.1 2.9-2.1z" fill="#fff"/><path d="M84 58l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+  <symbol id="rt-art-podium" viewBox="0 0 100 100"><polygon points="50.0,3.0 59.8,13.3 73.5,9.3 76.9,23.1 90.7,26.5 86.7,40.2 97.0,50.0 86.7,59.8 90.7,73.5 76.9,76.9 73.5,90.7 59.8,86.7 50.0,97.0 40.2,86.7 26.5,90.7 23.1,76.9 9.3,73.5 13.3,59.8 3.0,50.0 13.3,40.2 9.3,26.5 23.1,23.1 26.5,9.3 40.2,13.3" fill="#182440" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="50.0" cy="4.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="10.2" r="1.7" fill="#fff"/><circle cx="89.8" cy="27.0" r="1.7" fill="#fff"/><circle cx="96.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="89.8" cy="73.0" r="1.7" fill="#fff"/><circle cx="73.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="50.0" cy="96.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="89.8" r="1.7" fill="#fff"/><circle cx="10.2" cy="73.0" r="1.7" fill="#fff"/><circle cx="4.0" cy="50.0" r="1.7" fill="#fff"/><circle cx="10.2" cy="27.0" r="1.7" fill="#fff"/><circle cx="27.0" cy="10.2" r="1.7" fill="#fff"/>
+    <rect x="14" y="58" width="24" height="26" rx="2" fill="#c9d3dc" stroke="#182440" stroke-width="1.2"/><rect x="38" y="44" width="24" height="40" rx="2" fill="url(#rtGold)" stroke="#182440" stroke-width="1.2"/><rect x="62" y="66" width="24" height="18" rx="2" fill="#c58a54" stroke="#182440" stroke-width="1.2"/>
+    <g font-family="Bebas Neue,sans-serif" font-size="17" text-anchor="middle" fill="#182440"><text x="26" y="77">2</text><text x="50" y="68">1</text><text x="74" y="80">3</text></g>
+    <path d="M50 22l3 6 6.6 1-4.8 4.6 1.2 6.6-6-3.2-6 3.2 1.2-6.6-4.8-4.6 6.6-1z" fill="url(#rtGold)" stroke="#8a5a10" stroke-width="1"/><path d="M19 23.5l1.9 2.6 2.6 1.9-2.6 1.9-1.9 2.6-1.9-2.6-2.6-1.9 2.6-1.9z" fill="#fff"/><path d="M84 28l1.7 2.3 2.3 1.7-2.3 1.7-1.7 2.3-1.7-2.3-2.3-1.7 2.3-1.7z" fill="#fff"/></symbol>
+</svg>
 
-<div class="rt-wrap">
+<!-- Aviso -->
+<div class="rt-toast" id="rt-toast" role="status" aria-live="polite"></div>
 
-  <!-- ══ VIEWS ══ -->
+<div class="rt-app rt-wrap">
 
-  <!-- VIEW: Lista de planes -->
+  <!-- ══ VISTA: lista de planes ══ -->
   <div id="rt-view-list">
-    <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div>
-        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Semana</div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="rtNavWeek(-1)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px">‹</button>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text)" id="rt-week-label">—</div>
-          <button onclick="rtNavWeek(1)" id="rt-week-next-btn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px">›</button>
-        </div>
+    <div class="rt-weeknav" role="group" aria-label="Semana que se muestra">
+      <button type="button" onclick="rtNavWeek(-1)" aria-label="Semana anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div id="rt-week-label" aria-live="polite">—</div>
+      <button type="button" id="rt-week-next-btn" onclick="rtNavWeek(1)" aria-label="Semana siguiente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+
+    <button type="button" class="rt-ban rt-ban-amber" onclick="rtShowView('create')">
+      <svg class="rt-ban-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="16"/></svg><div class="rt-ban-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#rt-art-plan"/></svg></div>
+      <div class="rt-ban-body">
+        <div class="rt-ban-t">Crear un plan</div>
+        <div class="rt-ban-s">Elige los días y las actividades.</div>
+        <span class="rt-ban-go">Nuevo plan →</span>
       </div>
-      <button class="rt-btn y" onclick="rtShowView('create')">+ Nuevo plan</button>
-    </div>
+    </button>
 
-    <!-- Plan activo -->
-    <div id="rt-active-plan-section" style="display:none">
-      <div class="rt-sec">Plan activo</div>
-      <div id="rt-active-plan-card"></div>
-    </div>
+    <div id="rt-active-plan-section" style="display:none"><div id="rt-active-plan-card"></div></div>
 
-    <!-- Mis planes -->
-    <div class="rt-sec">Mis planes</div>
+    <h2 class="rt-hd">Mis planes</h2>
     <div id="rt-plans-list">
-      <div style="text-align:center;padding:24px 0;font-size:12px;color:var(--muted)">
-        Sin planes aún — crea el primero
-      </div>
+      <div class="rt-empty">Sin planes aún. Crea el primero.</div>
     </div>
-
   </div>
 
-  <!-- VIEW: Crear plan -->
+  <!-- ══ VISTA: crear plan (2 pasos) ══ -->
   <div id="rt-view-create" style="display:none">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-      <button class="rt-btn ghost sm" onclick="rtShowView('list')">← Volver</button>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text)">Nuevo plan</div>
+    <div class="rt-top">
+      <button type="button" class="rt-back" onclick="rtShowView('list')">← Volver</button>
+      <div class="rt-top-t"><div class="rt-top-h">Nuevo plan</div></div>
+      <div class="rt-step-ind" id="rt-step-ind">Paso 1 de 2</div>
     </div>
 
-    <div class="rt-card">
-      <div class="rt-card-bar" style="background:linear-gradient(90deg,var(--yellow),var(--green))"></div>
-
-      <!-- Para quién -->
-      <div id="rt-for-who-section" style="display:none;margin-bottom:14px">
-        <div class="rt-label">Asignar a</div>
-        <select class="rt-input" id="rt-assign-mode" onchange="rtToggleAssignMode(this.value)" style="margin-bottom:8px">
-          <option value="self">Para mí mismo</option>
-          <option value="specific">Arquero específico</option>
-          <option value="mass">Grupo de arqueros</option>
-        </select>
-
-        <!-- Específico -->
-        <div id="rt-assign-specific" style="display:none">
-          <select class="rt-input" id="rt-for-user">
-            <option value="">Selecciona un arquero</option>
+    <div id="rt-step-1">
+      <div class="rt-form-card">
+        <div id="rt-for-who-section" class="rt-field" style="display:none">
+          <div class="rt-label">Asignar a</div>
+          <select class="rt-input" id="rt-assign-mode" onchange="rtToggleAssignMode(this.value)">
+            <option value="self">Para mí mismo</option>
+            <option value="specific">Arquero específico</option>
+            <option value="mass">Grupo de arqueros</option>
           </select>
-        </div>
-
-        <!-- Masivo -->
-        <div id="rt-assign-mass" style="display:none">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div>
-              <div class="rt-label" style="margin-bottom:3px">Género</div>
-              <select class="rt-input" id="rt-mass-gender">
-                <option value="">Todos</option>
-                <option value="varonil">Varonil</option>
-                <option value="femenil">Femenil</option>
-              </select>
-            </div>
-            <div>
-              <div class="rt-label" style="margin-bottom:3px">Arco</div>
-              <select class="rt-input" id="rt-mass-bow">
-                <option value="">Todos</option>
-                <option value="recurvo">Recurvo</option>
-                <option value="compuesto">Compuesto</option>
-                <option value="barebow">Bare bow</option>
-                <option value="tradicional">Tradicional</option>
-              </select>
-            </div>
-            <div>
-              <div class="rt-label" style="margin-bottom:3px">Categoría</div>
-              <select class="rt-input" id="rt-mass-cat">
-                <option value="">Todas</option>
-                <option value="sub14">Sub 14</option>
-                <option value="sub16">Sub 16</option>
-                <option value="sub18">Sub 18</option>
-                <option value="sub21">Sub 21</option>
-                <option value="sub25">Sub 25</option>
-                <option value="mayores">Mayores</option>
-              </select>
-            </div>
+          <div class="rt-hint" id="rt-no-archers" style="display:none">Aún no tienes arqueros en tus clubes. Cuando un arquero registre su club en Mi Perfil, aparecerá aquí.</div>
+          <div id="rt-assign-specific" style="display:none;margin-top:8px">
+            <select class="rt-input" id="rt-for-user"><option value="">Selecciona un arquero</option></select>
           </div>
-          <div style="margin-top:6px;padding:7px 10px;border-radius:8px;background:rgba(216,209,90,0.06);border:0.5px solid rgba(216,209,90,0.2)">
-            <div style="font-size:10px;color:var(--muted)">El plan se creará una copia para cada arquero que cumpla el filtro.</div>
+          <div id="rt-assign-mass" style="display:none;margin-top:8px">
+            <div class="rt-two">
+              <div><div class="rt-label">Género</div>
+                <select class="rt-input" id="rt-mass-gender"><option value="">Todos</option><option value="varonil">Varonil</option><option value="femenil">Femenil</option></select></div>
+              <div><div class="rt-label">Arco</div>
+                <select class="rt-input" id="rt-mass-bow"><option value="">Todos</option><option value="recurvo">Recurvo</option><option value="compuesto">Compuesto</option><option value="barebow">Bare bow</option><option value="tradicional">Tradicional</option></select></div>
+            </div>
+            <div style="margin-top:8px"><div class="rt-label">Categoría</div>
+              <select class="rt-input" id="rt-mass-cat"><option value="">Todas</option><option value="sub14">Sub 14</option><option value="sub16">Sub 16</option><option value="sub18">Sub 18</option><option value="sub21">Sub 21</option><option value="sub25">Sub 25</option><option value="mayores">Mayores</option></select></div>
+            <div class="rt-hint">Se crea una copia del plan para cada arquero que cumpla el filtro.</div>
           </div>
         </div>
-      </div>
 
-      <!-- Título -->
-      <div class="rt-label">Nombre del plan</div>
-      <input class="rt-input" id="rt-plan-title" placeholder="Ej: Preparación torneo mayo" style="margin-bottom:12px">
+        <div class="rt-field">
+          <label class="rt-label" for="rt-plan-title">Nombre del plan</label>
+          <input class="rt-input" id="rt-plan-title" placeholder="Ej: Preparación torneo mayo">
+        </div>
 
-      <!-- Semanas -->
-      <div class="rt-label">Duración</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <select class="rt-input" id="rt-plan-weeks" style="flex:1">
-          <option value="1">1 semana</option>
-          <option value="2">2 semanas</option>
-          <option value="3">3 semanas</option>
-          <option value="4">4 semanas</option>
-          <option value="8">8 semanas</option>
-          <option value="12">12 semanas</option>
-        </select>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <div style="font-size:11px;color:var(--muted)">Desde</div>
-          <input type="date" class="rt-input" id="rt-plan-start" style="width:auto">
+        <div class="rt-field">
+          <div class="rt-label">Duración y fecha de inicio</div>
+          <div class="rt-two">
+            <select class="rt-input" id="rt-plan-weeks" aria-label="Duración">
+              <option value="1">1 semana</option><option value="2">2 semanas</option><option value="3">3 semanas</option><option value="4">4 semanas</option><option value="8">8 semanas</option><option value="12">12 semanas</option>
+            </select>
+            <input type="date" class="rt-input" id="rt-plan-start" aria-label="Desde">
+          </div>
+        </div>
+
+        <div class="rt-field">
+          <div class="rt-label">Días de entrenamiento</div>
+          <div class="rt-daypicker" id="rt-day-picker">
+            <button type="button" class="rt-day-pill" data-day="0" aria-pressed="false" aria-label="Lunes" onclick="rtToggleDay(this)">L</button>
+            <button type="button" class="rt-day-pill" data-day="1" aria-pressed="false" aria-label="Martes" onclick="rtToggleDay(this)">M</button>
+            <button type="button" class="rt-day-pill" data-day="2" aria-pressed="false" aria-label="Miércoles" onclick="rtToggleDay(this)">X</button>
+            <button type="button" class="rt-day-pill" data-day="3" aria-pressed="false" aria-label="Jueves" onclick="rtToggleDay(this)">J</button>
+            <button type="button" class="rt-day-pill" data-day="4" aria-pressed="false" aria-label="Viernes" onclick="rtToggleDay(this)">V</button>
+            <button type="button" class="rt-day-pill" data-day="5" aria-pressed="false" aria-label="Sábado" onclick="rtToggleDay(this)">S</button>
+            <button type="button" class="rt-day-pill" data-day="6" aria-pressed="false" aria-label="Domingo" onclick="rtToggleDay(this)">D</button>
+          </div>
+        </div>
+
+        <div class="rt-field">
+          <div class="rt-switch-row">
+            <div><b>Mismo programa cada día</b><span>Desactívalo para personalizar por día</span></div>
+            <button type="button" class="rt-toggle on" id="rt-same-day-toggle" role="switch" aria-checked="true" aria-label="Mismo programa cada día" onclick="rtToggleSameDay(this)"><span class="rt-toggle-dot"></span></button>
+          </div>
         </div>
       </div>
-
-      <!-- Días -->
-      <div class="rt-label">Días de entrenamiento</div>
-      <div style="display:flex;gap:6px;margin-bottom:14px" id="rt-day-picker">
-        <div class="rt-day-pill" data-day="0" onclick="rtToggleDay(this)">L</div>
-        <div class="rt-day-pill" data-day="1" onclick="rtToggleDay(this)">M</div>
-        <div class="rt-day-pill" data-day="2" onclick="rtToggleDay(this)">X</div>
-        <div class="rt-day-pill" data-day="3" onclick="rtToggleDay(this)">J</div>
-        <div class="rt-day-pill" data-day="4" onclick="rtToggleDay(this)">V</div>
-        <div class="rt-day-pill" data-day="5" onclick="rtToggleDay(this)">S</div>
-        <div class="rt-day-pill" data-day="6" onclick="rtToggleDay(this)">D</div>
-      </div>
-
-      <!-- Mismo cada día -->
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div>
-          <div style="font-size:13px;color:var(--text);font-weight:500">Mismo programa cada día</div>
-          <div style="font-size:10px;color:var(--muted)">Desactiva para personalizar por día</div>
-        </div>
-        <div class="rt-toggle on" id="rt-same-day-toggle" onclick="rtToggleSameDay(this)">
-          <div class="rt-toggle-dot"></div>
-        </div>
-      </div>
+      <button type="button" class="rt-btn-a" onclick="rtCreateStep(2)">Siguiente: actividades →</button>
     </div>
 
-    <!-- Actividades del plan -->
-    <div id="rt-activities-builder">
-      <div class="rt-sec">Actividades</div>
-
-      <!-- Tabs por día (solo cuando "mismo día" está off) -->
-      <div id="rt-day-builder-tabs" style="display:none;gap:4px;flex-wrap:wrap;margin-bottom:10px">
-        <div class="rt-week-tab act" id="rt-builder-day-all" onclick="rtSetBuilderDay(null,this)">Todos</div>
+    <div id="rt-step-2" style="display:none">
+      <div class="rt-form-card" id="rt-step2-sum" style="padding:10px 14px;font-size:13px;line-height:1.45;color:var(--rt-ink-2)"></div>
+      <div id="rt-activities-builder">
+        <h2 class="rt-hd first">Actividades</h2>
+        <div class="rt-chips" id="rt-day-builder-tabs" style="display:none">
+          <button type="button" class="rt-chip act" id="rt-builder-day-all" onclick="rtSetBuilderDay(null,this)">Todos</button>
+        </div>
+        <div id="rt-acts-container"></div>
+        <button type="button" class="rt-btn-s" style="margin-bottom:12px" onclick="rtShowAddActivity()">+ Agregar actividad</button>
       </div>
-
-      <div id="rt-acts-container"></div>
-      <button class="rt-btn" style="width:100%;margin-bottom:12px" onclick="rtShowAddActivity()">+ Agregar actividad</button>
+      <button type="button" class="rt-btn-a" onclick="rtSavePlan()">Guardar plan</button>
+      <button type="button" class="rt-btn-s" style="margin-top:8px" onclick="rtCreateStep(1)">← Volver al paso 1</button>
     </div>
-
-    <button class="rt-btn y" style="width:100%" onclick="rtSavePlan()">Guardar plan →</button>
   </div>
 
-  <!-- VIEW: Plan detail / día actual -->
+  <!-- ══ VISTA: detalle del plan ══ -->
   <div id="rt-view-plan" style="display:none">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <button class="rt-btn ghost sm" onclick="rtShowView('list')">← Planes</button>
-      <div style="flex:1">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text)" id="rt-plan-detail-title">—</div>
-        <div style="font-size:10px;color:var(--muted)" id="rt-plan-detail-sub">—</div>
-      </div>
-      <button class="rt-btn sm" onclick="rtEditPlan()">✏️</button>
-    </div>
-
-    <!-- ── RESUMEN ARRIBA — sticky, sin scroll ── -->
-    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:12px;position:relative;overflow:hidden">
-      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--yellow),var(--green),var(--blue))"></div>
-
-      <!-- 3 stats principales -->
-      <div class="rt-stat-grid" id="rt-plan-week-stats" style="margin-bottom:10px"></div>
-
-      <!-- Promedio por flecha por modalidad -->
-      <div id="rt-pfa-wrap" style="display:none">
-        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⬛ Promedio por flecha</div>
-        <div id="rt-pfa-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px"></div>
+    <div class="rt-top">
+      <button type="button" class="rt-back" onclick="rtShowView('list')">← Planes</button>
+      <div class="rt-top-t">
+        <div class="rt-top-h" id="rt-plan-detail-title">—</div>
+        <div class="rt-top-s" id="rt-plan-detail-sub">—</div>
       </div>
     </div>
 
-    <!-- Week tabs -->
-    <div class="rt-week-tabs" id="rt-plan-week-tabs"></div>
+    <div class="rt-ban rt-sum">
+      <div class="rt-ban-body">
+        <div class="rt-sum-row" style="flex-wrap:wrap">
+          <div class="rt-ban-t">Resumen de la semana</div>
+          <button type="button" class="rt-btn-sm" onclick="rtOpenSheet('rt-pfa-sheet')">Promedio por flecha</button>
+        </div>
+        <div class="rt-stats" id="rt-plan-week-stats"></div>
+      </div>
+    </div>
 
-    <!-- Day tabs -->
-    <div style="display:flex;gap:4px;margin-bottom:12px;overflow-x:auto" id="rt-plan-day-tabs"></div>
+    <div class="rt-chips" id="rt-plan-week-tabs" role="group" aria-label="Semana del plan"></div>
+    <div class="rt-chips" id="rt-plan-day-tabs" role="group" aria-label="Día"></div>
 
-    <!-- Activities for selected day -->
+    <h2 class="rt-hd" id="rt-day-head"><span id="rt-day-title">—</span><small id="rt-day-sum"></small></h2>
     <div id="rt-day-activities"></div>
   </div>
 
 </div><!-- rt-wrap -->
 
-<!-- ══ OVERLAY: Agregar actividad ══ -->
-<div id="rt-act-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(14,14,14,0.92);overflow-y:auto;padding:20px">
-  <div style="max-width:420px;margin:0 auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text)">Agregar actividad</div>
-      <button onclick="rtCloseActOverlay()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+<!-- ══ VENTANA: agregar actividad ══ -->
+<div id="rt-act-overlay" class="rt-sheet" style="display:none" role="dialog" aria-modal="true" aria-labelledby="rt-act-t" onclick="if(event.target===this)rtCloseActOverlay()">
+  <div class="rt-sheet-panel">
+    <div class="rt-sheet-head">
+      <div class="rt-sheet-t" id="rt-act-t">Agregar actividad</div>
+      <button type="button" class="rt-x" onclick="rtCloseActOverlay()" aria-label="Cerrar">✕</button>
     </div>
-
-    <!-- Type selector -->
-    <div id="rt-act-type-selector">
-      <div class="rt-act-type" data-type="asistencia" onclick="rtSelectActType('asistencia',this)">
-        <div class="rt-act-icon">✅</div>
-        <div class="rt-act-info">
-          <div class="rt-act-label">Asistencia</div>
-          <div class="rt-act-sub">Registra si el arquero fue al entrenamiento</div>
-        </div>
-      </div>
-      <div class="rt-act-type" data-type="calentamiento" onclick="rtSelectActType('calentamiento',this)">
-        <div class="rt-act-icon">🔥</div>
-        <div class="rt-act-info">
-          <div class="rt-act-label">Calentamiento</div>
-          <div class="rt-act-sub">Sí o no — con nota de qué incluye</div>
-        </div>
-      </div>
-      <div class="rt-act-type" data-type="tiros_sin" onclick="rtSelectActType('tiros_sin',this)">
-        <div class="rt-act-icon">🏹</div>
-        <div class="rt-act-info">
-          <div class="rt-act-label">Tiros sin caratula</div>
-          <div class="rt-act-sub">X tiros a X metros — técnica pura</div>
-        </div>
-      </div>
-      <div class="rt-act-type" data-type="tiros_con" onclick="rtSelectActType('tiros_con',this)">
-        <div class="rt-act-icon">🎯</div>
-        <div class="rt-act-info">
-          <div class="rt-act-label">Tiros con caratula</div>
-          <div class="rt-act-sub">X tiros a X metros — con puntaje</div>
-        </div>
-      </div>
-      <div class="rt-act-type" data-type="conteo" onclick="rtSelectActType('conteo',this)">
-        <div class="rt-act-icon">📊</div>
-        <div class="rt-act-info">
-          <div class="rt-act-label">Conteo</div>
-          <div class="rt-act-sub">Ronda oficial — se guarda en bitácora</div>
-        </div>
-      </div>
-      <div class="rt-act-type" data-type="torneo" onclick="rtSelectActType('torneo',this)">
-        <div class="rt-act-icon">🏆</div>
-        <div class="rt-act-info">
-          <div class="rt-act-label">Torneo entre amigos</div>
-          <div class="rt-act-sub">Crea o une una sala de competencia</div>
-        </div>
-      </div>
+    <div class="rt-types" id="rt-act-type-selector">
+      <button type="button" class="rt-act-type" data-type="asistencia" onclick="rtSelectActType('asistencia',this)"><span class="ic"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#rt-art-check"/></svg></span><b>Asistencia</b><span>Si el arquero fue al entrenamiento</span></button>
+      <button type="button" class="rt-act-type" data-type="calentamiento" onclick="rtSelectActType('calentamiento',this)"><span class="ic"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#rt-art-flame"/></svg></span><b>Calentamiento</b><span>Sí o no, con nota de qué incluye</span></button>
+      <button type="button" class="rt-act-type" data-type="tiros_sin" onclick="rtSelectActType('tiros_sin',this)"><span class="ic"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#rt-art-bow"/></svg></span><b>Tiros sin carátula</b><span>X tiros a X metros, técnica pura</span></button>
+      <button type="button" class="rt-act-type" data-type="tiros_con" onclick="rtSelectActType('tiros_con',this)"><span class="ic"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#rt-art-outdoor"/></svg></span><b>Tiros con carátula</b><span>X tiros a X metros, con puntaje</span></button>
+      <button type="button" class="rt-act-type" data-type="conteo" onclick="rtSelectActType('conteo',this)"><span class="ic"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#rt-art-podium"/></svg></span><b>Conteo</b><span>Ronda oficial, se guarda en bitácora</span></button>
+      <button type="button" class="rt-act-type" data-type="torneo" onclick="rtSelectActType('torneo',this)"><span class="ic"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#rt-art-trophy"/></svg></span><b>Torneo entre amigos</b><span>Crea o une una sala de competencia</span></button>
     </div>
-
-    <!-- Config por tipo -->
-    <div id="rt-act-config" style="display:none;margin-top:14px">
-      <div style="height:0.5px;background:var(--border);margin-bottom:14px"></div>
-
-      <!-- Config: tiros_sin / tiros_con -->
+    <div id="rt-act-config" class="rt-act-cfg" style="display:none">
       <div id="rt-cfg-tiros" style="display:none">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-          <div>
-            <div class="rt-label">Tiros</div>
-            <input type="number" class="rt-input" id="rt-cfg-num-tiros" placeholder="60" min="1" max="500">
-          </div>
-          <div>
-            <div class="rt-label">Metros</div>
-            <input type="number" class="rt-input" id="rt-cfg-metros" placeholder="18" min="1" max="90">
-          </div>
+        <div class="rt-two rt-field">
+          <div><label class="rt-label" for="rt-cfg-num-tiros">Tiros</label><input type="number" inputmode="numeric" class="rt-input" id="rt-cfg-num-tiros" placeholder="60" min="1" max="500"></div>
+          <div><label class="rt-label" for="rt-cfg-metros">Metros</label><input type="number" inputmode="numeric" class="rt-input" id="rt-cfg-metros" placeholder="18" min="1" max="90"></div>
         </div>
       </div>
-
-      <!-- Config: conteo -->
-      <div id="rt-cfg-conteo" style="display:none">
-        <div class="rt-label">Modalidad</div>
-        <select class="rt-input" id="rt-cfg-conteo-mode" style="margin-bottom:10px">
-          <optgroup label="Indoor">
-            <option value="indoor-15">Indoor 15 tiros</option>
-            <option value="indoor-30">Indoor 30 tiros</option>
-            <option value="indoor-60">Indoor 60 tiros</option>
-          </optgroup>
-          <optgroup label="Outdoor">
-            <option value="outdoor-36">Outdoor 36 flechas</option>
-            <option value="outdoor-72">Outdoor 72 flechas</option>
-          </optgroup>
-          <optgroup label="Field / 3D">
-            <option value="field-c">Field Conocidas</option>
-            <option value="field-d">Field Desconocidas</option>
-            <option value="3d">3D</option>
-          </optgroup>
+      <div id="rt-cfg-conteo" class="rt-field" style="display:none">
+        <label class="rt-label" for="rt-cfg-conteo-mode">Modalidad</label>
+        <select class="rt-input" id="rt-cfg-conteo-mode">
+          <optgroup label="Indoor"><option value="indoor-15">Indoor 15 tiros</option><option value="indoor-30">Indoor 30 tiros</option><option value="indoor-60">Indoor 60 tiros</option></optgroup>
+          <optgroup label="Outdoor"><option value="outdoor-36">Outdoor 36 flechas</option><option value="outdoor-72">Outdoor 72 flechas</option></optgroup>
+          <optgroup label="Field / 3D"><option value="field-c">Field Conocidas</option><option value="field-d">Field Desconocidas</option><option value="3d">3D</option></optgroup>
         </select>
       </div>
-
-      <!-- Nota del coach (siempre visible) -->
-      <div class="rt-label">Nota para el atleta <span style="color:var(--hint)">(opcional)</span></div>
-      <textarea class="rt-textarea" id="rt-act-note" placeholder="Ej: Para el calentamiento: 5 min estiramiento, 10 min tiro suave, revisar forma antes de comenzar serie..."></textarea>
-
-      <button class="rt-btn y" style="width:100%;margin-top:12px" onclick="rtAddActivity()">Agregar →</button>
+      <div class="rt-field">
+        <label class="rt-label" for="rt-act-note">Nota para el atleta <span>(opcional)</span></label>
+        <textarea class="rt-textarea" id="rt-act-note" placeholder="Ej: 5 min de estiramiento y 10 de tiro suave antes de la serie"></textarea>
+      </div>
+      <button type="button" class="rt-btn-a" id="rt-act-ok" onclick="rtAddActivity()">Agregar</button>
     </div>
   </div>
 </div>
 
-<!-- ══ OVERLAY: Reportar actividad ══ -->
-<div id="rt-report-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(14,14,14,0.92);overflow-y:auto;padding:20px">
-  <div style="max-width:420px;margin:0 auto" id="rt-report-content"></div>
+<!-- ══ VENTANA: reportar actividad ══ -->
+<div id="rt-report-overlay" class="rt-sheet" style="display:none" role="dialog" aria-modal="true" aria-label="Reportar actividad" onclick="if(event.target===this)rtCloseReport()">
+  <div class="rt-sheet-panel" id="rt-report-content"></div>
+</div>
+
+<!-- ══ VENTANA: promedio por flecha (tus sesiones) ══ -->
+<div id="rt-pfa-sheet" class="rt-sheet" style="display:none" role="dialog" aria-modal="true" aria-labelledby="rt-pfa-t" onclick="if(event.target===this)rtCloseSheet('rt-pfa-sheet')">
+  <div class="rt-sheet-panel">
+    <div class="rt-sheet-head">
+      <div><div class="rt-sheet-sub">Tus sesiones de Puntuaciones</div><div class="rt-sheet-t" id="rt-pfa-t">Promedio por flecha</div></div>
+      <button type="button" class="rt-x" onclick="rtCloseSheet('rt-pfa-sheet')" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="rt-pfa-empty" class="rt-empty" style="display:none">Aún no hay sesiones con puntaje. Cuando registres una, aparece aquí.</div>
+    <div id="rt-pfa-wrap" style="display:none"><div class="rt-pfa-grid" id="rt-pfa-grid"></div></div>
+  </div>
+</div>
+
+<!-- ══ VENTANA: promedio por flecha de los arqueros (coach) ══ -->
+<div id="rt-cpfa-sheet" class="rt-sheet" style="display:none" role="dialog" aria-modal="true" aria-labelledby="rt-cpfa-t" onclick="if(event.target===this)rtCloseSheet('rt-cpfa-sheet')">
+  <div class="rt-sheet-panel">
+    <div class="rt-sheet-head">
+      <div><div class="rt-sheet-sub" id="rt-cpfa-sub">Con el filtro actual</div><div class="rt-sheet-t" id="rt-cpfa-t">Promedio por flecha</div></div>
+      <button type="button" class="rt-x" onclick="rtCloseSheet('rt-cpfa-sheet')" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="rt-pfa-grid" id="rt-coach-pfa-grid"></div>
+  </div>
+</div>
+
+<!-- ══ VENTANA: filtros del coach ══ -->
+<div id="rt-filter-sheet" class="rt-sheet" style="display:none" role="dialog" aria-modal="true" aria-labelledby="rt-filter-t" onclick="if(event.target===this)rtCloseSheet('rt-filter-sheet')">
+  <div class="rt-sheet-panel" id="rt-coach-filters">
+    <div class="rt-sheet-head">
+      <div class="rt-sheet-t" id="rt-filter-t">Filtros</div>
+      <button type="button" class="rt-x" onclick="rtCloseSheet('rt-filter-sheet')" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="rt-field"><label class="rt-label" for="rt-filter-gender">Género</label>
+      <select class="rt-input" id="rt-filter-gender" onchange="rtApplyCoachFilter()"><option value="">Todos</option><option value="varonil">Varonil</option><option value="femenil">Femenil</option></select></div>
+    <div class="rt-field"><label class="rt-label" for="rt-filter-bow">Modalidad de arco</label>
+      <select class="rt-input" id="rt-filter-bow" onchange="rtApplyCoachFilter()"><option value="">Todas</option><option value="compuesto">Compuesto</option><option value="recurvo">Recurvo</option><option value="barebow">Barebow</option><option value="tradicional">Tradicional</option></select></div>
+    <div class="rt-field"><label class="rt-label" for="rt-filter-cat">Categoría</label>
+      <select class="rt-input" id="rt-filter-cat" onchange="rtApplyCoachFilter()"><option value="">Todas</option><option value="sub14">Sub 14</option><option value="sub16">Sub 16</option><option value="sub18">Sub 18</option><option value="sub21">Sub 21</option><option value="sub25">Sub 25</option><option value="mayores">Mayores</option></select></div>
+    <div class="rt-field">
+      <div class="rt-label">Periodo de los reportes</div>
+      <div class="rt-tfs" id="rt-time-filter-chips">
+        <button type="button" class="rt-tf-btn" onclick="rtSetFilterDays(7,this)">7 d</button>
+        <button type="button" class="rt-tf-btn" onclick="rtSetFilterDays(15,this)">15 d</button>
+        <button type="button" class="rt-tf-btn rt-tf-act" onclick="rtSetFilterDays(30,this)">30 d</button>
+        <button type="button" class="rt-tf-btn" onclick="rtSetFilterDays(60,this)">60 d</button>
+        <button type="button" class="rt-tf-btn" onclick="rtSetFilterDays(90,this)">90 d</button>
+        <button type="button" class="rt-tf-btn" onclick="rtSetFilterDays(180,this)">180 d</button>
+        <button type="button" class="rt-tf-btn" onclick="rtSetFilterDays(360,this)">360 d</button>
+        <button type="button" class="rt-tf-btn" onclick="rtSetFilterDays(0,this)">Máx</button>
+      </div>
+      <input type="hidden" id="rt-filter-days" value="30">
+    </div>
+    <button type="button" class="rt-btn-a" onclick="rtCloseSheet('rt-filter-sheet')">Listo</button>
+  </div>
 </div>
 
 <script>
@@ -16629,8 +16528,21 @@ window.coTrOpenAthlete = function(userId){
 const SUPA = 'https://axaiyaflubssaghvhefe.supabase.co';
 window._supabaseSUPA = SUPA;
 const DAYS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-const ACT_ICONS = {asistencia:'✅',calentamiento:'🔥',tiros_sin:'🏹',tiros_con:'🎯',conteo:'📊',torneo:'🏆'};
-const ACT_COLORS = {asistencia:'#5dcaa5',calentamiento:'#d8a05a',tiros_sin:'#5ab4d6',tiros_con:'#d8d15a',conteo:'#9a88dd',torneo:'#e05555'};
+const ACT_ART = {asistencia:'check',calentamiento:'flame',tiros_sin:'bow',tiros_con:'outdoor',conteo:'podium',torneo:'trophy'};
+const ACT_VAR = {asistencia:'green',calentamiento:'amber',tiros_sin:'teal',tiros_con:'navy',conteo:'field',torneo:'red'};
+const ACT_BAR = {asistencia:'#2e9e5e',calentamiento:'#d98e1f',tiros_sin:'#2f8f9c',tiros_con:'#35508c',conteo:'#6a6a6a',torneo:'#c24a34'};
+const DAYS_FULL = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const RT_MODE_LABELS = {'indoor-15':'Indoor 15 tiros','indoor-30':'Indoor 30 tiros','indoor-60':'Indoor 60 tiros','outdoor-36':'Outdoor 36 flechas','outdoor-72':'Outdoor 72 flechas','field-c':'Field conocidas','field-d':'Field desconocidas','3d':'3D'};
+const rtModeLabel = m => RT_MODE_LABELS[m] || m;
+// Texto del usuario que se pinta como HTML (títulos, notas): se escapa para que no pueda inyectar etiquetas.
+const rtEsc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rtIcon = t => `<svg viewBox="0 0 100 100" aria-hidden="true"><use href="#rt-art-${ACT_ART[t]||'plan'}"/></svg>`;
+const rtArt = t => `<div class="rt-ban-art">${rtIcon(t)}</div>`;
+const RT_MARK = '<svg class="rt-ban-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="16"/></svg>';
+function rtLocalISO(d){ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+// 'YYYY-MM-DD' como fecha LOCAL (new Date('2026-11-23') es medianoche UTC y en México se mostraba un día antes)
+function rtParseLocal(s){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||''); return m ? new Date(+m[1],+m[2]-1,+m[3]) : new Date(NaN); }
+const RT_SHORT = {day:'numeric',month:'short'};
 const ACT_LABELS = {asistencia:'Asistencia',calentamiento:'Calentamiento',tiros_sin:'Tiros sin caratula',tiros_con:'Tiros con caratula',conteo:'Conteo',torneo:'Torneo'};
 
 let rtUserId = null;
@@ -16652,12 +16564,13 @@ let rtActivitiesByDay = {}; // {null:[...], 0:[...], ...}
 // ── Toggle day pill ───────────────────────────────────────
 window.rtToggleDay = function(el){
   el.classList.toggle('on');
+  el.setAttribute('aria-pressed', el.classList.contains('on') ? 'true' : 'false');
   rtUpdateDayBuilderTabs();
 };
 
 window.rtSetBuilderDay = function(day, el){
   rtBuilderDay = day === 'null' ? null : (day===null ? null : parseInt(day));
-  document.querySelectorAll('#rt-day-builder-tabs .rt-week-tab').forEach(t=>t.classList.remove('act'));
+  document.querySelectorAll('#rt-day-builder-tabs .rt-chip').forEach(t=>t.classList.remove('act'));
   el.classList.add('act');
   rtRenderActivitiesBuilder();
 };
@@ -16669,9 +16582,9 @@ function rtUpdateDayBuilderTabs(){
   if(sameDay){ tabsEl.style.display='none'; return; }
   const activeDays = [...document.querySelectorAll('#rt-day-picker .rt-day-pill.on')]
     .map(el=>parseInt(el.dataset.day));
-  let html = `<div class="rt-week-tab ${rtBuilderDay===null?'act':''}" onclick="rtSetBuilderDay(null,this)">Todos</div>`;
+  let html = `<button type="button" class="rt-chip ${rtBuilderDay===null?'act':''}" onclick="rtSetBuilderDay(null,this)">Todos</button>`;
   html += activeDays.map(d=>
-    `<div class="rt-week-tab ${rtBuilderDay===d?'act':''}" onclick="rtSetBuilderDay(${d},this)">${DAYS[d]}</div>`
+    `<button type="button" class="rt-chip ${rtBuilderDay===d?'act':''}" onclick="rtSetBuilderDay(${d},this)">${DAYS[d]}</button>`
   ).join('');
   tabsEl.innerHTML = html;
   tabsEl.style.display = 'flex';
@@ -16699,6 +16612,7 @@ window.rtNavWeek = function(delta){
   if(rtWeekOffset + delta > 0) return; // no ir al futuro
   rtWeekOffset += delta;
   rtUpdateWeekLabel();
+  rtRenderPlansList();   // antes solo cambiaba la etiqueta: la lista no se volvía a filtrar por la semana elegida
   rtLoadWeekStats();
 };
 
@@ -16713,7 +16627,7 @@ function rtInit(){
     rtLoadCoachArchers();
   }
 
-  document.getElementById('rt-plan-start').value = new Date().toISOString().slice(0,10);
+  document.getElementById('rt-plan-start').value = rtLocalISO(new Date());
   rtUpdateWeekLabel();
   rtLoadPlans();
 }
@@ -16748,7 +16662,8 @@ window.rtShowView = function(view){
     document.getElementById('rt-view-'+v).style.display = v===view ? 'block' : 'none';
   });
   if(view === 'list') rtLoadPlans();
-  if(view === 'create'){ rtActivitiesByDay = {}; rtBuilderDay = null; rtRenderActivitiesBuilder(); }
+  if(view === 'create'){ rtActivitiesByDay = {}; rtBuilderDay = null; rtRenderActivitiesBuilder(); rtCreateStep(1); }
+  try{ window.scrollTo(0,0); }catch(e){}
 };
 
 // ── Toggle assign mode ────────────────────────────────────
@@ -16763,6 +16678,7 @@ window.rtToggleAssignMode = function(mode){
 window.rtToggleSameDay = function(el){
   el.classList.toggle('on');
   const sameDay = el.classList.contains('on');
+  el.setAttribute('aria-checked', sameDay ? 'true' : 'false');
   if(sameDay){
     // Colapsar todo a "todos"
     const all = rtAllActivities();
@@ -16776,11 +16692,14 @@ window.rtToggleSameDay = function(el){
 };
 
 // ── Load coach archers ────────────────────────────────────
+// La base (RLS) ya entrega SOLO a los arqueros de los clubes del coach; aquí únicamente se pintan.
 async function rtLoadCoachArchers(){
   const sel = document.getElementById('rt-for-user');
   try{
     const r = await rtFetch('archer_profiles?select=user_id,display_name&order=display_name.asc&limit=100');
+    if(!r.ok) throw new Error('HTTP '+r.status);
     const data = await r.json();
+    let n = 0;
     data.forEach(p=>{
       rtArcherNames[p.user_id] = p.display_name || p.user_id.slice(0,8);
       if(p.user_id === rtUserId) return;
@@ -16788,8 +16707,11 @@ async function rtLoadCoachArchers(){
       o.value = p.user_id;
       o.textContent = p.display_name || p.user_id.slice(0,8);
       sel.appendChild(o);
+      n++;
     });
-  } catch(e){}
+    const warn = document.getElementById('rt-no-archers');
+    if(warn) warn.style.display = n ? 'none' : 'block';
+  } catch(e){ console.error('rtLoadCoachArchers', e); }
 }
 
 // ── Load plans ────────────────────────────────────────────
@@ -16821,7 +16743,6 @@ async function rtLoadPlans(){
 function rtRenderPlansList(){
   const el = document.getElementById('rt-plans-list');
   const activeSec = document.getElementById('rt-active-plan-section');
-  const activeCard = document.getElementById('rt-active-plan-card');
 
   // Mis planes activos (assigned_to = yo)
   const myActive  = rtPlans.filter(p=>p.assigned_to===rtUserId && p.status==='active');
@@ -16836,16 +16757,17 @@ function rtRenderPlansList(){
 
   // Filtrar "mis planes" por la semana visible
   const {mon: wMon, sun: wSun} = rtUpdateWeekLabel();
-  const wMonStr = wMon.toISOString().slice(0,10);
-  const wSunStr = wSun.toISOString().slice(0,10);
+  // Fechas LOCALES (con toISOString la ventana se corría un día por la noche en México)
+  const wMonStr = rtLocalISO(wMon);
+  const wSunStr = rtLocalISO(wSun);
 
   function planInWeek(p){
     const start = p.week_start;
     if(!start) return true;
     const weeks = p.weeks || 1;
-    const pEnd = new Date(start);
+    const pEnd = rtParseLocal(start);
     pEnd.setDate(pEnd.getDate() + weeks*7 - 1);
-    const pEndStr = pEnd.toISOString().slice(0,10);
+    const pEndStr = rtLocalISO(pEnd);
     return start <= wSunStr && pEndStr >= wMonStr;
   }
 
@@ -16853,99 +16775,55 @@ function rtRenderPlansList(){
   if(myAll.length){
     html += myAll.map(p=>rtRenderPlanItem(p, p.status==='active')).join('');
   } else {
-    html += '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--muted)">Sin planes esta semana</div>';
+    html += '<div class="rt-empty">' + (rtWeekOffset===0 ? 'Sin planes esta semana.' : 'Sin planes en esa semana.') + '</div>';
   }
 
-  if(forOthers.length && rtIsCoach){
-    html += `<div class="rt-sec" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Planes asignados a arqueros</span>
-      <span style="font-size:10px;color:var(--muted)" id="rt-coach-plans-count"></span>
-    </div>`;
-    // ── Stats primero ──
-    html += `<div class="rt-stat-grid" style="margin-bottom:12px">
-      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-asistencia">—</div><div class="rt-stat-lbl">Asistencia</div></div>
-      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-calenta">—</div><div class="rt-stat-lbl">Actividades</div></div>
-      <div class="rt-stat-box"><div class="rt-stat-val" id="rt-stat-tiros">—</div><div class="rt-stat-lbl">% Tiros</div></div>
-    </div>`;
-    // ── Filtros segundo ──
-    html += `<div id="rt-coach-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-      <select id="rt-filter-gender" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
-        <option value="">👤 Género</option>
-        <option value="varonil">Varonil</option>
-        <option value="femenil">Femenil</option>
-      </select>
-      <select id="rt-filter-bow" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
-        <option value="">🏹 Modalidad</option>
-        <option value="compuesto">Compuesto</option>
-        <option value="recurvo">Recurvo</option>
-        <option value="barebow">Barebow</option>
-        <option value="tradicional">Tradicional</option>
-      </select>
-      <select id="rt-filter-cat" onchange="rtApplyCoachFilter()" style="flex:1;min-width:90px;padding:6px 8px;border-radius:7px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif">
-        <option value="">🎖 Categoría</option>
-        <option value="sub14">Sub 14</option>
-        <option value="sub16">Sub 16</option>
-        <option value="sub18">Sub 18</option>
-        <option value="sub21">Sub 21</option>
-        <option value="sub25">Sub 25</option>
-        <option value="mayores">Mayores</option>
-      </select>
-      <input type="hidden" id="rt-filter-days" value="30">
-    </div>`;
-    html += `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px" id="rt-time-filter-chips">
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(7,this)">7d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(15,this)">15d</button>
-      <button class="rt-tf-btn rt-tf-act" onclick="rtSetFilterDays(30,this)">30d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(60,this)">60d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(90,this)">90d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(180,this)">180d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(360,this)">360d</button>
-      <button class="rt-tf-btn" onclick="rtSetFilterDays(0,this)">Máx</button>
-    </div>`;
-    html += `<div id="rt-coach-plans-list">${forOthers.map(p=>rtRenderPlanItem(p,false)).join('')}</div>`;
-    // Store for filtering and show initial count
+  const showCoach = forOthers.length && rtIsCoach;
+  if(showCoach){
+    html += `<h2 class="rt-hd">Arqueros<small id="rt-coach-plans-count"></small></h2>
+    <div class="rt-ban rt-sum"><div class="rt-ban-body">
+      <div class="rt-sum-row" style="flex-wrap:wrap"><div class="rt-ban-t">Resumen de arqueros</div><button type="button" class="rt-btn-sm" onclick="rtOpenSheet('rt-cpfa-sheet')">Promedio por flecha</button></div>
+      <div class="rt-stats">
+        <div class="rt-stat"><div class="v" id="rt-stat-asistencia">—</div><div class="l">Reportes</div></div>
+        <div class="rt-stat"><div class="v" id="rt-stat-calenta">—</div><div class="l">Actividades</div></div>
+        <div class="rt-stat"><div class="v" id="rt-stat-tiros">—</div><div class="l">Completado</div></div>
+      </div>
+      <div class="rt-sum-foot"><span id="rt-filter-sum">Últimos 30 d</span><button type="button" class="rt-btn-sm" onclick="rtOpenSheet('rt-filter-sheet')">Filtros</button></div>
+    </div></div>
+    <div id="rt-coach-plans-list">${forOthers.map(p=>rtRenderPlanItem(p,false)).join('')}</div>`;
+    // Store for filtering
     window._rtForOthers = forOthers;
-    // Set initial count after DOM renders
-    setTimeout(()=>{
-      const countEl = document.getElementById('rt-coach-plans-count');
-      if(countEl) countEl.textContent = forOthers.length+' planes';
-    }, 50);
   }
 
   if(!html && !myActive.length){
-    html = '<div style="text-align:center;padding:24px 0;font-size:12px;color:var(--muted)">Sin planes aún — crea el primero</div>';
+    html = '<div class="rt-empty">Sin planes aún. Crea el primero.</div>';
   }
 
   el.innerHTML = html;
+
+  // Estadísticas del coach con el filtro por defecto (antes solo se calculaban al tocar un filtro)
+  if(showCoach) rtApplyCoachFilter();
 }
 
 function rtRenderPlanItem(p, isActive){
-  const start = new Date(p.week_start);
+  const start = rtParseLocal(p.week_start);
   const weeks = p.weeks||1;
   const end = new Date(start); end.setDate(start.getDate() + weeks*7 - 1);
-  const dateRange = start.toLocaleDateString('es-MX',{day:'numeric',month:'short'}) + ' – ' +
-    end.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
-  const statusBadge = p.status==='active'
-    ? '<span style="font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(93,202,165,0.15);color:#5dcaa5;border:0.5px solid rgba(93,202,165,0.3)">Activo</span>'
-    : '<span style="font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--muted)">Inactivo</span>';
-
-  // Mostrar a quién está asignado si es para otro
+  const dateRange = start.toLocaleDateString('es-MX',RT_SHORT) + ' – ' + end.toLocaleDateString('es-MX',RT_SHORT);
+  const active = p.status==='active';
   const isForOther = p.assigned_to !== rtUserId;
-  const assigneeName = rtArcherNames[p.assigned_to] || p.assigned_to?.slice(0,8);
-  const assigneeTag = isForOther
-    ? `<div style="font-size:10px;color:#9a88dd;margin-top:2px">👤 Para: ${assigneeName}</div>`
-    : '';
-
-  return `<div class="rt-plan-item ${isActive?'active-plan':''}" onclick="rtOpenPlan('${p.id}')">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${p.title||'Plan sin nombre'}</div>
-        <div style="font-size:10px;color:var(--muted)">${dateRange} · ${weeks} sem.</div>
-        ${assigneeTag}
-      </div>
-      ${statusBadge}
+  const assigneeName = rtArcherNames[p.assigned_to] || (p.assigned_to||'').slice(0,8);
+  const title = rtEsc(p.title||'Plan sin nombre');
+  return `<button type="button" class="rt-ban ${active?'':'rt-ban-done'}" onclick="rtOpenPlan('${rtEsc(p.id)}')" aria-label="${title}, ${dateRange}, ${active?'activo':'inactivo'}">
+    ${RT_MARK}${rtArt('plan')}
+    <div class="rt-ban-body">
+      <span class="rt-pill ${active?'ok':'off'}">${active?'Activo':'Inactivo'}</span>
+      <div class="rt-ban-t">${title}</div>
+      <div class="rt-ban-s">${dateRange} · ${weeks} sem.</div>
+      ${isForOther?`<div class="rt-ban-s">Para: ${rtEsc(assigneeName)}</div>`:''}
+      <span class="rt-ban-go">Abrir →</span>
     </div>
-  </div>`;
+  </button>`;
 }
 
 
@@ -16966,6 +16844,8 @@ window.rtShowAddActivity = function(){
   document.getElementById('rt-act-config').style.display = 'none';
   document.querySelectorAll('.rt-act-type').forEach(el=>el.classList.remove('sel'));
   document.getElementById('rt-act-note').value = '';
+  document.getElementById('rt-act-t').textContent = 'Agregar actividad';
+  document.getElementById('rt-act-ok').textContent = 'Agregar';
   document.getElementById('rt-act-overlay').style.display = 'block';
 };
 
@@ -16977,11 +16857,13 @@ window.rtSelectActType = function(type, el){
   rtSelectedActType = type;
   document.querySelectorAll('.rt-act-type').forEach(e=>e.classList.remove('sel'));
   el.classList.add('sel');
-  document.getElementById('rt-act-config').style.display = 'block';
+  const cfg = document.getElementById('rt-act-config');
+  cfg.style.display = 'block';
   // Show/hide config panels
   ['tiros','conteo'].forEach(c=>document.getElementById('rt-cfg-'+c).style.display='none');
   if(type==='tiros_sin'||type==='tiros_con') document.getElementById('rt-cfg-tiros').style.display='block';
   if(type==='conteo') document.getElementById('rt-cfg-conteo').style.display='block';
+  try{ cfg.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(e){}
 };
 
 window.rtAddActivity = function(){
@@ -17014,30 +16896,22 @@ function rtRenderActivitiesBuilder(){
   const el = document.getElementById('rt-acts-container');
   const rtActivities = rtGetCurrentActs();
   if(!rtActivities.length){
-    el.innerHTML = '<div style="text-align:center;padding:16px 0;font-size:12px;color:var(--muted)">Sin actividades — agrega al menos una</div>';
+    el.innerHTML = '<div class="rt-empty">Sin actividades. Agrega al menos una.</div>';
     return;
   }
   el.innerHTML = rtActivities.map((a,i)=>{
-    const color = ACT_COLORS[a.type]||'var(--muted)';
     const label = ACT_LABELS[a.type]||a.type;
     let sub = '';
     if(a.config.num_tiros) sub = `${a.config.num_tiros} tiros · ${a.config.metros}m`;
-    if(a.config.mode) sub = a.config.mode;
-    return `<div class="rt-act-card">
-      <div class="rt-act-card-bar" style="background:${color}"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:18px">${ACT_ICONS[a.type]||'•'}</span>
-          <div>
-            <div style="font-size:12px;font-weight:600;color:var(--text)">${label}</div>
-            ${sub?`<div style="font-size:10px;color:var(--muted)">${sub}</div>`:''}
-            ${a.config.nota?`<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;font-style:italic">${a.config.nota.slice(0,60)}${a.config.nota.length>60?'…':''}</div>`:''}
-          </div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button class="rt-btn sm ghost" onclick="rtEditActivity(${i})">✏️</button>
-          <button class="rt-btn sm ghost" onclick="rtRemoveActivity(${i})" style="color:var(--coral)">✕</button>
-        </div>
+    if(a.config.mode) sub = rtModeLabel(a.config.mode);
+    const nota = a.config.nota ? a.config.nota.slice(0,60)+(a.config.nota.length>60?'…':'') : '';
+    return `<div class="rt-row">
+      <i class="rt-row-bar" style="background:${ACT_BAR[a.type]||'#7d8798'}"></i>
+      <span class="rt-row-ic">${rtIcon(a.type)}</span>
+      <div class="rt-row-t"><b>${rtEsc(label)}</b>${sub?`<span>${rtEsc(sub)}</span>`:''}${nota?`<span><i>${rtEsc(nota)}</i></span>`:''}</div>
+      <div class="rt-row-b">
+        <button type="button" onclick="rtEditActivity(${i})" aria-label="Editar ${rtEsc(label)}">Editar</button>
+        <button type="button" class="del" onclick="rtRemoveActivity(${i})" aria-label="Quitar ${rtEsc(label)}">Quitar</button>
       </div>
     </div>`;
   }).join('');
@@ -17063,6 +16937,8 @@ window.rtEditActivity = function(i){
     document.getElementById('rt-cfg-conteo-mode').value = a.config.mode||'indoor-30';
   }
   document.getElementById('rt-act-note').value = a.config.nota||'';
+  document.getElementById('rt-act-t').textContent = 'Editar actividad';
+  document.getElementById('rt-act-ok').textContent = 'Guardar cambios';
   document.getElementById('rt-act-overlay').style.display = 'block';
 };
 
@@ -17121,12 +16997,14 @@ window.rtSavePlan = async function(){
       }
       // Excluir al propio coach
       let uids = users.map(p=>p.uid).filter(uid=>uid!==rtUserId);
-      targetUsers = uids.length ? uids : [rtUserId];
-    } catch(e){ targetUsers = [rtUserId]; }
+      // Antes, sin coincidencias el plan se asignaba en silencio al propio coach y decía "Plan guardado".
+      if(!uids.length) return rtToast('No hay arqueros de tus clubes que cumplan ese filtro');
+      targetUsers = uids;
+    } catch(e){ return rtToast('No se pudo cargar a los arqueros. Intenta de nuevo'); }
   }
 
   try{
-    const planIds = [];
+    const created = [];   // planes ya creados en esta operación, para deshacerlos si algo falla
     for(const uid of targetUsers){
       const pRes = await rtFetch('training_plans', {
         method:'POST',
@@ -17140,9 +17018,18 @@ window.rtSavePlan = async function(){
           status: 'active'
         })
       });
+      if(!pRes.ok){
+        const body = await pRes.json().catch(()=>({}));
+        console.error('Plan error', pRes.status, body);
+        await rtUndoPlans(created);
+        return rtToast((pRes.status===403 || body.code==='42501')
+          ? 'No puedes asignar planes a ese arquero: no es de tus clubes'
+          : 'No se pudo guardar el plan ('+pRes.status+')');
+      }
       const pData = await pRes.json();
       const plan = Array.isArray(pData)?pData[0]:pData;
-      if(plan?.id) planIds.push(plan.id);
+      if(!plan?.id){ await rtUndoPlans(created); return rtToast('No se pudo guardar el plan'); }
+      created.push(plan.id);
 
       // Guardar actividades para este plan
       const acts = rtAllActivities().map((a,i)=>({
@@ -17161,9 +17048,10 @@ window.rtSavePlan = async function(){
           headers:{'Prefer':'return=minimal'},
           body: JSON.stringify(acts)
         });
-        if(!aRes.ok && aRes.status !== 201){
-          const err = await aRes.text();
-          console.error('Activities error:', err);
+        if(!aRes.ok){
+          console.error('Activities error:', aRes.status, await aRes.text());
+          await rtUndoPlans(created);
+          return rtToast('No se pudieron guardar las actividades. No se creó el plan');
         }
       }
     }
@@ -17177,6 +17065,16 @@ window.rtSavePlan = async function(){
 };
 
 // ── Open plan ─────────────────────────────────────────────
+// Semana del plan que contiene hoy (si hoy es antes del plan, la 1; si ya terminó, la última)
+function rtWeekOfToday(plan){
+  const weeks = plan.weeks||1;
+  const start = rtParseLocal(plan.week_start);
+  if(isNaN(start)) return 1;
+  const t = new Date(); const today = new Date(t.getFullYear(),t.getMonth(),t.getDate());
+  const diff = Math.floor((today-start)/86400000);
+  return Math.min(weeks, Math.max(1, Math.floor(diff/7)+1));
+}
+
 window.rtOpenPlan = async function(planId){
   let plan = rtPlans.find(p=>p.id===planId);
   if(!plan){
@@ -17191,21 +17089,23 @@ window.rtOpenPlan = async function(planId){
 
   rtCurrentPlan = plan;
   window.rtCurrentPlan = plan; // expose globally for debugging
-  rtCurrentWeek = 1;
+  rtCurrentWeek = rtWeekOfToday(plan);
 
   document.getElementById('rt-plan-detail-title').textContent = plan.title||'Plan';
   // Mostrar nombre del atleta si el plan es de otro
   const isOthersPlan = plan.assigned_to && plan.assigned_to !== rtUserId;
   const archerName = isOthersPlan ? (rtArcherNames[plan.assigned_to] || null) : null;
+  const nWeeks = plan.weeks||1;
   document.getElementById('rt-plan-detail-sub').textContent =
-    (archerName ? '👤 ' + archerName + ' · ' : '') +
-    `${plan.weeks||1} semana${(plan.weeks||1)>1?'s':''} · desde ${new Date(plan.week_start).toLocaleDateString('es-MX',{day:'numeric',month:'short'})}`;
+    (archerName ? archerName + ' · ' : '') +
+    `${nWeeks} semana${nWeeks>1?'s':''} · desde ${rtParseLocal(plan.week_start).toLocaleDateString('es-MX',RT_SHORT)}`;
 
-  // Week tabs
+  // Semanas: solo se muestran si el plan dura más de una
   const weekTabs = document.getElementById('rt-plan-week-tabs');
-  weekTabs.innerHTML = Array.from({length:plan.weeks||1},(_,i)=>`
-    <div class="rt-week-tab ${i===0?'act':''}" onclick="rtSelectWeek(${i+1},this)">Sem ${i+1}</div>
+  weekTabs.innerHTML = Array.from({length:nWeeks},(_,i)=>`
+    <button type="button" class="rt-chip ${i+1===rtCurrentWeek?'act':''}" onclick="rtSelectWeek(${i+1},this)">Sem ${i+1}</button>
   `).join('');
+  weekTabs.style.display = nWeeks>1 ? 'flex' : 'none';
 
   rtShowView('plan');
   await rtLoadPlanDay(plan);
@@ -17213,7 +17113,7 @@ window.rtOpenPlan = async function(planId){
 
 window.rtSelectWeek = function(week, el){
   rtCurrentWeek = week;
-  document.querySelectorAll('.rt-week-tab').forEach(t=>t.classList.remove('act'));
+  document.querySelectorAll('#rt-plan-week-tabs .rt-chip').forEach(t=>t.classList.remove('act'));
   el.classList.add('act');
   rtLoadPlanDay(rtCurrentPlan);
 };
@@ -17222,17 +17122,26 @@ async function rtLoadPlanDay(plan){
   // Build day tabs from plan.days
   const days = plan.days||{};
   const activeDays = Object.entries(days).filter(([,v])=>v).map(([k])=>parseInt(k));
-  if(!activeDays.length) return;
+  const dayTabsEl = document.getElementById('rt-plan-day-tabs');
+  if(!activeDays.length){
+    dayTabsEl.innerHTML = '';
+    document.getElementById('rt-day-title').textContent = '—';
+    document.getElementById('rt-day-sum').textContent = '';
+    document.getElementById('rt-day-activities').innerHTML = '<div class="rt-empty">Este plan no tiene días de entrenamiento.</div>';
+    return;
+  }
 
-  // Default to today's day of week if in plan, else first active day
+  // Día por defecto: el de hoy si está en el plan; si no, el primero
+  const todayISO = rtLocalISO(new Date());
   const todayDow = (new Date().getDay()+6)%7; // 0=lun
-  rtCurrentDay = activeDays.includes(todayDow) ? todayDow : activeDays[0];
+  const todayMatch = activeDays.find(d=>rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, d)===todayISO);
+  rtCurrentDay = todayMatch !== undefined ? todayMatch : (activeDays.includes(todayDow) ? todayDow : activeDays[0]);
 
   // Render day tabs
-  const dayTabsEl = document.getElementById('rt-plan-day-tabs');
-  dayTabsEl.innerHTML = activeDays.map(d=>`
-    <div class="rt-week-tab ${d===rtCurrentDay?'act':''}" onclick="rtSelectDay(${d},this)">${DAYS[d]}</div>
-  `).join('');
+  dayTabsEl.innerHTML = activeDays.map(d=>{
+    const isToday = rtGetDateForDayWeek(plan.week_start, rtCurrentWeek, d)===todayISO;
+    return `<button type="button" class="rt-chip ${d===rtCurrentDay?'act':''}" onclick="rtSelectDay(${d},this)" aria-label="${DAYS_FULL[d]}${isToday?' (hoy)':''}">${DAYS[d]}${isToday?'<span class="hoy">hoy</span>':''}</button>`;
+  }).join('');
 
   await rtRenderDayActivities(plan);
   await rtRenderWeekStats(plan);
@@ -17240,14 +17149,16 @@ async function rtLoadPlanDay(plan){
 
 window.rtSelectDay = function(day, el){
   rtCurrentDay = day;
-  document.querySelectorAll('#rt-plan-day-tabs .rt-week-tab').forEach(t=>t.classList.remove('act'));
+  document.querySelectorAll('#rt-plan-day-tabs .rt-chip').forEach(t=>t.classList.remove('act'));
   el.classList.add('act');
   rtRenderDayActivities(rtCurrentPlan);
 };
 
 async function rtRenderDayActivities(plan){
   const el = document.getElementById('rt-day-activities');
-  el.innerHTML = '<div style="text-align:center;padding:16px;font-size:12px;color:var(--muted)">Cargando...</div>';
+  const titleEl = document.getElementById('rt-day-title');
+  const sumEl = document.getElementById('rt-day-sum');
+  el.innerHTML = '<div class="rt-empty">Cargando…</div>';
 
   try{
     // Load activities — null day_of_week = aplica a todos los días activos
@@ -17264,24 +17175,25 @@ async function rtRenderDayActivities(plan){
     const reportMap = {};
     reports.forEach(r=>{ reportMap[r.activity_id] = r; });
 
-    const today = new Date().toISOString().slice(0,10);
-    const isToday = reportDate === today;
-    const isPast = reportDate < today;
+    if(titleEl) titleEl.textContent = (DAYS_FULL[rtCurrentDay]||'') + (reportDate===rtLocalISO(new Date()) ? ' · Hoy' : '');
 
     if(!acts.length){
-      el.innerHTML = '<div style="text-align:center;padding:16px;font-size:12px;color:var(--muted)">Sin actividades en este día</div>';
+      if(sumEl) sumEl.textContent = '';
+      el.innerHTML = '<div class="rt-empty">Sin actividades en este día.</div>';
       return;
     }
+    if(sumEl) sumEl.textContent = `${acts.filter(a=>reportMap[a.id]?.completed).length} de ${acts.length} hechas`;
 
     el.innerHTML = acts.map(a=>{
       const rep = reportMap[a.id];
-      const color = ACT_COLORS[a.type]||'var(--muted)';
-      const done = rep?.completed;
+      const done = !!rep?.completed;
       const pct = rtGetCompletionPct(a, rep);
+      const label = ACT_LABELS[a.type]||a.type;
+      const cfg = a.config?.num_tiros ? `${a.config.num_tiros} tiros · ${a.config.metros} m` : (a.config?.mode ? rtModeLabel(a.config.mode) : '');
 
       let valueStr = '';
       if(a.type==='asistencia'||a.type==='calentamiento'){
-        valueStr = done ? '✓ Sí' : (rep?'✗ No':'—');
+        valueStr = done ? '✓ Sí' : (rep?'✗ No':'Pendiente');
       } else if(a.type==='tiros_sin'||a.type==='tiros_con'){
         const target = a.config?.num_tiros||0;
         const done_v = rep?.value_done||0;
@@ -17291,35 +17203,25 @@ async function rtRenderDayActivities(plan){
       } else if(a.type==='torneo'){
         valueStr = rep?.value_done ? `Lugar: ${rep.value_done}°` : 'Pendiente';
       }
+      const pill = done ? '<span class="rt-pill ok">Hecho</span>' : (rep && pct>0 ? '<span class="rt-pill">En curso</span>' : '');
+      const v = done ? 'done' : (ACT_VAR[a.type]||'navy');
 
-      // Permitir reportar en cualquier día activo del plan (propio o del coach)
-      const canReport = true;
-
-      return `<div class="rt-act-card" style="opacity:${!canReport&&!rep?'0.5':'1'}">
-        <div class="rt-act-card-bar" style="background:${done?color:'rgba(255,255,255,0.1)'}"></div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-size:20px">${done?'✅':ACT_ICONS[a.type]||'•'}</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-              <span style="font-size:12px;font-weight:600;color:var(--text)">${ACT_LABELS[a.type]||a.type}</span>
-              ${a.config?.num_tiros?`<span style="font-size:9px;color:var(--muted)">${a.config.num_tiros} tiros · ${a.config.metros}m</span>`:''}
-              ${a.config?.mode?`<span style="font-size:9px;color:var(--muted)">${a.config.mode}</span>`:''}
-            </div>
-            <div style="font-size:11px;color:${done?'#5dcaa5':'var(--muted)'}">${valueStr}</div>
-            ${a.config?.nota?`<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px;font-style:italic">📌 ${a.config.nota}</div>`:''}
-            ${rep?.note?`<div style="font-size:10px;color:rgba(154,136,221,0.8);margin-top:2px;font-style:italic">💬 ${rep.note}</div>`:''}
-          </div>
-          ${canReport?`<button class="rt-btn sm ${done?'ghost':'y'}" onclick="rtOpenReport('${a.id}','${plan.id}','${reportDate}')" style="${done?'':''}">
-            ${done?'Editar':'Reportar'}
-          </button>`:''}
+      return `<button type="button" class="rt-ban rt-ban-${v}" onclick="rtOpenReport('${rtEsc(a.id)}','${rtEsc(plan.id)}','${reportDate}')" aria-label="${rtEsc(label)}. ${rtEsc(valueStr)}. ${done?'Editar':'Reportar'}">
+        ${RT_MARK}${rtArt(a.type)}
+        <div class="rt-ban-body">
+          ${pill}
+          <div class="rt-ban-t">${rtEsc(label)}</div>
+          ${cfg?`<div class="rt-ban-s">${rtEsc(cfg)}</div>`:''}
+          <div class="rt-state">${rtEsc(valueStr)}</div>
+          ${a.config?.nota?`<div class="rt-note"><b>Coach:</b> ${rtEsc(a.config.nota)}</div>`:''}
+          ${rep?.note?`<div class="rt-note"><b>Tú:</b> ${rtEsc(rep.note)}</div>`:''}
+          ${pct>0&&pct<100?`<div class="rt-bar"><i style="width:${pct}%"></i></div>`:''}
+          <span class="rt-ban-go">${done?'Editar':'Reportar'} →</span>
         </div>
-        ${pct>0&&pct<100?`<div style="margin-top:8px;height:3px;border-radius:2px;background:rgba(255,255,255,0.08)">
-          <div style="width:${pct}%;height:100%;border-radius:2px;background:${color};transition:width .4s"></div>
-        </div>`:''}
-      </div>`;
+      </button>`;
     }).join('');
 
-  } catch(e){ console.error(e); el.innerHTML='<div style="color:var(--coral);font-size:12px;padding:8px">Error cargando actividades</div>'; }
+  } catch(e){ console.error(e); el.innerHTML='<div class="rt-empty">Error cargando actividades.</div>'; }
 }
 
 function rtGetCompletionPct(act, rep){
@@ -17358,74 +17260,52 @@ window.rtOpenReport = async function(actId, planId, reportDate){
 
   rtReportingAct = {act, planId, reportDate, repId: rep?.id};
 
-  const color = ACT_COLORS[act.type]||'var(--muted)';
   const label = ACT_LABELS[act.type]||act.type;
-
   let formHtml = '';
 
-  if(act.type==='asistencia'){
+  if(act.type==='asistencia'||act.type==='calentamiento'){
+    const isAsis = act.type==='asistencia';
+    const yesOn = rep?.completed===true;
+    const noOn  = rep?.completed===false && !!rep?.id;
     formHtml = `
-      <div class="rt-label">¿Asististe hoy?</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        <button class="rt-btn ${rep?.completed===true?'y':''}" id="rt-rep-yes" onclick="rtRepSetBool(true)" style="padding:14px">✓ Sí asistí</button>
-        <button class="rt-btn ${rep?.completed===false&&rep?.id?'':'ghost'}" id="rt-rep-no" onclick="rtRepSetBool(false)" style="padding:14px;color:var(--coral)">✗ No asistí</button>
-      </div>`;
-  } else if(act.type==='calentamiento'){
-    formHtml = `
-      <div class="rt-label">¿Completaste el calentamiento?</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        <button class="rt-btn ${rep?.completed===true?'y':''}" id="rt-rep-yes" onclick="rtRepSetBool(true)" style="padding:14px">✓ Sí</button>
-        <button class="rt-btn ${rep?.completed===false&&rep?.id?'':'ghost'}" id="rt-rep-no" onclick="rtRepSetBool(false)" style="padding:14px;color:var(--coral)">✗ No</button>
+      <div class="rt-label">${isAsis?'¿Asististe hoy?':'¿Completaste el calentamiento?'}</div>
+      <div class="rt-yn">
+        <button type="button" id="rt-rep-yes" class="${yesOn?'pick-yes':''}" aria-pressed="${yesOn}" onclick="rtRepSetBool(true)">${isAsis?'Sí asistí':'Sí'}</button>
+        <button type="button" id="rt-rep-no" class="${noOn?'pick-no':''}" aria-pressed="${noOn}" onclick="rtRepSetBool(false)">${isAsis?'No asistí':'No'}</button>
       </div>`;
   } else if(act.type==='tiros_sin'||act.type==='tiros_con'){
     const target = act.config?.num_tiros||0;
     formHtml = `
-      <div class="rt-label">¿Cuántos tiros completaste? (meta: ${target})</div>
-      <input type="number" class="rt-input" id="rt-rep-value" value="${rep?.value_done||''}" placeholder="${target}" min="0" max="${target*2}" style="margin-bottom:12px">
-      <div id="rt-rep-pct-bar" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.08);margin-bottom:12px">
-        <div id="rt-rep-pct-fill" style="height:100%;border-radius:2px;background:${color};transition:width .3s;width:${rep?.value_done?Math.min(100,Math.round(rep.value_done/target*100)):0}%"></div>
-      </div>`;
+      <label class="rt-label" for="rt-rep-value">¿Cuántos tiros completaste? <span>(meta: ${target})</span></label>
+      <input type="number" inputmode="numeric" class="rt-input" id="rt-rep-value" value="${rtEsc(rep?.value_done||'')}" placeholder="${target}" min="0" max="${target*2}" style="margin-bottom:12px">
+      <div class="rt-rep-bar"><i id="rt-rep-pct-fill" style="width:${rep?.value_done?Math.min(100,Math.round(rep.value_done/target*100)):0}%"></i></div>`;
   } else if(act.type==='conteo'){
     formHtml = `
-      <div style="padding:10px 14px;border-radius:10px;background:rgba(154,136,221,0.08);border:0.5px solid rgba(154,136,221,0.3);margin-bottom:14px">
-        <div style="font-size:12px;color:#9a88dd;font-weight:600">📊 Conteo — ${act.config?.mode||''}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px">Se irá a registrar tu score en Puntuaciones. El resultado se guardará aquí automáticamente.</div>
-      </div>
-      ${rep?.value_done?`<div style="text-align:center;margin-bottom:12px"><div style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:#9a88dd">${rep.value_done}</div><div style="font-size:11px;color:var(--muted)">Score registrado</div></div>`:''}
-      <button class="rt-btn y" style="width:100%;margin-bottom:10px" onclick="rtGoToConteo('${act.id}','${planId}','${reportDate}','${act.config?.mode||''}')">
-        ${rep?.value_done?'Actualizar score →':'Ir a anotar →'}
-      </button>`;
+      <div class="rt-rep-meta"><b>Conteo · ${rtEsc(rtModeLabel(act.config?.mode||''))}</b><div>Vas a registrar tu score en Puntuaciones. El resultado se guarda aquí automáticamente.</div></div>
+      ${rep?.value_done?`<div class="rt-rep-score"><div class="n">${rtEsc(rep.value_done)}</div><div class="l">Score registrado</div></div>`:''}
+      <button type="button" class="rt-btn-a" style="margin-bottom:10px" onclick="rtGoToConteo('${rtEsc(act.id)}','${rtEsc(planId)}','${reportDate}','${rtEsc(act.config?.mode||'')}')">${rep?.value_done?'Actualizar score →':'Ir a anotar →'}</button>`;
   } else if(act.type==='torneo'){
     formHtml = `
-      <div style="padding:10px 14px;border-radius:10px;background:rgba(224,85,85,0.08);border:0.5px solid rgba(224,85,85,0.3);margin-bottom:14px">
-        <div style="font-size:12px;color:#e05555;font-weight:600">🏆 Torneo entre amigos</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px">Ve a Competencias para unirte o crear el torneo del día.</div>
-      </div>
-      <div class="rt-label">Lugar obtenido (si ya tienes el resultado)</div>
-      <input type="number" class="rt-input" id="rt-rep-value" value="${rep?.value_done||''}" placeholder="Ej: 1" min="1" max="99" style="margin-bottom:12px">
-      <button class="rt-btn ghost" style="width:100%;margin-bottom:10px" onclick="rtGoToTorneo()">Ir a Competencias →</button>`;
+      <div class="rt-rep-meta"><b>Torneo entre amigos</b><div>Ve a Competencias para unirte o crear el torneo del día.</div></div>
+      <label class="rt-label" for="rt-rep-value">Lugar obtenido <span>(si ya tienes el resultado)</span></label>
+      <input type="number" inputmode="numeric" class="rt-input" id="rt-rep-value" value="${rtEsc(rep?.value_done||'')}" placeholder="Ej: 1" min="1" max="99" style="margin-bottom:12px">
+      <button type="button" class="rt-btn-s" style="margin-bottom:10px" onclick="rtGoToTorneo()">Ir a Competencias →</button>`;
   }
 
   content.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div>
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${reportDate}</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text)">${label}</div>
-      </div>
-      <button onclick="rtCloseReport()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    <div class="rt-sheet-head">
+      <div><div class="rt-sheet-sub">${rtEsc(DAYS_FULL[rtCurrentDay]||'')} · Semana ${rtCurrentWeek}</div><div class="rt-sheet-t">${rtEsc(label)}</div></div>
+      <button type="button" class="rt-x" onclick="rtCloseReport()" aria-label="Cerrar">✕</button>
     </div>
 
-    ${act.config?.nota?`<div style="padding:10px 12px;border-radius:8px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);margin-bottom:14px">
-      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Nota del coach</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.5">${act.config.nota}</div>
-    </div>`:''}
+    ${act.config?.nota?`<div class="rt-rep-meta"><b>Nota del coach</b><div>${rtEsc(act.config.nota)}</div></div>`:''}
 
     ${formHtml}
 
-    <div class="rt-label">Tu nota <span style="color:var(--hint)">(opcional)</span></div>
-    <textarea class="rt-textarea" id="rt-rep-note" placeholder="Ej: Me costó los últimos 10 tiros, brazo cansado">${rep?.note||''}</textarea>
+    <label class="rt-label" for="rt-rep-note">Tu nota <span>(opcional)</span></label>
+    <textarea class="rt-textarea" id="rt-rep-note" placeholder="Ej: Me costaron los últimos 10 tiros, brazo cansado">${rtEsc(rep?.note||'')}</textarea>
 
-    ${act.type!=='conteo'?`<button class="rt-btn y" style="width:100%;margin-top:14px" onclick="rtSaveReport('${act.id}','${planId}','${reportDate}')">Guardar reporte ✓</button>`:''}
+    ${act.type!=='conteo'?`<button type="button" class="rt-btn-a" style="margin-top:14px" onclick="rtSaveReport('${rtEsc(act.id)}','${rtEsc(planId)}','${reportDate}')">Guardar reporte</button>`:''}
   `;
 
   // Live pct bar for tiros
@@ -17440,16 +17320,15 @@ window.rtOpenReport = async function(actId, planId, reportDate){
 
   overlay.style.display = 'block';
   window._rtRepBool = rep?.completed ?? null;
+  const x = content.querySelector('.rt-x'); if(x) setTimeout(()=>x.focus(),30);
 };
 
 window.rtRepSetBool = function(val){
   window._rtRepBool = val;
   const yes = document.getElementById('rt-rep-yes');
   const no  = document.getElementById('rt-rep-no');
-  if(yes) yes.className = 'rt-btn'+(val?' y':'');
-  if(no)  no.className  = 'rt-btn'+(val?'':' y');
-  if(no && !val) no.style.color = '#5dcaa5';
-  if(yes && val) yes.style.color = '';
+  if(yes){ yes.className = val ? 'pick-yes' : ''; yes.setAttribute('aria-pressed', val ? 'true' : 'false'); }
+  if(no){  no.className  = val ? '' : 'pick-no';  no.setAttribute('aria-pressed', val ? 'false' : 'true'); }
 };
 
 window.rtCloseReport = function(){
@@ -17489,16 +17368,28 @@ window.rtSaveReport = async function(actId, planId, reportDate){
   };
 
   try{
+    let res;
     if(repId){
-      await rtFetch(`training_reports?id=eq.${repId}`, {
-        method:'PATCH', headers:{'Prefer':'return=minimal'},
+      res = await rtFetch(`training_reports?id=eq.${repId}`, {
+        method:'PATCH', headers:{'Prefer':'return=representation'},
         body: JSON.stringify({completed, value_done, note: notes})
       });
     } else {
-      await rtFetch('training_reports', {
+      res = await rtFetch('training_reports', {
         method:'POST', headers:{'Prefer':'return=minimal'},
         body: JSON.stringify(payload)
       });
+    }
+    // Antes no se revisaba la respuesta: si la base rechazaba el reporte igual decía "✓ Reporte guardado".
+    if(!res.ok){
+      console.error('Report error', res.status, await res.text());
+      return rtToast(res.status===409 ? 'No se guardó: la base ya tiene un reporte de esta actividad (409)'
+        : (res.status===401 || res.status===403) ? 'No se guardó: sin permiso. Vuelve a iniciar sesión'
+        : 'No se guardó el reporte ('+res.status+')');
+    }
+    if(repId){
+      const upd = await res.json().catch(()=>[]);
+      if(!Array.isArray(upd) || !upd.length) return rtToast('No se guardó: no se pudo actualizar el reporte');
     }
     rtToast('✓ Reporte guardado', true);
     document.getElementById('rt-report-overlay').style.display = 'none';
@@ -17555,14 +17446,12 @@ const RT_MODE_ARROWS = {
   'outdoor-36':36,'outdoor-72':72,
   'field-c':24,'field-d':24,'3d':20
 };
-const RT_DISC_COLORS = {indoor:'#e05555',outdoor:'#5ab4d6',field:'#d8d15a','3d':'#5dcaa5'};
+const RT_DISC_COLORS = {indoor:'#ff7b7b',outdoor:'#5ab4d6',field:'#d8d15a','3d':'#5dcaa5'};   // el rojo se aclaró: sobre la ventana oscura el anterior daba 3.9:1
 const RT_DISC_LABELS = {indoor:'Indoor',outdoor:'Outdoor',field:'Field','3d':'3D'};
 
 // ── Week stats ────────────────────────────────────────────
 async function rtRenderWeekStats(plan){
   const SUPA2 = window._supabaseSUPA || 'https://axaiyaflubssaghvhefe.supabase.co';
-  const session2 = (await window._supabaseClient.auth.getSession()).data.session;
-  const h2 = { apikey: window._supabaseAnonKey||''  , Authorization: 'Bearer '+(session2?.access_token||'') };
   const el = document.getElementById('rt-plan-week-stats');
   try{
     // Obtener todos los reportes del plan (no solo esta semana) para PFA
@@ -17575,10 +17464,10 @@ async function rtRenderWeekStats(plan){
       ? `user_id=in.(${planUserId},${rtUserId})`
       : `user_id=eq.${rtUserId}`;
 
-    const [rWeek, actsRaw, rAll] = await Promise.all([
+    // (se quitó la tercera consulta: traía TODOS los reportes del arquero y el resultado nunca se usaba)
+    const [rWeek, actsRaw] = await Promise.all([
       rtFetch(`training_reports?plan_id=eq.${plan.id}&${userFilter}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`).then(r=>r.json()),
-      rtFetch(`training_activities?plan_id=eq.${plan.id}&order=sort_order.asc`).then(r=>r.json()),
-      rtFetch(`training_reports?user_id=eq.${planUserId}&value_done=gt.0&select=value_done,note`).then(r=>r.json())
+      rtFetch(`training_activities?plan_id=eq.${plan.id}&order=sort_order.asc`).then(r=>r.json())
     ]);
 
     // Total actividades reales del plan (excluyendo asistencia)
@@ -17613,18 +17502,9 @@ async function rtRenderWeekStats(plan){
     }
 
     el.innerHTML = `
-      <div class="rt-stat-box">
-        <div class="rt-stat-val" style="color:#5dcaa5">${reported}<span style="font-size:14px;color:rgba(255,255,255,0.3)"> / ${totalAllActs}</span></div>
-        <div class="rt-stat-lbl">Reportes</div>
-      </div>
-      <div class="rt-stat-box">
-        <div class="rt-stat-val" style="color:#d8a05a">${touched}<span style="font-size:14px;color:rgba(255,255,255,0.3)"> / ${totalActs}</span></div>
-        <div class="rt-stat-lbl">Actividades</div>
-      </div>
-      <div class="rt-stat-box">
-        <div class="rt-stat-val" style="color:#9a88dd">${realPct}%</div>
-        <div class="rt-stat-lbl">Completado</div>
-      </div>`;
+      <div class="rt-stat"><div class="v">${reported}<small>/ ${totalAllActs}</small></div><div class="l">Reportes</div></div>
+      <div class="rt-stat"><div class="v">${touched}<small>/ ${totalActs}</small></div><div class="l">Actividades</div></div>
+      <div class="rt-stat"><div class="v">${realPct}%</div><div class="l">Completado</div></div>`;
 
     // PFA — buscar en archer_scores del usuario
     const session = (await window._supabaseClient.auth.getSession()).data.session;
@@ -17656,46 +17536,29 @@ async function rtRenderWeekStats(plan){
 
     const pfaWrap = document.getElementById('rt-pfa-wrap');
     const pfaGrid = document.getElementById('rt-pfa-grid');
+    const pfaEmpty = document.getElementById('rt-pfa-empty');
     const discs = Object.keys(byDisc);
     if(pfaGrid && discs.length){
       pfaGrid.innerHTML = discs.map(disc=>{
         const vals = byDisc[disc];
         const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
-        const color = RT_DISC_COLORS[disc]||'var(--muted)';
-        return `<div style="padding:6px 8px;border-radius:7px;background:var(--surface2);border:0.5px solid var(--border);border-left:2px solid ${color}">
-          <div style="font-size:9px;color:${color};font-weight:600;text-transform:uppercase;letter-spacing:.05em">${RT_DISC_LABELS[disc]||disc}</div>
-          <div style="display:flex;align-items:baseline;gap:3px;margin-top:2px">
-            <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text);line-height:1">${avg}</span>
-            <span style="font-size:9px;color:var(--muted)">pts/flecha</span>
-          </div>
-          <div style="font-size:9px;color:var(--muted);margin-top:1px">${vals.length} sesión${vals.length!==1?'es':''}</div>
-        </div>`;
+        const color = RT_DISC_COLORS[disc]||'#9aa3b5';
+        return `<div class="rt-pfa" style="--c:${color}"><div class="d">${RT_DISC_LABELS[disc]||disc}</div><div class="n"><b>${avg}</b><span>pts/flecha</span></div><div class="s">${vals.length} ${vals.length!==1?'sesiones':'sesión'}</div></div>`;
       }).join('');
       if(pfaWrap) pfaWrap.style.display = 'block';
-    } else if(pfaWrap){
-      pfaWrap.style.display = 'none';
+      if(pfaEmpty) pfaEmpty.style.display = 'none';
+    } else {
+      if(pfaWrap) pfaWrap.style.display = 'none';
+      if(pfaEmpty) pfaEmpty.style.display = 'block';
     }
 
   } catch(e){ console.error('rtRenderWeekStats error',e); if(el) el.innerHTML=''; }
 }
 
 async function rtLoadWeekStats(){
-  // Stats generales de esta semana en la lista
-  const now = new Date();
-  const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7));
-  const weekStart = mon.toISOString().slice(0,10);
-  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
-  const weekEnd = sun.toISOString().slice(0,10);
-
-  try{
-    const r = await rtFetch(`training_reports?user_id=eq.${rtUserId}&report_date=gte.${weekStart}&report_date=lte.${weekEnd}`);
-    const reps = await r.json();
-    const done = reps.filter(r=>r.completed).length;
-    const total = reps.length;
-    document.getElementById('rt-stat-asistencia').textContent = done;
-    document.getElementById('rt-stat-calenta').textContent = total;
-    document.getElementById('rt-stat-tiros').textContent = total ? Math.round(done/total*100)+'%' : '—';
-  } catch(e){}
+  // Antes escribía en las tres cifras del bloque del coach con los reportes del PROPIO coach de esta semana
+  // (y con etiquetas que no coincidían). Ahora esas cifras las calcula rtRenderCoachStats con los planes de
+  // los arqueros, desde que se pinta la lista. Se conserva la función porque otras partes la llaman.
 }
 
 window.rtEditPlan = function(){ rtToast('Edición de plan próximamente'); };
@@ -17772,11 +17635,12 @@ window.rtApplyCoachFilter = async function(){
   if(listEl){
     listEl.innerHTML = filtered.length
       ? filtered.map(p=>rtRenderPlanItem(p,false)).join('')
-      : '<div style="padding:16px 0;text-align:center;font-size:12px;color:var(--muted)">Sin planes con ese filtro</div>';
+      : '<div class="rt-empty">Sin planes con ese filtro.</div>';
   }
   if(countEl){
     countEl.textContent = hasFilter ? filtered.length+' / '+plans.length+' planes' : plans.length+' planes';
   }
+  rtUpdateFilterSummary();
   await rtRenderCoachStats(filtered);
 
   // Invalidar cache para próxima llamada (perfil puede actualizarse)
@@ -17824,10 +17688,6 @@ async function rtRenderCoachStats(plans){
   const reports  = reportsRes.ok ? (await reportsRes.json() || []) : [];
   const allActs  = actsRes.ok    ? (await actsRes.json()    || []) : [];
   const scores   = scoresRes.ok  ? (await scoresRes.json()  || []) : [];
-  console.log('🔍 CoachStats | plans:', plans.length, 'planIds:', planIds.slice(0,2), 'allUserIds:', allUserIds);
-  console.log('🔍 CoachStats | reports:', reports.length, 'allActs:', allActs.length, 'reportsOk:', reportsRes.ok, 'actsOk:', actsRes.ok);
-  console.log('🔍 CoachStats | reportsRes status:', reportsRes.status, 'actsRes status:', actsRes.status);
-
   // ── MACRO STATS (misma lógica que individual pero para todos los planes) ──
 
   // Reportes: actividades tocadas / total actividades (incluyendo asistencia)
@@ -17857,8 +17717,8 @@ async function rtRenderCoachStats(plans){
     realPctAll = Math.round(totalProg / totalTrain * 100);
   }
 
-  if(elAsist) elAsist.innerHTML = `${reportedAll}<span style="font-size:0.55em;color:var(--muted);margin-left:2px">de ${totalActsAll}</span>`;
-  if(elCal)   elCal.innerHTML   = `${touchedAll}<span style="font-size:0.55em;color:var(--muted);margin-left:2px">de ${totalTrain}</span>`;
+  if(elAsist) elAsist.innerHTML = `${reportedAll}<small>/ ${totalActsAll}</small>`;
+  if(elCal)   elCal.innerHTML   = `${touchedAll}<small>/ ${totalTrain}</small>`;
   if(elTiros) elTiros.textContent = totalTrain > 0 ? realPctAll+'%' : '—';
 
   // PFA por disciplina
@@ -17876,40 +17736,17 @@ async function rtRenderCoachStats(plans){
     byDisc[disc].push(pfa);
   });
 
-  // Render PFA grid — insertar después de los stat boxes si no existe
-  let pfaEl = document.getElementById('rt-coach-pfa-grid');
-  if(!pfaEl){
-    const statsEl = document.getElementById('rt-stat-asistencia')?.closest('.rt-stat-grid');
-    if(statsEl){
-      const wrap = document.createElement('div');
-      wrap.id = 'rt-coach-pfa-grid';
-      wrap.style.cssText = 'margin-top:10px';
-      statsEl.parentNode.insertBefore(wrap, statsEl.nextSibling);
-      pfaEl = wrap;
-    }
-  }
-
+  // Promedio por flecha de los arqueros: va en su propia ventana
+  const pfaEl = document.getElementById('rt-coach-pfa-grid');
   if(pfaEl){
     const discs = ['indoor','outdoor','field','3d'];
-    const cells = discs.map(disc=>{
+    pfaEl.innerHTML = discs.map(disc=>{
       const vals = byDisc[disc];
-      if(!vals || !vals.length) return `<div style="padding:6px 8px;border-radius:7px;background:var(--surface2);border:0.5px solid var(--border);opacity:.3">
-        <div style="font-size:9px;color:var(--muted);text-transform:uppercase">${RT_DISC_LABELS[disc]}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">Sin datos</div>
-      </div>`;
+      if(!vals || !vals.length) return `<div class="rt-pfa nodata"><div class="d">${RT_DISC_LABELS[disc]}</div><div class="s">Sin datos</div></div>`;
       const avg   = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
-      const color = RT_DISC_COLORS[disc]||'var(--muted)';
-      return `<div style="padding:6px 8px;border-radius:7px;background:var(--surface2);border:0.5px solid var(--border);border-left:2px solid ${color}">
-        <div style="font-size:9px;color:${color};font-weight:600;text-transform:uppercase;letter-spacing:.05em">${RT_DISC_LABELS[disc]}</div>
-        <div style="display:flex;align-items:baseline;gap:3px;margin-top:2px">
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text);line-height:1">${avg}</span>
-          <span style="font-size:9px;color:var(--muted)">pts/flecha</span>
-        </div>
-        <div style="font-size:9px;color:var(--muted);margin-top:1px">${vals.length} sesión${vals.length!==1?'es':''}</div>
-      </div>`;
-    });
-    pfaEl.innerHTML = `<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⬛ Promedio por flecha</div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">${cells.join('')}</div>`;
+      const color = RT_DISC_COLORS[disc]||'#9aa3b5';
+      return `<div class="rt-pfa" style="--c:${color}"><div class="d">${RT_DISC_LABELS[disc]}</div><div class="n"><b>${avg}</b><span>pts/flecha</span></div><div class="s">${vals.length} ${vals.length!==1?'sesiones':'sesión'}</div></div>`;
+    }).join('');
   }
 }
 
@@ -17958,6 +17795,70 @@ window.rtOpenAthleteView = function(userId){
     </div>
     ${plans.map(p=>rtRenderPlanItem(p,false)).join('')}`;
 };
+
+// ── Deshacer planes a medio crear ─────────────────────────
+// Si algo falla al asignar (por ejemplo la base rechaza a un arquero que no es del club), no deben quedar planes sueltos.
+async function rtUndoPlans(ids){
+  if(!ids.length) return;
+  const list = ids.join(',');
+  try{
+    await rtFetch(`training_activities?plan_id=in.(${list})`, {method:'DELETE'});
+    await rtFetch(`training_plans?id=in.(${list})`, {method:'DELETE'});
+  } catch(e){ console.error('rtUndoPlans', e); }
+}
+
+// ── Resumen del filtro del coach ──────────────────────────
+function rtUpdateFilterSummary(){
+  const el = document.getElementById('rt-filter-sum'); if(!el) return;
+  const txt = id => { const s=document.getElementById(id); return (s && s.value) ? s.options[s.selectedIndex].text : ''; };
+  const days = parseInt(document.getElementById('rt-filter-days')?.value || '30');
+  const parts = [txt('rt-filter-gender'),txt('rt-filter-bow'),txt('rt-filter-cat')].filter(Boolean);
+  parts.push(days>0 ? 'Últimos '+days+' d' : 'Todo el historial');
+  el.textContent = parts.join(' · ');
+}
+
+// ── Crear plan por pasos ──────────────────────────────────
+window.rtCreateStep = function(n){
+  if(n===2){
+    if(!document.getElementById('rt-plan-title').value.trim()) return rtToast('Escribe un nombre para el plan');
+    if(!document.querySelectorAll('#rt-day-picker .rt-day-pill.on').length) return rtToast('Selecciona al menos un día');
+    rtUpdateDayBuilderTabs();
+    const title = document.getElementById('rt-plan-title').value.trim();
+    const days = [...document.querySelectorAll('#rt-day-picker .rt-day-pill.on')].map(el=>DAYS[parseInt(el.dataset.day)]).join(' · ');
+    const wk = parseInt(document.getElementById('rt-plan-weeks').value)||1;
+    const st = rtParseLocal(document.getElementById('rt-plan-start').value);
+    document.getElementById('rt-step2-sum').innerHTML = `<b>${rtEsc(title)}</b><br>${days} · ${wk} semana${wk>1?'s':''}` + (isNaN(st) ? '' : ` · desde ${st.toLocaleDateString('es-MX',RT_SHORT)}`);
+  }
+  document.getElementById('rt-step-1').style.display = n===1 ? 'block' : 'none';
+  document.getElementById('rt-step-2').style.display = n===2 ? 'block' : 'none';
+  document.getElementById('rt-step-ind').textContent = 'Paso '+n+' de 2';
+  try{ window.scrollTo(0,0); }catch(e){}
+};
+
+// ── Ventanas emergentes ───────────────────────────────────
+window.rtOpenSheet = function(id){
+  const el = document.getElementById(id); if(!el) return;
+  el.style.display = 'block';
+  const x = el.querySelector('.rt-x'); if(x) setTimeout(()=>x.focus(),30);
+};
+window.rtCloseSheet = function(id){ const el = document.getElementById(id); if(el) el.style.display = 'none'; };
+document.addEventListener('keydown', function(e){
+  if(e.key!=='Escape') return;
+  document.querySelectorAll('.rt-sheet').forEach(function(s){ if(s.style.display==='block') s.style.display='none'; });
+});
+
+// ── Semana actual para otras pestañas ─────────────────────
+// La Bitácora lee window.rtCurrentWeek al guardar un score del plan (si no existe usa 1). Se expone sin duplicar el estado.
+Object.defineProperty(window, 'rtCurrentWeek', {configurable:true, get: function(){ return rtCurrentWeek; }});
+
+// ── Página blanca mientras esta pestaña está visible ──────
+(function(){
+  const panel = document.getElementById('tab-rutina'); if(!panel) return;
+  const root = document.documentElement;
+  const sync = function(){ root.classList.toggle('rt-claro', panel.classList.contains('active')); };
+  sync();
+  if(window.MutationObserver) new MutationObserver(sync).observe(panel,{attributes:true,attributeFilter:['class']});
+})();
 
 // ── Exponer funciones de render globalmente ───────────────
 window.rtRenderDayActivities = rtRenderDayActivities;
